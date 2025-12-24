@@ -1,19 +1,19 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { ArrowLeft, Save, Bot, XCircle, FileText, Mail } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Switch } from "@/components/ui/switch"
-import { DashboardShell } from "@/components/dashboard-shell"
+import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft, Save, Bot, XCircle, FileText, Mail } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { DashboardShell } from '@/components/dashboard-shell';
 
 export default function ComplianceSettingsPage() {
-  const router = useRouter()
+  const router = useRouter();
 
   const [settings, setSettings] = useState({
     notifyOnRejection: true,
@@ -27,21 +27,21 @@ export default function ComplianceSettingsPage() {
       aiDetection:
         'Dear {{artist}},\n\nYour submission "{{title}}" has been flagged as potentially AI-generated content. Our platform only accepts human-created artwork.\n\nIf you believe this is an error, please contact our support team.\n\nBest regards,\n{{brand}}',
     },
-    reviewerEmails: ["compliance@example.com", "legal@example.com"],
+    reviewerEmails: ['compliance@example.com', 'legal@example.com'],
     apiKeys: {
       aiornot:
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImRmYWIzMGNjLWI0NjktNGRjYS05OWVmLTllZjViYmVmNTZmYyIsInVzZXJfaWQiOiJkZmFiMzBjYy1iNDY5LTRkY2EtOTllZi05ZWY1YmJlZjU2ZmMiLCJhdWQiOiJhY2Nlc3MiLCJleHAiOjAuMH0.KoGvysGDtSuxfnxwL_QQ5NHE01hInWYyYx0yl0wRM-w",
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImRmYWIzMGNjLWI0NjktNGRjYS05OWVmLTllZjViYmVmNTZmYyIsInVzZXJfaWQiOiJkZmFiMzBjYy1iNDY5LTRkY2EtOTllZi05ZWY1YmJlZjU2ZmMiLCJhdWQiOiJhY2Nlc3MiLCJleHAiOjAuMH0.KoGvysGDtSuxfnxwL_QQ5NHE01hInWYyYx0yl0wRM-w',
       openai:
-        "sk-proj-GghCXhHvPqZPs59horHY_qNw0quljb5q4vgK1Z5WV9z1U6ldcPPPiDt2puaX_Vp4AMYWZw7EfYT3BlbkFJ8rCGk-UZrIrUiA6_Fak3VeGepV2gn36Voh38WjkLJHMd_3fycfckOiY5325ySldLJfIOyJEkA",
+        'sk-proj-GghCXhHvPqZPs59horHY_qNw0quljb5q4vgK1Z5WV9z1U6ldcPPPiDt2puaX_Vp4AMYWZw7EfYT3BlbkFJ8rCGk-UZrIrUiA6_Fak3VeGepV2gn36Voh38WjkLJHMd_3fycfckOiY5325ySldLJfIOyJEkA',
     },
-  })
+  });
 
   const handleSave = () => {
     // In a real app, this would save to a database
-    console.log("Saving compliance settings:", settings)
+    console.log('Saving compliance settings:', settings);
     // Show success message and redirect
-    router.push("/dashboard/compliance")
-  }
+    router.push('/dashboard/compliance');
+  };
 
   return (
     <DashboardShell>
@@ -53,7 +53,9 @@ export default function ComplianceSettingsPage() {
         </Link>
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Compliance Settings</h1>
-          <p className="text-muted-foreground">Configure general settings for the compliance system</p>
+          <p className="text-muted-foreground">
+            Configure general settings for the compliance system
+          </p>
         </div>
       </div>
 
@@ -77,7 +79,9 @@ export default function ComplianceSettingsPage() {
               <Switch
                 id="notify-rejection"
                 checked={settings.notifyOnRejection}
-                onCheckedChange={(checked) => setSettings({ ...settings, notifyOnRejection: checked })}
+                onCheckedChange={(checked) =>
+                  setSettings({ ...settings, notifyOnRejection: checked })
+                }
               />
             </div>
 
@@ -91,7 +95,9 @@ export default function ComplianceSettingsPage() {
               <Switch
                 id="notify-approval"
                 checked={settings.notifyOnApproval}
-                onCheckedChange={(checked) => setSettings({ ...settings, notifyOnApproval: checked })}
+                onCheckedChange={(checked) =>
+                  setSettings({ ...settings, notifyOnApproval: checked })
+                }
               />
             </div>
 
@@ -105,7 +111,9 @@ export default function ComplianceSettingsPage() {
               <Switch
                 id="notify-ai"
                 checked={settings.notifyOnAIDetection}
-                onCheckedChange={(checked) => setSettings({ ...settings, notifyOnAIDetection: checked })}
+                onCheckedChange={(checked) =>
+                  setSettings({ ...settings, notifyOnAIDetection: checked })
+                }
               />
             </div>
 
@@ -117,18 +125,18 @@ export default function ComplianceSettingsPage() {
                     <Input
                       value={email}
                       onChange={(e) => {
-                        const updatedEmails = [...settings.reviewerEmails]
-                        updatedEmails[index] = e.target.value
-                        setSettings({ ...settings, reviewerEmails: updatedEmails })
+                        const updatedEmails = [...settings.reviewerEmails];
+                        updatedEmails[index] = e.target.value;
+                        setSettings({ ...settings, reviewerEmails: updatedEmails });
                       }}
                     />
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        const updatedEmails = [...settings.reviewerEmails]
-                        updatedEmails.splice(index, 1)
-                        setSettings({ ...settings, reviewerEmails: updatedEmails })
+                        const updatedEmails = [...settings.reviewerEmails];
+                        updatedEmails.splice(index, 1);
+                        setSettings({ ...settings, reviewerEmails: updatedEmails });
                       }}
                       className="h-8 w-8 p-0 text-muted-foreground"
                     >
@@ -142,8 +150,8 @@ export default function ComplianceSettingsPage() {
                   onClick={() => {
                     setSettings({
                       ...settings,
-                      reviewerEmails: [...settings.reviewerEmails, ""],
-                    })
+                      reviewerEmails: [...settings.reviewerEmails, ''],
+                    });
                   }}
                 >
                   Add Email
@@ -179,7 +187,7 @@ export default function ComplianceSettingsPage() {
                 className="min-h-[150px] font-mono text-sm"
               />
               <p className="text-xs text-muted-foreground">
-                Available variables: {{ artist }}, {{ title }}, {{ reason }}, {{ brand }}
+                Available variables: {'{{artist}}'}, {'{{title}}'}, {'{{reason}}'}, {'{{brand}}'}
               </p>
             </div>
 
@@ -200,7 +208,7 @@ export default function ComplianceSettingsPage() {
                 className="min-h-[150px] font-mono text-sm"
               />
               <p className="text-xs text-muted-foreground">
-                Available variables: {{ artist }}, {{ title }}, {{ brand }}
+                Available variables: {'{{artist}}'}, {'{{title}}'}, {'{{brand}}'}
               </p>
             </div>
 
@@ -221,7 +229,7 @@ export default function ComplianceSettingsPage() {
                 className="min-h-[150px] font-mono text-sm"
               />
               <p className="text-xs text-muted-foreground">
-                Available variables: {{ artist }}, {{ title }}, {{ brand }}
+                Available variables: {'{{artist}}'}, {'{{title}}'}, {'{{brand}}'}
               </p>
             </div>
           </CardContent>
@@ -252,7 +260,9 @@ export default function ComplianceSettingsPage() {
                   })
                 }
               />
-              <p className="text-xs text-muted-foreground">Used for AI detection in artwork submissions</p>
+              <p className="text-xs text-muted-foreground">
+                Used for AI detection in artwork submissions
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -289,6 +299,5 @@ export default function ComplianceSettingsPage() {
         </Button>
       </div>
     </DashboardShell>
-  )
+  );
 }
-

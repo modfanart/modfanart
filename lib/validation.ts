@@ -17,10 +17,12 @@ export function validateRequest<T extends z.ZodTypeAny>(
   const result = schema.safeParse(data);
 
   if (!result.success) {
-    const errors = result.error;
-    logger.warn(`Validation failed: ${errors.map((e) => e.message).join(', ')}`, {
+    const issues = result.error.issues; // ← Correct way to access errors
+    const errorMessages = issues.map((issue) => issue.message).join(', ');
+
+    logger.warn(`Validation failed: ${errorMessages}`, {
       context,
-      data: { errors },
+      data: { issues },
     });
 
     return {
@@ -29,7 +31,10 @@ export function validateRequest<T extends z.ZodTypeAny>(
         {
           success: false,
           error: 'Validation failed',
-          details: errors,
+          details: issues.map((issue) => ({
+            path: issue.path,
+            message: issue.message,
+          })),
         },
         { status: 400 }
       ),

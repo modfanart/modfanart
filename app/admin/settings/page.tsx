@@ -352,13 +352,14 @@ export default function SettingsPage() {
                           {moderationSettings.thresholds.aiScore.toFixed(2)}
                         </span>
                       </div>
+                      {/* AI Score Threshold */}
                       <Slider
                         id="aiScore"
                         min={0}
                         max={1}
                         step={0.05}
                         value={[moderationSettings.thresholds.aiScore]}
-                        onValueChange={([value]) => handleThresholdChange('aiScore', value)}
+                        onValueChange={([value]) => handleThresholdChange('aiScore', value!)}
                       />
                       <p className="text-xs text-gray-500">
                         Submissions with AI scores above this threshold will be flagged as
@@ -388,13 +389,14 @@ export default function SettingsPage() {
                           {moderationSettings.thresholds.ipCompliance}
                         </span>
                       </div>
+                      {/* IP Compliance */}
                       <Slider
                         id="ipCompliance"
                         min={1}
                         max={10}
                         step={1}
                         value={[moderationSettings.thresholds.ipCompliance]}
-                        onValueChange={([value]) => handleThresholdChange('ipCompliance', value)}
+                        onValueChange={([value]) => handleThresholdChange('ipCompliance', value!)}
                       />
                       <p className="text-xs text-gray-500">
                         Submissions with IP compliance scores above this threshold will be flagged
@@ -424,13 +426,14 @@ export default function SettingsPage() {
                           {moderationSettings.thresholds.contentSafety}
                         </span>
                       </div>
+                      {/* Content Safety */}
                       <Slider
                         id="contentSafety"
                         min={1}
                         max={10}
                         step={1}
                         value={[moderationSettings.thresholds.contentSafety]}
-                        onValueChange={([value]) => handleThresholdChange('contentSafety', value)}
+                        onValueChange={([value]) => handleThresholdChange('contentSafety', value!)}
                       />
                       <p className="text-xs text-gray-500">
                         Submissions with content safety scores above this threshold will be flagged
@@ -458,13 +461,14 @@ export default function SettingsPage() {
                         </div>
                         <span className="text-sm">{moderationSettings.thresholds.autoApprove}</span>
                       </div>
+                      {/* Auto-Approve */}
                       <Slider
                         id="autoApprove"
                         min={1}
                         max={10}
                         step={1}
                         value={[moderationSettings.thresholds.autoApprove]}
-                        onValueChange={([value]) => handleThresholdChange('autoApprove', value)}
+                        onValueChange={([value]) => handleThresholdChange('autoApprove', value!)}
                       />
                       <p className="text-xs text-gray-500">
                         Submissions with overall risk scores below this threshold will be
@@ -492,13 +496,14 @@ export default function SettingsPage() {
                         </div>
                         <span className="text-sm">{moderationSettings.thresholds.autoReject}</span>
                       </div>
+                      {/* Auto-Reject */}
                       <Slider
                         id="autoReject"
                         min={1}
                         max={10}
                         step={1}
                         value={[moderationSettings.thresholds.autoReject]}
-                        onValueChange={([value]) => handleThresholdChange('autoReject', value)}
+                        onValueChange={([value]) => handleThresholdChange('autoReject', value!)}
                       />
                       <p className="text-xs text-gray-500">
                         Submissions with overall risk scores above this threshold will be

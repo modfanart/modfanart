@@ -1,221 +1,177 @@
-import { postgresClient, DB } from "../config"
-import { v4 as uuidv4 } from "uuid"
-import { logger } from "../../utils/logger"
-import { z } from "zod"
+import { postgresClient, DB } from '../config';
+import { v4 as uuidv4 } from 'uuid';
+import { logger } from '../../utils/logger';
+import { z } from 'zod';
 
-export type PaymentStatus = "pending" | "completed" | "failed" | "refunded"
+export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'refunded';
 
 const CreatePaymentSchema = z.object({
   userId: z.string().uuid(),
   amount: z.number().positive(),
   currency: z.string().length(3),
-  status: z.enum(["pending", "completed", "failed", "refunded"]).default("pending"),
+  status: z.enum(['pending', 'completed', 'failed', 'refunded']).default('pending'),
   paymentMethod: z.string().min(2).max(50),
   paymentIntentId: z.string().optional(),
   metadata: z.record(z.any()).optional(),
-})
+});
 
 export interface Payment {
-  id: string
-  userId: string
-  amount: number
-  currency: string
-  status: PaymentStatus
-  paymentMethod: string
-  paymentIntentId?: string
-  createdAt: Date
-  updatedAt: Date
-  metadata?: Record<string, any>
+  id: string;
+  userId: string;
+  amount: number;
+  currency: string;
+  status: PaymentStatus;
+  paymentMethod: string;
+  paymentIntentId?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  metadata?: Record<string, any>;
 }
 
-export async function createPayment(paymentData: Omit<Payment, "id" | "createdAt" | "updatedAt">): Promise<Payment> {
+/**
+ * CREATE PAYMENT
+ */
+export async function createPayment(
+  paymentData: Omit<Payment, 'id' | 'createdAt' | 'updatedAt'>
+): Promise<Payment> {
   try {
-    // Validate input data
-    const validatedData = CreatePaymentSchema.parse(paymentData)
-
-    const id = uuidv4()
-    const now = new Date()
+    const validatedData = CreatePaymentSchema.parse(paymentData);
+    const id = uuidv4();
+    const now = new Date();
 
     const payment: Payment = {
       id,
       ...validatedData,
       createdAt: now,
       updatedAt: now,
-    }
+    };
 
-    await postgresClient.sql`
-      INSERT INTO ${DB.PAYMENTS} (
-        id, user_id, amount, currency, status, 
-        payment_method, payment_intent_id, created_at, updated_at, metadata
-      ) VALUES (
-        ${payment.id}, ${payment.userId}, ${payment.amount}, 
-        ${payment.currency}, ${payment.status}, ${payment.paymentMethod}, 
-        ${payment.paymentIntentId || null}, ${payment.createdAt}, 
-        ${payment.updatedAt}, ${JSON.stringify(payment.metadata || {})}
-      )
-    `
+    await postgresClient
+      .insertInto('payments')
+      .values({
+        id: payment.id,
+        user_id: payment.userId,
+        amount: payment.amount.toString(), // PostgreSQL Numeric often expects string to preserve precision
+        currency: payment.currency,
+        status: payment.status,
+        payment_method: payment.paymentMethod,
+        payment_intent_id: payment.paymentIntentId ?? null,
+        created_at: payment.createdAt,
+        updated_at: payment.updatedAt,
+        metadata: JSON.stringify(payment.metadata ?? {}),
+      })
+      .execute();
 
-    logger.info("Payment created successfully", {
-      context: "payment-model",
-      data: { paymentId: id, userId: payment.userId, amount: payment.amount, currency: payment.currency },
-    })
+    logger.info('Payment created successfully', {
+      context: 'payment-model',
+      data: { paymentId: id, userId: payment.userId },
+    });
 
-    return payment
-  } catch (error) {
-    logger.error("Failed to create payment", {
-      context: "payment-model",
-      error,
-      data: { userId: paymentData.userId, amount: paymentData.amount },
-    })
-
+    return payment;
+  } catch (error: any) {
+    logger.error('Failed to create payment', { context: 'payment-model', error });
     if (error instanceof z.ZodError) {
-      throw new Error(`Invalid payment data: ${JSON.stringify(error.errors)}`)
+      throw new Error(`Invalid payment data: ${JSON.stringify(error.errors)}`);
     }
-
-    throw new Error(`Failed to create payment: ${error.message}`)
+    throw error;
   }
 }
 
+/**
+ * GET BY ID
+ */
 export async function getPaymentById(id: string): Promise<Payment | null> {
-  if (!id || typeof id !== "string") {
-    throw new Error("Invalid payment ID")
-  }
+  const result = await postgresClient
+    .selectFrom('payments')
+    .selectAll()
+    .where('id', '=', id)
+    .executeTakeFirst();
 
-  try {
-    const result = await postgresClient.sql`
-      SELECT * FROM ${DB.PAYMENTS} WHERE id = ${id}
-    `
-
-    if (result.rows.length === 0) {
-      return null
-    }
-
-    return mapRowToPayment(result.rows[0])
-  } catch (error) {
-    logger.error("Failed to get payment by ID", {
-      context: "payment-model",
-      error,
-      data: { paymentId: id },
-    })
-    throw new Error(`Failed to get payment: ${error.message}`)
-  }
+  return result ? mapRowToPayment(result) : null;
 }
 
+/**
+ * GET BY USER ID
+ */
 export async function getPaymentsByUserId(userId: string): Promise<Payment[]> {
-  if (!userId || typeof userId !== "string") {
-    throw new Error("Invalid user ID")
-  }
+  const results = await postgresClient
+    .selectFrom('payments')
+    .selectAll()
+    .where('user_id', '=', userId)
+    .orderBy('created_at', 'desc')
+    .execute();
 
-  try {
-    const result = await postgresClient.sql`
-      SELECT * FROM ${DB.PAYMENTS} WHERE user_id = ${userId} ORDER BY created_at DESC
-    `
-
-    return result.rows.map(mapRowToPayment)
-  } catch (error) {
-    logger.error("Failed to get payments by user ID", {
-      context: "payment-model",
-      error,
-      data: { userId },
-    })
-    throw new Error(`Failed to get payments: ${error.message}`)
-  }
+  return results.map(mapRowToPayment);
 }
 
+/**
+ * UPDATE PAYMENT STATUS (With History Tracking)
+ */
 export async function updatePaymentStatus(
   id: string,
   status: PaymentStatus,
-  metadata?: Record<string, any>,
+  metadata?: Record<string, any>
 ): Promise<Payment | null> {
-  if (!id || typeof id !== "string") {
-    throw new Error("Invalid payment ID")
-  }
+  return await postgresClient.transaction().execute(async (trx) => {
+    const existingRow = await trx
+      .selectFrom('payments')
+      .selectAll()
+      .where('id', '=', id)
+      .forUpdate()
+      .executeTakeFirst();
 
-  try {
-    // Start transaction
-    const client = await postgresClient.connect()
+    if (!existingRow) return null;
 
-    try {
-      await client.sql`BEGIN`
+    const currentPayment = mapRowToPayment(existingRow);
+    const now = new Date();
 
-      // Get current payment data
-      const getPaymentResult = await client.sql`
-        SELECT * FROM ${DB.PAYMENTS} WHERE id = ${id} FOR UPDATE
-      `
+    // Prepare metadata with status history
+    const updatedMetadata = {
+      ...(currentPayment.metadata ?? {}),
+      ...(metadata ?? {}),
+      statusHistory: [
+        ...(currentPayment.metadata?.statusHistory ?? []),
+        {
+          from: currentPayment.status,
+          to: status,
+          date: now.toISOString(),
+        },
+      ],
+    };
 
-      if (getPaymentResult.rows.length === 0) {
-        await client.sql`ROLLBACK`
-        return null
-      }
-
-      const currentPayment = mapRowToPayment(getPaymentResult.rows[0])
-      const now = new Date()
-
-      // Update payment status
-      let updatedMetadata = currentPayment.metadata || {}
-
-      // Add status history
-      if (!updatedMetadata.statusHistory) {
-        updatedMetadata.statusHistory = []
-      }
-
-      updatedMetadata.statusHistory.push({
-        from: currentPayment.status,
-        to: status,
-        date: now.toISOString(),
+    await trx
+      .updateTable('payments')
+      .set({
+        status,
+        updated_at: now,
+        metadata: JSON.stringify(updatedMetadata),
       })
+      .where('id', '=', id)
+      .execute();
 
-      // Merge additional metadata if provided
-      if (metadata) {
-        updatedMetadata = { ...updatedMetadata, ...metadata }
-      }
-
-      await client.sql`
-        UPDATE ${DB.PAYMENTS} SET
-          status = ${status},
-          updated_at = ${now},
-          metadata = ${JSON.stringify(updatedMetadata)}
-        WHERE id = ${id}
-      `
-
-      await client.sql`COMMIT`
-
-      logger.info(`Payment status updated to ${status}`, {
-        context: "payment-model",
-        data: { paymentId: id, previousStatus: currentPayment.status, newStatus: status },
-      })
-
-      // Get updated payment
-      const updatedPayment = await getPaymentById(id)
-      return updatedPayment
-    } catch (error) {
-      await client.sql`ROLLBACK`
-      throw error
-    } finally {
-      client.release()
-    }
-  } catch (error) {
-    logger.error("Failed to update payment status", {
-      context: "payment-model",
-      error,
-      data: { paymentId: id, status },
-    })
-    throw new Error(`Failed to update payment status: ${error.message}`)
-  }
+    return {
+      ...currentPayment,
+      status,
+      updatedAt: now,
+      metadata: updatedMetadata,
+    };
+  });
 }
 
+/**
+ * MAPPER
+ */
 function mapRowToPayment(row: any): Payment {
   return {
     id: row.id,
     userId: row.user_id,
     amount: Number.parseFloat(row.amount),
     currency: row.currency,
-    status: row.status,
+    status: row.status as PaymentStatus,
     paymentMethod: row.payment_method,
-    paymentIntentId: row.payment_intent_id,
+    paymentIntentId: row.payment_intent_id ?? undefined,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
-    metadata: row.metadata,
-  }
+    metadata: typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata,
+  };
 }
-

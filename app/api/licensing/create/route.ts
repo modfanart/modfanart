@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
 
     const session = await getServerSession(authOptions);
     const userId = session?.user?.id;
-    const userRole = session?.user?.role || 'user';
+    const userRole = session?.user?.role;
 
     logger.info(`Creating license agreement`, {
       context: 'licensing-api',

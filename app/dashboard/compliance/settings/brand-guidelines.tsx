@@ -1,82 +1,82 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ColorPicker } from "@/components/ui/color-picker"
-import { FileUpload } from "@/components/ui/file-upload"
-import { Slider } from "@/components/ui/slider"
-import { Switch } from "@/components/ui/switch"
-import { Palette, Type, Image, Shield, Bot } from "lucide-react"
+import { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ColorPicker } from '@/components/ui/color-picker';
+import { FileUpload } from '@/components/ui/file-upload';
+import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
+import { Palette, Type, Image, Shield, Bot } from 'lucide-react';
 
 interface BrandGuidelines {
   colors: {
-    primary: string
-    secondary: string
-    accent: string
-    background: string
-  }
+    primary: string;
+    secondary: string;
+    accent: string;
+    background: string;
+  };
   typography: {
-    primaryFont: string
-    secondaryFont: string
-    minFontSize: number
-    maxFontSize: number
-  }
+    primaryFont: string;
+    secondaryFont: string;
+    minFontSize: number;
+    maxFontSize: number;
+  };
   logos: {
-    main: string
-    alternate: string
-    minSize: number
-    clearSpace: number
-    restrictedUses: string[]
-  }
+    main: string;
+    alternate: string;
+    minSize: number;
+    clearSpace: number;
+    restrictedUses: string[];
+  };
   aiCriteria: {
-    minConfidenceScore: number
-    autoApproveThreshold: number
-    requireHumanReview: boolean
-    contentRestrictions: string[]
-  }
+    minConfidenceScore: number;
+    autoApproveThreshold: number;
+    requireHumanReview: boolean;
+    contentRestrictions: string[];
+  };
 }
 
 export default function BrandGuidelinesSettings() {
   const [guidelines, setGuidelines] = useState<BrandGuidelines>({
     colors: {
-      primary: "#000000",
-      secondary: "#ffffff",
-      accent: "#0070f3",
-      background: "#f5f5f5",
+      primary: '#000000',
+      secondary: '#ffffff',
+      accent: '#0070f3',
+      background: '#f5f5f5',
     },
     typography: {
-      primaryFont: "Inter",
-      secondaryFont: "System UI",
+      primaryFont: 'Inter',
+      secondaryFont: 'System UI',
       minFontSize: 12,
       maxFontSize: 48,
     },
     logos: {
-      main: "/path/to/main-logo.svg",
-      alternate: "/path/to/alternate-logo.svg",
+      main: '/path/to/main-logo.svg',
+      alternate: '/path/to/alternate-logo.svg',
       minSize: 32,
       clearSpace: 16,
-      restrictedUses: ["Modification", "Rotation", "Distortion"],
+      restrictedUses: ['Modification', 'Rotation', 'Distortion'],
     },
     aiCriteria: {
       minConfidenceScore: 0.8,
       autoApproveThreshold: 0.95,
       requireHumanReview: true,
-      contentRestrictions: ["Violence", "Adult Content", "Political Content"],
+      contentRestrictions: ['Violence', 'Adult Content', 'Political Content'],
     },
-  })
+  });
 
   const handleSave = async () => {
     try {
       // TODO: Implement API call to save guidelines
-      console.log("Saving guidelines:", guidelines)
+      console.log('Saving guidelines:', guidelines);
     } catch (error) {
-      console.error("Error saving guidelines:", error)
+      console.error('Error saving guidelines:', error);
     }
-  }
+  };
 
   return (
     <Tabs defaultValue="colors" className="w-full">
@@ -201,7 +201,10 @@ export default function BrandGuidelinesSettings() {
                     onChange={(e) =>
                       setGuidelines({
                         ...guidelines,
-                        typography: { ...guidelines.typography, minFontSize: Number(e.target.value) },
+                        typography: {
+                          ...guidelines.typography,
+                          minFontSize: Number(e.target.value),
+                        },
                       })
                     }
                     className="w-20"
@@ -213,7 +216,10 @@ export default function BrandGuidelinesSettings() {
                     onChange={(e) =>
                       setGuidelines({
                         ...guidelines,
-                        typography: { ...guidelines.typography, maxFontSize: Number(e.target.value) },
+                        typography: {
+                          ...guidelines.typography,
+                          maxFontSize: Number(e.target.value),
+                        },
                       })
                     }
                     className="w-20"
@@ -267,7 +273,7 @@ export default function BrandGuidelinesSettings() {
                   onValueChange={([value]) =>
                     setGuidelines({
                       ...guidelines,
-                      logos: { ...guidelines.logos, minSize: value },
+                      logos: { ...guidelines.logos, minSize: value! },
                     })
                   }
                 />
@@ -279,10 +285,11 @@ export default function BrandGuidelinesSettings() {
                   min={8}
                   max={64}
                   step={1}
+                  // Logo clearSpace
                   onValueChange={([value]) =>
                     setGuidelines({
                       ...guidelines,
-                      logos: { ...guidelines.logos, clearSpace: value },
+                      logos: { ...guidelines.logos, clearSpace: value! },
                     })
                   }
                 />
@@ -311,12 +318,14 @@ export default function BrandGuidelinesSettings() {
                     onValueChange={([value]) =>
                       setGuidelines({
                         ...guidelines,
-                        aiCriteria: { ...guidelines.aiCriteria, minConfidenceScore: value / 100 },
+                        aiCriteria: { ...guidelines.aiCriteria, minConfidenceScore: value! / 100 },
                       })
                     }
                     className="flex-1"
                   />
-                  <span className="w-12 text-right">{Math.round(guidelines.aiCriteria.minConfidenceScore * 100)}%</span>
+                  <span className="w-12 text-right">
+                    {Math.round(guidelines.aiCriteria.minConfidenceScore * 100)}%
+                  </span>
                 </div>
               </div>
 
@@ -331,7 +340,10 @@ export default function BrandGuidelinesSettings() {
                     onValueChange={([value]) =>
                       setGuidelines({
                         ...guidelines,
-                        aiCriteria: { ...guidelines.aiCriteria, autoApproveThreshold: value / 100 },
+                        aiCriteria: {
+                          ...guidelines.aiCriteria,
+                          autoApproveThreshold: value! / 100,
+                        },
                       })
                     }
                     className="flex-1"
@@ -368,12 +380,15 @@ export default function BrandGuidelinesSettings() {
                       <Input
                         value={restriction}
                         onChange={(e) => {
-                          const newRestrictions = [...guidelines.aiCriteria.contentRestrictions]
-                          newRestrictions[index] = e.target.value
+                          const newRestrictions = [...guidelines.aiCriteria.contentRestrictions];
+                          newRestrictions[index] = e.target.value;
                           setGuidelines({
                             ...guidelines,
-                            aiCriteria: { ...guidelines.aiCriteria, contentRestrictions: newRestrictions },
-                          })
+                            aiCriteria: {
+                              ...guidelines.aiCriteria,
+                              contentRestrictions: newRestrictions,
+                            },
+                          });
                         }}
                       />
                       <Button
@@ -381,12 +396,15 @@ export default function BrandGuidelinesSettings() {
                         size="sm"
                         onClick={() => {
                           const newRestrictions = guidelines.aiCriteria.contentRestrictions.filter(
-                            (_, i) => i !== index,
-                          )
+                            (_, i) => i !== index
+                          );
                           setGuidelines({
                             ...guidelines,
-                            aiCriteria: { ...guidelines.aiCriteria, contentRestrictions: newRestrictions },
-                          })
+                            aiCriteria: {
+                              ...guidelines.aiCriteria,
+                              contentRestrictions: newRestrictions,
+                            },
+                          });
                         }}
                       >
                         Remove
@@ -400,7 +418,7 @@ export default function BrandGuidelinesSettings() {
                         ...guidelines,
                         aiCriteria: {
                           ...guidelines.aiCriteria,
-                          contentRestrictions: [...guidelines.aiCriteria.contentRestrictions, ""],
+                          contentRestrictions: [...guidelines.aiCriteria.contentRestrictions, ''],
                         },
                       })
                     }
@@ -421,6 +439,5 @@ export default function BrandGuidelinesSettings() {
         </Button>
       </div>
     </Tabs>
-  )
+  );
 }
-

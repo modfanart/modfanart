@@ -33,7 +33,7 @@ const personalInfoSchema = z.object({
   }),
 });
 
-// Step 2 schema - FIXED
+// Step 2 schema
 const accountTypeSchema = z.object({
   accountType: z.enum(['artist', 'brand']).optional().default('artist'),
 });
@@ -79,10 +79,11 @@ export default function SignupPage() {
     },
   });
 
+  // Example for the Account Type Form
   const accountTypeForm = useForm<AccountTypeValues>({
     resolver: zodResolver(accountTypeSchema),
     defaultValues: {
-      accountType: undefined, // Allowed initially; .default('artist') will fill on submit if missing
+      accountType: 'artist',
     },
   });
 

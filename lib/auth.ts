@@ -1,27 +1,31 @@
-import type { NextAuthOptions, Session, User as NextAuthUser } from 'next-auth';
+import type { NextAuthOptions } from 'next-auth';
 import type { JWT } from 'next-auth/jwt';
 import GoogleProvider from 'next-auth/providers/google';
 import { getServerSession } from 'next-auth/next';
-import { type User, getUserById, getUserByEmail } from '@/lib/db/models/user';
+
+import { getUserByEmail, getUserById, createUser } from '@/lib/db/models/user'; // ← add createUser
 import { logger } from '@/lib/logger';
 
-// Define extended session and user types
-export interface ExtendedSession extends Session {
-  user: {
+// Augment NextAuth types (put this in types/next-auth.d.ts instead of here)
+declare module 'next-auth' {
+  interface Session {
+    user: {
+      id: string;
+      role: string;
+      name?: string | null;
+      email?: string | null;
+      image?: string | null;
+    };
+  }
+}
+
+declare module 'next-auth/jwt' {
+  interface JWT {
     id: string;
-    name?: string | null;
-    email?: string | null;
-    image?: string | null;
-    role?: string;
-  };
+    role: string;
+  }
 }
 
-export interface ExtendedUser extends NextAuthUser {
-  id: string;
-  role?: string;
-}
-
-// Define the auth options with callbacks
 export const authOptions: NextAuthOptions = {
   session: {
     strategy: 'jwt',
@@ -35,176 +39,97 @@ export const authOptions: NextAuthOptions = {
   ],
   pages: {
     signIn: '/login',
-    signOut: '/',
     error: '/auth/error',
-    verifyRequest: '/auth/verify-request',
   },
   callbacks: {
-    async signIn({ user, account, profile }) {
-      try {
-        // If user doesn't have an email, we can't proceed
-        if (!user.email) {
-          logger.error('Sign in failed: User has no email', { user: { id: user.id } });
-          return false;
-        }
-
-        // Check if user exists in our database
-        const existingUser = await getUserByEmail(user.email);
-
-        if (!existingUser) {
-          // Here you would typically create a new user in your database
-          // For now, we'll just log this event
-          logger.info('New user signed in, needs to be created in database', {
-            email: user.email,
-            name: user.name,
-          });
-        } else {
-          logger.info('Existing user signed in', { userId: existingUser.id });
-        }
-
-        return true;
-      } catch (error) {
-        logger.error('Error during sign in callback', { error });
+    async signIn({ user, profile }) {
+      if (!user.email) {
+        logger.warn('Sign-in rejected: no email', { name: user.name });
         return false;
       }
-    },
-    async jwt({ token, account, user }) {
-      try {
-        // Initial sign in
-        if (account && user) {
-          // Add access token and user ID to the token
-          token.accessToken = account.access_token;
-          token.id = user.id;
 
-          // If we have a user in our database, add their role
-          if (user.email) {
-            const dbUser = await getUserByEmail(user.email);
-            if (dbUser) {
-              token.role = dbUser.role || 'user';
-            } else {
-              token.role = 'user'; // Default role
-            }
+      // Optional: restrict to specific domains
+      // if (!user.email.endsWith('@allowed.com')) return false;
+
+      return true; // Allow sign-in, we'll handle user creation in jwt()
+    },
+
+    async jwt({ token, user, account, profile }) {
+      // Initial sign-in only
+      if (user && account && profile) {
+        // Find or create user in your database
+        let dbUser = await getUserByEmail(user.email!);
+
+        if (!dbUser) {
+          // Create new user in your DB
+          try {
+            dbUser = await createUser({
+              email: user.email!,
+              name: user.name || null,
+              image: user.image || null,
+              // You might want to set a default role or trigger onboarding
+              role: 'user',
+            });
+            logger.info('New user created via OAuth', { userId: dbUser.id, email: user.email });
+          } catch (error) {
+            logger.error('Failed to create user during sign-in', { error, email: user.email });
+            // Optionally reject sign-in here by throwing or returning modified token
           }
         }
 
-        return token;
-      } catch (error) {
-        logger.error('Error in JWT callback', { error });
-        // Return the token as is if there's an error
-        return token;
+        // Attach your app's user ID and role to the token
+        token.id = dbUser.id;
+        token.role = dbUser.role || 'user';
       }
+
+      return token;
     },
-    async session({ session, token }: { session: Session; token: JWT }) {
-      try {
-        // Add user ID and role to the session
-        return {
-          ...session,
-          user: {
-            ...session.user,
-            id: token.sub || token.id,
-            role: (token.role as string) || 'user',
-          },
-        } as ExtendedSession;
-      } catch (error) {
-        logger.error('Error in session callback', { error });
-        // Return the session as is if there's an error
-        return session;
+
+    async session({ session, token }) {
+      if (token?.id) {
+        session.user.id = token.id as string;
       }
+      if (token?.role) {
+        session.user.role = token.role as string;
+      }
+
+      return session;
     },
   },
   events: {
     async signIn({ user }) {
-      logger.info('User signed in', { userId: user.id });
+      logger.info('User signed in successfully', { email: user.email });
     },
     async signOut({ token }) {
-      logger.info('User signed out', { userId: token.sub });
-    },
-    async createUser({ user }) {
-      logger.info('User created', { userId: user.id });
-    },
-    async updateUser({ user }) {
-      logger.info('User updated', { userId: user.id });
-    },
-    async linkAccount({ user, account, profile }) {
-      logger.info('Account linked', { userId: user.id, provider: account.provider });
+      logger.info('User signed out', { userId: token.id });
     },
   },
   debug: process.env.NODE_ENV === 'development',
 };
 
-/**
- * Gets the current user's profile from the session
- * @returns The user profile or null if not authenticated
- */
-export async function getUserProfile(): Promise<User | null> {
-  try {
-    const session = (await getServerSession(authOptions)) as ExtendedSession | null;
+// Helper functions (unchanged, but now safe)
+export async function getUserProfile() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return null;
 
-    if (!session || !session.user || !session.user.id) {
-      return null;
-    }
-
-    const user = await getUserById(session.user.id);
-    return user;
-  } catch (error) {
-    logger.error('Error getting user profile', { error });
-    return null;
-  }
+  return await getUserById(session.user.id);
 }
 
-/**
- * Gets the current session
- * @returns The session or null if not authenticated
- */
-export async function getSession(): Promise<ExtendedSession | null> {
-  try {
-    return (await getServerSession(authOptions)) as ExtendedSession | null;
-  } catch (error) {
-    logger.error('Error getting session', { error });
-    return null;
-  }
+export async function getSession() {
+  return await getServerSession(authOptions);
 }
 
-/**
- * Checks if the current user has a specific role
- * @param role The role to check for
- * @returns True if the user has the role, false otherwise
- */
-export async function hasRole(role: string): Promise<boolean> {
-  try {
-    const session = await getSession();
-    return !!session?.user?.role && session.user.role === role;
-  } catch (error) {
-    logger.error('Error checking user role', { error, role });
-    return false;
-  }
+export async function hasRole(requiredRole: string) {
+  const session = await getSession();
+  return session?.user?.role === requiredRole;
 }
 
-/**
- * Checks if the current user has any of the specified roles
- * @param roles Array of roles to check for
- * @returns True if the user has any of the roles, false otherwise
- */
-export async function hasAnyRole(roles: string[]): Promise<boolean> {
-  try {
-    const session = await getSession();
-    return !!session?.user?.role && roles.includes(session.user.role);
-  } catch (error) {
-    logger.error('Error checking user roles', { error, roles });
-    return false;
-  }
+export async function hasAnyRole(roles: string[]) {
+  const session = await getSession();
+  return session?.user?.role ? roles.includes(session.user.role) : false;
 }
 
-/**
- * Validates that a user is authenticated
- * @returns True if authenticated, false otherwise
- */
-export async function isAuthenticated(): Promise<boolean> {
-  try {
-    const session = await getSession();
-    return !!session?.user;
-  } catch (error) {
-    logger.error('Error checking authentication', { error });
-    return false;
-  }
+export async function isAuthenticated() {
+  const session = await getSession();
+  return !!session?.user;
 }

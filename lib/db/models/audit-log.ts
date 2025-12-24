@@ -54,13 +54,14 @@ export interface AuditLog {
   createdAt: Date;
 }
 
+/**
+ * CREATE AUDIT LOG
+ */
 export async function createAuditLog(
   logData: Omit<AuditLog, 'id' | 'createdAt'>
 ): Promise<AuditLog> {
   try {
-    // Validate input data (now with stricter enums)
     const validatedData = CreateAuditLogSchema.parse(logData);
-
     const id = uuidv4();
     const now = new Date();
 
@@ -70,99 +71,45 @@ export async function createAuditLog(
       createdAt: now,
     };
 
-    // Safe tagged template literal insert (assuming postgres.js library where sql`` handles params)
-    await postgresClient.sql`
-      INSERT INTO ${DB.AUDIT_LOGS} (
-        id, user_id, action, entity_type, entity_id, 
-        details, ip_address, user_agent, created_at
-      ) VALUES (
-        ${auditLog.id},
-        ${auditLog.userId ?? null},
-        ${auditLog.action},
-        ${auditLog.entityType},
-        ${auditLog.entityId ?? null},
-        ${auditLog.details},  -- postgres.js safely serializes objects to JSON/JSONB
-        ${auditLog.ipAddress ?? null},
-        ${auditLog.userAgent ?? null},
-        ${auditLog.createdAt}
-      )
-    `;
-
-    logger.debug('Audit log created', {
-      context: 'audit-log-model',
-      data: {
-        logId: id,
+    await postgresClient
+      .insertInto('audit_logs')
+      .values({
+        id: auditLog.id,
+        user_id: auditLog.userId ?? null,
         action: auditLog.action,
-        entityType: auditLog.entityType,
-        entityId: auditLog.entityId,
-      },
-    });
+        entity_type: auditLog.entityType,
+        entity_id: auditLog.entityId ?? null,
+        details: auditLog.details, // ← Pass object directly — Kysely serializes JSON
+        ip_address: auditLog.ipAddress ?? null,
+        user_agent: auditLog.userAgent ?? null,
+        created_at: auditLog.createdAt,
+      })
+      .execute();
+
+    logger.debug('Audit log created', { logId: id });
 
     return auditLog;
-  } catch (error) {
+  } catch (error: any) {
     logger.error('Failed to create audit log', {
-      context: 'audit-log-model',
-      error,
-      data: { action: logData.action, entityType: logData.entityType },
+      error: error instanceof Error ? error.message : String(error),
     });
 
     if (error instanceof z.ZodError) {
-      throw new Error(`Invalid audit log data: ${JSON.stringify(error)}`);
+      const messages = error.errors.map((e) => `${e.path.join('.')} : ${e.message}`).join('; ');
+      throw new Error(`Invalid audit log data: ${messages}`);
     }
 
-    throw new Error(`Failed to create audit log: ${(error as Error).message}`);
+    throw error;
   }
 }
 
-export async function getAuditLogsByEntityId(entityId: string): Promise<AuditLog[]> {
-  if (!entityId || typeof entityId !== 'string') {
-    throw new Error('Invalid entity ID');
-  }
-
-  try {
-    const result = await postgresClient.sql`
-      SELECT * FROM ${DB.AUDIT_LOGS} 
-      WHERE entity_id = ${entityId} 
-      ORDER BY created_at DESC
-    `;
-
-    return result.rows.map(mapRowToAuditLog);
-  } catch (error) {
-    logger.error('Failed to get audit logs by entity ID', {
-      context: 'audit-log-model',
-      error,
-      data: { entityId },
-    });
-    throw new Error(`Failed to get audit logs: ${(error as Error).message}`);
-  }
-}
-
-export async function getAuditLogsByUserId(userId: string): Promise<AuditLog[]> {
-  if (!userId || typeof userId !== 'string') {
-    throw new Error('Invalid user ID');
-  }
-
-  try {
-    const result = await postgresClient.sql`
-      SELECT * FROM ${DB.AUDIT_LOGS} 
-      WHERE user_id = ${userId} 
-      ORDER BY created_at DESC
-    `;
-
-    return result.rows.map(mapRowToAuditLog);
-  } catch (error) {
-    logger.error('Failed to get audit logs by user ID', {
-      context: 'audit-log-model',
-      error,
-      data: { userId },
-    });
-    throw new Error(`Failed to get audit logs: ${(error as Error).message}`);
-  }
-}
-
+/**
+ * SEARCH AUDIT LOGS
+ */
 export async function searchAuditLogs(params: {
   action?: AuditAction;
   entityType?: EntityType;
+  entityId?: string;
   userId?: string;
   startDate?: Date;
   endDate?: Date;
@@ -170,82 +117,137 @@ export async function searchAuditLogs(params: {
   offset?: number;
 }): Promise<{ logs: AuditLog[]; total: number }> {
   try {
-    const conditions: string[] = [];
-    const values: any[] = [];
-    let paramIndex = 1;
+    let baseQuery = postgresClient
+      .selectFrom('audit_logs')
+      .selectAll()
+      .$if(!!params.action, (qb) => qb.where('action', '=', params.action!))
+      .$if(!!params.entityType, (qb) => qb.where('entity_type', '=', params.entityType!))
+      .$if(!!params.entityId, (qb) => qb.where('entity_id', '=', params.entityId!))
+      .$if(!!params.userId, (qb) => qb.where('user_id', '=', params.userId!))
+      .$if(!!params.startDate, (qb) => qb.where('created_at', '>=', params.startDate!))
+      .$if(!!params.endDate, (qb) => qb.where('created_at', '<=', params.endDate!));
 
-    if (params.action) {
-      conditions.push(`action = $${paramIndex++}`);
-      values.push(params.action);
-    }
+    const countQuery = baseQuery
+      .clearSelect()
+      .select(postgresClient.fn.count<number>('id').as('total'));
 
-    if (params.entityType) {
-      conditions.push(`entity_type = $${paramIndex++}`);
-      values.push(params.entityType);
-    }
+    const dataQuery = baseQuery
+      .orderBy('created_at', 'desc')
+      .limit(params.limit ?? 50)
+      .offset(params.offset ?? 0);
 
-    if (params.userId) {
-      conditions.push(`user_id = $${paramIndex++}`);
-      values.push(params.userId);
-    }
+    const [countResult, logs] = await Promise.all([
+      countQuery.executeTakeFirst(),
+      dataQuery.execute(),
+    ]);
 
-    if (params.startDate) {
-      conditions.push(`created_at >= $${paramIndex++}`);
-      values.push(params.startDate);
-    }
-
-    if (params.endDate) {
-      conditions.push(`created_at <= $${paramIndex++}`);
-      values.push(params.endDate);
-    }
-
-    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-
-    // Count query
-    const countResult = await postgresClient.sql`
-      SELECT COUNT(*)::integer AS total 
-      FROM ${DB.AUDIT_LOGS} 
-      ${postgresClient.sql.unsafe(whereClause)}
-    `.execute();
-
-    const total = countResult.rows[0]?.total ?? 0;
-
-    // Paginated query
-    const limit = params.limit ?? 50;
-    const offset = params.offset ?? 0;
-
-    const result = await postgresClient.sql`
-      SELECT * 
-      FROM ${DB.AUDIT_LOGS} 
-      ${postgresClient.sql.unsafe(whereClause)} 
-      ORDER BY created_at DESC 
-      LIMIT ${limit} OFFSET ${offset}
-    `;
+    const total = Number(countResult?.total ?? 0);
 
     return {
-      logs: result.rows.map(mapRowToAuditLog),
+      logs: logs.map(mapRowToAuditLog),
       total,
     };
-  } catch (error) {
+  } catch (error: any) {
     logger.error('Failed to search audit logs', {
-      context: 'audit-log-model',
-      error,
-      data: params,
+      error: error instanceof Error ? error.message : String(error),
     });
-    throw new Error(`Failed to search audit logs: ${(error as Error).message}`);
+    throw new Error(`Failed to search audit logs: ${error.message}`);
   }
 }
 
+/**
+ * GET AUDIT LOG BY ID
+ */
+export async function getAuditLogById(id: string): Promise<AuditLog | null> {
+  try {
+    const row = await postgresClient
+      .selectFrom('audit_logs')
+      .selectAll()
+      .where('id', '=', id)
+      .executeTakeFirst();
+
+    return row ? mapRowToAuditLog(row) : null;
+  } catch (error: any) {
+    logger.error('Failed to get audit log by id', {
+      error: error instanceof Error ? error.message : String(error),
+      id,
+    });
+    throw new Error(`Failed to retrieve audit log: ${error.message}`);
+  }
+}
+
+/**
+ * GET AUDIT LOGS BY USER ID
+ */
+export async function getAuditLogsByUserId(userId: string, limit = 100): Promise<AuditLog[]> {
+  try {
+    const results = await postgresClient
+      .selectFrom('audit_logs')
+      .selectAll()
+      .where('user_id', '=', userId)
+      .orderBy('created_at', 'desc')
+      .limit(limit)
+      .execute();
+
+    return results.map(mapRowToAuditLog);
+  } catch (error: any) {
+    logger.error('Failed to get audit logs by user id', {
+      error: error instanceof Error ? error.message : String(error),
+      userId,
+    });
+    throw new Error(`Failed to retrieve audit logs for user: ${error.message}`);
+  }
+}
+
+/**
+ * MAPPER: DB row → AuditLog
+ */
 function mapRowToAuditLog(row: any): AuditLog {
   return {
     id: row.id,
     userId: row.user_id ?? undefined,
-    action: row.action,
-    entityType: row.entity_type,
+    action: row.action as AuditAction,
+    entityType: row.entity_type as EntityType,
     entityId: row.entity_id ?? undefined,
-    details: row.details ?? {},
+    details: typeof row.details === 'string' ? JSON.parse(row.details) : row.details ?? {},
     ipAddress: row.ip_address ?? undefined,
     userAgent: row.user_agent ?? undefined,
     createdAt: new Date(row.created_at),
   };
 }
+
+/**
+ * Convenience helpers for common audit scenarios
+ */
+export const audit = {
+  system: (action: AuditAction, details: Record<string, any> = {}) =>
+    createAuditLog({
+      action,
+      entityType: 'system',
+      details,
+    }),
+
+  user: (userId: string, action: AuditAction, details: Record<string, any> = {}) =>
+    createAuditLog({
+      userId,
+      action,
+      entityType: 'user',
+      entityId: userId,
+      details,
+    }),
+
+  entity: (
+    userId: string | undefined,
+    entityType: EntityType,
+    entityId: string,
+    action: AuditAction,
+    details: Record<string, any> = {}
+  ) =>
+    createAuditLog({
+      userId,
+      action,
+      entityType,
+      entityId,
+      details,
+    }),
+};

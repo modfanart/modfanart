@@ -1,9 +1,9 @@
-import { postgresClient, DB } from "../config"
-import { v4 as uuidv4 } from "uuid"
-import { logger } from "../../utils/logger"
-import { z } from "zod"
+import { postgresClient, DB } from '../config';
+import { v4 as uuidv4 } from 'uuid';
+import { logger } from '../../utils/logger';
+import { z } from 'zod';
 
-export type LicenseStatus = "active" | "expired" | "revoked"
+export type LicenseStatus = 'active' | 'expired' | 'revoked';
 
 const LicenseTermsSchema = z.object({
   usageRights: z.array(z.string()),
@@ -12,280 +12,213 @@ const LicenseTermsSchema = z.object({
   restrictions: z.array(z.string()).optional(),
   royaltyPercentage: z.number().min(0).max(100).optional(),
   exclusivity: z.boolean().default(false),
-})
+});
 
-export type LicenseTerms = z.infer<typeof LicenseTermsSchema>
+export type LicenseTerms = z.infer<typeof LicenseTermsSchema>;
 
 const CreateLicenseSchema = z.object({
   submissionId: z.string().uuid(),
   userId: z.string().uuid(),
   licenseType: z.string().min(2).max(50),
-  status: z.enum(["active", "expired", "revoked"]).default("active"),
+  status: z.enum(['active', 'expired', 'revoked']).default('active'),
   terms: LicenseTermsSchema,
   expiresAt: z.date().optional(),
   paymentId: z.string().uuid().optional(),
   metadata: z.record(z.any()).optional(),
-})
+});
 
 export interface License {
-  id: string
-  submissionId: string
-  userId: string
-  licenseType: string
-  status: LicenseStatus
-  terms: LicenseTerms
-  createdAt: Date
-  updatedAt: Date
-  expiresAt?: Date
-  paymentId?: string
-  metadata?: Record<string, any>
+  id: string;
+  submissionId: string;
+  userId: string;
+  licenseType: string;
+  status: LicenseStatus;
+  terms: LicenseTerms;
+  createdAt: Date;
+  updatedAt: Date;
+  expiresAt?: Date;
+  paymentId?: string;
+  metadata?: Record<string, any>;
 }
 
-export async function createLicense(licenseData: Omit<License, "id" | "createdAt" | "updatedAt">): Promise<License> {
+/**
+ * CREATE LICENSE
+ */
+export async function createLicense(
+  licenseData: Omit<License, 'id' | 'createdAt' | 'updatedAt'>
+): Promise<License> {
   try {
-    // Validate input data
-    const validatedData = CreateLicenseSchema.parse(licenseData)
-
-    const id = uuidv4()
-    const now = new Date()
+    const validatedData = CreateLicenseSchema.parse(licenseData);
+    const id = uuidv4();
+    const now = new Date();
 
     const license: License = {
       id,
       ...validatedData,
       createdAt: now,
       updatedAt: now,
-    }
+    };
 
-    // Start transaction
-    const client = await postgresClient.connect()
+    return await postgresClient.transaction().execute(async (trx) => {
+      // 1. Verify and lock submission
+      const submission = await trx
+        .selectFrom('submissions')
+        .select(['id', 'status'])
+        .where('id', '=', license.submissionId)
+        .forUpdate()
+        .executeTakeFirstOrThrow();
 
-    try {
-      await client.sql`BEGIN`
-
-      // Verify submission exists and is in approved status
-      const submissionResult = await client.sql`
-        SELECT status FROM ${DB.SUBMISSIONS} 
-        WHERE id = ${license.submissionId}
-        FOR UPDATE
-      `
-
-      if (submissionResult.rows.length === 0) {
-        throw new Error(`Submission with ID ${license.submissionId} not found`)
+      if (submission.status !== 'approved') {
+        throw new Error(`Cannot license submission with status '${submission.status}'`);
       }
 
-      const submissionStatus = submissionResult.rows[0].status
-      if (submissionStatus !== "approved") {
-        throw new Error(`Cannot license submission with status ${submissionStatus}`)
-      }
+      // 2. Insert license — pass objects directly for JSON columns
+      await trx
+        .insertInto('licenses')
+        .values({
+          id: license.id,
+          submission_id: license.submissionId,
+          user_id: license.userId,
+          license_type: license.licenseType,
+          status: license.status,
+          terms: license.terms, // ← object, not JSON.stringify
+          created_at: license.createdAt,
+          updated_at: license.updatedAt,
+          expires_at: license.expiresAt ?? null,
+          payment_id: license.paymentId ?? null,
+          metadata: license.metadata ?? null, // ← object or null
+        })
+        .execute();
 
-      // Insert license record
-      await client.sql`
-        INSERT INTO ${DB.LICENSES} (
-          id, submission_id, user_id, license_type, status, 
-          terms, created_at, updated_at, expires_at, payment_id, metadata
-        ) VALUES (
-          ${license.id}, ${license.submissionId}, ${license.userId}, 
-          ${license.licenseType}, ${license.status}, ${JSON.stringify(license.terms)}, 
-          ${license.createdAt}, ${license.updatedAt}, ${license.expiresAt || null}, 
-          ${license.paymentId || null}, ${JSON.stringify(license.metadata || {})}
-        )
-      `
+      // 3. Update submission status
+      await trx
+        .updateTable('submissions')
+        .set({ status: 'licensed', updated_at: now })
+        .where('id', '=', license.submissionId)
+        .execute();
 
-      // Update submission status to licensed
-      await client.sql`
-        UPDATE ${DB.SUBMISSIONS} 
-        SET status = 'licensed', updated_at = ${now}
-        WHERE id = ${license.submissionId}
-      `
+      logger.info('License created successfully', {
+        licenseId: id,
+        submissionId: license.submissionId,
+      });
 
-      await client.sql`COMMIT`
-
-      logger.info("License created successfully", {
-        context: "license-model",
-        data: { licenseId: id, submissionId: license.submissionId, userId: license.userId },
-      })
-
-      return license
-    } catch (error) {
-      await client.sql`ROLLBACK`
-      throw error
-    } finally {
-      client.release()
-    }
-  } catch (error) {
-    logger.error("Failed to create license", {
-      context: "license-model",
-      error,
-      data: { submissionId: licenseData.submissionId, userId: licenseData.userId },
-    })
+      return license;
+    });
+  } catch (error: any) {
+    logger.error('Failed to create license', {
+      error: error instanceof Error ? error : String(error),
+      submissionId: licenseData.submissionId,
+    });
 
     if (error instanceof z.ZodError) {
-      throw new Error(`Invalid license data: ${JSON.stringify(error.errors)}`)
+      const messages = error.errors.map((e) => `${e.path.join('.')} : ${e.message}`).join('; ');
+      throw new Error(`Invalid license data: ${messages}`);
     }
 
-    throw new Error(`Failed to create license: ${error.message}`)
+    throw error;
   }
 }
 
+/**
+ * GET BY ID
+ */
 export async function getLicenseById(id: string): Promise<License | null> {
-  if (!id || typeof id !== "string") {
-    throw new Error("Invalid license ID")
-  }
+  const row = await postgresClient
+    .selectFrom('licenses')
+    .selectAll()
+    .where('id', '=', id)
+    .executeTakeFirst();
 
-  try {
-    const result = await postgresClient.sql`
-      SELECT * FROM ${DB.LICENSES} WHERE id = ${id}
-    `
-
-    if (result.rows.length === 0) {
-      return null
-    }
-
-    return mapRowToLicense(result.rows[0])
-  } catch (error) {
-    logger.error("Failed to get license by ID", {
-      context: "license-model",
-      error,
-      data: { licenseId: id },
-    })
-    throw new Error(`Failed to get license: ${error.message}`)
-  }
+  return row ? mapRowToLicense(row) : null;
 }
 
-export async function getLicensesByUserId(userId: string): Promise<License[]> {
-  if (!userId || typeof userId !== "string") {
-    throw new Error("Invalid user ID")
-  }
+/**
+ * UPDATE LICENSE STATUS
+ */
+export async function updateLicenseStatus(
+  id: string,
+  status: LicenseStatus,
+  reason?: string
+): Promise<License | null> {
+  return await postgresClient.transaction().execute(async (trx) => {
+    const row = await trx
+      .selectFrom('licenses')
+      .selectAll()
+      .where('id', '=', id)
+      .forUpdate()
+      .executeTakeFirst();
 
-  try {
-    const result = await postgresClient.sql`
-      SELECT * FROM ${DB.LICENSES} WHERE user_id = ${userId} ORDER BY created_at DESC
-    `
+    if (!row) return null;
 
-    return result.rows.map(mapRowToLicense)
-  } catch (error) {
-    logger.error("Failed to get licenses by user ID", {
-      context: "license-model",
-      error,
-      data: { userId },
-    })
-    throw new Error(`Failed to get licenses: ${error.message}`)
-  }
-}
+    const currentLicense = mapRowToLicense(row);
+    const now = new Date();
 
-export async function getLicensesBySubmissionId(submissionId: string): Promise<License[]> {
-  if (!submissionId || typeof submissionId !== "string") {
-    throw new Error("Invalid submission ID")
-  }
+    // Build status history entry
+    const historyEntry = {
+      from: currentLicense.status,
+      to: status,
+      date: now.toISOString(),
+      reason: reason ?? null,
+    };
 
-  try {
-    const result = await postgresClient.sql`
-      SELECT * FROM ${DB.LICENSES} WHERE submission_id = ${submissionId} ORDER BY created_at DESC
-    `
+    const currentHistory = (currentLicense.metadata?.statusHistory as any[]) ?? [];
+    const updatedMetadata: Record<string, any> = {
+      ...(currentLicense.metadata ?? {}),
+      statusHistory: [...currentHistory, historyEntry],
+    };
 
-    return result.rows.map(mapRowToLicense)
-  } catch (error) {
-    logger.error("Failed to get licenses by submission ID", {
-      context: "license-model",
-      error,
-      data: { submissionId },
-    })
-    throw new Error(`Failed to get licenses: ${error.message}`)
-  }
-}
-
-export async function updateLicenseStatus(id: string, status: LicenseStatus, reason?: string): Promise<License | null> {
-  if (!id || typeof id !== "string") {
-    throw new Error("Invalid license ID")
-  }
-
-  try {
-    // Start transaction
-    const client = await postgresClient.connect()
-
-    try {
-      await client.sql`BEGIN`
-
-      // Get current license data
-      const getLicenseResult = await client.sql`
-        SELECT * FROM ${DB.LICENSES} WHERE id = ${id} FOR UPDATE
-      `
-
-      if (getLicenseResult.rows.length === 0) {
-        await client.sql`ROLLBACK`
-        return null
-      }
-
-      const currentLicense = mapRowToLicense(getLicenseResult.rows[0])
-      const now = new Date()
-
-      // Update license status
-      await client.sql`
-        UPDATE ${DB.LICENSES} SET
-          status = ${status},
-          updated_at = ${now},
-          metadata = jsonb_set(
-            COALESCE(metadata, '{}'::jsonb),
-            '{statusHistory}',
-            COALESCE(metadata->'statusHistory', '[]'::jsonb) || 
-            jsonb_build_object(
-              'from', ${currentLicense.status},
-              'to', ${status},
-              'date', ${now.toISOString()},
-              'reason', ${reason || null}
-            )::jsonb
-          )
-        WHERE id = ${id}
-      `
-
-      // If revoking, update submission status back to approved
-      if (status === "revoked") {
-        await client.sql`
-          UPDATE ${DB.SUBMISSIONS} 
-          SET status = 'approved', updated_at = ${now}
-          WHERE id = ${currentLicense.submissionId}
-        `
-      }
-
-      await client.sql`COMMIT`
-
-      logger.info(`License status updated to ${status}`, {
-        context: "license-model",
-        data: { licenseId: id, previousStatus: currentLicense.status, newStatus: status, reason },
+    // Update — pass object directly for metadata
+    await trx
+      .updateTable('licenses')
+      .set({
+        status,
+        updated_at: now,
+        metadata: updatedMetadata, // ← object, not stringified
       })
+      .where('id', '=', id)
+      .execute();
 
-      // Get updated license
-      const updatedLicense = await getLicenseById(id)
-      return updatedLicense
-    } catch (error) {
-      await client.sql`ROLLBACK`
-      throw error
-    } finally {
-      client.release()
+    // If revoked, revert submission
+    if (status === 'revoked') {
+      await trx
+        .updateTable('submissions')
+        .set({ status: 'approved', updated_at: now })
+        .where('id', '=', currentLicense.submissionId)
+        .execute();
     }
-  } catch (error) {
-    logger.error("Failed to update license status", {
-      context: "license-model",
-      error,
-      data: { licenseId: id, status },
-    })
-    throw new Error(`Failed to update license status: ${error.message}`)
-  }
+
+    logger.info('License status updated', {
+      licenseId: id,
+      newStatus: status,
+    });
+
+    return {
+      ...currentLicense,
+      status,
+      updatedAt: now,
+      metadata: updatedMetadata,
+    };
+  });
 }
 
+/**
+ * MAPPER: DB row → License
+ */
 function mapRowToLicense(row: any): License {
   return {
     id: row.id,
     submissionId: row.submission_id,
     userId: row.user_id,
     licenseType: row.license_type,
-    status: row.status,
-    terms: row.terms,
+    status: row.status as LicenseStatus,
+    terms: typeof row.terms === 'string' ? JSON.parse(row.terms) : row.terms,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
     expiresAt: row.expires_at ? new Date(row.expires_at) : undefined,
-    paymentId: row.payment_id,
-    metadata: row.metadata,
-  }
+    paymentId: row.payment_id ?? undefined,
+    metadata:
+      row.metadata && typeof row.metadata === 'string'
+        ? JSON.parse(row.metadata)
+        : row.metadata ?? undefined,
+  };
 }
-

@@ -4,7 +4,7 @@ import { createClient } from '@vercel/edge-config';
 import { logger } from '@/lib/logger';
 import { rateLimit } from '@/lib/middleware/rate-limit';
 
-// Zod schemas (same as before — excellent!)
+// Zod schemas
 const featureFlagsSchema = z.object({
   enableGrokIntegration: z.boolean(),
   enableAiModeration: z.boolean(),
@@ -47,7 +47,7 @@ const settingsSchema = z.object({
   limits: limitsSchema,
 });
 
-// Default settings
+// Default settings (fallback when Edge Config is not available)
 const defaultSettings = {
   featureFlags: {
     enableGrokIntegration: false,
@@ -70,40 +70,43 @@ const defaultSettings = {
     },
   },
   limits: {
-    maxSubmissionSize: 5 * 1024 * 1024,
+    maxSubmissionSize: 5 * 1024 * 1024, // 5MB
     maxSubmissionsPerUser: 10,
     maxSubmissionsPerDay: 1000,
     maxApiRequestsPerMinute: 60,
   },
 };
 
-// Rate limiter
+// Rate limiter middleware (assumed to return NextResponse on limit exceeded, null otherwise)
 const limiter = rateLimit({
-  interval: 60 * 1000, // 1 minute
-  uniqueTokenPerInterval: 500, // Allow more for admin
+  windowMs: 60 * 1000, // 1 minute
+  max: 500, // Adjust based on your implementation (unique tokens or requests)
 });
 
-// Initialize Edge Config client
+// Edge Config client (read-only at runtime)
 const edgeConfigClient = process.env.EDGE_CONFIG ? createClient(process.env.EDGE_CONFIG) : null;
 
 if (!edgeConfigClient) {
-  logger.warn('EDGE_CONFIG not set — settings will not persist', { context: 'admin-settings' });
+  logger.warn('EDGE_CONFIG not set — settings will be read-only and use defaults', {
+    context: 'admin-settings',
+  });
 }
 
 // GET: Retrieve all settings
 export async function GET(request: NextRequest) {
   try {
-    // Rate limit
-    const { success } = await limiter.check(request, 10); // 10 requests per minute
-    if (!success) {
-      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    // Apply rate limiting
+    const rateLimitResponse = await limiter(request);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
     }
 
+    // If no Edge Config, return defaults
     if (!edgeConfigClient) {
       return NextResponse.json(defaultSettings);
     }
 
-    // Fetch all keys at once for efficiency
+    // Fetch settings in parallel
     const [featureFlags, moderationSettings, limits] = await Promise.all([
       edgeConfigClient.get('featureFlags').catch(() => null),
       edgeConfigClient.get('moderationSettings').catch(() => null),
@@ -126,25 +129,29 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST: Update settings
+// POST: Update settings (NOT possible with Edge Config at runtime)
 export async function POST(request: NextRequest) {
   try {
-    // Rate limit (stricter for writes)
-    const { success } = await limiter.check(request, 5);
-    if (!success) {
-      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    // Apply stricter rate limiting for writes
+    const rateLimitResponse = await limiter(request);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
     }
 
-    // TODO: Add proper authentication (e.g., session check, admin role)
-    // This is a critical admin endpoint!
+    // Critical: Add proper admin authentication here in production!
+    // Example: check session, API key, or admin role
 
-    if (!edgeConfigClient) {
-      return NextResponse.json(
-        { error: 'Edge Config not available — cannot save settings' },
-        { status: 500 }
-      );
-    }
+    // Edge Config is read-only at runtime — cannot update via code
+    return NextResponse.json(
+      {
+        error:
+          'Runtime updates to Edge Config are not supported. Please update settings via the Vercel Dashboard or Vercel CLI.',
+      },
+      { status: 400 }
+    );
 
+    // If you switch to a writable store (e.g., Vercel KV, Postgres), replace the above with:
+    /*
     const body = await request.json();
     const validationResult = settingsSchema.safeParse(body);
 
@@ -160,24 +167,23 @@ export async function POST(request: NextRequest) {
 
     const settings = validationResult.data;
 
-    // Update Edge Config — use .update() for partial updates
-    await Promise.all([
-      edgeConfigClient.update('featureFlags', settings.featureFlags),
-      edgeConfigClient.update('moderationSettings', settings.moderationSettings),
-      edgeConfigClient.update('limits', settings.limits),
-    ]);
+    // Example with Vercel KV:
+    // await kv.set('featureFlags', settings.featureFlags);
+    // await kv.set('moderationSettings', settings.moderationSettings);
+    // await kv.set('limits', settings.limits);
 
     logger.info('Admin settings updated successfully', {
       context: 'admin-settings',
-      updatedBy: request.headers.get('x-forwarded-for') || 'unknown',
+      ip: request.headers.get('x-forwarded-for') || 'unknown',
     });
 
     return NextResponse.json({
       success: true,
       message: 'Settings saved successfully',
     });
+    */
   } catch (error) {
-    logger.error('Error saving settings', error, { context: 'admin-settings' });
-    return NextResponse.json({ error: 'Failed to save settings' }, { status: 500 });
+    logger.error('Error processing settings update', error, { context: 'admin-settings' });
+    return NextResponse.json({ error: 'Failed to process request' }, { status: 500 });
   }
 }

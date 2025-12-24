@@ -115,15 +115,14 @@ export default function AutomatedReviewPage() {
                 min={30}
                 max={95}
                 step={5}
-                value={[settings.strictness]}
-                onValueChange={(value) => setSettings({ ...settings, strictness: value[0] })}
+                value={[settings.strictness]} // ← now safely number[]
+                onValueChange={(value) => setSettings({ ...settings, strictness: value[0]! })}
               />
               <p className="text-sm text-muted-foreground">
                 Set how strictly the guidelines are enforced. Higher values mean stricter
                 enforcement.
               </p>
             </div>
-
             <div className="space-y-3">
               <Label htmlFor="custom-prompt">Custom Review Prompt</Label>
               <Textarea

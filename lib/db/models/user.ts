@@ -7,6 +7,7 @@ import {
 } from '../../validation/model-validation';
 import { logger } from '../../utils/logger';
 
+// Standard User Types
 export type UserRole = 'artist' | 'brand' | 'creator' | 'admin';
 export type SubscriptionTier = 'free' | 'premium_artist' | 'creator' | 'enterprise';
 export type SubscriptionStatus = 'active' | 'inactive' | 'past_due' | 'canceled';
@@ -21,254 +22,154 @@ export interface User {
   profileImageUrl?: string;
   bio?: string;
   website?: string;
-  socialLinks?: {
-    twitter?: string;
-    instagram?: string;
-    facebook?: string;
-    tiktok?: string;
-  };
-  subscription?: {
-    tier: SubscriptionTier;
-    status: SubscriptionStatus;
-    renewalDate?: string;
-    customerId?: string;
-  };
-  settings?: {
-    notifications: boolean;
-    marketingEmails: boolean;
-    twoFactorEnabled: boolean;
-  };
+  socialLinks?: Record<string, any>;
+  subscription?: Record<string, any>;
+  settings?: Record<string, any>;
 }
 
+/**
+ * CREATE USER
+ */
 export async function createUser(
   userData: Omit<User, 'id' | 'createdAt' | 'updatedAt'>
 ): Promise<User> {
   const validation = validateModel(userData, CreateUserSchema, 'createUser');
   if (!validation.success) {
-    throw new Error(`Invalid user data: ${JSON.stringify(validation.errors?.errors)}`);
+    throw new Error(`Invalid user data: ${JSON.stringify(validation.errors)}`);
   }
 
-  const id = uuidv4();
-  const now = new Date();
-
   const user: User = {
-    id,
+    id: uuidv4(),
     ...userData,
-    createdAt: now,
-    updatedAt: now,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   };
 
   try {
-    await postgresClient.sql`
-      INSERT INTO ${DB.USERS} (
-        id, email, name, role, created_at, updated_at,
-        profile_image_url, bio, website, social_links,
-        subscription, settings
-      ) VALUES (
-        ${user.id},
-        ${user.email},
-        ${user.name},
-        ${user.role},
-        ${user.createdAt},
-        ${user.updatedAt},
-        ${user.profileImageUrl ?? null},
-        ${user.bio ?? null},
-        ${user.website ?? null},
-        ${user.socialLinks ?? {}},           -- postgres.js safely serializes objects
-        ${user.subscription ?? {}},
-        ${user.settings ?? { notifications: true, marketingEmails: true, twoFactorEnabled: false }}
-      )
-    `;
+    await postgresClient
+      .insertInto('users') // Use the table name as defined in your Kysely Database type
+      .values({
+        id: user.id,
+        email: user.email.toLowerCase().trim(),
+        name: user.name,
+        role: user.role,
+        created_at: user.createdAt,
+        updated_at: user.updatedAt,
+        profile_image_url: user.profileImageUrl ?? null,
+        bio: user.bio ?? null,
+        website: user.website ?? null,
+        social_links: user.socialLinks ?? {},
+        subscription: user.subscription ?? {},
+        settings: user.settings ?? {
+          notifications: true,
+          marketingEmails: true,
+          twoFactorEnabled: false,
+        },
+      })
+      .execute();
 
-    logger.info('User created successfully', {
-      context: 'user-model',
-      data: { userId: user.id, email: user.email },
-    });
-
+    logger.info('User created successfully', { context: 'user-model', data: { userId: user.id } });
     return user;
   } catch (error: any) {
-    logger.error('Failed to create user', {
-      context: 'user-model',
-      error,
-      data: { email: user.email },
-    });
-
-    if (error.message?.includes('duplicate key') && error.message?.includes('email')) {
+    if (error.message?.includes('unique constraint') || error.message?.includes('duplicate key')) {
       throw new Error(`User with email ${user.email} already exists`);
     }
-
-    throw new Error(`Failed to create user: ${error.message ?? 'Unknown error'}`);
+    throw error;
   }
 }
 
+/**
+ * GET USER BY ID
+ */
 export async function getUserById(id: string): Promise<User | null> {
-  if (!id || typeof id !== 'string') {
-    throw new Error('Invalid user ID');
-  }
+  const result = await postgresClient
+    .selectFrom('users')
+    .selectAll()
+    .where('id', '=', id)
+    .executeTakeFirst();
 
-  try {
-    const result = await postgresClient.sql`
-      SELECT * FROM ${DB.USERS} WHERE id = ${id}
-    `;
-
-    if (result.rows.length === 0) {
-      return null;
-    }
-
-    return mapRowToUser(result.rows[0]);
-  } catch (error: any) {
-    logger.error('Failed to get user by ID', {
-      context: 'user-model',
-      error,
-      data: { userId: id },
-    });
-    throw new Error(`Failed to get user: ${error.message ?? 'Unknown error'}`);
-  }
+  return result ? mapRowToUser(result) : null;
 }
 
+/**
+ * GET USER BY EMAIL
+ */
 export async function getUserByEmail(email: string): Promise<User | null> {
-  if (!email || typeof email !== 'string') {
-    throw new Error('Invalid email');
-  }
+  const result = await postgresClient
+    .selectFrom('users')
+    .selectAll()
+    .where('email', '=', email.toLowerCase().trim())
+    .executeTakeFirst();
 
-  try {
-    const result = await postgresClient.sql`
-      SELECT * FROM ${DB.USERS} WHERE email = ${email}
-    `;
-
-    if (result.rows.length === 0) {
-      return null;
-    }
-
-    return mapRowToUser(result.rows[0]);
-  } catch (error: any) {
-    logger.error('Failed to get user by email', {
-      context: 'user-model',
-      error,
-      data: { email },
-    });
-    throw new Error(`Failed to get user: ${error.message ?? 'Unknown error'}`);
-  }
+  return result ? mapRowToUser(result) : null;
 }
 
+/**
+ * UPDATE USER
+ */
 export async function updateUser(id: string, userData: Partial<User>): Promise<User | null> {
   const validation = validateModel(userData, UpdateUserSchema, 'updateUser');
-  if (!validation.success) {
-    throw new Error(`Invalid user data: ${JSON.stringify(validation.errors?.errors)}`);
-  }
+  if (!validation.success) throw new Error('Invalid user data');
 
-  const client = await postgresClient.connect();
+  return await postgresClient.transaction().execute(async (trx) => {
+    // 1. Get current user and lock the row (FOR UPDATE)
+    const existing = await trx
+      .selectFrom('users')
+      .selectAll()
+      .where('id', '=', id)
+      .forUpdate()
+      .executeTakeFirst();
 
-  try {
-    await client.sql`BEGIN`;
+    if (!existing) return null;
 
-    const getResult = await client.sql`
-      SELECT * FROM ${DB.USERS} WHERE id = ${id} FOR UPDATE
-    `;
+    const updatedAt = new Date();
 
-    if (getResult.rows.length === 0) {
-      await client.sql`ROLLBACK`;
-      return null;
-    }
+    // 2. Perform Update
+    await trx
+      .updateTable('users')
+      .set({
+        ...userData,
+        email: userData.email?.toLowerCase().trim(),
+        updated_at: updatedAt,
+        // Stringify JSON fields if passing new objects
+        social_links: userData.socialLinks ? JSON.stringify(userData.socialLinks) : undefined,
+        subscription: userData.subscription ? JSON.stringify(userData.subscription) : undefined,
+        settings: userData.settings ? JSON.stringify(userData.settings) : undefined,
+      } as any)
+      .where('id', '=', id)
+      .execute();
 
-    const currentUser = mapRowToUser(getResult.rows[0]);
-
-    const updatedUser: User = {
-      ...currentUser,
-      ...userData,
-      updatedAt: new Date(),
-    };
-
-    await client.sql`
-      UPDATE ${DB.USERS} SET
-        name = ${updatedUser.name},
-        email = ${updatedUser.email},
-        role = ${updatedUser.role},
-        updated_at = ${updatedUser.updatedAt},
-        profile_image_url = ${updatedUser.profileImageUrl ?? null},
-        bio = ${updatedUser.bio ?? null},
-        website = ${updatedUser.website ?? null},
-        social_links = ${updatedUser.socialLinks ?? {}},
-        subscription = ${updatedUser.subscription ?? {}},
-        settings = ${updatedUser.settings ?? {}}
-      WHERE id = ${id}
-    `;
-
-    await client.sql`COMMIT`;
-
-    logger.info('User updated successfully', {
-      context: 'user-model',
-      data: { userId: id },
-    });
-
-    return updatedUser;
-  } catch (error: any) {
-    await client.sql`ROLLBACK`;
-
-    logger.error('Failed to update user', {
-      context: 'user-model',
-      error,
-      data: { userId: id },
-    });
-
-    if (error.message?.includes('duplicate key') && error.message?.includes('email')) {
-      throw new Error(`User with email ${userData.email} already exists`);
-    }
-
-    throw new Error(`Failed to update user: ${error.message ?? 'Unknown error'}`);
-  } finally {
-    client.release();
-  }
+    return { ...mapRowToUser(existing), ...userData, updatedAt } as User;
+  });
 }
 
+/**
+ * DELETE USER
+ */
 export async function deleteUser(id: string): Promise<boolean> {
-  if (!id || typeof id !== 'string') {
-    throw new Error('Invalid user ID');
-  }
+  const result = await postgresClient.deleteFrom('users').where('id', '=', id).executeTakeFirst();
 
-  try {
-    const result = await postgresClient.sql`
-      DELETE FROM ${DB.USERS} WHERE id = ${id}
-    `;
-
-    const deleted = result.rowCount > 0;
-
-    if (deleted) {
-      logger.info('User deleted successfully', {
-        context: 'user-model',
-        data: { userId: id },
-      });
-    } else {
-      logger.warn('User not found for deletion', {
-        context: 'user-model',
-        data: { userId: id },
-      });
-    }
-
-    return deleted;
-  } catch (error: any) {
-    logger.error('Failed to delete user', {
-      context: 'user-model',
-      error,
-      data: { userId: id },
-    });
-    throw new Error(`Failed to delete user: ${error.message ?? 'Unknown error'}`);
-  }
+  return Number(result.numDeletedRows) > 0;
 }
 
+/**
+ * MAPPER
+ */
 function mapRowToUser(row: any): User {
   return {
     id: row.id,
     email: row.email,
     name: row.name,
-    role: row.role,
+    role: row.role as UserRole,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
-    profileImageUrl: row.profile_image_url ?? undefined,
-    bio: row.bio ?? undefined,
-    website: row.website ?? undefined,
-    socialLinks: row.social_links ?? undefined,
-    subscription: row.subscription ?? undefined,
-    settings: row.settings ?? undefined,
+    profileImageUrl: row.profile_image_url || undefined,
+    bio: row.bio || undefined,
+    website: row.website || undefined,
+    socialLinks:
+      typeof row.social_links === 'string' ? JSON.parse(row.social_links) : row.social_links,
+    subscription:
+      typeof row.subscription === 'string' ? JSON.parse(row.subscription) : row.subscription,
+    settings: typeof row.settings === 'string' ? JSON.parse(row.settings) : row.settings,
   };
 }

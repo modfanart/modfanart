@@ -30,18 +30,18 @@ type AnalysisResult = {
 
 export async function POST(request: NextRequest) {
   try {
-    // Apply rate limiting — correct usage
-    const rateLimitResult = await rateLimit({
-      request,
+    // 1. Initialize the middleware with options
+    const limiter = rateLimit({
       limit: 10,
       windowMs: 60 * 1000, // 1 minute
     });
 
-    if (!rateLimitResult.success) {
-      return NextResponse.json(
-        { error: 'Rate limit exceeded. Please try again later.' },
-        { status: 429 }
-      );
+    // 2. Execute it by passing the request
+    const rateLimitResponse = await limiter(request);
+
+    // 3. If it returns a NextResponse (the 429 error), return it immediately
+    if (rateLimitResponse) {
+      return rateLimitResponse;
     }
 
     // Check if AI moderation is enabled

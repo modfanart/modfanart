@@ -1,10 +1,10 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { DashboardShell } from "@/components/dashboard-shell"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { BarChart, LineChart, PieChart } from "lucide-react"
+import { useState } from 'react';
+import { DashboardShell } from '@/components/dashboard-shell';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { BarChart, LineChart, PieChart } from 'lucide-react';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -18,46 +18,48 @@ import {
   PieChart as RechartsPieChart,
   Pie,
   Cell,
-} from "recharts"
+} from 'recharts';
 
 // Sample data for charts
 const viewsData = [
-  { name: "Jan", views: 400 },
-  { name: "Feb", views: 300 },
-  { name: "Mar", views: 600 },
-  { name: "Apr", views: 800 },
-  { name: "May", views: 700 },
-  { name: "Jun", views: 900 },
-  { name: "Jul", views: 1100 },
-]
+  { name: 'Jan', views: 400 },
+  { name: 'Feb', views: 300 },
+  { name: 'Mar', views: 600 },
+  { name: 'Apr', views: 800 },
+  { name: 'May', views: 700 },
+  { name: 'Jun', views: 900 },
+  { name: 'Jul', views: 1100 },
+];
 
 const submissionData = [
-  { name: "Jan", submissions: 4 },
-  { name: "Feb", submissions: 3 },
-  { name: "Mar", submissions: 5 },
-  { name: "Apr", submissions: 7 },
-  { name: "May", submissions: 2 },
-  { name: "Jun", submissions: 6 },
-  { name: "Jul", submissions: 8 },
-]
+  { name: 'Jan', submissions: 4 },
+  { name: 'Feb', submissions: 3 },
+  { name: 'Mar', submissions: 5 },
+  { name: 'Apr', submissions: 7 },
+  { name: 'May', submissions: 2 },
+  { name: 'Jun', submissions: 6 },
+  { name: 'Jul', submissions: 8 },
+];
 
 const categoryData = [
-  { name: "Fan Art", value: 60 },
-  { name: "Original", value: 25 },
-  { name: "Derivative", value: 15 },
-]
+  { name: 'Fan Art', value: 60 },
+  { name: 'Original', value: 25 },
+  { name: 'Derivative', value: 15 },
+];
 
-const COLORS = ["#9747ff", "#36B9CC", "#4E73DF", "#1CC88A"]
+const COLORS = ['#9747ff', '#36B9CC', '#4E73DF', '#1CC88A'];
 
 export default function AnalyticsPage() {
-  const [dateRange, setDateRange] = useState("7d")
+  const [dateRange, setDateRange] = useState('7d');
 
   return (
     <DashboardShell>
       <div className="flex flex-col gap-4 p-4 md:p-8">
         <div className="flex flex-col gap-2">
           <h2 className="text-3xl font-bold tracking-tight">Analytics</h2>
-          <p className="text-muted-foreground">Track the performance of your submissions and engagement metrics.</p>
+          <p className="text-muted-foreground">
+            Track the performance of your submissions and engagement metrics.
+          </p>
         </div>
 
         {/* Overview Cards */}
@@ -154,30 +156,34 @@ export default function AnalyticsPage() {
         {/* Date Range Selector */}
         <div className="flex items-center space-x-2">
           <button
-            onClick={() => setDateRange("7d")}
-            className={`px-3 py-1 text-sm rounded-md ${dateRange === "7d" ? "bg-[#9747ff] text-white" : "bg-gray-100"}`}
+            onClick={() => setDateRange('7d')}
+            className={`px-3 py-1 text-sm rounded-md ${
+              dateRange === '7d' ? 'bg-[#9747ff] text-white' : 'bg-gray-100'
+            }`}
           >
             7 days
           </button>
           <button
-            onClick={() => setDateRange("30d")}
+            onClick={() => setDateRange('30d')}
             className={`px-3 py-1 text-sm rounded-md ${
-              dateRange === "30d" ? "bg-[#9747ff] text-white" : "bg-gray-100"
+              dateRange === '30d' ? 'bg-[#9747ff] text-white' : 'bg-gray-100'
             }`}
           >
             30 days
           </button>
           <button
-            onClick={() => setDateRange("90d")}
+            onClick={() => setDateRange('90d')}
             className={`px-3 py-1 text-sm rounded-md ${
-              dateRange === "90d" ? "bg-[#9747ff] text-white" : "bg-gray-100"
+              dateRange === '90d' ? 'bg-[#9747ff] text-white' : 'bg-gray-100'
             }`}
           >
             90 days
           </button>
           <button
-            onClick={() => setDateRange("1y")}
-            className={`px-3 py-1 text-sm rounded-md ${dateRange === "1y" ? "bg-[#9747ff] text-white" : "bg-gray-100"}`}
+            onClick={() => setDateRange('1y')}
+            className={`px-3 py-1 text-sm rounded-md ${
+              dateRange === '1y' ? 'bg-[#9747ff] text-white' : 'bg-gray-100'
+            }`}
           >
             1 year
           </button>
@@ -204,7 +210,9 @@ export default function AnalyticsPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Views Over Time</CardTitle>
-                <CardDescription>Total views of your submissions over the selected time period.</CardDescription>
+                <CardDescription>
+                  Total views of your submissions over the selected time period.
+                </CardDescription>
               </CardHeader>
               <CardContent className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
@@ -221,7 +229,13 @@ export default function AnalyticsPage() {
                     <XAxis dataKey="name" />
                     <YAxis />
                     <Tooltip />
-                    <Area type="monotone" dataKey="views" stroke="#9747ff" fill="#9747ff" fillOpacity={0.2} />
+                    <Area
+                      type="monotone"
+                      dataKey="views"
+                      stroke="#9747ff"
+                      fill="#9747ff"
+                      fillOpacity={0.2}
+                    />
                   </AreaChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -232,7 +246,9 @@ export default function AnalyticsPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Submissions Over Time</CardTitle>
-                <CardDescription>Number of submissions you've created over the selected time period.</CardDescription>
+                <CardDescription>
+                  Number of submissions you've created over the selected time period.
+                </CardDescription>
               </CardHeader>
               <CardContent className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
@@ -274,7 +290,9 @@ export default function AnalyticsPage() {
                         outerRadius={100}
                         fill="#8884d8"
                         dataKey="value"
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        label={({ name, percent }) =>
+                          `${name} ${((percent ?? 0) * 100).toFixed(0)}%`
+                        }
                       >
                         {categoryData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -304,7 +322,8 @@ export default function AnalyticsPage() {
                     <div>
                       <h4 className="font-medium">Submission Title {i}</h4>
                       <p className="text-sm text-muted-foreground">
-                        {Math.floor(Math.random() * 1000)} views • {Math.floor(Math.random() * 50)} licenses
+                        {Math.floor(Math.random() * 1000)} views • {Math.floor(Math.random() * 50)}{' '}
+                        licenses
                       </p>
                     </div>
                   </div>
@@ -315,6 +334,5 @@ export default function AnalyticsPage() {
         </Card>
       </div>
     </DashboardShell>
-  )
+  );
 }
-

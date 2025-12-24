@@ -1,304 +1,278 @@
-import { postgresClient, DB } from "../config"
-import { v4 as uuidv4 } from "uuid"
-import { CreateProductSchema, UpdateProductSchema, validateModel } from "../../validation/model-validation"
-import { logger } from "../../utils/logger"
+import { postgresClient, DB } from '../config';
+import { v4 as uuidv4 } from 'uuid';
+import {
+  CreateProductSchema,
+  UpdateProductSchema,
+  validateModel,
+} from '../../validation/model-validation';
+import { logger } from '../../utils/logger';
 
-export type ProductStatus = "active" | "inactive" | "draft" | "archived"
+export type ProductStatus = 'active' | 'inactive' | 'draft' | 'archived';
 
 export interface Product {
-  id: string
-  title: string
-  description: string
-  price: number
-  imageUrl: string
-  category: string
-  artist: string
-  brand: string
-  status: ProductStatus
-  isNew: boolean
-  isBestseller: boolean
-  createdAt: Date
-  updatedAt: Date
-  artistId?: string
-  brandId?: string
-  inventory?: number
-  metadata?: Record<string, any>
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  imageUrl: string;
+  category: string;
+  artist: string;
+  brand: string;
+  status: ProductStatus;
+  isNew: boolean;
+  isBestseller: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  artistId?: string;
+  brandId?: string;
+  inventory?: number;
+  metadata?: Record<string, any>;
 }
 
-export async function createProduct(productData: Omit<Product, "id" | "createdAt" | "updatedAt">): Promise<Product> {
-  // Validate input data
-  const validation = validateModel(productData, CreateProductSchema, "createProduct")
+/**
+ * CREATE PRODUCT
+ */
+export async function createProduct(
+  productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>
+): Promise<Product> {
+  const validation = validateModel(productData, CreateProductSchema, 'createProduct');
   if (!validation.success) {
-    throw new Error(`Invalid product data: ${JSON.stringify(validation.errors?.errors)}`)
+    throw new Error(`Invalid product data: ${JSON.stringify(validation.errors)}`);
   }
 
-  const id = uuidv4()
-  const now = new Date()
+  const id = uuidv4();
+  const now = new Date();
 
   const product: Product = {
     id,
     ...productData,
     createdAt: now,
     updatedAt: now,
-  }
+  };
 
   try {
-    await postgresClient.sql`
-      INSERT INTO ${DB.PRODUCTS} (
-        id, title, description, price, image_url, category, 
-        artist, brand, status, is_new, is_bestseller, 
-        created_at, updated_at, artist_id, brand_id, inventory, metadata
-      ) VALUES (
-        ${product.id}, ${product.title}, ${product.description}, 
-        ${product.price}, ${product.imageUrl}, ${product.category}, 
-        ${product.artist}, ${product.brand}, ${product.status}, 
-        ${product.isNew}, ${product.isBestseller}, ${product.createdAt}, 
-        ${product.updatedAt}, ${product.artistId || null}, 
-        ${product.brandId || null}, ${product.inventory || null}, 
-        ${JSON.stringify(product.metadata || {})}
-      )
-    `
+    await postgresClient
+      .insertInto('products')
+      .values({
+        id: product.id,
+        title: product.title,
+        description: product.description,
+        price: product.price,
+        image_url: product.imageUrl,
+        category: product.category,
+        artist: product.artist,
+        brand: product.brand,
+        status: product.status,
+        is_new: product.isNew,
+        is_bestseller: product.isBestseller,
+        created_at: product.createdAt,
+        updated_at: product.updatedAt,
+        artist_id: product.artistId ?? null,
+        brand_id: product.brandId ?? null,
+        inventory: product.inventory ?? null,
+        metadata: product.metadata ?? {}, // ← Pass object directly (or null if column allows)
+      })
+      .execute();
 
-    logger.info("Product created successfully", {
-      context: "product-model",
-      data: { productId: id, title: product.title },
-    })
+    logger.info('Product created successfully', {
+      context: 'product-model',
+      productId: product.id,
+    });
 
-    return product
-  } catch (error) {
-    logger.error("Failed to create product", {
-      context: "product-model",
+    return product;
+  } catch (error: any) {
+    logger.error('Failed to create product', {
+      context: 'product-model',
       error,
-      data: { title: product.title },
-    })
-    throw new Error(`Failed to create product: ${error.message}`)
+      productId: id,
+    });
+    throw new Error(`Failed to create product: ${error.message}`);
   }
 }
 
+/**
+ * GET BY ID
+ */
 export async function getProductById(id: string): Promise<Product | null> {
-  if (!id || typeof id !== "string") {
-    throw new Error("Invalid product ID")
-  }
+  const row = await postgresClient
+    .selectFrom('products')
+    .selectAll()
+    .where('id', '=', id)
+    .executeTakeFirst();
 
-  try {
-    const result = await postgresClient.sql`
-      SELECT * FROM ${DB.PRODUCTS} WHERE id = ${id}
-    `
-
-    if (result.rows.length === 0) {
-      return null
-    }
-
-    return mapRowToProduct(result.rows[0])
-  } catch (error) {
-    logger.error("Failed to get product by ID", {
-      context: "product-model",
-      error,
-      data: { productId: id },
-    })
-    throw new Error(`Failed to get product: ${error.message}`)
-  }
+  return row ? mapRowToProduct(row) : null;
 }
 
+/**
+ * GET BY CATEGORY
+ */
 export async function getProductsByCategory(category: string): Promise<Product[]> {
-  if (!category || typeof category !== "string") {
-    throw new Error("Invalid category")
-  }
+  const rows = await postgresClient
+    .selectFrom('products')
+    .selectAll()
+    .where('category', '=', category)
+    .where('status', '=', 'active')
+    .orderBy('is_bestseller', 'desc')
+    .orderBy('is_new', 'desc')
+    .orderBy('created_at', 'desc')
+    .execute();
 
-  try {
-    const result = await postgresClient.sql`
-      SELECT * FROM ${DB.PRODUCTS} 
-      WHERE category = ${category} AND status = 'active'
-      ORDER BY is_bestseller DESC, is_new DESC, created_at DESC
-    `
-
-    return result.rows.map(mapRowToProduct)
-  } catch (error) {
-    logger.error("Failed to get products by category", {
-      context: "product-model",
-      error,
-      data: { category },
-    })
-    throw new Error(`Failed to get products: ${error.message}`)
-  }
+  return rows.map(mapRowToProduct);
 }
 
-export async function getProductsByArtist(artistId: string): Promise<Product[]> {
-  if (!artistId || typeof artistId !== "string") {
-    throw new Error("Invalid artist ID")
-  }
-
-  try {
-    const result = await postgresClient.sql`
-      SELECT * FROM ${DB.PRODUCTS} 
-      WHERE artist_id = ${artistId} AND status = 'active'
-      ORDER BY is_bestseller DESC, is_new DESC, created_at DESC
-    `
-
-    return result.rows.map(mapRowToProduct)
-  } catch (error) {
-    logger.error("Failed to get products by artist", {
-      context: "product-model",
-      error,
-      data: { artistId },
-    })
-    throw new Error(`Failed to get products: ${error.message}`)
-  }
-}
-
-export async function getProductsByBrand(brandId: string): Promise<Product[]> {
-  if (!brandId || typeof brandId !== "string") {
-    throw new Error("Invalid brand ID")
-  }
-
-  try {
-    const result = await postgresClient.sql`
-      SELECT * FROM ${DB.PRODUCTS} 
-      WHERE brand_id = ${brandId} AND status = 'active'
-      ORDER BY is_bestseller DESC, is_new DESC, created_at DESC
-    `
-
-    return result.rows.map(mapRowToProduct)
-  } catch (error) {
-    logger.error("Failed to get products by brand", {
-      context: "product-model",
-      error,
-      data: { brandId },
-    })
-    throw new Error(`Failed to get products: ${error.message}`)
-  }
-}
-
-export async function updateProduct(id: string, productData: Partial<Product>): Promise<Product | null> {
-  // Validate input data
-  const validation = validateModel(productData, UpdateProductSchema, "updateProduct")
+/**
+ * UPDATE PRODUCT
+ */
+export async function updateProduct(
+  id: string,
+  productData: Partial<Product>
+): Promise<Product | null> {
+  const validation = validateModel(productData, UpdateProductSchema, 'updateProduct');
   if (!validation.success) {
-    throw new Error(`Invalid product data: ${JSON.stringify(validation.errors?.errors)}`)
+    throw new Error(`Invalid update data: ${JSON.stringify(validation.errors)}`);
   }
 
-  try {
-    // Start transaction
-    const client = await postgresClient.connect()
+  return await postgresClient.transaction().execute(async (trx) => {
+    const existing = await trx
+      .selectFrom('products')
+      .selectAll()
+      .where('id', '=', id)
+      .forUpdate()
+      .executeTakeFirst();
 
-    try {
-      await client.sql`BEGIN`
+    if (!existing) return null;
 
-      // Get current product data
-      const getProductResult = await client.sql`
-        SELECT * FROM ${DB.PRODUCTS} WHERE id = ${id} FOR UPDATE
-      `
+    const updatedAt = new Date();
 
-      if (getProductResult.rows.length === 0) {
-        await client.sql`ROLLBACK`
-        return null
-      }
+    const updatePayload: Partial<DB['products']> = {
+      updated_at: updatedAt,
+    };
 
-      const currentProduct = mapRowToProduct(getProductResult.rows[0])
+    if (productData.title !== undefined) updatePayload.title = productData.title;
+    if (productData.description !== undefined) updatePayload.description = productData.description;
+    if (productData.price !== undefined) updatePayload.price = productData.price;
+    if (productData.imageUrl !== undefined) updatePayload.image_url = productData.imageUrl;
+    if (productData.category !== undefined) updatePayload.category = productData.category;
+    if (productData.artist !== undefined) updatePayload.artist = productData.artist;
+    if (productData.brand !== undefined) updatePayload.brand = productData.brand;
+    if (productData.status !== undefined) updatePayload.status = productData.status;
+    if (productData.isNew !== undefined) updatePayload.is_new = productData.isNew;
+    if (productData.isBestseller !== undefined)
+      updatePayload.is_bestseller = productData.isBestseller;
+    if (productData.artistId !== undefined) updatePayload.artist_id = productData.artistId ?? null;
+    if (productData.brandId !== undefined) updatePayload.brand_id = productData.brandId ?? null;
+    if (productData.inventory !== undefined)
+      updatePayload.inventory = productData.inventory ?? null;
 
-      const updatedProduct = {
-        ...currentProduct,
-        ...productData,
-        updatedAt: new Date(),
-      }
-
-      await client.sql`
-        UPDATE ${DB.PRODUCTS} SET
-          title = ${updatedProduct.title},
-          description = ${updatedProduct.description},
-          price = ${updatedProduct.price},
-          image_url = ${updatedProduct.imageUrl},
-          category = ${updatedProduct.category},
-          artist = ${updatedProduct.artist},
-          brand = ${updatedProduct.brand},
-          status = ${updatedProduct.status},
-          is_new = ${updatedProduct.isNew},
-          is_bestseller = ${updatedProduct.isBestseller},
-          updated_at = ${updatedProduct.updatedAt},
-          artist_id = ${updatedProduct.artistId || null},
-          brand_id = ${updatedProduct.brandId || null},
-          inventory = ${updatedProduct.inventory || null},
-          metadata = ${JSON.stringify(updatedProduct.metadata || {})}
-        WHERE id = ${id}
-      `
-
-      await client.sql`COMMIT`
-
-      logger.info("Product updated successfully", {
-        context: "product-model",
-        data: { productId: id },
-      })
-
-      return updatedProduct
-    } catch (error) {
-      await client.sql`ROLLBACK`
-      throw error
-    } finally {
-      client.release()
+    // JSON field — pass object directly
+    if (productData.metadata !== undefined) {
+      updatePayload.metadata = productData.metadata ?? null;
     }
-  } catch (error) {
-    logger.error("Failed to update product", {
-      context: "product-model",
-      error,
-      data: { productId: id },
-    })
-    throw new Error(`Failed to update product: ${error.message}`)
-  }
+
+    await trx.updateTable('products').set(updatePayload).where('id', '=', id).execute();
+
+    const current = mapRowToProduct(existing);
+    const updated: Product = {
+      ...current,
+      ...productData,
+      updatedAt,
+      metadata: productData.metadata ?? current.metadata,
+    };
+
+    logger.info('Product updated', { context: 'product-model', productId: id });
+    return updated;
+  });
 }
 
+/**
+ * DELETE PRODUCT
+ */
 export async function deleteProduct(id: string): Promise<boolean> {
-  if (!id || typeof id !== "string") {
-    throw new Error("Invalid product ID")
+  const result = await postgresClient
+    .deleteFrom('products')
+    .where('id', '=', id)
+    .executeTakeFirst();
+
+  const deleted = Number(result.numDeletedRows) > 0;
+  if (deleted) {
+    logger.info('Product deleted', { context: 'product-model', productId: id });
   }
-
-  try {
-    const result = await postgresClient.sql`
-      DELETE FROM ${DB.PRODUCTS} WHERE id = ${id}
-    `
-
-    const deleted = result.rowCount > 0
-
-    if (deleted) {
-      logger.info("Product deleted successfully", {
-        context: "product-model",
-        data: { productId: id },
-      })
-    } else {
-      logger.warn("Product not found for deletion", {
-        context: "product-model",
-        data: { productId: id },
-      })
-    }
-
-    return deleted
-  } catch (error) {
-    logger.error("Failed to delete product", {
-      context: "product-model",
-      error,
-      data: { productId: id },
-    })
-    throw new Error(`Failed to delete product: ${error.message}`)
-  }
+  return deleted;
 }
 
+/**
+ * MAPPER
+ */
 function mapRowToProduct(row: any): Product {
   return {
     id: row.id,
     title: row.title,
     description: row.description,
-    price: row.price,
+    price: Number(row.price),
     imageUrl: row.image_url,
     category: row.category,
     artist: row.artist,
     brand: row.brand,
-    status: row.status,
-    isNew: row.is_new,
-    isBestseller: row.is_bestseller,
+    status: row.status as ProductStatus,
+    isNew: !!row.is_new,
+    isBestseller: !!row.is_bestseller,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
-    artistId: row.artist_id,
-    brandId: row.brand_id,
-    inventory: row.inventory,
-    metadata: row.metadata,
-  }
+    artistId: row.artist_id ?? undefined,
+    brandId: row.brand_id ?? undefined,
+    inventory: row.inventory ?? undefined,
+    metadata:
+      row.metadata && typeof row.metadata === 'string'
+        ? JSON.parse(row.metadata)
+        : row.metadata ?? undefined,
+  };
+}
+/**
+ * GET PRODUCTS BY ARTIST ID
+ */
+export async function getProductsByArtist(artistId: string): Promise<Product[]> {
+  const rows = await postgresClient
+    .selectFrom('products')
+    .selectAll()
+    .where('artist_id', '=', artistId)
+    .where('status', '=', 'active')
+    .orderBy('is_bestseller', 'desc')
+    .orderBy('is_new', 'desc')
+    .orderBy('created_at', 'desc')
+    .execute();
+
+  return rows.map(mapRowToProduct);
 }
 
+/**
+ * GET PRODUCTS BY BRAND NAME
+ */
+export async function getProductsByBrand(brand: string): Promise<Product[]> {
+  const rows = await postgresClient
+    .selectFrom('products')
+    .selectAll()
+    .where('brand', '=', brand)
+    .where('status', '=', 'active')
+    .orderBy('is_bestseller', 'desc')
+    .orderBy('is_new', 'desc')
+    .orderBy('created_at', 'desc')
+    .execute();
+
+  return rows.map(mapRowToProduct);
+}
+
+/**
+ * GET ALL ACTIVE PRODUCTS (Optional - for default marketplace view)
+ */
+export async function getAllActiveProducts(): Promise<Product[]> {
+  const rows = await postgresClient
+    .selectFrom('products')
+    .selectAll()
+    .where('status', '=', 'active')
+    .orderBy('is_bestseller', 'desc')
+    .orderBy('is_new', 'desc')
+    .orderBy('created_at', 'desc')
+    .execute();
+
+  return rows.map(mapRowToProduct);
+}

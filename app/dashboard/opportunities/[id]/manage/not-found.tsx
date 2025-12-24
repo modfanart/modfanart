@@ -11,15 +11,9 @@ export default function OpportunityNotFound() {
       <EmptyState
         title="Opportunity Not Found"
         description="The opportunity you're looking for doesn't exist or you don't have access to it."
-        icon="file-question"
-        action={
-          <Button asChild>
-            <Link href="/dashboard/opportunities">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Opportunities
-            </Link>
-          </Button>
-        }
+        icon="file-question" // You can replace this with a proper icon component if needed
+        actionLabel="Back to Opportunities"
+        actionLink="/dashboard/opportunities"
       />
     </DashboardShell>
   );
