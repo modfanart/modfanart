@@ -1,10 +1,10 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getEdgeConfig, setEdgeConfig } from '@/lib/edge-config';
+import { createClient } from '@vercel/edge-config';
 import { logger } from '@/lib/logger';
 import { rateLimit } from '@/lib/middleware/rate-limit';
 
-// Define the settings schema
+// Zod schemas (same as before — excellent!)
 const featureFlagsSchema = z.object({
   enableGrokIntegration: z.boolean(),
   enableAiModeration: z.boolean(),
@@ -77,94 +77,107 @@ const defaultSettings = {
   },
 };
 
-// Rate limiter for this endpoint
+// Rate limiter
 const limiter = rateLimit({
   interval: 60 * 1000, // 1 minute
-  uniqueTokenPerInterval: 10,
+  uniqueTokenPerInterval: 500, // Allow more for admin
 });
 
-// GET handler to retrieve settings
+// Initialize Edge Config client
+const edgeConfigClient = process.env.EDGE_CONFIG ? createClient(process.env.EDGE_CONFIG) : null;
+
+if (!edgeConfigClient) {
+  logger.warn('EDGE_CONFIG not set — settings will not persist', { context: 'admin-settings' });
+}
+
+// GET: Retrieve all settings
 export async function GET(request: NextRequest) {
   try {
-    // Apply rate limiting
-    const { success } = await limiter.check(request, 5);
-
+    // Rate limit
+    const { success } = await limiter.check(request, 10); // 10 requests per minute
     if (!success) {
-      return NextResponse.json(
-        { error: 'Too many requests. Please try again later.' },
-        { status: 429 }
-      );
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
-    // Get settings from Edge Config
-    const featureFlags = (await getEdgeConfig('featureFlags')) || defaultSettings.featureFlags;
-    const moderationSettings =
-      (await getEdgeConfig('moderationSettings')) || defaultSettings.moderationSettings;
-    const limits = (await getEdgeConfig('limits')) || defaultSettings.limits;
+    if (!edgeConfigClient) {
+      return NextResponse.json(defaultSettings);
+    }
 
-    return NextResponse.json({
-      featureFlags,
-      moderationSettings,
-      limits,
-    });
+    // Fetch all keys at once for efficiency
+    const [featureFlags, moderationSettings, limits] = await Promise.all([
+      edgeConfigClient.get('featureFlags').catch(() => null),
+      edgeConfigClient.get('moderationSettings').catch(() => null),
+      edgeConfigClient.get('limits').catch(() => null),
+    ]);
+
+    const response = {
+      featureFlags:
+        (featureFlags as typeof defaultSettings.featureFlags) ?? defaultSettings.featureFlags,
+      moderationSettings:
+        (moderationSettings as typeof defaultSettings.moderationSettings) ??
+        defaultSettings.moderationSettings,
+      limits: (limits as typeof defaultSettings.limits) ?? defaultSettings.limits,
+    };
+
+    return NextResponse.json(response);
   } catch (error) {
-    logger.error('Error retrieving settings', error, {
-      context: 'admin-settings',
-    });
-
+    logger.error('Error retrieving settings', error, { context: 'admin-settings' });
     return NextResponse.json({ error: 'Failed to retrieve settings' }, { status: 500 });
   }
 }
 
-// POST handler to update settings
+// POST: Update settings
 export async function POST(request: NextRequest) {
   try {
-    // Apply rate limiting
-    const { success } = await limiter.check(request, 3);
-
+    // Rate limit (stricter for writes)
+    const { success } = await limiter.check(request, 5);
     if (!success) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
+
+    // TODO: Add proper authentication (e.g., session check, admin role)
+    // This is a critical admin endpoint!
+
+    if (!edgeConfigClient) {
       return NextResponse.json(
-        { error: 'Too many requests. Please try again later.' },
-        { status: 429 }
+        { error: 'Edge Config not available — cannot save settings' },
+        { status: 500 }
       );
     }
 
-    // Parse and validate request body
     const body = await request.json();
-
     const validationResult = settingsSchema.safeParse(body);
 
     if (!validationResult.success) {
       return NextResponse.json(
-        { error: 'Invalid settings data', details: validationResult.error.format() },
+        {
+          error: 'Invalid settings data',
+          details: validationResult.error.format(),
+        },
         { status: 400 }
       );
     }
 
     const settings = validationResult.data;
 
-    // Update Edge Config
-    await setEdgeConfig('featureFlags', settings.featureFlags);
-    await setEdgeConfig('moderationSettings', settings.moderationSettings);
-    await setEdgeConfig('limits', settings.limits);
+    // Update Edge Config — use .update() for partial updates
+    await Promise.all([
+      edgeConfigClient.update('featureFlags', settings.featureFlags),
+      edgeConfigClient.update('moderationSettings', settings.moderationSettings),
+      edgeConfigClient.update('limits', settings.limits),
+    ]);
 
-    logger.info('Settings updated', {
+    logger.info('Admin settings updated successfully', {
       context: 'admin-settings',
-      data: {
-        featureFlags: settings.featureFlags,
-        moderationThresholds: settings.moderationSettings.thresholds,
-      },
+      updatedBy: request.headers.get('x-forwarded-for') || 'unknown',
     });
 
     return NextResponse.json({
       success: true,
-      message: 'Settings updated successfully',
+      message: 'Settings saved successfully',
     });
   } catch (error) {
-    logger.error('Error updating settings', error, {
-      context: 'admin-settings',
-    });
-
-    return NextResponse.json({ error: 'Failed to update settings' }, { status: 500 });
+    logger.error('Error saving settings', error, { context: 'admin-settings' });
+    return NextResponse.json({ error: 'Failed to save settings' }, { status: 500 });
   }
 }

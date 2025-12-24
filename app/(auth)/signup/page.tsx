@@ -19,9 +19,8 @@ import { Input } from '@/components/ui/input';
 import { ArrowLeft, Eye, EyeOff, Palette, Building2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { redirect } from 'next/navigation';
 
-// Step 1 form schema
+// Step 1 schema
 const personalInfoSchema = z.object({
   firstName: z.string().min(2, {
     message: 'First name must be at least 2 characters.',
@@ -34,27 +33,21 @@ const personalInfoSchema = z.object({
   }),
 });
 
-// Step 2 form schema (account type)
+// Step 2 schema - FIXED
 const accountTypeSchema = z.object({
-  accountType: z.enum(['artist', 'brand'], {
-    required_error: 'Please select an account type.',
-  }),
+  accountType: z.enum(['artist', 'brand']).optional().default('artist'),
 });
 
-// Step 3 form schema
+// Step 3 schema
 const accountInfoSchema = z
   .object({
     username: z
       .string()
-      .min(3, {
-        message: 'Username must be at least 3 characters.',
-      })
+      .min(3, { message: 'Username must be at least 3 characters.' })
       .regex(/^[a-zA-Z0-9_]+$/, {
         message: 'Username can only contain letters, numbers, and underscores.',
       }),
-    password: z.string().min(8, {
-      message: 'Password must be at least 8 characters.',
-    }),
+    password: z.string().min(8, { message: 'Password must be at least 8 characters.' }),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -76,7 +69,7 @@ export default function SignupPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [accountCreated, setAccountCreated] = useState(false);
 
-  // Step 1 form
+  // Forms
   const personalInfoForm = useForm<PersonalInfoValues>({
     resolver: zodResolver(personalInfoSchema),
     defaultValues: {
@@ -86,15 +79,13 @@ export default function SignupPage() {
     },
   });
 
-  // Step 2 form
   const accountTypeForm = useForm<AccountTypeValues>({
     resolver: zodResolver(accountTypeSchema),
     defaultValues: {
-      accountType: undefined,
+      accountType: undefined, // Allowed initially; .default('artist') will fill on submit if missing
     },
   });
 
-  // Step 3 form
   const accountInfoForm = useForm<AccountInfoValues>({
     resolver: zodResolver(accountInfoSchema),
     defaultValues: {
@@ -117,16 +108,15 @@ export default function SignupPage() {
   function onAccountInfoSubmit(values: AccountInfoValues) {
     setIsLoading(true);
 
-    // Combine data from all steps
     const formData = {
-      ...personalInfo,
-      ...accountType,
+      ...personalInfo!,
+      ...accountType!,
       ...values,
     };
 
     // Simulate API call
     setTimeout(() => {
-      console.log('Form data:', formData);
+      console.log('Signup complete:', formData);
       setIsLoading(false);
       setAccountCreated(true);
     }, 1500);
@@ -136,34 +126,49 @@ export default function SignupPage() {
     router.push('/login');
   }
 
+  if (accountCreated) {
+    return (
+      <div className="space-y-8">
+        <h1 className="text-3xl font-bold mb-2">Account Created</h1>
+        <p className="text-gray-600 mb-6">Thank you for signing up!</p>
+
+        <p className="mb-2">A confirmation email has been sent to:</p>
+        <p className="font-medium mb-6">{personalInfo?.email}</p>
+
+        <p className="mb-8">
+          Please click on the link in the <span className="font-medium">email</span> to activate
+          your account.
+        </p>
+
+        <Button
+          onClick={handleBackToSignIn}
+          className="w-full h-12 bg-black hover:bg-gray-800 text-white"
+        >
+          Back to Sign in
+        </Button>
+      </div>
+    );
+  }
+
   return (
-    <>
-      {accountCreated ? (
-        // Account created success screen
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Account Created</h1>
-          <p className="text-gray-600 mb-6">Thank you for signing up!</p>
+    <div className="space-y-8">
+      {step > 1 && (
+        <button
+          type="button"
+          onClick={() => setStep(step - 1)}
+          className="flex items-center text-gray-600 mb-4 hover:text-gray-900 transition-colors"
+        >
+          <ArrowLeft size={16} className="mr-1" />
+          Back
+        </button>
+      )}
 
-          <p className="mb-2">A confirmation email has been sent to:</p>
-          <p className="font-medium mb-6">{personalInfo?.email}</p>
-
-          <p className="mb-8">
-            Please click on the link in the <span className="font-medium">email</span> to activate
-            your account.
-          </p>
-
-          <Button
-            onClick={handleBackToSignIn}
-            className="w-full h-12 bg-black hover:bg-gray-800 text-white"
-          >
-            Back to Sign in
-          </Button>
-        </div>
-      ) : step === 1 ? (
-        // Step 1: Personal Information
-        <div>
-          <h1 className="text-3xl font-bold mb-2">Sign up</h1>
-          <p className="text-gray-600 mb-8">Welcome! Create an account to get started.</p>
+      {step === 1 && (
+        <>
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Sign up</h1>
+            <p className="text-gray-600 mb-8">Welcome! Create an account to get started.</p>
+          </div>
 
           <Form {...personalInfoForm}>
             <form
@@ -206,8 +211,9 @@ export default function SignupPage() {
                     <FormLabel>Email</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Your email address"
                         type="email"
+                        autoComplete="email"
+                        placeholder="Your email address"
                         {...field}
                         className="h-12"
                       />
@@ -226,7 +232,7 @@ export default function SignupPage() {
           <div className="mt-8">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
+                <div className="w-full border-t border-gray-300" />
               </div>
               <div className="relative flex justify-center text-sm">
                 <span className="px-2 bg-white text-gray-500">or</span>
@@ -235,10 +241,11 @@ export default function SignupPage() {
 
             <Button
               variant="outline"
+              type="button"
               className="w-full mt-6 h-12 border-gray-300"
               onClick={() => console.log('Google sign up')}
             >
-              <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" aria-hidden="true">
                 <path
                   d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                   fill="#4285F4"
@@ -266,19 +273,15 @@ export default function SignupPage() {
               Sign in
             </Link>
           </p>
-        </div>
-      ) : step === 2 ? (
-        // Step 2: Account Type Selection
-        <div>
-          <button
-            onClick={() => setStep(1)}
-            className="flex items-center text-gray-600 mb-4 hover:text-gray-900"
-          >
-            <ArrowLeft size={16} className="mr-1" /> Back
-          </button>
+        </>
+      )}
 
-          <h1 className="text-3xl font-bold mb-2">Choose Account Type</h1>
-          <p className="text-gray-600 mb-8">Select the type of account you want to create.</p>
+      {step === 2 && (
+        <>
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Choose Account Type</h1>
+            <p className="text-gray-600 mb-8">Select the type of account you want to create.</p>
+          </div>
 
           <Form {...accountTypeForm}>
             <form
@@ -293,60 +296,64 @@ export default function SignupPage() {
                     <FormControl>
                       <RadioGroup
                         onValueChange={field.onChange}
-                        defaultValue={field.value}
+                        value={field.value}
                         className="flex flex-col gap-4"
                       >
                         <Card
-                          className={`cursor-pointer ${
-                            field.value === 'artist' ? 'border-[#9747ff]' : 'border-gray-200'
+                          className={`cursor-pointer transition-all hover:shadow-md ${
+                            field.value === 'artist'
+                              ? 'border-[#9747ff] ring-2 ring-[#9747ff] ring-offset-2'
+                              : 'border-gray-200'
                           }`}
+                          onClick={() => field.onChange('artist')}
                         >
                           <CardContent className="p-6">
-                            <FormItem className="flex items-center space-x-3 space-y-0">
-                              <FormControl>
-                                <RadioGroupItem value="artist" id="artist" />
-                              </FormControl>
-                              <div className="flex items-center space-x-4">
-                                <div className="bg-purple-100 p-3 rounded-full">
-                                  <Palette className="h-6 w-6 text-purple-600" />
-                                </div>
-                                <div>
-                                  <FormLabel className="text-lg font-medium" htmlFor="artist">
-                                    Artist
-                                  </FormLabel>
-                                  <p className="text-sm text-gray-500">
-                                    Create and submit fan art for licensing opportunities
-                                  </p>
-                                </div>
+                            <div className="flex items-center space-x-4">
+                              <RadioGroupItem value="artist" id="artist" />
+                              <div className="bg-purple-100 p-3 rounded-full">
+                                <Palette className="h-6 w-6 text-purple-600" />
                               </div>
-                            </FormItem>
+                              <div>
+                                <label
+                                  htmlFor="artist"
+                                  className="text-lg font-medium cursor-pointer"
+                                >
+                                  Artist
+                                </label>
+                                <p className="text-sm text-gray-500 mt-1">
+                                  Create and submit fan art for licensing opportunities
+                                </p>
+                              </div>
+                            </div>
                           </CardContent>
                         </Card>
 
                         <Card
-                          className={`cursor-pointer ${
-                            field.value === 'brand' ? 'border-[#9747ff]' : 'border-gray-200'
+                          className={`cursor-pointer transition-all hover:shadow-md ${
+                            field.value === 'brand'
+                              ? 'border-[#9747ff] ring-2 ring-[#9747ff] ring-offset-2'
+                              : 'border-gray-200'
                           }`}
+                          onClick={() => field.onChange('brand')}
                         >
                           <CardContent className="p-6">
-                            <FormItem className="flex items-center space-x-3 space-y-0">
-                              <FormControl>
-                                <RadioGroupItem value="brand" id="brand" />
-                              </FormControl>
-                              <div className="flex items-center space-x-4">
-                                <div className="bg-blue-100 p-3 rounded-full">
-                                  <Building2 className="h-6 w-6 text-blue-600" />
-                                </div>
-                                <div>
-                                  <FormLabel className="text-lg font-medium" htmlFor="brand">
-                                    Brand & IP Holder
-                                  </FormLabel>
-                                  <p className="text-sm text-gray-500">
-                                    Review and license fan art for your intellectual property
-                                  </p>
-                                </div>
+                            <div className="flex items-center space-x-4">
+                              <RadioGroupItem value="brand" id="brand" />
+                              <div className="bg-blue-100 p-3 rounded-full">
+                                <Building2 className="h-6 w-6 text-blue-600" />
                               </div>
-                            </FormItem>
+                              <div>
+                                <label
+                                  htmlFor="brand"
+                                  className="text-lg font-medium cursor-pointer"
+                                >
+                                  Brand & IP Holder
+                                </label>
+                                <p className="text-sm text-gray-500 mt-1">
+                                  Review and license fan art for your intellectual property
+                                </p>
+                              </div>
+                            </div>
                           </CardContent>
                         </Card>
                       </RadioGroup>
@@ -361,23 +368,19 @@ export default function SignupPage() {
               </Button>
             </form>
           </Form>
-        </div>
-      ) : (
-        // Step 3: Account Information
-        <div>
-          <button
-            onClick={() => setStep(2)}
-            className="flex items-center text-gray-600 mb-4 hover:text-gray-900"
-          >
-            <ArrowLeft size={16} className="mr-1" /> Back
-          </button>
+        </>
+      )}
 
-          <h1 className="text-3xl font-bold mb-2">Sign up</h1>
-          <p className="text-gray-600 mb-8">
-            {accountType?.accountType === 'artist'
-              ? 'Create your artist account to start submitting your work.'
-              : 'Create your brand account to manage your IP licensing.'}
-          </p>
+      {step === 3 && (
+        <>
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Sign up</h1>
+            <p className="text-gray-600 mb-8">
+              {accountType?.accountType === 'artist'
+                ? 'Create your artist account to start submitting your work.'
+                : 'Create your brand account to manage your IP licensing.'}
+            </p>
+          </div>
 
           <Form {...accountInfoForm}>
             <form
@@ -391,7 +394,12 @@ export default function SignupPage() {
                   <FormItem>
                     <FormLabel>Username</FormLabel>
                     <FormControl>
-                      <Input placeholder="Your username" {...field} className="h-12" />
+                      <Input
+                        placeholder="Your username"
+                        autoComplete="username"
+                        {...field}
+                        className="h-12"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -409,13 +417,15 @@ export default function SignupPage() {
                         <Input
                           type={showPassword ? 'text' : 'password'}
                           placeholder="Your password"
+                          autoComplete="new-password"
                           {...field}
                           className="h-12 pr-10"
                         />
                         <button
                           type="button"
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
-                          onClick={() => setShowPassword(!showPassword)}
+                          onClick={() => setShowPassword((prev) => !prev)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                          aria-label={showPassword ? 'Hide password' : 'Show password'}
                         >
                           {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                         </button>
@@ -437,13 +447,15 @@ export default function SignupPage() {
                         <Input
                           type={showConfirmPassword ? 'text' : 'password'}
                           placeholder="Confirm your password"
+                          autoComplete="new-password"
                           {...field}
                           className="h-12 pr-10"
                         />
                         <button
                           type="button"
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          onClick={() => setShowConfirmPassword((prev) => !prev)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                          aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
                         >
                           {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                         </button>
@@ -456,15 +468,15 @@ export default function SignupPage() {
 
               <Button
                 type="submit"
-                className="w-full h-12 bg-black hover:bg-gray-800 text-white"
                 disabled={isLoading}
+                className="w-full h-12 bg-black hover:bg-gray-800 text-white"
               >
                 {isLoading ? 'Creating account...' : 'Create Account'}
               </Button>
             </form>
           </Form>
-        </div>
+        </>
       )}
-    </>
+    </div>
   );
 }

@@ -1,83 +1,82 @@
-"use client"
+'use client';
 
-import type React from "react"
+import type React from 'react';
 
-import { useState } from "react"
-import Link from "next/link"
-import Image from "next/image"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Separator } from "@/components/ui/separator"
-import { Checkbox } from "@/components/ui/checkbox"
-import { ArrowLeft, CreditCard, ShieldCheck } from "lucide-react"
-import { useToast } from "@/components/ui/use-toaster"
+import { useState } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Separator } from '@/components/ui/separator';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ArrowLeft, CreditCard, ShieldCheck } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 
 // Sample cart data for checkout
 const cartItems = [
   {
-    id: "cart-item-1",
-    title: "Hulk Nature T-Shirt",
+    id: 'cart-item-1',
+    title: 'Hulk Nature T-Shirt',
     price: 29.99,
-    imageUrl:
-      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/hulk%20nature-2.jpg-ivaqVZqmxWtiQzqj7KrfCIH3S8XKHP.jpeg",
+    imageUrl: 'https://m.media-amazon.com/images/I/81n9+1qFV8L._AC_UY1000_.jpg',
     quantity: 1,
-    size: "L",
-    color: "Black",
+    size: 'L',
+    color: 'Black',
   },
   {
-    id: "cart-item-2",
-    title: "Ahsoka Tano Poster",
+    id: 'cart-item-2',
+    title: 'Ahsoka Tano Poster',
     price: 19.99,
     imageUrl:
-      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/ahsoka-FINAL-01%20%282%29-PO2rMTckglJ6t9uWAalnbK7kR10iY9.png",
+      'https://starwars-shop.com/cdn/shop/products/ahsoka-tano-poster-star-wars-rebels-disney-xd.jpg?v=1678901234',
     quantity: 2,
-    size: "18x24",
-    color: "",
+    size: '18x24',
+    color: '',
   },
-]
+];
 
 export default function CheckoutPage() {
-  const [paymentMethod, setPaymentMethod] = useState("credit-card")
-  const [isProcessing, setIsProcessing] = useState(false)
-  const { toast } = useToast()
+  const [paymentMethod, setPaymentMethod] = useState('credit-card');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const { toast } = useToast();
 
   const calculateSubtotal = () => {
-    return cartItems.reduce((total, item) => total + item.price * item.quantity, 0)
-  }
+    return cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
+  };
 
   const calculateShipping = () => {
-    const subtotal = calculateSubtotal()
-    return subtotal >= 50 ? 0 : 4.99
-  }
+    const subtotal = calculateSubtotal();
+    return subtotal >= 50 ? 0 : 4.99;
+  };
 
   const calculateTotal = () => {
-    return calculateSubtotal() + calculateShipping()
-  }
+    return calculateSubtotal() + calculateShipping();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsProcessing(true)
+    e.preventDefault();
+    setIsProcessing(true);
 
     try {
       // In a real app, this would call the Stripe API
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      await new Promise((resolve) => setTimeout(resolve, 2000));
 
       // Redirect to success page
-      window.location.href = "/marketplace/checkout/success"
+      window.location.href = '/marketplace/checkout/success';
     } catch (error) {
       toast({
-        title: "Payment failed",
-        description: "There was an error processing your payment. Please try again.",
-        variant: "destructive",
-      })
-      setIsProcessing(false)
+        title: 'Payment failed',
+        description: 'There was an error processing your payment. Please try again.',
+        variant: 'destructive',
+      });
+      setIsProcessing(false);
     }
-  }
+  };
 
   return (
-    <div className="container px-4 py-8 md:px-6 md:py-12">
+    <div className="container px-4 py-8 md:px-6 md:py-12 max-w-7xl">
       <Button variant="ghost" size="sm" asChild className="mb-6">
         <Link href="/marketplace/cart" className="flex items-center">
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -94,7 +93,7 @@ export default function CheckoutPage() {
         <div className="lg:col-span-2">
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Shipping Information */}
-            <div className="rounded-lg border p-6">
+            <div className="rounded-lg border bg-card p-6">
               <h2 className="mb-4 text-lg font-semibold">Shipping Information</h2>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
@@ -129,7 +128,7 @@ export default function CheckoutPage() {
                   <Label htmlFor="country">Country</Label>
                   <select
                     id="country"
-                    className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2"
+                    className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-foreground"
                     required
                   >
                     <option value="US">United States</option>
@@ -146,9 +145,13 @@ export default function CheckoutPage() {
             </div>
 
             {/* Payment Method */}
-            <div className="rounded-lg border p-6">
+            <div className="rounded-lg border bg-card p-6">
               <h2 className="mb-4 text-lg font-semibold">Payment Method</h2>
-              <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod} className="space-y-4">
+              <RadioGroup
+                value={paymentMethod}
+                onValueChange={setPaymentMethod}
+                className="space-y-4"
+              >
                 <div className="flex items-center space-x-2 rounded-lg border p-4">
                   <RadioGroupItem value="credit-card" id="credit-card" />
                   <Label htmlFor="credit-card" className="flex-1 cursor-pointer">
@@ -159,11 +162,16 @@ export default function CheckoutPage() {
                   </Label>
                 </div>
 
-                {paymentMethod === "credit-card" && (
+                {paymentMethod === 'credit-card' && (
                   <div className="ml-6 space-y-4 rounded-lg border p-4">
                     <div>
                       <Label htmlFor="card-number">Card Number</Label>
-                      <Input id="card-number" placeholder="1234 5678 9012 3456" required className="mt-1" />
+                      <Input
+                        id="card-number"
+                        placeholder="1234 5678 9012 3456"
+                        required
+                        className="mt-1"
+                      />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
@@ -187,11 +195,11 @@ export default function CheckoutPage() {
                   <Label htmlFor="paypal" className="flex-1 cursor-pointer">
                     <div className="flex items-center">
                       <Image
-                        src="/placeholder.svg?height=20&width=80"
+                        src="https://www.paypalobjects.com/webstatic/mktg/logo/pp-logo-100px.png"
                         alt="PayPal"
                         width={80}
                         height={20}
-                        className="mr-2"
+                        unoptimized
                       />
                       PayPal
                     </div>
@@ -211,22 +219,28 @@ export default function CheckoutPage() {
                 Secure checkout powered by Stripe
               </div>
               <Button type="submit" size="lg" disabled={isProcessing}>
-                {isProcessing ? "Processing..." : `Pay $${calculateTotal().toFixed(2)}`}
+                {isProcessing ? 'Processing...' : `Pay $${calculateTotal().toFixed(2)}`}
               </Button>
             </div>
           </form>
         </div>
 
         <div>
-          <div className="rounded-lg border">
+          <div className="rounded-lg border bg-card">
             <div className="p-6">
               <h2 className="mb-4 text-lg font-semibold">Order Summary</h2>
 
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {cartItems.map((item) => (
                   <div key={item.id} className="flex gap-4">
-                    <div className="relative h-16 w-16 overflow-hidden rounded-md border">
-                      <Image src={item.imageUrl || "/placeholder.svg"} alt={item.title} fill className="object-cover" />
+                    <div className="relative h-20 w-20 overflow-hidden rounded-md border bg-muted/30">
+                      <Image
+                        src={item.imageUrl}
+                        alt={item.title}
+                        fill
+                        className="object-contain p-2"
+                        unoptimized
+                      />
                     </div>
                     <div className="flex-1">
                       <p className="font-medium">{item.title}</p>
@@ -235,22 +249,28 @@ export default function CheckoutPage() {
                         {item.color && `, ${item.color}`} × {item.quantity}
                       </p>
                     </div>
-                    <div className="font-medium">${(item.price * item.quantity).toFixed(2)}</div>
+                    <div className="font-medium text-right">
+                      ${(item.price * item.quantity).toFixed(2)}
+                    </div>
                   </div>
                 ))}
 
                 <Separator />
 
-                <div className="flex justify-between">
-                  <span>Subtotal</span>
-                  <span>${calculateSubtotal().toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Shipping</span>
-                  <span>{calculateShipping() === 0 ? "Free" : `$${calculateShipping().toFixed(2)}`}</span>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span>Subtotal</span>
+                    <span>${calculateSubtotal().toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Shipping</span>
+                    <span>
+                      {calculateShipping() === 0 ? 'Free' : `$${calculateShipping().toFixed(2)}`}
+                    </span>
+                  </div>
                 </div>
                 <Separator />
-                <div className="flex justify-between font-semibold">
+                <div className="flex justify-between text-xl font-bold">
                   <span>Total</span>
                   <span>${calculateTotal().toFixed(2)}</span>
                 </div>
@@ -260,6 +280,5 @@ export default function CheckoutPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
-

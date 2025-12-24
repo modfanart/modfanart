@@ -70,7 +70,6 @@ export async function getFeatureFlags(): Promise<FeatureFlags> {
     return (await edgeConfig.get(CONFIG.FEATURES)) as FeatureFlags;
   } catch (error) {
     console.error('Error fetching feature flags:', error);
-    // Default feature flags if Edge Config fails
     return {
       enableMarketplace: true,
       enableAIScreening: true,
@@ -87,7 +86,6 @@ export async function getPricingConfig(): Promise<PricingConfig> {
     return (await edgeConfig.get(CONFIG.PRICING)) as PricingConfig;
   } catch (error) {
     console.error('Error fetching pricing config:', error);
-    // Default pricing if Edge Config fails
     return {
       tiers: {
         free: {
@@ -100,7 +98,7 @@ export async function getPricingConfig(): Promise<PricingConfig> {
           monthlyPrice: 19.99,
           yearlyPrice: 199.99,
           features: ['Unlimited submissions', 'Priority review', 'Advanced analytics'],
-          submissionLimit: -1,
+          submissionLimit: -1, // -1 means unlimited
           revenueSplit: 0.85,
         },
         creator: {
@@ -133,7 +131,6 @@ export async function getComplianceRules(): Promise<ComplianceRules> {
     return (await edgeConfig.get(CONFIG.COMPLIANCE_RULES)) as ComplianceRules;
   } catch (error) {
     console.error('Error fetching compliance rules:', error);
-    // Default compliance rules if Edge Config fails
     return {
       aiDetectionThreshold: 0.7,
       contentSafetyThreshold: 0.8,
@@ -150,7 +147,6 @@ export async function getAISettings(): Promise<AISettings> {
     return (await edgeConfig.get(CONFIG.AI_SETTINGS)) as AISettings;
   } catch (error) {
     console.error('Error fetching AI settings:', error);
-    // Default AI settings if Edge Config fails
     return {
       models: {
         detection: 'aiornot',

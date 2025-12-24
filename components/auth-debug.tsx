@@ -1,16 +1,16 @@
-"use client"
-import { useSession } from "next-auth/react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { signIn, signOut } from "next-auth/react"
+'use client';
+import { useSession } from 'next-auth/react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { signIn, signOut } from 'next-auth/react';
 
 export function AuthDebug() {
   // Only render in development environment
-  if (process.env.NODE_ENV !== "development" && !process.env.NEXT_PUBLIC_DEBUG) {
-    return null
+  if (process.env.NODE_ENV !== 'development' && !process.env.NEXT_PUBLIC_DEBUG) {
+    return null;
   }
 
-  const { data: session, status } = useSession()
+  const { data: session, status } = useSession();
 
   return (
     <Card>
@@ -44,6 +44,5 @@ export function AuthDebug() {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
-

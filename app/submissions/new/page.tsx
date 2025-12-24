@@ -1,200 +1,221 @@
-"use client"
+'use client';
 
-import type React from "react"
+import type React from 'react';
 
-import { useState, useRef } from "react"
-import { useRouter } from "next/navigation"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
-import { Loader2, Upload, AlertCircle, CheckCircle2 } from "lucide-react"
+import { useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { Loader2, Upload, AlertCircle, CheckCircle2 } from 'lucide-react';
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
-import { Separator } from "@/components/ui/separator"
-import { Badge } from "@/components/ui/badge"
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 
 // Define the form schema with Zod
 const formSchema = z.object({
   title: z
     .string()
     .min(3, {
-      message: "Title must be at least 3 characters.",
+      message: 'Title must be at least 3 characters.',
     })
     .max(100, {
-      message: "Title must not exceed 100 characters.",
+      message: 'Title must not exceed 100 characters.',
     }),
   description: z
     .string()
     .min(10, {
-      message: "Description must be at least 10 characters.",
+      message: 'Description must be at least 10 characters.',
     })
     .max(500, {
-      message: "Description must not exceed 500 characters.",
+      message: 'Description must not exceed 500 characters.',
     }),
   category: z.string({
-    required_error: "Please select a category.",
+    required_error: 'Please select a category.',
   }),
   originalIp: z
     .string()
     .min(2, {
-      message: "Original IP must be at least 2 characters.",
+      message: 'Original IP must be at least 2 characters.',
     })
     .max(100, {
-      message: "Original IP must not exceed 100 characters.",
+      message: 'Original IP must not exceed 100 characters.',
     }),
   tags: z.string().optional(),
-})
+});
 
 // Define the categories
 const categories = [
-  { value: "anime", label: "Anime & Manga" },
-  { value: "gaming", label: "Video Games" },
-  { value: "movies", label: "Movies & TV" },
-  { value: "comics", label: "Comics & Graphic Novels" },
-  { value: "books", label: "Books & Literature" },
-  { value: "other", label: "Other" },
-]
+  { value: 'anime', label: 'Anime & Manga' },
+  { value: 'gaming', label: 'Video Games' },
+  { value: 'movies', label: 'Movies & TV' },
+  { value: 'comics', label: 'Comics & Graphic Novels' },
+  { value: 'books', label: 'Books & Literature' },
+  { value: 'other', label: 'Other' },
+];
 
 export default function NewSubmissionPage() {
-  const router = useRouter()
-  const [file, setFile] = useState<File | null>(null)
-  const [fileError, setFileError] = useState<string | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [submitError, setSubmitError] = useState<string | null>(null)
-  const [submitSuccess, setSubmitSuccess] = useState(false)
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const router = useRouter();
+  const [file, setFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Initialize form
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      title: "",
-      description: "",
-      category: "",
-      originalIp: "",
-      tags: "",
+      title: '',
+      description: '',
+      category: '',
+      originalIp: '',
+      tags: '',
     },
-  })
+  });
 
   // Handle file selection
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0]
-    setFileError(null)
+    const selectedFile = e.target.files?.[0];
+    setFileError(null);
 
     if (!selectedFile) {
-      setFile(null)
-      setPreviewUrl(null)
-      return
+      setFile(null);
+      setPreviewUrl(null);
+      return;
     }
 
     // Validate file type
-    const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"]
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     if (!validTypes.includes(selectedFile.type)) {
-      setFileError("Please upload a valid image file (JPEG, PNG, GIF, or WEBP).")
-      setFile(null)
-      setPreviewUrl(null)
-      return
+      setFileError('Please upload a valid image file (JPEG, PNG, GIF, or WEBP).');
+      setFile(null);
+      setPreviewUrl(null);
+      return;
     }
 
     // Validate file size (5MB max)
     if (selectedFile.size > 5 * 1024 * 1024) {
-      setFileError("File size must not exceed 5MB.")
-      setFile(null)
-      setPreviewUrl(null)
-      return
+      setFileError('File size must not exceed 5MB.');
+      setFile(null);
+      setPreviewUrl(null);
+      return;
     }
 
-    setFile(selectedFile)
+    setFile(selectedFile);
 
     // Create preview URL
-    const objectUrl = URL.createObjectURL(selectedFile)
-    setPreviewUrl(objectUrl)
+    const objectUrl = URL.createObjectURL(selectedFile);
+    setPreviewUrl(objectUrl);
 
     // Clean up the preview URL when component unmounts
-    return () => URL.revokeObjectURL(objectUrl)
-  }
+    return () => URL.revokeObjectURL(objectUrl);
+  };
 
   // Handle form submission
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     // Validate file
     if (!file) {
-      setFileError("Please upload an image file.")
-      return
+      setFileError('Please upload an image file.');
+      return;
     }
 
-    setIsSubmitting(true)
-    setSubmitError(null)
+    setIsSubmitting(true);
+    setSubmitError(null);
 
     try {
       // Create FormData
-      const formData = new FormData()
-      formData.append("file", file)
-      formData.append("title", values.title)
-      formData.append("description", values.description)
-      formData.append("category", values.category)
-      formData.append("originalIp", values.originalIp)
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('title', values.title);
+      formData.append('description', values.description);
+      formData.append('category', values.category);
+      formData.append('originalIp', values.originalIp);
 
       // Process tags if provided
       if (values.tags) {
         const tagsArray = values.tags
-          .split(",")
+          .split(',')
           .map((tag) => tag.trim())
-          .filter((tag) => tag.length > 0)
+          .filter((tag) => tag.length > 0);
 
-        formData.append("tags", JSON.stringify(tagsArray))
+        formData.append('tags', JSON.stringify(tagsArray));
       }
 
       // Submit the form
-      const response = await fetch("/api/submissions/create", {
-        method: "POST",
+      const response = await fetch('/api/submissions/create', {
+        method: 'POST',
         body: formData,
-      })
+      });
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || "Failed to submit artwork")
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to submit artwork');
       }
 
-      const data = await response.json()
+      const data = await response.json();
 
       // Show success message
-      setSubmitSuccess(true)
+      setSubmitSuccess(true);
 
       // Redirect to submission details after a delay
       setTimeout(() => {
-        router.push(`/submissions/${data.id}`)
-      }, 2000)
+        router.push(`/submissions/${data.id}`);
+      }, 2000);
     } catch (error) {
-      console.error("Submission error:", error)
-      setSubmitError(error instanceof Error ? error.message : "An unexpected error occurred")
+      console.error('Submission error:', error);
+      setSubmitError(error instanceof Error ? error.message : 'An unexpected error occurred');
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   // Handle file button click
   const handleFileButtonClick = () => {
-    fileInputRef.current?.click()
-  }
+    fileInputRef.current?.click();
+  };
 
   // Parse tags for display
   const renderTagBadges = () => {
-    const tagsValue = form.watch("tags")
-    if (!tagsValue) return null
+    const tagsValue = form.watch('tags');
+    if (!tagsValue) return null;
 
     const tagsArray = tagsValue
-      .split(",")
+      .split(',')
       .map((tag) => tag.trim())
-      .filter((tag) => tag.length > 0)
+      .filter((tag) => tag.length > 0);
 
-    if (tagsArray.length === 0) return null
+    if (tagsArray.length === 0) return null;
 
     return (
       <div className="flex flex-wrap gap-2 mt-2">
@@ -204,8 +225,8 @@ export default function NewSubmissionPage() {
           </Badge>
         ))}
       </div>
-    )
-  }
+    );
+  };
 
   return (
     <div className="container py-8 max-w-3xl">
@@ -216,8 +237,8 @@ export default function NewSubmissionPage() {
           <CheckCircle2 className="h-4 w-4 text-green-600" />
           <AlertTitle>Success!</AlertTitle>
           <AlertDescription>
-            Your artwork has been submitted successfully and is now being processed. You will be redirected to the
-            submission details page shortly.
+            Your artwork has been submitted successfully and is now being processed. You will be
+            redirected to the submission details page shortly.
           </AlertDescription>
         </Alert>
       ) : (
@@ -225,8 +246,8 @@ export default function NewSubmissionPage() {
           <CardHeader>
             <CardTitle>Submit Your Fan Art</CardTitle>
             <CardDescription>
-              Share your fan art with the community. All submissions will be reviewed for compliance with IP guidelines
-              before being approved.
+              Share your fan art with the community. All submissions will be reviewed for compliance
+              with IP guidelines before being approved.
             </CardDescription>
           </CardHeader>
 
@@ -238,7 +259,9 @@ export default function NewSubmissionPage() {
                   <FormLabel>Artwork Image</FormLabel>
                   <div
                     className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-                      fileError ? "border-red-400 bg-red-50" : "border-gray-300 hover:border-primary hover:bg-gray-50"
+                      fileError
+                        ? 'border-red-400 bg-red-50'
+                        : 'border-gray-300 hover:border-primary hover:bg-gray-50'
                     }`}
                     onClick={handleFileButtonClick}
                   >
@@ -254,7 +277,7 @@ export default function NewSubmissionPage() {
                       <div className="space-y-4">
                         <div className="relative w-full max-w-xs mx-auto aspect-square overflow-hidden rounded-md">
                           <img
-                            src={previewUrl || "/placeholder.svg"}
+                            src={previewUrl || '/placeholder.svg'}
                             alt="Preview"
                             className="object-cover w-full h-full"
                           />
@@ -264,8 +287,8 @@ export default function NewSubmissionPage() {
                             type="button"
                             variant="outline"
                             onClick={(e) => {
-                              e.stopPropagation()
-                              handleFileButtonClick()
+                              e.stopPropagation();
+                              handleFileButtonClick();
                             }}
                           >
                             Change Image
@@ -314,7 +337,11 @@ export default function NewSubmissionPage() {
                     <FormItem>
                       <FormLabel>Description</FormLabel>
                       <FormControl>
-                        <Textarea placeholder="Describe your artwork..." className="min-h-[100px]" {...field} />
+                        <Textarea
+                          placeholder="Describe your artwork..."
+                          className="min-h-[100px]"
+                          {...field}
+                        />
                       </FormControl>
                       <FormDescription>
                         Provide details about your artwork, inspiration, and techniques used.
@@ -345,7 +372,9 @@ export default function NewSubmissionPage() {
                           ))}
                         </SelectContent>
                       </Select>
-                      <FormDescription>Select the category that best fits your artwork.</FormDescription>
+                      <FormDescription>
+                        Select the category that best fits your artwork.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -361,7 +390,9 @@ export default function NewSubmissionPage() {
                       <FormControl>
                         <Input placeholder="e.g., Naruto, Star Wars, Marvel" {...field} />
                       </FormControl>
-                      <FormDescription>The original intellectual property your fan art is based on.</FormDescription>
+                      <FormDescription>
+                        The original intellectual property your fan art is based on.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -375,9 +406,14 @@ export default function NewSubmissionPage() {
                     <FormItem>
                       <FormLabel>Tags</FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g., digital art, character design, fanart" {...field} />
+                        <Input
+                          placeholder="e.g., digital art, character design, fanart"
+                          {...field}
+                        />
                       </FormControl>
-                      <FormDescription>Add tags separated by commas to help others find your artwork.</FormDescription>
+                      <FormDescription>
+                        Add tags separated by commas to help others find your artwork.
+                      </FormDescription>
                       {renderTagBadges()}
                       <FormMessage />
                     </FormItem>
@@ -401,7 +437,7 @@ export default function NewSubmissionPage() {
                       Submitting...
                     </>
                   ) : (
-                    "Submit Artwork"
+                    'Submit Artwork'
                   )}
                 </Button>
               </form>
@@ -410,14 +446,15 @@ export default function NewSubmissionPage() {
 
           <CardFooter className="flex flex-col space-y-4 text-sm text-gray-500">
             <p>
-              By submitting your artwork, you agree to our Terms of Service and acknowledge that your submission will be
-              reviewed for compliance with IP guidelines.
+              By submitting your artwork, you agree to our Terms of Service and acknowledge that
+              your submission will be reviewed for compliance with IP guidelines.
             </p>
-            <p>If approved, your artwork may be licensed according to our platform's licensing terms.</p>
+            <p>
+              If approved, your artwork may be licensed according to our platform's licensing terms.
+            </p>
           </CardFooter>
         </Card>
       )}
     </div>
-  )
+  );
 }
-

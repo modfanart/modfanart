@@ -1,10 +1,10 @@
-import { z } from "zod"
-import { logger } from "../utils/logger"
+import { z } from 'zod';
+import { logger } from '../utils/logger';
 
 // User validation schemas
-export const UserRoleSchema = z.enum(["artist", "brand", "creator", "admin"])
-export const SubscriptionTierSchema = z.enum(["free", "premium_artist", "creator", "enterprise"])
-export const SubscriptionStatusSchema = z.enum(["active", "inactive", "past_due", "canceled"])
+export const UserRoleSchema = z.enum(['artist', 'brand', 'creator', 'admin']);
+export const SubscriptionTierSchema = z.enum(['free', 'premium_artist', 'creator', 'enterprise']);
+export const SubscriptionStatusSchema = z.enum(['active', 'inactive', 'past_due', 'canceled']);
 
 export const SocialLinksSchema = z
   .object({
@@ -13,7 +13,7 @@ export const SocialLinksSchema = z
     facebook: z.string().url().optional(),
     tiktok: z.string().url().optional(),
   })
-  .optional()
+  .optional();
 
 export const UserSettingsSchema = z
   .object({
@@ -21,7 +21,7 @@ export const UserSettingsSchema = z
     marketingEmails: z.boolean().default(true),
     twoFactorEnabled: z.boolean().default(false),
   })
-  .optional()
+  .optional();
 
 export const SubscriptionSchema = z
   .object({
@@ -30,7 +30,7 @@ export const SubscriptionSchema = z
     renewalDate: z.string().optional(),
     customerId: z.string().optional(),
   })
-  .optional()
+  .optional();
 
 export const CreateUserSchema = z.object({
   email: z.string().email(),
@@ -42,12 +42,18 @@ export const CreateUserSchema = z.object({
   socialLinks: SocialLinksSchema,
   subscription: SubscriptionSchema,
   settings: UserSettingsSchema,
-})
+});
 
-export const UpdateUserSchema = CreateUserSchema.partial()
+export const UpdateUserSchema = CreateUserSchema.partial();
 
 // Submission validation schemas
-export const SubmissionStatusSchema = z.enum(["pending", "review", "approved", "rejected", "licensed"])
+export const SubmissionStatusSchema = z.enum([
+  'pending',
+  'review',
+  'approved',
+  'rejected',
+  'licensed',
+]);
 
 export const CreateSubmissionSchema = z.object({
   title: z.string().min(3).max(100),
@@ -55,19 +61,19 @@ export const CreateSubmissionSchema = z.object({
   category: z.string().min(2).max(50),
   originalIp: z.string().min(2).max(100),
   tags: z.array(z.string().min(1).max(30)).max(10),
-  status: SubmissionStatusSchema.default("pending"),
+  status: SubmissionStatusSchema.default('pending'),
   imageUrl: z.string().url(),
   licenseType: z.string().min(2).max(50),
   userId: z.string().uuid(),
   reviewNotes: z.string().max(1000).optional(),
   reviewedBy: z.string().uuid().optional(),
   reviewedAt: z.date().optional(),
-})
+});
 
-export const UpdateSubmissionSchema = CreateSubmissionSchema.partial()
+export const UpdateSubmissionSchema = CreateSubmissionSchema.partial();
 
 // Product validation schemas
-export const ProductStatusSchema = z.enum(["active", "inactive", "draft", "archived"])
+export const ProductStatusSchema = z.enum(['active', 'inactive', 'draft', 'archived']);
 
 export const CreateProductSchema = z.object({
   title: z.string().min(3).max(100),
@@ -77,40 +83,48 @@ export const CreateProductSchema = z.object({
   category: z.string().min(2).max(50),
   artist: z.string().min(2).max(100),
   brand: z.string().min(2).max(100),
-  status: ProductStatusSchema.default("draft"),
+  status: ProductStatusSchema.default('draft'),
   isNew: z.boolean().default(false),
   isBestseller: z.boolean().default(false),
-})
+});
 
-export const UpdateProductSchema = CreateProductSchema.partial()
+export const UpdateProductSchema = CreateProductSchema.partial();
 
+// Validation helper function
 // Validation helper function
 export function validateModel<T>(
   data: unknown,
   schema: z.ZodSchema<T>,
-  context: string,
+  context: string
 ): {
-  success: boolean
-  data?: T
-  errors?: z.ZodError
+  success: boolean;
+  data?: T;
+  errors?: z.ZodError;
 } {
   try {
-    const validatedData = schema.parse(data)
-    return { success: true, data: validatedData }
+    const validatedData = schema.parse(data);
+    return { success: true, data: validatedData };
   } catch (error) {
     if (error instanceof z.ZodError) {
+      // Log a safe, serializable version of the errors
       logger.warn(`Validation error in ${context}`, {
-        context: "model-validation",
-        data: { errors: error.errors },
-      })
-      return { success: false, errors: error }
+        context: 'model-validation',
+        // Use .flatten() or .format() for clean, plain-object errors
+        errors: error.flatten(),
+        // Or just the issues array: errors: error.issues,
+        // Optionally include a sanitized version of input data if needed (be careful with PII!)
+      });
+
+      return { success: false, errors: error };
     }
 
     logger.error(`Unexpected validation error in ${context}`, {
-      context: "model-validation",
-      error,
-    })
-    return { success: false, errors: new z.ZodError([]) }
+      context: 'model-validation',
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+
+    // Fallback empty ZodError to keep return type consistent
+    return { success: false, errors: new z.ZodError([]) };
   }
 }
-

@@ -1,72 +1,80 @@
-"use client"
+'use client';
 
-import { useState, useEffect, useRef } from "react"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Slider } from "@/components/ui/slider"
-import { Separator } from "@/components/ui/separator"
+import { useState, useEffect, useRef } from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Slider } from '@/components/ui/slider';
+import { Separator } from '@/components/ui/separator';
 
-export function MarketplaceFilters({ onFilterChange }) {
-  const [priceRange, setPriceRange] = useState([0, 100])
-  const [selectedCategories, setSelectedCategories] = useState([])
-  const [selectedBrands, setSelectedBrands] = useState([])
-  const isInitialMount = useRef(true)
+type Filters = {
+  priceRange: number[];
+  categories: string[];
+  brands: string[];
+};
+
+interface MarketplaceFiltersProps {
+  onFilterChange: (filters: Filters) => void;
+}
+
+export function MarketplaceFilters({ onFilterChange }: MarketplaceFiltersProps) {
+  const [priceRange, setPriceRange] = useState<number[]>([0, 100]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
+  const isInitialMount = useRef(true);
 
   // Available categories
   const categories = [
-    { id: "apparel", label: "Apparel" },
-    { id: "posters", label: "Posters & Prints" },
-    { id: "accessories", label: "Accessories" },
-    { id: "stickers", label: "Stickers" },
-    { id: "collectibles", label: "Collectibles" },
-    { id: "digital", label: "Digital Items" },
-  ]
+    { id: 'apparel', label: 'Apparel' },
+    { id: 'posters', label: 'Posters & Prints' },
+    { id: 'accessories', label: 'Accessories' },
+    { id: 'stickers', label: 'Stickers' },
+    { id: 'collectibles', label: 'Collectibles' },
+    { id: 'digital', label: 'Digital Items' },
+  ];
 
   // Popular brands/IPs
   const brands = [
-    { id: "marvel", label: "Marvel" },
-    { id: "nintendo", label: "Nintendo" },
-    { id: "fantasy", label: "Fantasy Realms" },
-    { id: "anime", label: "Anime Studio" },
-    { id: "scifi", label: "Sci-Fi Universe" },
-    { id: "gaming", label: "Classic Gaming" },
-  ]
+    { id: 'marvel', label: 'Marvel' },
+    { id: 'nintendo', label: 'Nintendo' },
+    { id: 'fantasy', label: 'Fantasy Realms' },
+    { id: 'anime', label: 'Anime Studio' },
+    { id: 'scifi', label: 'Sci-Fi Universe' },
+    { id: 'gaming', label: 'Classic Gaming' },
+  ];
 
-  // Only trigger filter changes after initial mount and when values actually change
   useEffect(() => {
     if (isInitialMount.current) {
-      isInitialMount.current = false
-      return
+      isInitialMount.current = false;
+      return;
     }
 
-    // Create a stable filter object
-    const filters = {
+    onFilterChange({
       priceRange,
       categories: selectedCategories,
       brands: selectedBrands,
-    }
+    });
+  }, [priceRange, selectedCategories, selectedBrands, onFilterChange]);
 
-    onFilterChange(filters)
-  }, [priceRange, selectedCategories, selectedBrands])
+  const handleCategoryChange = (categoryId: string, checked: boolean) => {
+    setSelectedCategories((prev) =>
+      checked ? [...prev, categoryId] : prev.filter((id) => id !== categoryId)
+    );
+  };
 
-  const handleCategoryChange = (categoryId, checked) => {
-    setSelectedCategories(
-      checked ? [...selectedCategories, categoryId] : selectedCategories.filter((id) => id !== categoryId),
-    )
-  }
+  const handleBrandChange = (brandId: string, checked: boolean) => {
+    setSelectedBrands((prev) =>
+      checked ? [...prev, brandId] : prev.filter((id) => id !== brandId)
+    );
+  };
 
-  const handleBrandChange = (brandId, checked) => {
-    setSelectedBrands(checked ? [...selectedBrands, brandId] : selectedBrands.filter((id) => id !== brandId))
-  }
-
-  const handlePriceChange = (value) => {
-    setPriceRange(value)
-  }
+  const handlePriceChange = (value: number[]) => {
+    setPriceRange(value);
+  };
 
   const resetFilters = () => {
-    setPriceRange([0, 100])
-    setSelectedCategories([])
-    setSelectedBrands([])
-  }
+    setPriceRange([0, 100]);
+    setSelectedCategories([]);
+    setSelectedBrands([]);
+  };
 
   return (
     <div className="space-y-6">
@@ -103,7 +111,7 @@ export function MarketplaceFilters({ onFilterChange }) {
               <Checkbox
                 id={`category-${category.id}`}
                 checked={selectedCategories.includes(category.id)}
-                onCheckedChange={(checked) => handleCategoryChange(category.id, checked)}
+                onCheckedChange={(checked) => handleCategoryChange(category.id, checked === true)}
               />
               <label
                 htmlFor={`category-${category.id}`}
@@ -126,7 +134,7 @@ export function MarketplaceFilters({ onFilterChange }) {
               <Checkbox
                 id={`brand-${brand.id}`}
                 checked={selectedBrands.includes(brand.id)}
-                onCheckedChange={(checked) => handleBrandChange(brand.id, checked)}
+                onCheckedChange={(checked) => handleBrandChange(brand.id, checked === true)}
               />
               <label
                 htmlFor={`brand-${brand.id}`}
@@ -139,6 +147,5 @@ export function MarketplaceFilters({ onFilterChange }) {
         </div>
       </div>
     </div>
-  )
+  );
 }
-

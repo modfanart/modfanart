@@ -1,12 +1,12 @@
-"use client"
+'use client';
 
-import { DynamicImport } from "./dynamic-import"
-import type { CalendarProps } from "react-day-picker"
+import { DynamicImport } from './dynamic-import';
+import type { DayPickerProps } from 'react-day-picker'; // ← Correct type
 
-export function CalendarWrapper(props: CalendarProps) {
+export function CalendarWrapper(props: DayPickerProps) {
   return (
     <DynamicImport
-      component={() => import("./calendar").then((mod) => ({ default: mod.Calendar }))}
+      component={() => import('./calendar').then((mod) => ({ default: mod.Calendar }))}
       props={props}
       fallback={
         <div className="p-3 w-full max-w-sm bg-muted/20 rounded-md">
@@ -23,6 +23,5 @@ export function CalendarWrapper(props: CalendarProps) {
         </div>
       }
     />
-  )
+  );
 }
-
