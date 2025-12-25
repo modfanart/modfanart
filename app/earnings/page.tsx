@@ -1,66 +1,90 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { DashboardShell } from "@/components/dashboard-shell"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { BarChart, LineChart } from "@/components/ui/chart"
-import { DollarSign, Download, CreditCard, History, ArrowUpRight, Filter, Calendar } from "lucide-react"
-import { DatePicker } from "@/components/ui/date-picker"
-
+import { useState } from 'react';
+import { DashboardShell } from '@/components/dashboard-shell';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { BarChart, LineChart } from '@/components/ui/chart';
+import {
+  DollarSign,
+  Download,
+  CreditCard,
+  History,
+  ArrowUpRight,
+  Filter,
+  Calendar,
+} from 'lucide-react';
+import { DateRangePicker } from '@/components/ui/date-picker';
+type DateRange = {
+  from: Date | undefined;
+  to: Date | undefined;
+};
 export default function EarningsPage() {
-  const [dateRange, setDateRange] = useState({
+  const [dateRange, setDateRange] = useState<DateRange>({
     from: new Date(new Date().setMonth(new Date().getMonth() - 1)),
     to: new Date(),
-  })
+  });
 
   // Mock data for earnings
   const recentTransactions = [
     {
-      id: "TX-1234",
-      date: "Mar 5, 2025",
-      amount: "$125.00",
-      status: "Paid",
-      source: "Artwork License: Cosmic Hero",
-      type: "License Fee",
+      id: 'TX-1234',
+      date: 'Mar 5, 2025',
+      amount: '$125.00',
+      status: 'Paid',
+      source: 'Artwork License: Cosmic Hero',
+      type: 'License Fee',
     },
     {
-      id: "TX-1233",
-      date: "Mar 1, 2025",
-      amount: "$75.50",
-      status: "Paid",
-      source: "Artwork License: Forest Guardian",
-      type: "License Fee",
+      id: 'TX-1233',
+      date: 'Mar 1, 2025',
+      amount: '$75.50',
+      status: 'Paid',
+      source: 'Artwork License: Forest Guardian',
+      type: 'License Fee',
     },
     {
-      id: "TX-1232",
-      date: "Feb 25, 2025",
-      amount: "$220.00",
-      status: "Paid",
-      source: "Commercial Use: Space Explorer",
-      type: "Commercial License",
+      id: 'TX-1232',
+      date: 'Feb 25, 2025',
+      amount: '$220.00',
+      status: 'Paid',
+      source: 'Commercial Use: Space Explorer',
+      type: 'Commercial License',
     },
     {
-      id: "TX-1231",
-      date: "Feb 18, 2025",
-      amount: "$45.00",
-      status: "Paid",
-      source: "Artwork License: Ocean Defender",
-      type: "License Fee",
+      id: 'TX-1231',
+      date: 'Feb 18, 2025',
+      amount: '$45.00',
+      status: 'Paid',
+      source: 'Artwork License: Ocean Defender',
+      type: 'License Fee',
     },
     {
-      id: "TX-1230",
-      date: "Feb 10, 2025",
-      amount: "$150.00",
-      status: "Paid",
-      source: "Premium Subscription",
-      type: "Subscription",
+      id: 'TX-1230',
+      date: 'Feb 10, 2025',
+      amount: '$150.00',
+      status: 'Paid',
+      source: 'Premium Subscription',
+      type: 'Subscription',
     },
-  ]
+  ];
 
   return (
     <DashboardShell>
@@ -71,18 +95,7 @@ export default function EarningsPage() {
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
-          <DatePicker
-            selected={dateRange}
-            onSelect={setDateRange}
-            selectsRange
-            startDate={dateRange.from}
-            endDate={dateRange.to}
-          >
-            <Button variant="outline" className="ml-auto">
-              <Calendar className="mr-2 h-4 w-4" />
-              Date Range
-            </Button>
-          </DatePicker>
+          <DateRangePicker date={dateRange} onDateChange={setDateRange} placeholder="Date Range" />
         </div>
       </div>
 
@@ -147,12 +160,12 @@ export default function EarningsPage() {
               <CardContent className="pl-2">
                 <LineChart
                   data={[
-                    { name: "Oct", total: 220 },
-                    { name: "Nov", total: 380 },
-                    { name: "Dec", total: 475 },
-                    { name: "Jan", total: 520 },
-                    { name: "Feb", total: 590 },
-                    { name: "Mar", total: 615 },
+                    { name: 'Oct', total: 220 },
+                    { name: 'Nov', total: 380 },
+                    { name: 'Dec', total: 475 },
+                    { name: 'Jan', total: 520 },
+                    { name: 'Feb', total: 590 },
+                    { name: 'Mar', total: 615 },
                   ]}
                   className="aspect-[3/2]"
                 />
@@ -166,9 +179,9 @@ export default function EarningsPage() {
               <CardContent>
                 <BarChart
                   data={[
-                    { name: "Standard", total: 580 },
-                    { name: "Commercial", total: 420 },
-                    { name: "Premium", total: 245 },
+                    { name: 'Standard', total: 580 },
+                    { name: 'Commercial', total: 420 },
+                    { name: 'Premium', total: 245 },
                   ]}
                   className="aspect-[3/2]"
                 />
@@ -184,7 +197,10 @@ export default function EarningsPage() {
             <CardContent>
               <div className="space-y-6">
                 {recentTransactions.map((transaction) => (
-                  <div key={transaction.id} className="flex items-start space-x-4 rounded-lg border p-4">
+                  <div
+                    key={transaction.id}
+                    className="flex items-start space-x-4 rounded-lg border p-4"
+                  >
                     <div className="space-y-1">
                       <p className="text-sm font-medium leading-none">{transaction.source}</p>
                       <p className="text-sm text-muted-foreground">{transaction.date}</p>
@@ -193,9 +209,9 @@ export default function EarningsPage() {
                       <div className="font-medium">{transaction.amount}</div>
                       <span
                         className={`rounded-full px-2 py-1 text-xs ${
-                          transaction.status === "Paid"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-yellow-100 text-yellow-800"
+                          transaction.status === 'Paid'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-yellow-100 text-yellow-800'
                         }`}
                       >
                         {transaction.status}
@@ -235,7 +251,10 @@ export default function EarningsPage() {
                   <div className="text-right">Amount</div>
                 </div>
                 {recentTransactions.concat(recentTransactions).map((transaction, i) => (
-                  <div key={`${transaction.id}-${i}`} className="grid grid-cols-5 border-t p-4 text-sm">
+                  <div
+                    key={`${transaction.id}-${i}`}
+                    className="grid grid-cols-5 border-t p-4 text-sm"
+                  >
                     <div className="font-medium">{transaction.id}</div>
                     <div>{transaction.date}</div>
                     <div>{transaction.source}</div>
@@ -362,6 +381,5 @@ export default function EarningsPage() {
         </TabsContent>
       </Tabs>
     </DashboardShell>
-  )
+  );
 }
-

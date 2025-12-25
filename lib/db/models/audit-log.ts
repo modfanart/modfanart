@@ -95,7 +95,7 @@ export async function createAuditLog(
     });
 
     if (error instanceof z.ZodError) {
-      const messages = error.errors.map((e) => `${e.path.join('.')} : ${e.message}`).join('; ');
+      const messages = error.issues.map((e) => `${e.path.join('.')} : ${e.message}`).join('; ');
       throw new Error(`Invalid audit log data: ${messages}`);
     }
 

@@ -1,112 +1,131 @@
-"use client"
+'use client';
 
-import type React from "react"
+import type React from 'react';
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { useToast } from "@/components/ui/use-toaster"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Star, ThumbsUp, Flag } from "lucide-react"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/components/ui/use-toaster';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Star, ThumbsUp, Flag } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+interface Review {
+  id: string;
+  user: {
+    name: string;
+    avatar: string;
+    initials: string;
+  };
+  rating: number;
+  title: string;
+  content: string;
+  date: string; // ← Required string
+  helpful: number;
+  verified: boolean;
+}
 // Mock review data
-const mockReviews = [
+const mockReviews: Review[] = [
   {
-    id: "review-1",
+    id: 'review-1',
     user: {
-      name: "Alex Johnson",
-      avatar: "/placeholder.svg?height=40&width=40&text=AJ",
-      initials: "AJ",
+      name: 'Alex Johnson',
+      avatar: '/placeholder.svg?height=40&width=40&text=AJ',
+      initials: 'AJ',
     },
     rating: 5,
-    title: "Excellent quality and design",
+    title: 'Excellent quality and design',
     content:
       "I'm extremely impressed with the quality of this product. The design is exactly as pictured and the materials are top-notch. Shipping was fast and the packaging was secure. Would definitely recommend!",
-    date: "2023-11-15",
+    date: '2023-11-15',
     helpful: 24,
     verified: true,
   },
   {
-    id: "review-2",
+    id: 'review-2',
     user: {
-      name: "Sam Rivera",
-      avatar: "/placeholder.svg?height=40&width=40&text=SR",
-      initials: "SR",
+      name: 'Sam Rivera',
+      avatar: '/placeholder.svg?height=40&width=40&text=SR',
+      initials: 'SR',
     },
     rating: 4,
-    title: "Great product, minor sizing issue",
+    title: 'Great product, minor sizing issue',
     content:
       "The product is fantastic overall. The design is beautiful and the quality is great. My only issue was that it ran slightly smaller than expected, so I'd recommend sizing up if you're between sizes. Otherwise, very happy with my purchase!",
-    date: "2023-10-28",
+    date: '2023-10-28',
     helpful: 18,
     verified: true,
   },
   {
-    id: "review-3",
+    id: 'review-3',
     user: {
-      name: "Taylor Kim",
-      avatar: "/placeholder.svg?height=40&width=40&text=TK",
-      initials: "TK",
+      name: 'Taylor Kim',
+      avatar: '/placeholder.svg?height=40&width=40&text=TK',
+      initials: 'TK',
     },
     rating: 5,
-    title: "Exceeded expectations",
+    title: 'Exceeded expectations',
     content:
-      "This product exceeded all my expectations. The attention to detail is incredible and it looks even better in person than in the photos. Shipping was quick and customer service was excellent when I had a question. Highly recommen  Shipping was quick and customer service was excellent when I had a question. Highly recommend to any fan of the franchise!",
-    date: "2023-11-02",
+      'This product exceeded all my expectations. The attention to detail is incredible and it looks even better in person than in the photos. Shipping was quick and customer service was excellent when I had a question. Highly recommen  Shipping was quick and customer service was excellent when I had a question. Highly recommend to any fan of the franchise!',
+    date: '2023-11-02',
     helpful: 12,
     verified: true,
   },
   {
-    id: "review-4",
+    id: 'review-4',
     user: {
-      name: "Jordan Smith",
-      avatar: "/placeholder.svg?height=40&width=40&text=JS",
-      initials: "JS",
+      name: 'Jordan Smith',
+      avatar: '/placeholder.svg?height=40&width=40&text=JS',
+      initials: 'JS',
     },
     rating: 3,
-    title: "Good but not great",
+    title: 'Good but not great',
     content:
       "The product is decent quality and the design is nice, but I was expecting something a bit more premium for the price point. It's still a good item, but there are a few areas where the quality could be improved. Shipping was fast though.",
-    date: "2023-10-15",
+    date: '2023-10-15',
     helpful: 8,
     verified: true,
   },
   {
-    id: "review-5",
+    id: 'review-5',
     user: {
-      name: "Casey Morgan",
-      avatar: "/placeholder.svg?height=40&width=40&text=CM",
-      initials: "CM",
+      name: 'Casey Morgan',
+      avatar: '/placeholder.svg?height=40&width=40&text=CM',
+      initials: 'CM',
     },
     rating: 5,
-    title: "Perfect gift for fans",
+    title: 'Perfect gift for fans',
     content:
-      "I bought this as a gift for my partner who is a huge fan, and they absolutely loved it! The quality is excellent and the design is spot on. It arrived quickly and was well packaged. Will definitely be purchasing more items in the future.",
-    date: "2023-11-10",
+      'I bought this as a gift for my partner who is a huge fan, and they absolutely loved it! The quality is excellent and the design is spot on. It arrived quickly and was well packaged. Will definitely be purchasing more items in the future.',
+    date: '2023-11-10',
     helpful: 15,
     verified: true,
   },
-]
+];
 
 interface ProductReviewsProps {
-  productId: string
-  rating: number
-  reviewCount: number
+  productId: string;
+  rating: number;
+  reviewCount: number;
 }
 
 export function ProductReviews({ productId, rating, reviewCount }: ProductReviewsProps) {
-  const { toast } = useToast()
-  const [reviews, setReviews] = useState(mockReviews)
-  const [filter, setFilter] = useState("all")
-  const [sort, setSort] = useState("newest")
+  const { toast } = useToast();
+  const [reviews, setReviews] = useState<Review[]>(mockReviews);
+  const [filter, setFilter] = useState('all');
+  const [sort, setSort] = useState('newest');
   const [newReview, setNewReview] = useState({
     rating: 5,
-    title: "",
-    content: "",
-  })
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [showReviewForm, setShowReviewForm] = useState(false)
+    title: '',
+    content: '',
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
 
   // Calculate rating distribution
   const ratingCounts = {
@@ -115,75 +134,79 @@ export function ProductReviews({ productId, rating, reviewCount }: ProductReview
     3: reviews.filter((r) => r.rating === 3).length,
     2: reviews.filter((r) => r.rating === 2).length,
     1: reviews.filter((r) => r.rating === 1).length,
-  }
+  };
 
   const filteredReviews = reviews.filter((review) => {
-    if (filter === "all") return true
-    return review.rating === Number.parseInt(filter)
-  })
+    if (filter === 'all') return true;
+    return review.rating === Number.parseInt(filter);
+  });
 
   const sortedReviews = [...filteredReviews].sort((a, b) => {
-    if (sort === "newest") {
-      return new Date(b.date).getTime() - new Date(a.date).getTime()
-    } else if (sort === "oldest") {
-      return new Date(a.date).getTime() - new Date(b.date).getTime()
-    } else if (sort === "highest") {
-      return b.rating - a.rating
-    } else if (sort === "lowest") {
-      return a.rating - b.rating
-    } else if (sort === "helpful") {
-      return b.helpful - a.helpful
+    if (sort === 'newest') {
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
+    } else if (sort === 'oldest') {
+      return new Date(a.date).getTime() - new Date(b.date).getTime();
+    } else if (sort === 'highest') {
+      return b.rating - a.rating;
+    } else if (sort === 'lowest') {
+      return a.rating - b.rating;
+    } else if (sort === 'helpful') {
+      return b.helpful - a.helpful;
     }
-    return 0
-  })
+    return 0;
+  });
 
   const handleHelpful = (reviewId: string) => {
-    setReviews(reviews.map((review) => (review.id === reviewId ? { ...review, helpful: review.helpful + 1 } : review)))
+    setReviews(
+      reviews.map((review) =>
+        review.id === reviewId ? { ...review, helpful: review.helpful + 1 } : review
+      )
+    );
     toast({
-      title: "Thanks for your feedback",
-      description: "You marked this review as helpful.",
-    })
-  }
+      title: 'Thanks for your feedback',
+      description: 'You marked this review as helpful.',
+    });
+  };
 
   const handleReport = (reviewId: string) => {
     toast({
-      title: "Review reported",
-      description: "Thank you for helping us maintain quality reviews.",
-    })
-  }
+      title: 'Review reported',
+      description: 'Thank you for helping us maintain quality reviews.',
+    });
+  };
 
   const handleSubmitReview = (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
+    e.preventDefault();
+    setIsSubmitting(true);
 
     // Simulate API call
     setTimeout(() => {
       const newReviewObj = {
         id: `review-${Date.now()}`,
         user: {
-          name: "You",
-          avatar: "/placeholder.svg?height=40&width=40&text=You",
-          initials: "YO",
+          name: 'You',
+          avatar: '/placeholder.svg?height=40&width=40&text=You',
+          initials: 'YO',
         },
         rating: newReview.rating,
         title: newReview.title,
         content: newReview.content,
-        date: new Date().toISOString().split("T")[0],
+        date: new Date().toISOString().split('T')[0],
         helpful: 0,
         verified: true,
-      }
+      };
 
-      setReviews([newReviewObj, ...reviews])
-      setNewReview({ rating: 5, title: "", content: "" })
-      setIsSubmitting(false)
-      setShowReviewForm(false)
+      setReviews([newReviewObj, ...reviews]);
+      setNewReview({ rating: 5, title: '', content: '' });
+      setIsSubmitting(false);
+      setShowReviewForm(false);
 
       toast({
-        title: "Review submitted",
-        description: "Thank you for sharing your feedback!",
-      })
-    }, 1000)
-  }
+        title: 'Review submitted',
+        description: 'Thank you for sharing your feedback!',
+      });
+    }, 1000);
+  };
 
   return (
     <div className="space-y-8">
@@ -198,10 +221,10 @@ export function ProductReviews({ productId, rating, reviewCount }: ProductReview
                   key={i}
                   className={`h-5 w-5 ${
                     i < Math.floor(rating)
-                      ? "fill-yellow-400 text-yellow-400"
+                      ? 'fill-yellow-400 text-yellow-400'
                       : i < rating
-                        ? "fill-yellow-400 text-yellow-400"
-                        : "text-gray-300"
+                      ? 'fill-yellow-400 text-yellow-400'
+                      : 'text-gray-300'
                   }`}
                 />
               ))}
@@ -219,7 +242,11 @@ export function ProductReviews({ productId, rating, reviewCount }: ProductReview
                 <div className="h-2 flex-1 rounded-full bg-gray-200">
                   <div
                     className="h-2 rounded-full bg-yellow-400"
-                    style={{ width: `${(ratingCounts[star as keyof typeof ratingCounts] / reviews.length) * 100}%` }}
+                    style={{
+                      width: `${
+                        (ratingCounts[star as keyof typeof ratingCounts] / reviews.length) * 100
+                      }%`,
+                    }}
                   ></div>
                 </div>
                 <div className="w-8 text-right text-sm text-muted-foreground">
@@ -231,7 +258,7 @@ export function ProductReviews({ productId, rating, reviewCount }: ProductReview
 
           {/* Write a Review Button */}
           <Button className="w-full" onClick={() => setShowReviewForm(!showReviewForm)}>
-            {showReviewForm ? "Cancel Review" : "Write a Review"}
+            {showReviewForm ? 'Cancel Review' : 'Write a Review'}
           </Button>
         </div>
 
@@ -253,7 +280,9 @@ export function ProductReviews({ productId, rating, reviewCount }: ProductReview
                       >
                         <Star
                           className={`h-6 w-6 ${
-                            star <= newReview.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
+                            star <= newReview.rating
+                              ? 'fill-yellow-400 text-yellow-400'
+                              : 'text-gray-300'
                           }`}
                         />
                       </button>
@@ -290,7 +319,7 @@ export function ProductReviews({ productId, rating, reviewCount }: ProductReview
                 </div>
 
                 <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Submitting..." : "Submit Review"}
+                  {isSubmitting ? 'Submitting...' : 'Submit Review'}
                 </Button>
               </form>
             </div>
@@ -364,16 +393,18 @@ export function ProductReviews({ productId, rating, reviewCount }: ProductReview
                             <Star
                               key={i}
                               className={`h-4 w-4 ${
-                                i < review.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
+                                i < review.rating
+                                  ? 'fill-yellow-400 text-yellow-400'
+                                  : 'text-gray-300'
                               }`}
                             />
                           ))}
                         </div>
                         <span className="text-sm text-muted-foreground">
-                          {new Date(review.date).toLocaleDateString("en-US", {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
+                          {new Date(review.date).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
                           })}
                         </span>
                       </div>
@@ -416,6 +447,5 @@ export function ProductReviews({ productId, rating, reviewCount }: ProductReview
         </div>
       )}
     </div>
-  )
+  );
 }
-

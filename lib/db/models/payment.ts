@@ -71,7 +71,7 @@ export async function createPayment(
   } catch (error: any) {
     logger.error('Failed to create payment', { context: 'payment-model', error });
     if (error instanceof z.ZodError) {
-      throw new Error(`Invalid payment data: ${JSON.stringify(error.errors)}`);
+      throw new Error(`Invalid payment data: ${JSON.stringify(error.issues)}`);
     }
     throw error;
   }

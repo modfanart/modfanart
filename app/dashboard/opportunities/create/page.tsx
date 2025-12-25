@@ -1,31 +1,31 @@
-"use client"
+'use client';
 
-import type React from "react"
+import type React from 'react';
 
-import { useState } from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { ArrowLeft } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { DashboardShell } from "@/components/dashboard-shell"
-import { DatePicker } from "@/components/ui/date-picker"
-import { Trophy, Briefcase } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
+import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { DashboardShell } from '@/components/dashboard-shell';
+import { DateRangePicker } from '@/components/ui/date-picker';
+import { Trophy, Briefcase } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 
 export default function CreateOpportunityPage() {
-  const router = useRouter()
-  const [opportunityType, setOpportunityType] = useState<"contest" | "rfd">("contest")
+  const router = useRouter();
+  const [opportunityType, setOpportunityType] = useState<'contest' | 'rfd'>('contest');
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     // In a real app, this would save the form data to a database
     // For now, we'll just redirect back to the opportunities page
-    router.push("/dashboard/opportunities")
-  }
+    router.push('/dashboard/opportunities');
+  };
 
   return (
     <DashboardShell>
@@ -37,7 +37,9 @@ export default function CreateOpportunityPage() {
         </Link>
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Create New Opportunity</h1>
-          <p className="text-muted-foreground">Set up a new fan art contest or licensing request for designs.</p>
+          <p className="text-muted-foreground">
+            Set up a new fan art contest or licensing request for designs.
+          </p>
         </div>
       </div>
 
@@ -50,7 +52,7 @@ export default function CreateOpportunityPage() {
                 <RadioGroup
                   defaultValue="contest"
                   className="grid grid-cols-1 gap-4 md:grid-cols-2"
-                  onValueChange={(value) => setOpportunityType(value as "contest" | "rfd")}
+                  onValueChange={(value) => setOpportunityType(value as 'contest' | 'rfd')}
                 >
                   <div>
                     <RadioGroupItem value="contest" id="contest" className="peer sr-only" />
@@ -109,7 +111,7 @@ export default function CreateOpportunityPage() {
               <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="deadline">Submission Deadline</Label>
-                  <DatePicker />
+                  <DateRangePicker />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="image">Cover Image URL</Label>
@@ -117,10 +119,15 @@ export default function CreateOpportunityPage() {
                 </div>
               </div>
 
-              {opportunityType === "contest" ? (
+              {opportunityType === 'contest' ? (
                 <div className="space-y-2">
                   <Label htmlFor="prize">Prize Details</Label>
-                  <Textarea id="prize" placeholder="Describe the prizes for winners" className="min-h-20" required />
+                  <Textarea
+                    id="prize"
+                    placeholder="Describe the prizes for winners"
+                    className="min-h-20"
+                    required
+                  />
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -155,6 +162,5 @@ export default function CreateOpportunityPage() {
         </CardContent>
       </Card>
     </DashboardShell>
-  )
+  );
 }
-

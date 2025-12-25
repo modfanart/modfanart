@@ -1,143 +1,177 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { format } from "date-fns"
-import { Calendar, Clock, FileText, Filter, ImageIcon, Search, ShieldCheck, Star, DollarSign } from "lucide-react"
-import { DashboardShell } from "@/components/dashboard-shell"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-
+import { useState } from 'react';
+import { format } from 'date-fns';
+import {
+  Calendar,
+  Clock,
+  FileText,
+  Filter,
+  ImageIcon,
+  Search,
+  ShieldCheck,
+  Star,
+  DollarSign,
+} from 'lucide-react';
+import { DashboardShell } from '@/components/dashboard-shell';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+type Activity = {
+  id: string;
+  type: 'submission' | 'license' | 'review' | 'compliance' | 'payment';
+  description: string;
+  timestamp: Date;
+  status: 'pending' | 'approved' | 'rejected' | 'completed';
+  icon: React.ReactNode;
+};
 // Mock data for activities
-const mockActivities = [
+const mockActivities: Activity[] = [
   {
-    id: "act-1",
-    type: "submission",
+    id: 'act-1',
+    type: 'submission',
     description: "Submitted new artwork 'Cosmic Hero'",
     timestamp: new Date(2025, 2, 6, 14, 30),
-    status: "pending",
+    status: 'pending',
     icon: <ImageIcon className="h-5 w-5 text-blue-500" />,
   },
   {
-    id: "act-2",
-    type: "license",
+    id: 'act-2',
+    type: 'license',
     description: "License approved for 'Dragon Warrior'",
     timestamp: new Date(2025, 2, 6, 10, 15),
-    status: "approved",
+    status: 'approved',
     icon: <FileText className="h-5 w-5 text-green-500" />,
   },
   {
-    id: "act-3",
-    type: "review",
+    id: 'act-3',
+    type: 'review',
     description: "Received feedback on 'Space Explorer'",
     timestamp: new Date(2025, 2, 5, 16, 45),
-    status: "completed",
+    status: 'completed',
     icon: <Star className="h-5 w-5 text-yellow-500" />,
   },
   {
-    id: "act-4",
-    type: "compliance",
+    id: 'act-4',
+    type: 'compliance',
     description: "IP compliance check completed for 'Forest Guardian'",
     timestamp: new Date(2025, 2, 5, 11, 20),
-    status: "approved",
+    status: 'approved',
     icon: <ShieldCheck className="h-5 w-5 text-purple-500" />,
   },
   {
-    id: "act-5",
-    type: "payment",
+    id: 'act-5',
+    type: 'payment',
     description: "Received payment for 'Ocean Defender' license",
     timestamp: new Date(2025, 2, 4, 9, 10),
-    status: "completed",
+    status: 'completed',
     icon: <DollarSign className="h-5 w-5 text-emerald-500" />,
   },
   {
-    id: "act-6",
-    type: "submission",
+    id: 'act-6',
+    type: 'submission',
     description: "Artwork 'Mountain Spirit' rejected",
     timestamp: new Date(2025, 2, 3, 13, 25),
-    status: "rejected",
+    status: 'rejected',
     icon: <ImageIcon className="h-5 w-5 text-blue-500" />,
   },
   {
-    id: "act-7",
-    type: "license",
+    id: 'act-7',
+    type: 'license',
     description: "License request for 'City Guardian'",
     timestamp: new Date(2025, 2, 2, 15, 40),
-    status: "pending",
+    status: 'pending',
     icon: <FileText className="h-5 w-5 text-green-500" />,
   },
-]
+];
 
 // Group activities by date
-const groupActivitiesByDate = (activities) => {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+const groupActivitiesByDate = (activities: Activity[]): Record<string, Activity[]> => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-  const yesterday = new Date(today)
-  yesterday.setDate(yesterday.getDate() - 1)
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
 
-  const thisWeekStart = new Date(today)
-  thisWeekStart.setDate(thisWeekStart.getDate() - thisWeekStart.getDay())
+  const thisWeekStart = new Date(today);
+  thisWeekStart.setDate(thisWeekStart.getDate() - thisWeekStart.getDay());
 
-  return activities.reduce((groups, activity) => {
-    const activityDate = new Date(activity.timestamp)
-    activityDate.setHours(0, 0, 0, 0)
+  return activities.reduce((groups: Record<string, Activity[]>, activity: Activity) => {
+    const activityDate = new Date(activity.timestamp);
+    activityDate.setHours(0, 0, 0, 0);
 
-    let group
+    let group: string;
     if (activityDate.getTime() === today.getTime()) {
-      group = "Today"
+      group = 'Today';
     } else if (activityDate.getTime() === yesterday.getTime()) {
-      group = "Yesterday"
+      group = 'Yesterday';
     } else if (activityDate > thisWeekStart) {
-      group = "This Week"
+      group = 'This Week';
     } else {
-      group = "Earlier"
+      group = 'Earlier';
     }
 
     if (!groups[group]) {
-      groups[group] = []
+      groups[group] = [];
     }
 
-    groups[group].push(activity)
-    return groups
-  }, {})
-}
+    groups[group].push(activity);
+    return groups;
+  }, {} as Record<string, Activity[]>);
+};
 
 // Status badge component
-const StatusBadge = ({ status }) => {
-  const statusConfig = {
-    pending: { color: "bg-yellow-100 text-yellow-800", label: "Pending" },
-    approved: { color: "bg-green-100 text-green-800", label: "Approved" },
-    rejected: { color: "bg-red-100 text-red-800", label: "Rejected" },
-    completed: { color: "bg-blue-100 text-blue-800", label: "Completed" },
-  }
+type Status = 'pending' | 'approved' | 'rejected' | 'completed';
 
-  const config = statusConfig[status] || { color: "bg-gray-100 text-gray-800", label: status }
+type StatusConfig = {
+  color: string;
+  label: string;
+};
+
+const statusConfig: Record<Status, StatusConfig> = {
+  pending: { color: 'bg-yellow-100 text-yellow-800', label: 'Pending' },
+  approved: { color: 'bg-green-100 text-green-800', label: 'Approved' },
+  rejected: { color: 'bg-red-100 text-red-800', label: 'Rejected' },
+  completed: { color: 'bg-blue-100 text-blue-800', label: 'Completed' },
+};
+
+type StatusBadgeProps = {
+  status: Status;
+};
+
+const StatusBadge = ({ status }: StatusBadgeProps) => {
+  const config = statusConfig[status] ?? { color: 'bg-gray-100 text-gray-800', label: status };
 
   return (
     <Badge className={`${config.color} font-medium`} variant="outline">
       {config.label}
     </Badge>
-  )
-}
+  );
+};
 
 export default function HistoryPage() {
-  const [filter, setFilter] = useState("all")
-  const [searchQuery, setSearchQuery] = useState("")
+  const [filter, setFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Filter activities based on type and search query
   const filteredActivities = mockActivities.filter((activity) => {
-    const matchesType = filter === "all" || activity.type === filter
-    const matchesSearch = activity.description.toLowerCase().includes(searchQuery.toLowerCase())
-    return matchesType && matchesSearch
-  })
+    const matchesType = filter === 'all' || activity.type === filter;
+    const matchesSearch = activity.description.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesType && matchesSearch;
+  });
 
-  const groupedActivities = groupActivitiesByDate(filteredActivities)
+  const groupedActivities = groupActivitiesByDate(filteredActivities);
 
   return (
-    <DashboardShell className="max-w-screen-2xl mx-auto">
+    <DashboardShell>
       <div className="flex flex-col gap-8">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="space-y-1">
@@ -204,7 +238,7 @@ export default function HistoryPage() {
                               <StatusBadge status={activity.status} />
                               <div className="flex items-center text-sm text-muted-foreground">
                                 <Clock className="mr-1 h-3 w-3" />
-                                {format(new Date(activity.timestamp), "h:mm a")}
+                                {format(new Date(activity.timestamp), 'h:mm a')}
                               </div>
                             </div>
                           </div>
@@ -223,17 +257,17 @@ export default function HistoryPage() {
                 </div>
                 <h3 className="mt-4 text-lg font-medium">No activities found</h3>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  {searchQuery || filter !== "all"
-                    ? "Try adjusting your filters or search query"
-                    : "Your activity history will appear here"}
+                  {searchQuery || filter !== 'all'
+                    ? 'Try adjusting your filters or search query'
+                    : 'Your activity history will appear here'}
                 </p>
-                {(searchQuery || filter !== "all") && (
+                {(searchQuery || filter !== 'all') && (
                   <Button
                     variant="outline"
                     className="mt-4"
                     onClick={() => {
-                      setSearchQuery("")
-                      setFilter("all")
+                      setSearchQuery('');
+                      setFilter('all');
                     }}
                   >
                     Clear filters
@@ -253,6 +287,5 @@ export default function HistoryPage() {
         )}
       </div>
     </DashboardShell>
-  )
+  );
 }
-

@@ -2,9 +2,12 @@ import { Kysely, PostgresDialect } from 'kysely';
 import { Pool } from 'pg';
 import { S3Client } from '@aws-sdk/client-s3';
 
-// Define column types more precisely where possible
+// === Database Interface ===
+// Use Kysely's recommended pattern: column types should reflect what comes from DB
+// Use Generated<string> for UUIDs if you're using uuid_generate_v4(), etc.
+
 interface UsersTable {
-  id: string;
+  id: string; // assuming uuid as string
   email: string;
   name: string;
   role: string;
@@ -13,7 +16,7 @@ interface UsersTable {
   profile_image_url: string | null;
   bio: string | null;
   website: string | null;
-  social_links: Record<string, string> | null; // or any if truly dynamic
+  social_links: Record<string, string> | null;
   subscription: Record<string, unknown> | null;
   settings: Record<string, unknown> | null;
 }
@@ -109,6 +112,7 @@ interface AuditLogsTable {
   created_at: Date;
 }
 
+// === Kysely Database Interface ===
 interface Database {
   users: UsersTable;
   submissions: SubmissionsTable;
@@ -119,32 +123,41 @@ interface Database {
   audit_logs: AuditLogsTable;
 }
 
+// === Table Name Constants ===
 export const DB = {
-  USERS: 'users',
-  SUBMISSIONS: 'submissions',
-  LICENSES: 'licenses',
-  PRODUCTS: 'products',
-  ORDERS: 'orders',
-  ANALYTICS: 'analytics',
-  AUDIT_LOGS: 'audit_logs',
-} as const;
+  USERS: 'users' as const,
+  SUBMISSIONS: 'submissions' as const,
+  LICENSES: 'licenses' as const,
+  PRODUCTS: 'products' as const,
+  ORDERS: 'orders' as const,
+  ANALYTICS: 'analytics' as const,
+  AUDIT_LOGS: 'audit_logs' as const,
+};
 
-const dialect = new PostgresDialect({
-  pool: new Pool({
-    connectionString: process.env.DATABASE_URL,
-  }),
+// === PostgreSQL Client ===
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  // Optional: improve connection handling
+  max: 10,
+  connectionTimeoutMillis: 2000,
+  idleTimeoutMillis: 30000,
 });
 
-export const postgresClient = new Kysely<Database>({
+const dialect = new PostgresDialect({ pool });
+
+export const db = new Kysely<Database>({
   dialect,
 });
 
-// Improved S3 client with optional explicit credentials (recommended for production)
+// === S3 Client ===
 export const s3Client = new S3Client({
   region: process.env.AWS_REGION ?? 'us-east-1',
-  // Uncomment if you need to specify credentials explicitly
-  // credentials: {
-  //   accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? '',
-  //   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? '',
-  // },
+  // In production (esp. Vercel, AWS Lambda), it's better to rely on IAM roles
+  // Only use explicit credentials in local dev if absolutely necessary
+  // credentials: process.env.AWS_ACCESS_KEY_ID
+  //   ? {
+  //       accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  //       secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+  //     }
+  //   : undefined,
 });

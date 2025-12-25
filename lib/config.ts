@@ -1,4 +1,9 @@
-// Environment variables and configuration
+// src/lib/config.ts
+
+import { get } from '@vercel/edge-config';
+// Safe fetch with fallback
+
+// Full application configuration object
 export const config = {
   // Blob Store configuration
   blob: {
@@ -7,7 +12,7 @@ export const config = {
     allowedTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
   },
 
-  // GrokAi configuration
+  // Grok AI configuration
   grokAi: {
     apiKey: process.env.GROK_API_KEY || '',
     baseUrl: 'https://api.grok.ai/v1',
@@ -54,7 +59,7 @@ export const config = {
     },
   },
 
-  // API configuration
+  // External API configuration
   api: {
     aiornot: {
       key: process.env.AIORNOT_API_KEY || '',
@@ -68,12 +73,45 @@ export const config = {
     },
   },
 
-  // Debug configuration
+  // Debug settings
   debug: process.env.DEBUG || 'mod:*',
   clientDebug: process.env.NEXT_PUBLIC_DEBUG === 'true',
 };
 
-// Types for Edge Config data
+// === Named exports required by other modules ===
+
+/**
+ * Safe wrapper for Vercel Edge Config `get` function.
+ * Falls back gracefully if EDGE_CONFIG_KEY is not set.
+ */
+export const edgeConfig = {
+  get: async (key: string) => {
+    if (!process.env.EDGE_CONFIG_KEY) {
+      console.warn('EDGE_CONFIG_KEY is not configured – using defaults');
+      return null;
+    }
+    try {
+      return await get(key);
+    } catch (error) {
+      console.error(`Failed to fetch Edge Config item "${key}":`, error);
+      return null;
+    }
+  },
+};
+
+/**
+ * Constant keys used to store/retrieve items in Edge Config.
+ * Use these with `edgeConfig.get()` throughout the app.
+ */
+export const CONFIG = {
+  FEATURES: 'feature_flags' as const,
+  PRICING: 'pricing_config' as const,
+  COMPLIANCE_RULES: 'compliance_rules' as const,
+  AI_SETTINGS: 'ai_settings' as const,
+} as const;
+
+// === Types ===
+
 export type FeatureFlags = {
   enableGrokIntegration: boolean;
   enableAiModeration: boolean;
@@ -111,7 +149,8 @@ export type EdgeConfigData = {
   [key: string]: any;
 };
 
-// Validate required environment variables
+// === Validation ===
+
 export function validateConfig() {
   const requiredVars = [
     { key: 'BLOB_STORAGE_KEY', value: config.blob.key },
