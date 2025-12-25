@@ -1,4 +1,4 @@
-import { postgresClient, DB, s3Client } from '../config';
+import { db, DB, s3Client } from '../config';
 import { v4 as uuidv4 } from 'uuid';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import {
@@ -89,6 +89,7 @@ export async function createSubmission(
           Key: key,
           Body: imageFile,
           ContentType: 'image/jpeg',
+          // Optional: add ACL or server-side encryption if needed
         })
       );
 
@@ -111,15 +112,15 @@ export async function createSubmission(
   };
 
   try {
-    await postgresClient
-      .insertInto('submissions')
+    await db
+      .insertInto(DB.SUBMISSIONS) // ← Use constant instead of string
       .values({
         id: submission.id,
         title: submission.title,
         description: submission.description,
         category: submission.category,
         original_ip: submission.originalIp,
-        tags: submission.tags, // object → Kysely auto-serializes
+        tags: submission.tags, // JSON[] or JSONB → Kysely serializes automatically
         status: submission.status,
         image_url: submission.imageUrl,
         license_type: submission.licenseType,
@@ -148,8 +149,8 @@ export async function createSubmission(
  * GET BY ID
  */
 export async function getSubmissionById(id: string): Promise<Submission | null> {
-  const row = await postgresClient
-    .selectFrom('submissions')
+  const row = await db
+    .selectFrom(DB.SUBMISSIONS)
     .selectAll()
     .where('id', '=', id)
     .executeTakeFirst();
@@ -161,10 +162,24 @@ export async function getSubmissionById(id: string): Promise<Submission | null> 
  * GET BY USER ID
  */
 export async function getSubmissionsByUserId(userId: string): Promise<Submission[]> {
-  const rows = await postgresClient
-    .selectFrom('submissions')
+  const rows = await db
+    .selectFrom(DB.SUBMISSIONS)
     .selectAll()
     .where('user_id', '=', userId)
+    .orderBy('submitted_at', 'desc')
+    .execute();
+
+  return rows.map(mapRowToSubmission);
+}
+
+/**
+ * GET SUBMISSIONS BY STATUS
+ */
+export async function getSubmissionsByStatus(status: SubmissionStatus): Promise<Submission[]> {
+  const rows = await db
+    .selectFrom(DB.SUBMISSIONS)
+    .selectAll()
+    .where('status', '=', status)
     .orderBy('submitted_at', 'desc')
     .execute();
 
@@ -176,16 +191,16 @@ export async function getSubmissionsByUserId(userId: string): Promise<Submission
  */
 export async function updateSubmission(
   id: string,
-  submissionData: Partial<Submission>
+  submissionData: Partial<Omit<Submission, 'id' | 'submittedAt' | 'userId'>>
 ): Promise<Submission | null> {
   const validation = validateModel(submissionData, UpdateSubmissionSchema, 'updateSubmission');
   if (!validation.success) {
     throw new Error(`Invalid update data: ${JSON.stringify(validation.errors)}`);
   }
 
-  return await postgresClient.transaction().execute(async (trx) => {
+  return await db.transaction().execute(async (trx) => {
     const existing = await trx
-      .selectFrom('submissions')
+      .selectFrom(DB.SUBMISSIONS)
       .selectAll()
       .where('id', '=', id)
       .forUpdate()
@@ -195,10 +210,11 @@ export async function updateSubmission(
 
     const updatedAt = new Date();
 
-    const updatePayload: Partial<DB['submissions']> = {
+    const updatePayload: Partial<typeof existing> = {
       updated_at: updatedAt,
     };
 
+    // Only set fields that are provided
     if (submissionData.title !== undefined) updatePayload.title = submissionData.title;
     if (submissionData.description !== undefined)
       updatePayload.description = submissionData.description;
@@ -209,6 +225,9 @@ export async function updateSubmission(
     if (submissionData.licenseType !== undefined)
       updatePayload.license_type = submissionData.licenseType;
     if (submissionData.status !== undefined) updatePayload.status = submissionData.status;
+    if (submissionData.tags !== undefined) updatePayload.tags = submissionData.tags;
+    if (submissionData.analysis !== undefined)
+      updatePayload.analysis = submissionData.analysis ?? null;
     if (submissionData.reviewNotes !== undefined)
       updatePayload.review_notes = submissionData.reviewNotes ?? null;
     if (submissionData.reviewedBy !== undefined)
@@ -216,19 +235,14 @@ export async function updateSubmission(
     if (submissionData.reviewedAt !== undefined)
       updatePayload.reviewed_at = submissionData.reviewedAt ?? null;
 
-    // JSON fields: pass objects directly
-    if (submissionData.tags !== undefined) updatePayload.tags = submissionData.tags;
-    if (submissionData.analysis !== undefined)
-      updatePayload.analysis = submissionData.analysis ?? null;
+    await trx.updateTable(DB.SUBMISSIONS).set(updatePayload).where('id', '=', id).execute();
 
-    await trx.updateTable('submissions').set(updatePayload).where('id', '=', id).execute();
-
-    const current = mapRowToSubmission(existing);
     const updated: Submission = {
-      ...current,
+      ...mapRowToSubmission(existing),
       ...submissionData,
       updatedAt,
-      reviewedAt: submissionData.reviewedAt ?? current.reviewedAt,
+      // Preserve existing reviewedAt if not updated
+      reviewedAt: submissionData.reviewedAt ?? mapRowToSubmission(existing).reviewedAt,
     };
 
     logger.info('Submission updated successfully', { submissionId: id });
@@ -240,10 +254,7 @@ export async function updateSubmission(
  * DELETE SUBMISSION
  */
 export async function deleteSubmission(id: string): Promise<boolean> {
-  const result = await postgresClient
-    .deleteFrom('submissions')
-    .where('id', '=', id)
-    .executeTakeFirst();
+  const result = await db.deleteFrom(DB.SUBMISSIONS).where('id', '=', id).executeTakeFirst();
 
   const deleted = Number(result.numDeletedRows) > 0;
 
@@ -255,7 +266,7 @@ export async function deleteSubmission(id: string): Promise<boolean> {
 }
 
 /**
- * MAPPER: DB row → Submission
+ * MAPPER: DB row → Submission (safe JSON handling)
  */
 function mapRowToSubmission(row: any): Submission {
   return {
@@ -264,33 +275,16 @@ function mapRowToSubmission(row: any): Submission {
     description: row.description,
     category: row.category,
     originalIp: row.original_ip,
-    tags: typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags ?? [],
+    tags: Array.isArray(row.tags) ? row.tags : [], // Ensure it's always an array
     status: row.status as SubmissionStatus,
     imageUrl: row.image_url,
     licenseType: row.license_type,
     submittedAt: new Date(row.submitted_at),
     updatedAt: new Date(row.updated_at),
     userId: row.user_id,
-    analysis:
-      row.analysis && typeof row.analysis === 'string'
-        ? JSON.parse(row.analysis)
-        : row.analysis ?? undefined,
+    analysis: row.analysis ?? undefined,
     reviewNotes: row.review_notes ?? undefined,
     reviewedBy: row.reviewed_by ?? undefined,
     reviewedAt: row.reviewed_at ? new Date(row.reviewed_at) : undefined,
   };
-}
-/**
- * GET SUBMISSIONS BY STATUS
- * Useful for admin dashboards and moderation queues
- */
-export async function getSubmissionsByStatus(status: SubmissionStatus): Promise<Submission[]> {
-  const rows = await postgresClient
-    .selectFrom('submissions')
-    .selectAll()
-    .where('status', '=', status)
-    .orderBy('submitted_at', 'desc')
-    .execute();
-
-  return rows.map(mapRowToSubmission);
 }

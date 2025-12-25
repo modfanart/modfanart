@@ -1,4 +1,4 @@
-import { postgresClient, DB } from '../config';
+import { db, DB } from '../config';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../../utils/logger';
 import { z } from 'zod';
@@ -46,7 +46,7 @@ export async function createPayment(
       updatedAt: now,
     };
 
-    await postgresClient
+    await db
       .insertInto('payments')
       .values({
         id: payment.id,
@@ -81,7 +81,7 @@ export async function createPayment(
  * GET BY ID
  */
 export async function getPaymentById(id: string): Promise<Payment | null> {
-  const result = await postgresClient
+  const result = await db
     .selectFrom('payments')
     .selectAll()
     .where('id', '=', id)
@@ -94,7 +94,7 @@ export async function getPaymentById(id: string): Promise<Payment | null> {
  * GET BY USER ID
  */
 export async function getPaymentsByUserId(userId: string): Promise<Payment[]> {
-  const results = await postgresClient
+  const results = await db
     .selectFrom('payments')
     .selectAll()
     .where('user_id', '=', userId)
@@ -112,7 +112,7 @@ export async function updatePaymentStatus(
   status: PaymentStatus,
   metadata?: Record<string, any>
 ): Promise<Payment | null> {
-  return await postgresClient.transaction().execute(async (trx) => {
+  return await db.transaction().execute(async (trx) => {
     const existingRow = await trx
       .selectFrom('payments')
       .selectAll()

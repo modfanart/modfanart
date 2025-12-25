@@ -1,4 +1,4 @@
-import { postgresClient, DB } from '../config';
+import { db, DB } from '../config';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../../utils/logger';
 import { z } from 'zod';
@@ -71,7 +71,7 @@ export async function createAuditLog(
       createdAt: now,
     };
 
-    await postgresClient
+    await db
       .insertInto('audit_logs')
       .values({
         id: auditLog.id,
@@ -117,7 +117,7 @@ export async function searchAuditLogs(params: {
   offset?: number;
 }): Promise<{ logs: AuditLog[]; total: number }> {
   try {
-    let baseQuery = postgresClient
+    let baseQuery = db
       .selectFrom('audit_logs')
       .selectAll()
       .$if(!!params.action, (qb) => qb.where('action', '=', params.action!))
@@ -127,9 +127,7 @@ export async function searchAuditLogs(params: {
       .$if(!!params.startDate, (qb) => qb.where('created_at', '>=', params.startDate!))
       .$if(!!params.endDate, (qb) => qb.where('created_at', '<=', params.endDate!));
 
-    const countQuery = baseQuery
-      .clearSelect()
-      .select(postgresClient.fn.count<number>('id').as('total'));
+    const countQuery = baseQuery.clearSelect().select(db.fn.count<number>('id').as('total'));
 
     const dataQuery = baseQuery
       .orderBy('created_at', 'desc')
@@ -160,7 +158,7 @@ export async function searchAuditLogs(params: {
  */
 export async function getAuditLogById(id: string): Promise<AuditLog | null> {
   try {
-    const row = await postgresClient
+    const row = await db
       .selectFrom('audit_logs')
       .selectAll()
       .where('id', '=', id)
@@ -181,7 +179,7 @@ export async function getAuditLogById(id: string): Promise<AuditLog | null> {
  */
 export async function getAuditLogsByUserId(userId: string, limit = 100): Promise<AuditLog[]> {
   try {
-    const results = await postgresClient
+    const results = await db
       .selectFrom('audit_logs')
       .selectAll()
       .where('user_id', '=', userId)

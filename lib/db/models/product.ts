@@ -1,4 +1,4 @@
-import { postgresClient, DB } from '../config';
+import { db, DB } from '../config';
 import { v4 as uuidv4 } from 'uuid';
 import {
   CreateProductSchema,
@@ -51,7 +51,7 @@ export async function createProduct(
   };
 
   try {
-    await postgresClient
+    await db
       .insertInto('products')
       .values({
         id: product.id,
@@ -94,11 +94,7 @@ export async function createProduct(
  * GET BY ID
  */
 export async function getProductById(id: string): Promise<Product | null> {
-  const row = await postgresClient
-    .selectFrom('products')
-    .selectAll()
-    .where('id', '=', id)
-    .executeTakeFirst();
+  const row = await db.selectFrom('products').selectAll().where('id', '=', id).executeTakeFirst();
 
   return row ? mapRowToProduct(row) : null;
 }
@@ -107,7 +103,7 @@ export async function getProductById(id: string): Promise<Product | null> {
  * GET BY CATEGORY
  */
 export async function getProductsByCategory(category: string): Promise<Product[]> {
-  const rows = await postgresClient
+  const rows = await db
     .selectFrom('products')
     .selectAll()
     .where('category', '=', category)
@@ -132,7 +128,7 @@ export async function updateProduct(
     throw new Error(`Invalid update data: ${JSON.stringify(validation.errors)}`);
   }
 
-  return await postgresClient.transaction().execute(async (trx) => {
+  return await db.transaction().execute(async (trx) => {
     const existing = await trx
       .selectFrom('products')
       .selectAll()
@@ -188,10 +184,7 @@ export async function updateProduct(
  * DELETE PRODUCT
  */
 export async function deleteProduct(id: string): Promise<boolean> {
-  const result = await postgresClient
-    .deleteFrom('products')
-    .where('id', '=', id)
-    .executeTakeFirst();
+  const result = await db.deleteFrom('products').where('id', '=', id).executeTakeFirst();
 
   const deleted = Number(result.numDeletedRows) > 0;
   if (deleted) {
@@ -231,7 +224,7 @@ function mapRowToProduct(row: any): Product {
  * GET PRODUCTS BY ARTIST ID
  */
 export async function getProductsByArtist(artistId: string): Promise<Product[]> {
-  const rows = await postgresClient
+  const rows = await db
     .selectFrom('products')
     .selectAll()
     .where('artist_id', '=', artistId)
@@ -248,7 +241,7 @@ export async function getProductsByArtist(artistId: string): Promise<Product[]> 
  * GET PRODUCTS BY BRAND NAME
  */
 export async function getProductsByBrand(brand: string): Promise<Product[]> {
-  const rows = await postgresClient
+  const rows = await db
     .selectFrom('products')
     .selectAll()
     .where('brand', '=', brand)
@@ -265,7 +258,7 @@ export async function getProductsByBrand(brand: string): Promise<Product[]> {
  * GET ALL ACTIVE PRODUCTS (Optional - for default marketplace view)
  */
 export async function getAllActiveProducts(): Promise<Product[]> {
-  const rows = await postgresClient
+  const rows = await db
     .selectFrom('products')
     .selectAll()
     .where('status', '=', 'active')

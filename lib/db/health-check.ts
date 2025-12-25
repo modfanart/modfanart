@@ -1,4 +1,4 @@
-import { postgresClient } from './config';
+import { db } from './config';
 import { logger } from '../utils/logger';
 import { sql } from 'kysely';
 
@@ -36,7 +36,7 @@ export async function checkDatabaseHealth(forceCheck = false): Promise<DatabaseH
 
   try {
     // 1. Basic Ping
-    const ping = await sql<{ ping: number }>`SELECT 1 as ping`.execute(postgresClient);
+    const ping = await sql<{ ping: number }>`SELECT 1 as ping`.execute(db);
     isHealthy = ping.rows[0]?.ping === 1;
 
     // 2. Connection Pool Stats
@@ -48,7 +48,7 @@ export async function checkDatabaseHealth(forceCheck = false): Promise<DatabaseH
         (SELECT setting::int FROM pg_settings WHERE name = 'max_connections') as max_connections
       FROM pg_stat_activity
       WHERE datname = current_database()
-    `.execute(postgresClient);
+    `.execute(db);
 
     if (poolStats.rows.length > 0) {
       const stats = poolStats.rows[0];
@@ -94,7 +94,7 @@ export async function getDatabaseMetrics(): Promise<Record<string, any>> {
     // Database size
     const dbSize = await sql<{
       size_bytes: string;
-    }>`SELECT pg_database_size(current_database())`.execute(postgresClient);
+    }>`SELECT pg_database_size(current_database())`.execute(db);
     const bytes = Number(dbSize.rows[0]?.size_bytes || 0);
 
     // Table statistics
@@ -107,14 +107,14 @@ export async function getDatabaseMetrics(): Promise<Record<string, any>> {
       FROM information_schema.tables
       WHERE table_schema = 'public'
       ORDER BY table_size_bytes DESC
-    `.execute(postgresClient);
+    `.execute(db);
 
     // Query performance (Requires pg_stat_statements extension)
     const queryStats = await sql<any>`
       SELECT calls, total_exec_time as total_time, rows, query 
       FROM pg_stat_statements 
       ORDER BY total_exec_time DESC LIMIT 10
-    `.execute(postgresClient);
+    `.execute(db);
 
     return {
       databaseSize: { bytes, megabytes: Math.round(bytes / 1024 / 1024) },

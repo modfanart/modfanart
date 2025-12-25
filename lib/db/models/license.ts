@@ -1,4 +1,4 @@
-import { postgresClient, DB } from '../config';
+import { db, DB } from '../config';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../../utils/logger';
 import { z } from 'zod';
@@ -59,7 +59,7 @@ export async function createLicense(
       updatedAt: now,
     };
 
-    return await postgresClient.transaction().execute(async (trx) => {
+    return await db.transaction().execute(async (trx) => {
       // 1. Verify and lock submission
       const submission = await trx
         .selectFrom('submissions')
@@ -123,11 +123,7 @@ export async function createLicense(
  * GET BY ID
  */
 export async function getLicenseById(id: string): Promise<License | null> {
-  const row = await postgresClient
-    .selectFrom('licenses')
-    .selectAll()
-    .where('id', '=', id)
-    .executeTakeFirst();
+  const row = await db.selectFrom('licenses').selectAll().where('id', '=', id).executeTakeFirst();
 
   return row ? mapRowToLicense(row) : null;
 }
@@ -140,7 +136,7 @@ export async function updateLicenseStatus(
   status: LicenseStatus,
   reason?: string
 ): Promise<License | null> {
-  return await postgresClient.transaction().execute(async (trx) => {
+  return await db.transaction().execute(async (trx) => {
     const row = await trx
       .selectFrom('licenses')
       .selectAll()

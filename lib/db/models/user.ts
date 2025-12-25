@@ -1,4 +1,4 @@
-import { postgresClient, DB } from '../config';
+import { db, DB } from '../config';
 import { v4 as uuidv4 } from 'uuid';
 import {
   CreateUserSchema,
@@ -46,7 +46,7 @@ export async function createUser(
   };
 
   try {
-    await postgresClient
+    await db
       .insertInto('users') // Use the table name as defined in your Kysely Database type
       .values({
         id: user.id,
@@ -82,11 +82,7 @@ export async function createUser(
  * GET USER BY ID
  */
 export async function getUserById(id: string): Promise<User | null> {
-  const result = await postgresClient
-    .selectFrom('users')
-    .selectAll()
-    .where('id', '=', id)
-    .executeTakeFirst();
+  const result = await db.selectFrom('users').selectAll().where('id', '=', id).executeTakeFirst();
 
   return result ? mapRowToUser(result) : null;
 }
@@ -95,7 +91,7 @@ export async function getUserById(id: string): Promise<User | null> {
  * GET USER BY EMAIL
  */
 export async function getUserByEmail(email: string): Promise<User | null> {
-  const result = await postgresClient
+  const result = await db
     .selectFrom('users')
     .selectAll()
     .where('email', '=', email.toLowerCase().trim())
@@ -111,7 +107,7 @@ export async function updateUser(id: string, userData: Partial<User>): Promise<U
   const validation = validateModel(userData, UpdateUserSchema, 'updateUser');
   if (!validation.success) throw new Error('Invalid user data');
 
-  return await postgresClient.transaction().execute(async (trx) => {
+  return await db.transaction().execute(async (trx) => {
     // 1. Get current user and lock the row (FOR UPDATE)
     const existing = await trx
       .selectFrom('users')
@@ -147,7 +143,7 @@ export async function updateUser(id: string, userData: Partial<User>): Promise<U
  * DELETE USER
  */
 export async function deleteUser(id: string): Promise<boolean> {
-  const result = await postgresClient.deleteFrom('users').where('id', '=', id).executeTakeFirst();
+  const result = await db.deleteFrom('users').where('id', '=', id).executeTakeFirst();
 
   return Number(result.numDeletedRows) > 0;
 }

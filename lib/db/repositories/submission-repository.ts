@@ -1,69 +1,77 @@
-import type { Submission, SubmissionStatus } from "../models/submission"
-import { postgresClient, DB } from "../config"
-import { dbCache, createCacheKey } from "../cache"
-import { logger } from "../../utils/logger"
+import type { Submission, SubmissionStatus } from '../models/submission';
+import { db, DB } from '../config';
+import { dbCache, createCacheKey } from '../cache';
+import { logger } from '../../utils/logger';
+import { sql } from 'kysely';
 
 // Cache TTLs
 const CACHE_TTL = {
-  SINGLE_SUBMISSION: 60000, // 1 minute
-  USER_SUBMISSIONS: 300000, // 5 minutes
-  STATUS_SUBMISSIONS: 120000, // 2 minutes
-}
+  SINGLE_SUBMISSION: 60_000, // 1 minute
+  USER_SUBMISSIONS: 300_000, // 5 minutes
+  STATUS_SUBMISSIONS: 120_000, // 2 minutes
+};
 
 export class SubmissionRepository {
   /**
    * Get a submission by ID with caching
    */
   async getById(id: string): Promise<Submission | null> {
-    const cacheKey = createCacheKey("submission", { id })
+    const cacheKey = createCacheKey('submission', { id });
 
     return dbCache.getOrSet(
       cacheKey,
       async () => {
-        const result = await postgresClient.sql`
-          SELECT * FROM ${DB.SUBMISSIONS} WHERE id = ${id}
-        `
+        const result = await sql<Submission>`
+          SELECT * FROM ${sql.table(DB.SUBMISSIONS)} WHERE id = ${id}
+        `.execute(db);
 
         if (result.rows.length === 0) {
-          return null
+          return null;
         }
 
-        return this.mapRowToSubmission(result.rows[0])
+        return this.mapRowToSubmission(result.rows[0]);
       },
-      CACHE_TTL.SINGLE_SUBMISSION,
-    )
+      CACHE_TTL.SINGLE_SUBMISSION
+    );
   }
 
   /**
    * Get submissions by user ID with caching
    */
-  async getByUserId(userId: string, limit = 50, offset = 0): Promise<{ submissions: Submission[]; total: number }> {
-    const cacheKey = createCacheKey("user_submissions", { userId, limit, offset })
+  async getByUserId(
+    userId: string,
+    limit = 50,
+    offset = 0
+  ): Promise<{ submissions: Submission[]; total: number }> {
+    const cacheKey = createCacheKey('user_submissions', { userId, limit, offset });
 
     return dbCache.getOrSet(
       cacheKey,
       async () => {
         // Get total count
-        const countResult = await postgresClient.sql`
-          SELECT COUNT(*) as total FROM ${DB.SUBMISSIONS} WHERE user_id = ${userId}
-        `
-        const total = Number.parseInt(countResult.rows[0].total)
+        const countResult = await sql<{ total: string }>`
+          SELECT COUNT(*)::text as total 
+          FROM ${sql.table(DB.SUBMISSIONS)} 
+          WHERE user_id = ${userId}
+        `.execute(db);
+
+        const total = Number(countResult.rows[0]?.total || 0);
 
         // Get paginated results
-        const result = await postgresClient.sql`
-          SELECT * FROM ${DB.SUBMISSIONS} 
+        const result = await sql<Submission>`
+          SELECT * FROM ${sql.table(DB.SUBMISSIONS)} 
           WHERE user_id = ${userId} 
           ORDER BY submitted_at DESC
           LIMIT ${limit} OFFSET ${offset}
-        `
+        `.execute(db);
 
         return {
           submissions: result.rows.map((row) => this.mapRowToSubmission(row)),
           total,
-        }
+        };
       },
-      CACHE_TTL.USER_SUBMISSIONS,
-    )
+      CACHE_TTL.USER_SUBMISSIONS
+    );
   }
 
   /**
@@ -72,132 +80,112 @@ export class SubmissionRepository {
   async getByStatus(
     status: SubmissionStatus,
     limit = 50,
-    offset = 0,
+    offset = 0
   ): Promise<{ submissions: Submission[]; total: number }> {
-    const cacheKey = createCacheKey("status_submissions", { status, limit, offset })
+    const cacheKey = createCacheKey('status_submissions', { status, limit, offset });
 
     return dbCache.getOrSet(
       cacheKey,
       async () => {
-        // Get total count
-        const countResult = await postgresClient.sql`
-          SELECT COUNT(*) as total FROM ${DB.SUBMISSIONS} WHERE status = ${status}
-        `
-        const total = Number.parseInt(countResult.rows[0].total)
+        const countResult = await sql<{ total: string }>`
+          SELECT COUNT(*)::text as total 
+          FROM ${sql.table(DB.SUBMISSIONS)} 
+          WHERE status = ${status}
+        `.execute(db);
 
-        // Get paginated results
-        const result = await postgresClient.sql`
-          SELECT * FROM ${DB.SUBMISSIONS} 
+        const total = Number(countResult.rows[0]?.total || 0);
+
+        const result = await sql<Submission>`
+          SELECT * FROM ${sql.table(DB.SUBMISSIONS)} 
           WHERE status = ${status} 
           ORDER BY submitted_at DESC
           LIMIT ${limit} OFFSET ${offset}
-        `
+        `.execute(db);
 
         return {
           submissions: result.rows.map((row) => this.mapRowToSubmission(row)),
           total,
-        }
+        };
       },
-      CACHE_TTL.STATUS_SUBMISSIONS,
-    )
+      CACHE_TTL.STATUS_SUBMISSIONS
+    );
   }
 
   /**
-   * Search submissions with filtering
+   * Search submissions with filtering (dynamic conditions)
    */
   async search(params: {
-    userId?: string
-    status?: SubmissionStatus
-    category?: string
-    originalIp?: string
-    startDate?: Date
-    endDate?: Date
-    searchTerm?: string
-    limit?: number
-    offset?: number
+    userId?: string;
+    status?: SubmissionStatus;
+    category?: string;
+    originalIp?: string;
+    startDate?: Date;
+    endDate?: Date;
+    searchTerm?: string;
+    limit?: number;
+    offset?: number;
   }): Promise<{ submissions: Submission[]; total: number }> {
+    const limit = params.limit ?? 50;
+    const offset = params.offset ?? 0;
+
     try {
-      const conditions = []
-      const values = []
-      let index = 1
+      let query = db.selectFrom(DB.SUBMISSIONS).selectAll();
 
       if (params.userId) {
-        conditions.push(`user_id = $${index++}`)
-        values.push(params.userId)
+        query = query.where('user_id', '=', params.userId);
       }
-
       if (params.status) {
-        conditions.push(`status = $${index++}`)
-        values.push(params.status)
+        query = query.where('status', '=', params.status);
       }
-
       if (params.category) {
-        conditions.push(`category = $${index++}`)
-        values.push(params.category)
+        query = query.where('category', '=', params.category);
       }
-
       if (params.originalIp) {
-        conditions.push(`original_ip = $${index++}`)
-        values.push(params.originalIp)
+        query = query.where('original_ip', '=', params.originalIp);
       }
-
       if (params.startDate) {
-        conditions.push(`submitted_at >= $${index++}`)
-        values.push(params.startDate)
+        query = query.where('submitted_at', '>=', params.startDate);
       }
-
       if (params.endDate) {
-        conditions.push(`submitted_at <= $${index++}`)
-        values.push(params.endDate)
+        query = query.where('submitted_at', '<=', params.endDate);
       }
-
       if (params.searchTerm) {
-        conditions.push(`(
-          title ILIKE $${index} OR 
-          description ILIKE $${index} OR 
-          original_ip ILIKE $${index}
-        )`)
-        values.push(`%${params.searchTerm}%`)
-        index++
+        const likeTerm = `%${params.searchTerm}%`;
+        query = query.where((eb) =>
+          eb.or([
+            eb('title', 'ilike', likeTerm),
+            eb('description', 'ilike', likeTerm),
+            eb('original_ip', 'ilike', likeTerm),
+          ])
+        );
       }
 
-      const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : ""
+      // Total count
+      const countResult = await query
+        .select(sql<number>`count(*) over()`.as('total'))
+        .limit(1)
+        .executeTakeFirst();
 
-      // Get total count
-      const countQuery = `
-        SELECT COUNT(*) as total 
-        FROM ${DB.SUBMISSIONS} 
-        ${whereClause}
-      `
+      const total = countResult ? Number(countResult.total) : 0;
 
-      const countResult = await postgresClient.query(countQuery, values)
-      const total = Number.parseInt(countResult.rows[0].total)
-
-      // Get paginated results
-      const limit = params.limit || 50
-      const offset = params.offset || 0
-
-      const query = `
-        SELECT * 
-        FROM ${DB.SUBMISSIONS} 
-        ${whereClause} 
-        ORDER BY submitted_at DESC 
-        LIMIT $${index++} OFFSET $${index++}
-      `
-
-      const result = await postgresClient.query(query, [...values, limit, offset])
+      // Paginated results
+      const result = await query
+        .orderBy('submitted_at', 'desc')
+        .limit(limit)
+        .offset(offset)
+        .execute();
 
       return {
-        submissions: result.rows.map((row) => this.mapRowToSubmission(row)),
+        submissions: result.map((row) => this.mapRowToSubmission(row)),
         total,
-      }
-    } catch (error) {
-      logger.error("Failed to search submissions", {
-        context: "submission-repository",
+      };
+    } catch (error: any) {
+      logger.error('Failed to search submissions', {
+        context: 'submission-repository',
         error,
         data: params,
-      })
-      throw new Error(`Failed to search submissions: ${error.message}`)
+      });
+      throw new Error(`Failed to search submissions: ${error.message}`);
     }
   }
 
@@ -205,19 +193,22 @@ export class SubmissionRepository {
    * Clear cache for a specific submission
    */
   clearCache(submissionId: string, userId?: string): void {
-    // Clear specific submission cache
-    dbCache.delete(createCacheKey("submission", { id: submissionId }))
+    dbCache.delete(createCacheKey('submission', { id: submissionId }));
 
-    // Clear user submissions cache if userId provided
     if (userId) {
-      dbCache.delete(createCacheKey("user_submissions", { userId, limit: 50, offset: 0 }))
+      // Clear common pagination variants (you can expand if needed)
+      for (let offset = 0; offset < 200; offset += 50) {
+        dbCache.delete(createCacheKey('user_submissions', { userId, limit: 50, offset }));
+      }
     }
 
-    // Clear status submissions caches for all statuses
-    const statuses: SubmissionStatus[] = ["pending", "review", "approved", "rejected", "licensed"]
-    statuses.forEach((status) => {
-      dbCache.delete(createCacheKey("status_submissions", { status, limit: 50, offset: 0 }))
-    })
+    // Clear status-based caches
+    const statuses: SubmissionStatus[] = ['pending', 'review', 'approved', 'rejected', 'licensed'];
+    for (const status of statuses) {
+      for (let offset = 0; offset < 200; offset += 50) {
+        dbCache.delete(createCacheKey('status_submissions', { status, limit: 50, offset }));
+      }
+    }
   }
 
   /**
@@ -241,10 +232,9 @@ export class SubmissionRepository {
       reviewNotes: row.review_notes,
       reviewedBy: row.reviewed_by,
       reviewedAt: row.reviewed_at ? new Date(row.reviewed_at) : undefined,
-    }
+    };
   }
 }
 
-// Export a singleton instance
-export const submissionRepository = new SubmissionRepository()
-
+// Export singleton
+export const submissionRepository = new SubmissionRepository();
