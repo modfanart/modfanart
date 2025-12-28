@@ -17,9 +17,7 @@ const getStripe = () => {
   if (!secretKey) {
     throw new Error('STRIPE_SECRET_KEY is not configured');
   }
-  return new Stripe(secretKey, {
-    apiVersion: '2023-10-16',
-  });
+  return new Stripe(secretKey); // No apiVersion → uses latest stable
 };
 
 export async function POST(req: NextRequest) {

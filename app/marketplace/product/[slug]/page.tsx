@@ -1,356 +1,356 @@
-"use client"
+'use client';
 
-import type React from "react"
+import type React from 'react';
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import Image from "next/image"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
-import { ShoppingCart, Heart, Share2, ArrowLeft, Check, Star, StarHalf } from "lucide-react"
-import { useToast } from "@/components/ui/use-toaster"
-import { ProductCard } from "@/components/product-card"
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import { ShoppingCart, Heart, Share2, ArrowLeft, Check, Star, StarHalf } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toaster';
+import { ProductCard } from '@/components/product-card';
 
 // Sample product data - in a real app, this would come from an API or database
 const products = {
-  "hulk-nature-tshirt": {
-    id: "prod-1",
-    slug: "hulk-nature-tshirt",
-    title: "Hulk Nature T-Shirt",
+  'hulk-nature-tshirt': {
+    id: 'prod-1',
+    slug: 'hulk-nature-tshirt',
+    title: 'Hulk Nature T-Shirt',
     price: 29.99,
     imageUrl:
-      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/hulk%20nature-2.jpg-ivaqVZqmxWtiQzqj7KrfCIH3S8XKHP.jpeg",
+      'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/hulk%20nature-2.jpg-ivaqVZqmxWtiQzqj7KrfCIH3S8XKHP.jpeg',
     images: [
-      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/hulk%20nature-2.jpg-ivaqVZqmxWtiQzqj7KrfCIH3S8XKHP.jpeg",
-      "/placeholder.svg?height=600&width=600&text=Hulk+T-Shirt+Back",
-      "/placeholder.svg?height=600&width=600&text=Hulk+T-Shirt+Detail",
+      'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/hulk%20nature-2.jpg-ivaqVZqmxWtiQzqj7KrfCIH3S8XKHP.jpeg',
+      '/placeholder.svg?height=600&width=600&text=Hulk+T-Shirt+Back',
+      '/placeholder.svg?height=600&width=600&text=Hulk+T-Shirt+Detail',
     ],
-    artist: "Sarah Johnson",
-    artistSlug: "sarah-johnson",
-    brand: "Marvel",
-    brandSlug: "marvel",
-    category: "apparel",
+    artist: 'Sarah Johnson',
+    artistSlug: 'sarah-johnson',
+    brand: 'Marvel',
+    brandSlug: 'marvel',
+    category: 'apparel',
     description:
       "This unique t-shirt features the Hulk seamlessly integrated with natural elements, showcasing the character's raw power alongside the beauty of nature. The design is printed on a premium cotton blend for comfort and durability.",
     details: [
-      "100% premium cotton",
-      "Machine washable",
-      "Officially licensed Marvel merchandise",
-      "Designed by Sarah Johnson",
-      "Available in multiple sizes and colors",
+      '100% premium cotton',
+      'Machine washable',
+      'Officially licensed Marvel merchandise',
+      'Designed by Sarah Johnson',
+      'Available in multiple sizes and colors',
     ],
     variants: {
-      sizes: ["S", "M", "L", "XL", "XXL"],
-      colors: ["Black", "White", "Green"],
+      sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+      colors: ['Black', 'White', 'Green'],
     },
-    relatedProducts: ["ahsoka-tano-poster", "dark-knight-hoodie", "spiderman-web-backpack"],
+    relatedProducts: ['ahsoka-tano-poster', 'dark-knight-hoodie', 'spiderman-web-backpack'],
     rating: 4.7,
     reviewCount: 124,
     inStock: true,
     isNew: true,
     isBestseller: false,
   },
-  "ahsoka-tano-poster": {
-    id: "prod-2",
-    slug: "ahsoka-tano-poster",
-    title: "Ahsoka Tano Poster",
+  'ahsoka-tano-poster': {
+    id: 'prod-2',
+    slug: 'ahsoka-tano-poster',
+    title: 'Ahsoka Tano Poster',
     price: 19.99,
     imageUrl:
-      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/ahsoka-FINAL-01%20%282%29-PO2rMTckglJ6t9uWAalnbK7kR10iY9.png",
+      'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/ahsoka-FINAL-01%20%282%29-PO2rMTckglJ6t9uWAalnbK7kR10iY9.png',
     images: [
-      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/ahsoka-FINAL-01%20%282%29-PO2rMTckglJ6t9uWAalnbK7kR10iY9.png",
-      "/placeholder.svg?height=600&width=600&text=Ahsoka+Poster+Detail",
-      "/placeholder.svg?height=600&width=600&text=Ahsoka+Poster+Frame",
+      'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/ahsoka-FINAL-01%20%282%29-PO2rMTckglJ6t9uWAalnbK7kR10iY9.png',
+      '/placeholder.svg?height=600&width=600&text=Ahsoka+Poster+Detail',
+      '/placeholder.svg?height=600&width=600&text=Ahsoka+Poster+Frame',
     ],
-    artist: "Alex Rivera",
-    artistSlug: "alex-rivera",
-    brand: "Star Wars",
-    brandSlug: "star-wars",
-    category: "posters",
+    artist: 'Alex Rivera',
+    artistSlug: 'alex-rivera',
+    brand: 'Star Wars',
+    brandSlug: 'star-wars',
+    category: 'posters',
     description:
       "This stunning Ahsoka Tano poster features the beloved character in a dynamic pose with her iconic dual lightsabers. Perfect for any Star Wars fan's collection, this high-quality print captures the essence of the character's journey.",
     details: [
-      "High-quality 250gsm art paper",
-      "Available in multiple sizes",
-      "Officially licensed Star Wars merchandise",
-      "Designed by Alex Rivera",
-      "Ships in protective tube",
+      'High-quality 250gsm art paper',
+      'Available in multiple sizes',
+      'Officially licensed Star Wars merchandise',
+      'Designed by Alex Rivera',
+      'Ships in protective tube',
     ],
     variants: {
-      sizes: ["11x17", "18x24", "24x36"],
+      sizes: ['11x17', '18x24', '24x36'],
       colors: [],
     },
-    relatedProducts: ["hulk-nature-tshirt", "dark-knight-hoodie", "star-wars-chibi-stickers"],
+    relatedProducts: ['hulk-nature-tshirt', 'dark-knight-hoodie', 'star-wars-chibi-stickers'],
     rating: 4.9,
     reviewCount: 87,
     inStock: true,
     isNew: false,
     isBestseller: true,
   },
-  "dark-knight-hoodie": {
-    id: "prod-3",
-    slug: "dark-knight-hoodie",
-    title: "Dark Knight Hoodie",
+  'dark-knight-hoodie': {
+    id: 'prod-3',
+    slug: 'dark-knight-hoodie',
+    title: 'Dark Knight Hoodie',
     price: 49.99,
     imageUrl:
-      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Absolute_Batman_low.jpg-jbjBkbHD8un1TKig37wzR4G3RvZFbk.jpeg",
+      'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Absolute_Batman_low.jpg-jbjBkbHD8un1TKig37wzR4G3RvZFbk.jpeg',
     images: [
-      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Absolute_Batman_low.jpg-jbjBkbHD8un1TKig37wzR4G3RvZFbk.jpeg",
-      "/placeholder.svg?height=600&width=600&text=Batman+Hoodie+Back",
-      "/placeholder.svg?height=600&width=600&text=Batman+Hoodie+Detail",
+      'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Absolute_Batman_low.jpg-jbjBkbHD8un1TKig37wzR4G3RvZFbk.jpeg',
+      '/placeholder.svg?height=600&width=600&text=Batman+Hoodie+Back',
+      '/placeholder.svg?height=600&width=600&text=Batman+Hoodie+Detail',
     ],
-    artist: "Thomas Wayne",
-    artistSlug: "thomas-wayne",
-    brand: "DC Comics",
-    brandSlug: "dc-comics",
-    category: "apparel",
+    artist: 'Thomas Wayne',
+    artistSlug: 'thomas-wayne',
+    brand: 'DC Comics',
+    brandSlug: 'dc-comics',
+    category: 'apparel',
     description:
       "Stay warm while representing Gotham's protector with this premium Dark Knight hoodie. Features a striking Batman design on a comfortable cotton-polyester blend.",
     details: [
-      "80% cotton, 20% polyester blend",
-      "Machine washable",
-      "Officially licensed DC Comics merchandise",
-      "Designed by Thomas Wayne",
-      "Available in multiple sizes",
+      '80% cotton, 20% polyester blend',
+      'Machine washable',
+      'Officially licensed DC Comics merchandise',
+      'Designed by Thomas Wayne',
+      'Available in multiple sizes',
     ],
     variants: {
-      sizes: ["S", "M", "L", "XL", "XXL"],
-      colors: ["Black", "Navy"],
+      sizes: ['S', 'M', 'L', 'XL', 'XXL'],
+      colors: ['Black', 'Navy'],
     },
-    relatedProducts: ["hulk-nature-tshirt", "ahsoka-tano-poster", "spiderman-web-backpack"],
+    relatedProducts: ['hulk-nature-tshirt', 'ahsoka-tano-poster', 'spiderman-web-backpack'],
     rating: 4.5,
     reviewCount: 56,
     inStock: true,
     isNew: false,
     isBestseller: false,
   },
-  "spiderman-web-backpack": {
-    id: "prod-5",
-    slug: "spiderman-web-backpack",
-    title: "Spider-Man Web Backpack",
+  'spiderman-web-backpack': {
+    id: 'prod-5',
+    slug: 'spiderman-web-backpack',
+    title: 'Spider-Man Web Backpack',
     price: 39.99,
-    imageUrl: "/placeholder.svg?height=600&width=600&text=Spider-Man+Backpack",
+    imageUrl: '/placeholder.svg?height=600&width=600&text=Spider-Man+Backpack',
     images: [
-      "/placeholder.svg?height=600&width=600&text=Spider-Man+Backpack",
-      "/placeholder.svg?height=600&width=600&text=Spider-Man+Backpack+Inside",
-      "/placeholder.svg?height=600&width=600&text=Spider-Man+Backpack+Side",
+      '/placeholder.svg?height=600&width=600&text=Spider-Man+Backpack',
+      '/placeholder.svg?height=600&width=600&text=Spider-Man+Backpack+Inside',
+      '/placeholder.svg?height=600&width=600&text=Spider-Man+Backpack+Side',
     ],
     artist: "Miguel O'Hara",
-    artistSlug: "miguel-ohara",
-    brand: "Marvel",
-    brandSlug: "marvel",
-    category: "accessories",
+    artistSlug: 'miguel-ohara',
+    brand: 'Marvel',
+    brandSlug: 'marvel',
+    category: 'accessories',
     description:
-      "Carry your essentials in style with this Spider-Man inspired backpack featuring a unique web pattern design. Durable, comfortable, and perfect for fans of the friendly neighborhood hero.",
+      'Carry your essentials in style with this Spider-Man inspired backpack featuring a unique web pattern design. Durable, comfortable, and perfect for fans of the friendly neighborhood hero.',
     details: [
-      "Durable polyester construction",
-      "Padded laptop compartment",
-      "Multiple storage compartments",
-      "Officially licensed Marvel merchandise",
+      'Durable polyester construction',
+      'Padded laptop compartment',
+      'Multiple storage compartments',
+      'Officially licensed Marvel merchandise',
       "Designed by Miguel O'Hara",
     ],
     variants: {
-      sizes: ["Standard"],
-      colors: ["Red/Blue", "Black/Red"],
+      sizes: ['Standard'],
+      colors: ['Red/Blue', 'Black/Red'],
     },
-    relatedProducts: ["hulk-nature-tshirt", "dark-knight-hoodie", "ahsoka-tano-poster"],
+    relatedProducts: ['hulk-nature-tshirt', 'dark-knight-hoodie', 'ahsoka-tano-poster'],
     rating: 4.3,
     reviewCount: 42,
     inStock: true,
     isNew: true,
     isBestseller: false,
   },
-  "star-wars-chibi-stickers": {
-    id: "prod-7",
-    slug: "star-wars-chibi-stickers",
-    title: "Star Wars Chibi Sticker Pack",
+  'star-wars-chibi-stickers': {
+    id: 'prod-7',
+    slug: 'star-wars-chibi-stickers',
+    title: 'Star Wars Chibi Sticker Pack',
     price: 12.99,
-    imageUrl: "/placeholder.svg?height=600&width=600&text=Star+Wars+Stickers",
+    imageUrl: '/placeholder.svg?height=600&width=600&text=Star+Wars+Stickers',
     images: [
-      "/placeholder.svg?height=600&width=600&text=Star+Wars+Stickers",
-      "/placeholder.svg?height=600&width=600&text=Star+Wars+Stickers+Set",
-      "/placeholder.svg?height=600&width=600&text=Star+Wars+Stickers+Detail",
+      '/placeholder.svg?height=600&width=600&text=Star+Wars+Stickers',
+      '/placeholder.svg?height=600&width=600&text=Star+Wars+Stickers+Set',
+      '/placeholder.svg?height=600&width=600&text=Star+Wars+Stickers+Detail',
     ],
-    artist: "Beskar Forge",
-    artistSlug: "beskar-forge",
-    brand: "Star Wars",
-    brandSlug: "star-wars",
-    category: "stickers",
+    artist: 'Beskar Forge',
+    artistSlug: 'beskar-forge',
+    brand: 'Star Wars',
+    brandSlug: 'star-wars',
+    category: 'stickers',
     description:
-      "Add some galactic charm to your belongings with this adorable set of chibi-style Star Wars character stickers. Each pack includes 6 high-quality vinyl stickers featuring your favorite characters in cute chibi form.",
+      'Add some galactic charm to your belongings with this adorable set of chibi-style Star Wars character stickers. Each pack includes 6 high-quality vinyl stickers featuring your favorite characters in cute chibi form.',
     details: [
-      "Set of 6 premium vinyl stickers",
-      "Weather-resistant and durable",
-      "Perfect for laptops, water bottles, or notebooks",
-      "Officially licensed Star Wars merchandise",
-      "Designed by Beskar Forge",
+      'Set of 6 premium vinyl stickers',
+      'Weather-resistant and durable',
+      'Perfect for laptops, water bottles, or notebooks',
+      'Officially licensed Star Wars merchandise',
+      'Designed by Beskar Forge',
     ],
     variants: {
-      sizes: ["3 inch", "4 inch", "5 inch"],
+      sizes: ['3 inch', '4 inch', '5 inch'],
       colors: [],
     },
-    relatedProducts: ["ahsoka-tano-poster", "hulk-nature-tshirt", "dark-knight-hoodie"],
+    relatedProducts: ['ahsoka-tano-poster', 'hulk-nature-tshirt', 'dark-knight-hoodie'],
     rating: 4.8,
     reviewCount: 31,
     inStock: true,
     isNew: false,
     isBestseller: true,
   },
-}
+};
 
 // Related products data
 const relatedProductsData = {
-  "hulk-nature-tshirt": {
-    id: "prod-1",
-    title: "Hulk Nature T-Shirt",
+  'hulk-nature-tshirt': {
+    id: 'prod-1',
+    title: 'Hulk Nature T-Shirt',
     price: 29.99,
     imageUrl:
-      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/hulk%20nature-2.jpg-ivaqVZqmxWtiQzqj7KrfCIH3S8XKHP.jpeg",
-    artist: "Sarah Johnson",
-    brand: "Marvel",
+      'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/hulk%20nature-2.jpg-ivaqVZqmxWtiQzqj7KrfCIH3S8XKHP.jpeg',
+    artist: 'Sarah Johnson',
+    brand: 'Marvel',
     isNew: true,
     isBestseller: false,
-    slug: "hulk-nature-tshirt",
+    slug: 'hulk-nature-tshirt',
   },
-  "ahsoka-tano-poster": {
-    id: "prod-2",
-    title: "Ahsoka Tano Poster",
+  'ahsoka-tano-poster': {
+    id: 'prod-2',
+    title: 'Ahsoka Tano Poster',
     price: 19.99,
     imageUrl:
-      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/ahsoka-FINAL-01%20%282%29-PO2rMTckglJ6t9uWAalnbK7kR10iY9.png",
-    artist: "Alex Rivera",
-    brand: "Star Wars",
+      'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/ahsoka-FINAL-01%20%282%29-PO2rMTckglJ6t9uWAalnbK7kR10iY9.png',
+    artist: 'Alex Rivera',
+    brand: 'Star Wars',
     isNew: false,
     isBestseller: true,
-    slug: "ahsoka-tano-poster",
+    slug: 'ahsoka-tano-poster',
   },
-  "dark-knight-hoodie": {
-    id: "prod-3",
-    title: "Dark Knight Hoodie",
+  'dark-knight-hoodie': {
+    id: 'prod-3',
+    title: 'Dark Knight Hoodie',
     price: 49.99,
     imageUrl:
-      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Absolute_Batman_low.jpg-jbjBkbHD8un1TKig37wzR4G3RvZFbk.jpeg",
-    artist: "Thomas Wayne",
-    brand: "DC Comics",
+      'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Absolute_Batman_low.jpg-jbjBkbHD8un1TKig37wzR4G3RvZFbk.jpeg',
+    artist: 'Thomas Wayne',
+    brand: 'DC Comics',
     isNew: false,
     isBestseller: false,
-    slug: "dark-knight-hoodie",
+    slug: 'dark-knight-hoodie',
   },
-  "spiderman-web-backpack": {
-    id: "prod-5",
-    title: "Spider-Man Web Backpack",
+  'spiderman-web-backpack': {
+    id: 'prod-5',
+    title: 'Spider-Man Web Backpack',
     price: 39.99,
-    imageUrl: "/placeholder.svg?height=300&width=300&text=Spider-Man+Backpack",
+    imageUrl: '/placeholder.svg?height=300&width=300&text=Spider-Man+Backpack',
     artist: "Miguel O'Hara",
-    brand: "Marvel",
+    brand: 'Marvel',
     isNew: true,
     isBestseller: false,
-    slug: "spiderman-web-backpack",
+    slug: 'spiderman-web-backpack',
   },
-  "star-wars-chibi-stickers": {
-    id: "prod-7",
-    title: "Star Wars Chibi Sticker Pack",
+  'star-wars-chibi-stickers': {
+    id: 'prod-7',
+    title: 'Star Wars Chibi Sticker Pack',
     price: 12.99,
-    imageUrl: "/placeholder.svg?height=300&width=300&text=Star+Wars+Stickers",
-    artist: "Beskar Forge",
-    brand: "Star Wars",
+    imageUrl: '/placeholder.svg?height=300&width=300&text=Star+Wars+Stickers',
+    artist: 'Beskar Forge',
+    brand: 'Star Wars',
     isNew: false,
     isBestseller: true,
-    slug: "star-wars-chibi-stickers",
+    slug: 'star-wars-chibi-stickers',
   },
-}
+};
 
 // Sample reviews data
 const sampleReviews = [
   {
-    id: "review-1",
-    productId: "prod-1",
-    userId: "user-1",
-    userName: "JohnDoe",
-    userAvatar: "/placeholder.svg?height=40&width=40",
+    id: 'review-1',
+    productId: 'prod-1',
+    userId: 'user-1',
+    userName: 'JohnDoe',
+    userAvatar: '/placeholder.svg?height=40&width=40',
     rating: 5,
-    title: "Amazing quality and design!",
+    title: 'Amazing quality and design!',
     comment:
       "This is one of the best fan art shirts I've ever purchased. The print quality is excellent and the fabric is super comfortable. Highly recommend!",
-    date: "2023-10-15",
+    date: '2023-10-15',
     helpfulCount: 12,
     verified: true,
   },
   {
-    id: "review-2",
-    productId: "prod-1",
-    userId: "user-2",
-    userName: "MarvelFan",
-    userAvatar: "/placeholder.svg?height=40&width=40",
+    id: 'review-2',
+    productId: 'prod-1',
+    userId: 'user-2',
+    userName: 'MarvelFan',
+    userAvatar: '/placeholder.svg?height=40&width=40',
     rating: 4,
-    title: "Great shirt, runs a bit small",
+    title: 'Great shirt, runs a bit small',
     comment:
-      "Love the design and quality, but I would recommend sizing up. I normally wear a medium but should have ordered a large.",
-    date: "2023-09-22",
+      'Love the design and quality, but I would recommend sizing up. I normally wear a medium but should have ordered a large.',
+    date: '2023-09-22',
     helpfulCount: 8,
     verified: true,
   },
   {
-    id: "review-3",
-    productId: "prod-1",
-    userId: "user-3",
-    userName: "ArtCollector",
-    userAvatar: "/placeholder.svg?height=40&width=40",
+    id: 'review-3',
+    productId: 'prod-1',
+    userId: 'user-3',
+    userName: 'ArtCollector',
+    userAvatar: '/placeholder.svg?height=40&width=40',
     rating: 5,
-    title: "Unique design that stands out",
+    title: 'Unique design that stands out',
     comment:
-      "The artist did an amazing job blending nature elements with the Hulk character. I get compliments every time I wear this shirt!",
-    date: "2023-08-30",
+      'The artist did an amazing job blending nature elements with the Hulk character. I get compliments every time I wear this shirt!',
+    date: '2023-08-30',
     helpfulCount: 5,
     verified: true,
   },
-]
+];
 
 export default function ProductPage({ params }: { params: { slug: string } }) {
-  const { slug } = params
-  const router = useRouter()
-  const { toast } = useToast()
+  const { slug } = params;
+  const router = useRouter();
+  const { toast } = useToast();
 
-  const [product, setProduct] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [selectedImage, setSelectedImage] = useState(0)
-  const [selectedSize, setSelectedSize] = useState("")
-  const [selectedColor, setSelectedColor] = useState("")
-  const [quantity, setQuantity] = useState(1)
-  const [reviews, setReviews] = useState(sampleReviews)
-  const [reviewFilter, setReviewFilter] = useState("all")
-  const [reviewSort, setReviewSort] = useState("newest")
-  const [showReviewForm, setShowReviewForm] = useState(false)
+  const [product, setProduct] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [selectedImage, setSelectedImage] = useState(0);
+  const [selectedSize, setSelectedSize] = useState('');
+  const [selectedColor, setSelectedColor] = useState('');
+  const [quantity, setQuantity] = useState(1);
+  const [reviews, setReviews] = useState(sampleReviews);
+  const [reviewFilter, setReviewFilter] = useState('all');
+  const [reviewSort, setReviewSort] = useState('newest');
+  const [showReviewForm, setShowReviewForm] = useState(false);
   const [newReview, setNewReview] = useState({
     rating: 5,
-    title: "",
-    comment: "",
-  })
+    title: '',
+    comment: '',
+  });
 
   useEffect(() => {
     // In a real app, this would be an API call
     const fetchProduct = () => {
-      setLoading(true)
+      setLoading(true);
       try {
-        const productData = products[slug as keyof typeof products]
+        const productData = products[slug as keyof typeof products];
         if (productData) {
-          setProduct(productData)
-          setSelectedSize(productData.variants.sizes[0] || "")
-          setSelectedColor(productData.variants.colors[0] || "")
+          setProduct(productData);
+          setSelectedSize(productData.variants.sizes[0] || '');
+          setSelectedColor(productData.variants.colors[0] || '');
         }
       } catch (error) {
-        console.error("Error fetching product:", error)
+        console.error('Error fetching product:', error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchProduct()
-  }, [slug])
+    fetchProduct();
+  }, [slug]);
 
   if (loading) {
     return (
@@ -360,7 +360,7 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
           <p className="mt-4 text-muted-foreground">Loading product...</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (!product) {
@@ -376,118 +376,126 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
           </Button>
         </div>
       </div>
-    )
+    );
   }
 
   const handleAddToCart = () => {
     toast({
-      title: "Added to cart",
-      description: `${product.title} (${selectedSize}${selectedColor ? `, ${selectedColor}` : ""}) × ${quantity}`,
-      action: (
-        <Link href="/marketplace/cart">
-          <Button variant="outline" size="sm">
-            View Cart
+      title: 'Added to cart',
+      description: (
+        <div className="flex flex-col gap-2">
+          <span>{`${product.title} (${selectedSize}${
+            selectedColor ? `, ${selectedColor}` : ''
+          }) × ${quantity}`}</span>
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/marketplace/cart">View Cart</Link>
           </Button>
-        </Link>
+        </div>
       ),
-    })
-  }
+    });
+  };
 
   const handleBuyNow = () => {
     // In a real app, this would add to cart and redirect to checkout
     toast({
-      title: "Proceeding to checkout",
-      description: `${product.title} (${selectedSize}${selectedColor ? `, ${selectedColor}` : ""}) × ${quantity}`,
-    })
+      title: 'Proceeding to checkout',
+      description: `${product.title} (${selectedSize}${
+        selectedColor ? `, ${selectedColor}` : ''
+      }) × ${quantity}`,
+    });
     // Redirect to checkout page
-    router.push("/marketplace/checkout")
-  }
+    router.push('/marketplace/checkout');
+  };
 
   const handleSubmitReview = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     // In a real app, this would be an API call to save the review
     const newReviewObj = {
       id: `review-${Date.now()}`,
       productId: product.id,
-      userId: "current-user",
-      userName: "You",
-      userAvatar: "/placeholder.svg?height=40&width=40",
+      userId: 'current-user',
+      userName: 'You',
+      userAvatar: '/placeholder.svg?height=40&width=40',
       rating: newReview.rating,
       title: newReview.title,
       comment: newReview.comment,
-      date: new Date().toISOString().split("T")[0],
+      date: new Date().toISOString().split('T')[0],
       helpfulCount: 0,
       verified: true,
-    }
+    };
 
-    setReviews([newReviewObj, ...reviews])
-    setShowReviewForm(false)
-    setNewReview({ rating: 5, title: "", comment: "" })
+    setReviews([newReviewObj, ...reviews]);
+    setShowReviewForm(false);
+    setNewReview({ rating: 5, title: '', comment: '' });
 
     toast({
-      title: "Review submitted",
-      description: "Thank you for your feedback!",
-    })
-  }
+      title: 'Review submitted',
+      description: 'Thank you for your feedback!',
+    });
+  };
 
   const handleMarkHelpful = (reviewId: string) => {
     setReviews(
-      reviews.map((review) => (review.id === reviewId ? { ...review, helpfulCount: review.helpfulCount + 1 } : review)),
-    )
+      reviews.map((review) =>
+        review.id === reviewId ? { ...review, helpfulCount: review.helpfulCount + 1 } : review
+      )
+    );
 
     toast({
-      title: "Feedback recorded",
-      description: "You marked this review as helpful",
-    })
-  }
+      title: 'Feedback recorded',
+      description: 'You marked this review as helpful',
+    });
+  };
 
   const filteredReviews = reviews.filter((review) => {
-    if (reviewFilter === "all") return true
-    return review.rating === Number.parseInt(reviewFilter)
-  })
+    if (reviewFilter === 'all') return true;
+    return review.rating === Number.parseInt(reviewFilter);
+  });
 
   const sortedReviews = [...filteredReviews].sort((a, b) => {
     switch (reviewSort) {
-      case "newest":
-        return new Date(b.date).getTime() - new Date(a.date).getTime()
-      case "oldest":
-        return new Date(a.date).getTime() - new Date(b.date).getTime()
-      case "highest":
-        return b.rating - a.rating
-      case "lowest":
-        return a.rating - b.rating
-      case "helpful":
-        return b.helpfulCount - a.helpfulCount
+      case 'newest':
+        return new Date(b.date).getTime() - new Date(a.date).getTime();
+      case 'oldest':
+        return new Date(a.date).getTime() - new Date(b.date).getTime();
+      case 'highest':
+        return b.rating - a.rating;
+      case 'lowest':
+        return a.rating - b.rating;
+      case 'helpful':
+        return b.helpfulCount - a.helpfulCount;
       default:
-        return 0
+        return 0;
     }
-  })
+  });
 
   const getRelatedProducts = () => {
-    return product.relatedProducts.map((slug: string) => relatedProductsData[slug as keyof typeof relatedProductsData])
-  }
+    return product.relatedProducts.map(
+      (slug: string) => relatedProductsData[slug as keyof typeof relatedProductsData]
+    );
+  };
 
   const renderStars = (rating: number) => {
-    const stars = []
-    const fullStars = Math.floor(rating)
-    const hasHalfStar = rating % 1 >= 0.5
+    const stars = [];
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
 
     for (let i = 0; i < fullStars; i++) {
-      stars.push(<Star key={`star-${i}`} className="h-4 w-4 fill-yellow-400 text-yellow-400" />)
+      stars.push(<Star key={`star-${i}`} className="h-4 w-4 fill-yellow-400 text-yellow-400" />);
     }
 
     if (hasHalfStar) {
-      stars.push(<StarHalf key="half-star" className="h-4 w-4 fill-yellow-400 text-yellow-400" />)
+      stars.push(<StarHalf key="half-star" className="h-4 w-4 fill-yellow-400 text-yellow-400" />);
     }
 
-    const emptyStars = 5 - stars.length
+    const emptyStars = 5 - stars.length;
     for (let i = 0; i < emptyStars; i++) {
-      stars.push(<Star key={`empty-star-${i}`} className="h-4 w-4 text-gray-300" />)
+      stars.push(<Star key={`empty-star-${i}`} className="h-4 w-4 text-gray-300" />);
     }
 
-    return stars
-  }
+    return stars;
+  };
 
   return (
     <div className="container px-4 py-8 md:px-6 md:py-12">
@@ -504,7 +512,7 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
           <div className="flex flex-col gap-4 lg:w-1/2">
             <div className="relative aspect-square overflow-hidden rounded-lg border">
               <Image
-                src={product.images[selectedImage] || "/placeholder.svg"}
+                src={product.images[selectedImage] || '/placeholder.svg'}
                 alt={product.title}
                 fill
                 className="object-cover"
@@ -525,12 +533,12 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
                 <button
                   key={index}
                   className={`relative h-20 w-20 overflow-hidden rounded-md border ${
-                    selectedImage === index ? "ring-2 ring-primary" : ""
+                    selectedImage === index ? 'ring-2 ring-primary' : ''
                   }`}
                   onClick={() => setSelectedImage(index)}
                 >
                   <Image
-                    src={image || "/placeholder.svg"}
+                    src={image || '/placeholder.svg'}
                     alt={`${product.title} - view ${index + 1}`}
                     fill
                     className="object-cover"
@@ -553,7 +561,7 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
                     >
                       {product.brand}
                     </Link>
-                    {" • "}
+                    {' • '}
                     <Link
                       href={`/marketplace/storefront/${product.artistSlug}`}
                       className="text-sm text-muted-foreground hover:text-primary hover:underline"
@@ -563,7 +571,9 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
                   </div>
                   <div className="mt-2 flex items-center">
                     <div className="flex items-center">{renderStars(product.rating)}</div>
-                    <span className="ml-2 text-sm text-muted-foreground">({product.reviewCount} reviews)</span>
+                    <span className="ml-2 text-sm text-muted-foreground">
+                      ({product.reviewCount} reviews)
+                    </span>
                     {product.inStock ? (
                       <span className="ml-4 text-sm font-medium text-green-600">In Stock</span>
                     ) : (
@@ -581,10 +591,18 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
                 {product.variants.sizes.length > 0 && (
                   <div>
                     <h3 className="mb-3 text-sm font-medium">Size</h3>
-                    <RadioGroup value={selectedSize} onValueChange={setSelectedSize} className="flex flex-wrap gap-2">
+                    <RadioGroup
+                      value={selectedSize}
+                      onValueChange={setSelectedSize}
+                      className="flex flex-wrap gap-2"
+                    >
                       {product.variants.sizes.map((size: string) => (
                         <div key={size}>
-                          <RadioGroupItem value={size} id={`size-${size}`} className="peer sr-only" />
+                          <RadioGroupItem
+                            value={size}
+                            id={`size-${size}`}
+                            className="peer sr-only"
+                          />
                           <Label
                             htmlFor={`size-${size}`}
                             className="flex h-10 w-14 cursor-pointer items-center justify-center rounded-md border border-muted bg-transparent text-sm font-medium ring-offset-background peer-data-[state=checked]:border-primary peer-data-[state=checked]:text-primary"
@@ -601,10 +619,18 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
                 {product.variants.colors.length > 0 && (
                   <div>
                     <h3 className="mb-3 text-sm font-medium">Color</h3>
-                    <RadioGroup value={selectedColor} onValueChange={setSelectedColor} className="flex flex-wrap gap-2">
+                    <RadioGroup
+                      value={selectedColor}
+                      onValueChange={setSelectedColor}
+                      className="flex flex-wrap gap-2"
+                    >
                       {product.variants.colors.map((color: string) => (
                         <div key={color}>
-                          <RadioGroupItem value={color} id={`color-${color}`} className="peer sr-only" />
+                          <RadioGroupItem
+                            value={color}
+                            id={`color-${color}`}
+                            className="peer sr-only"
+                          />
                           <Label
                             htmlFor={`color-${color}`}
                             className="flex h-10 min-w-[2.5rem] cursor-pointer items-center justify-center rounded-md border border-muted bg-transparent px-3 text-sm font-medium ring-offset-background peer-data-[state=checked]:border-primary peer-data-[state=checked]:text-primary"
@@ -630,7 +656,9 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
                     >
                       -
                     </Button>
-                    <div className="flex h-full flex-1 items-center justify-center border-y">{quantity}</div>
+                    <div className="flex h-full flex-1 items-center justify-center border-y">
+                      {quantity}
+                    </div>
                     <Button
                       variant="outline"
                       size="icon"
@@ -693,8 +721,12 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
                 <p>International shipping available to select countries</p>
               </TabsContent>
               <TabsContent value="licensing" className="mt-4 space-y-4">
-                <p>This product features officially licensed fan art approved by {product.brand}.</p>
-                <p>The design was created by {product.artist} and is protected under copyright law.</p>
+                <p>
+                  This product features officially licensed fan art approved by {product.brand}.
+                </p>
+                <p>
+                  The design was created by {product.artist} and is protected under copyright law.
+                </p>
                 <p>A portion of each sale goes to the original IP holder and the artist.</p>
                 <p>For licensing inquiries, please contact licensing@modplatform.com</p>
               </TabsContent>
@@ -713,29 +745,36 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
             <div className="mb-4 text-center">
               <div className="text-5xl font-bold">{product.rating.toFixed(1)}</div>
               <div className="mt-2 flex justify-center">{renderStars(product.rating)}</div>
-              <div className="mt-1 text-sm text-muted-foreground">Based on {product.reviewCount} reviews</div>
+              <div className="mt-1 text-sm text-muted-foreground">
+                Based on {product.reviewCount} reviews
+              </div>
             </div>
 
             {/* Rating Distribution */}
             <div className="mt-6 space-y-2">
               {[5, 4, 3, 2, 1].map((star) => {
                 const percentage =
-                  Math.round((reviews.filter((r) => r.rating === star).length / reviews.length) * 100) || 0
+                  Math.round(
+                    (reviews.filter((r) => r.rating === star).length / reviews.length) * 100
+                  ) || 0;
                 return (
                   <div key={star} className="flex items-center gap-2">
                     <div className="text-sm">{star} stars</div>
                     <div className="h-2 flex-1 rounded-full bg-gray-200">
-                      <div className="h-2 rounded-full bg-yellow-400" style={{ width: `${percentage}%` }}></div>
+                      <div
+                        className="h-2 rounded-full bg-yellow-400"
+                        style={{ width: `${percentage}%` }}
+                      ></div>
                     </div>
                     <div className="text-sm">{percentage}%</div>
                   </div>
-                )
+                );
               })}
             </div>
 
             {/* Write a Review */}
             <Button className="mt-6 w-full" onClick={() => setShowReviewForm(!showReviewForm)}>
-              {showReviewForm ? "Cancel Review" : "Write a Review"}
+              {showReviewForm ? 'Cancel Review' : 'Write a Review'}
             </Button>
           </div>
 
@@ -758,7 +797,9 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
                         >
                           <Star
                             className={`h-6 w-6 ${
-                              newReview.rating >= rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
+                              newReview.rating >= rating
+                                ? 'fill-yellow-400 text-yellow-400'
+                                : 'text-gray-300'
                             }`}
                           />
                         </button>
@@ -839,7 +880,7 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
             {sortedReviews.length === 0 ? (
               <div className="rounded-lg border border-dashed p-8 text-center">
                 <p className="text-muted-foreground">No reviews match your filter</p>
-                <Button variant="link" onClick={() => setReviewFilter("all")}>
+                <Button variant="link" onClick={() => setReviewFilter('all')}>
                   Clear filter
                 </Button>
               </div>
@@ -851,7 +892,7 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
                       <div className="flex items-center gap-2">
                         <div className="relative h-10 w-10 overflow-hidden rounded-full">
                           <Image
-                            src={review.userAvatar || "/placeholder.svg"}
+                            src={review.userAvatar || '/placeholder.svg'}
                             alt={review.userName}
                             fill
                             className="object-cover"
@@ -861,7 +902,9 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
                           <div className="font-medium">{review.userName}</div>
                           <div className="text-xs text-muted-foreground">
                             {new Date(review.date).toLocaleDateString()}
-                            {review.verified && <span className="ml-2 text-green-600">✓ Verified Purchase</span>}
+                            {review.verified && (
+                              <span className="ml-2 text-green-600">✓ Verified Purchase</span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -872,7 +915,11 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
                     <p className="text-sm">{review.comment}</p>
 
                     <div className="mt-4 flex items-center justify-between">
-                      <Button variant="ghost" size="sm" onClick={() => handleMarkHelpful(review.id)}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleMarkHelpful(review.id)}
+                      >
                         Was this helpful? ({review.helpfulCount})
                       </Button>
                       <Button variant="ghost" size="sm">
@@ -897,6 +944,5 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
         </div>
       </div>
     </div>
-  )
+  );
 }
-

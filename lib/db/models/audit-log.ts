@@ -37,20 +37,20 @@ const CreateAuditLogSchema = z.object({
   ]),
   entityType: z.enum(['user', 'submission', 'product', 'license', 'payment', 'system']),
   entityId: z.string().uuid().optional(),
-  details: z.record(z.any()).default({}),
+  details: z.record(z.string(), z.any()).default({}), // Correct
   ipAddress: z.string().max(45).optional(),
   userAgent: z.string().optional(),
 });
 
 export interface AuditLog {
   id: string;
-  userId?: string;
+  userId?: string | undefined; // ← Explicitly allow undefined
   action: AuditAction;
   entityType: EntityType;
-  entityId?: string;
+  entityId?: string | undefined;
   details: Record<string, any>;
-  ipAddress?: string;
-  userAgent?: string;
+  ipAddress?: string | undefined;
+  userAgent?: string | undefined;
   createdAt: Date;
 }
 

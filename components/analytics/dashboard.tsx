@@ -1,14 +1,20 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { format } from "date-fns"
-import { CalendarIcon, Download } from "lucide-react"
+import { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { format } from 'date-fns';
+import { CalendarIcon, Download } from 'lucide-react';
 import {
   Line,
   LineChart as RechartsLineChart,
@@ -23,80 +29,88 @@ import {
   Pie,
   PieChart as RechartsPieChart,
   Cell,
-} from "recharts"
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
+} from 'recharts';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 
 // Types
 type AnalyticsData = {
   submissionsByDate: {
-    date: string
-    count: number
-    approved: number
-    rejected: number
-    pending: number
-  }[]
+    date: string;
+    count: number;
+    approved: number;
+    rejected: number;
+    pending: number;
+  }[];
   submissionsByCategory: {
-    category: string
-    count: number
-    percentage: number
-  }[]
+    category: string;
+    count: number;
+    percentage: number;
+  }[];
   aiScoreDistribution: {
-    range: string
-    count: number
-  }[]
+    range: string;
+    count: number;
+  }[];
   topIps: {
-    originalIp: string
-    count: number
-    approvalRate: number
-  }[]
-}
+    originalIp: string;
+    count: number;
+    approvalRate: number;
+  }[];
+};
 
 // Props
 type AnalyticsDashboardProps = {
-  data: AnalyticsData
-  onRefresh: () => void
-  onDateRangeChange: (startDate: Date, endDate: Date) => void
-  onCategoryChange: (category: string) => void
-}
+  data: AnalyticsData;
+  onRefresh: () => void;
+  onDateRangeChange: (startDate: Date, endDate: Date) => void;
+  onCategoryChange: (category: string) => void;
+};
 
 // Colors
-const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8", "#82CA9D"]
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
 
-export function AnalyticsDashboard({ data, onRefresh, onDateRangeChange, onCategoryChange }: AnalyticsDashboardProps) {
-  const [startDate, setStartDate] = useState<Date | undefined>(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))
-  const [endDate, setEndDate] = useState<Date | undefined>(new Date())
-  const [category, setCategory] = useState<string>("all")
+export function AnalyticsDashboard({
+  data,
+  onRefresh,
+  onDateRangeChange,
+  onCategoryChange,
+}: AnalyticsDashboardProps) {
+  const [startDate, setStartDate] = useState<Date | undefined>(
+    new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+  );
+  const [endDate, setEndDate] = useState<Date | undefined>(new Date());
+  const [category, setCategory] = useState<string>('all');
 
   // Handle date range change
   const handleDateRangeChange = (start?: Date, end?: Date) => {
-    if (start) setStartDate(start)
-    if (end) setEndDate(end)
+    if (start) setStartDate(start);
+    if (end) setEndDate(end);
 
     if (start && end) {
-      onDateRangeChange(start, end)
+      onDateRangeChange(start, end);
     }
-  }
+  };
 
   // Handle category change
   const handleCategoryChange = (value: string) => {
-    setCategory(value)
-    onCategoryChange(value)
-  }
+    setCategory(value);
+    onCategoryChange(value);
+  };
 
   // Format date range for display
   const formatDateRange = () => {
     if (startDate && endDate) {
-      return `${format(startDate, "MMM d, yyyy")} - ${format(endDate, "MMM d, yyyy")}`
+      return `${format(startDate, 'MMM d, yyyy')} - ${format(endDate, 'MMM d, yyyy')}`;
     }
-    return "Select date range"
-  }
+    return 'Select date range';
+  };
+  const topCategory = data.submissionsByCategory[0];
 
   // Export data as CSV
   const exportData = () => {
     // Convert data to CSV format
     const csvData = [
       // Headers
-      ["Date", "Total", "Approved", "Rejected", "Pending"],
+      ['Date', 'Total', 'Approved', 'Rejected', 'Pending'],
       // Rows
       ...data.submissionsByDate.map((row) => [
         row.date,
@@ -106,19 +120,19 @@ export function AnalyticsDashboard({ data, onRefresh, onDateRangeChange, onCateg
         row.pending.toString(),
       ]),
     ]
-      .map((row) => row.join(","))
-      .join("\n")
+      .map((row) => row.join(','))
+      .join('\n');
 
     // Create a blob and download link
-    const blob = new Blob([csvData], { type: "text/csv" })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement("a")
-    link.href = url
-    link.download = `submissions-${format(new Date(), "yyyy-MM-dd")}.csv`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
+    const blob = new Blob([csvData], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `submissions-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="space-y-6">
@@ -141,7 +155,7 @@ export function AnalyticsDashboard({ data, onRefresh, onDateRangeChange, onCateg
                   to: endDate,
                 }}
                 onSelect={(range) => {
-                  handleDateRangeChange(range?.from, range?.to)
+                  handleDateRangeChange(range?.from, range?.to);
                 }}
                 initialFocus
               />
@@ -207,9 +221,12 @@ export function AnalyticsDashboard({ data, onRefresh, onDateRangeChange, onCateg
               <CardContent>
                 <div className="text-2xl font-bold">
                   {(() => {
-                    const total = data.submissionsByDate.reduce((sum, item) => sum + item.count, 0)
-                    const approved = data.submissionsByDate.reduce((sum, item) => sum + item.approved, 0)
-                    return total > 0 ? `${Math.round((approved / total) * 100)}%` : "N/A"
+                    const total = data.submissionsByDate.reduce((sum, item) => sum + item.count, 0);
+                    const approved = data.submissionsByDate.reduce(
+                      (sum, item) => sum + item.approved,
+                      0
+                    );
+                    return total > 0 ? `${Math.round((approved / total) * 100)}%` : 'N/A';
                   })()}
                 </div>
                 <p className="text-xs text-muted-foreground">Approved submissions</p>
@@ -223,14 +240,19 @@ export function AnalyticsDashboard({ data, onRefresh, onDateRangeChange, onCateg
               <CardContent>
                 <div className="text-2xl font-bold">
                   {(() => {
-                    const total = data.aiScoreDistribution.reduce((sum, item) => sum + item.count, 0)
+                    const total = data.aiScoreDistribution.reduce(
+                      (sum, item) => sum + item.count,
+                      0
+                    );
                     const aiDetected = data.aiScoreDistribution
                       .filter(
                         (item) =>
-                          item.range.startsWith("0.7") || item.range.startsWith("0.8") || item.range.startsWith("0.9"),
+                          item.range.startsWith('0.7') ||
+                          item.range.startsWith('0.8') ||
+                          item.range.startsWith('0.9')
                       )
-                      .reduce((sum, item) => sum + item.count, 0)
-                    return total > 0 ? `${Math.round((aiDetected / total) * 100)}%` : "N/A"
+                      .reduce((sum, item) => sum + item.count, 0);
+                    return total > 0 ? `${Math.round((aiDetected / total) * 100)}%` : 'N/A';
                   })()}
                 </div>
                 <p className="text-xs text-muted-foreground">AI-generated content</p>
@@ -243,12 +265,12 @@ export function AnalyticsDashboard({ data, onRefresh, onDateRangeChange, onCateg
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold capitalize">
-                  {data.submissionsByCategory.length > 0 ? data.submissionsByCategory[0].category : "N/A"}
+                  {topCategory ? topCategory.category : 'N/A'}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {data.submissionsByCategory.length > 0
-                    ? `${Math.round(data.submissionsByCategory[0].percentage)}% of submissions`
-                    : "No data available"}
+                  {topCategory
+                    ? `${Math.round(topCategory.percentage)}% of submissions`
+                    : 'No data available'}
                 </p>
               </CardContent>
             </Card>
@@ -265,16 +287,16 @@ export function AnalyticsDashboard({ data, onRefresh, onDateRangeChange, onCateg
                 <ChartContainer
                   config={{
                     total: {
-                      label: "Total",
-                      color: "hsl(var(--chart-1))",
+                      label: 'Total',
+                      color: 'hsl(var(--chart-1))',
                     },
                     approved: {
-                      label: "Approved",
-                      color: "hsl(var(--chart-2))",
+                      label: 'Approved',
+                      color: 'hsl(var(--chart-2))',
                     },
                     rejected: {
-                      label: "Rejected",
-                      color: "hsl(var(--chart-3))",
+                      label: 'Rejected',
+                      color: 'hsl(var(--chart-3))',
                     },
                   }}
                 >
@@ -285,9 +307,24 @@ export function AnalyticsDashboard({ data, onRefresh, onDateRangeChange, onCateg
                       <YAxis />
                       <ChartTooltip content={<ChartTooltipContent />} />
                       <Legend />
-                      <Line type="monotone" dataKey="count" name="total" stroke="var(--color-total)" />
-                      <Line type="monotone" dataKey="approved" name="approved" stroke="var(--color-approved)" />
-                      <Line type="monotone" dataKey="rejected" name="rejected" stroke="var(--color-rejected)" />
+                      <Line
+                        type="monotone"
+                        dataKey="count"
+                        name="total"
+                        stroke="var(--color-total)"
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="approved"
+                        name="approved"
+                        stroke="var(--color-approved)"
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="rejected"
+                        name="rejected"
+                        stroke="var(--color-rejected)"
+                      />
                     </RechartsLineChart>
                   </ResponsiveContainer>
                 </ChartContainer>
@@ -299,28 +336,24 @@ export function AnalyticsDashboard({ data, onRefresh, onDateRangeChange, onCateg
                 <CardTitle>Category Distribution</CardTitle>
                 <CardDescription>Submissions by category</CardDescription>
               </CardHeader>
-              <CardContent className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RechartsPieChart>
-                    <Pie
-                      data={data.submissionsByCategory}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="count"
-                      nameKey="category"
-                      label={({ category, percentage }) => `${category}: ${percentage.toFixed(1)}%`}
-                    >
-                      {data.submissionsByCategory.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value, name) => [`${value} submissions`, name]} />
-                  </RechartsPieChart>
-                </ResponsiveContainer>
-              </CardContent>
+              <Pie
+                data={data.submissionsByCategory}
+                cx="50%"
+                cy="50%"
+                labelLine={false}
+                outerRadius={80}
+                fill="#8884d8"
+                dataKey="count"
+                nameKey="category"
+                label={(entry) => {
+                  const { category, percentage } = entry.payload;
+                  return `${category}: ${percentage.toFixed(1)}%`;
+                }}
+              >
+                {data.submissionsByCategory.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
             </Card>
           </div>
         </TabsContent>
@@ -336,16 +369,16 @@ export function AnalyticsDashboard({ data, onRefresh, onDateRangeChange, onCateg
               <ChartContainer
                 config={{
                   approved: {
-                    label: "Approved",
-                    color: "hsl(var(--chart-1))",
+                    label: 'Approved',
+                    color: 'hsl(var(--chart-1))',
                   },
                   rejected: {
-                    label: "Rejected",
-                    color: "hsl(var(--chart-2))",
+                    label: 'Rejected',
+                    color: 'hsl(var(--chart-2))',
                   },
                   pending: {
-                    label: "Pending",
-                    color: "hsl(var(--chart-3))",
+                    label: 'Pending',
+                    color: 'hsl(var(--chart-3))',
                   },
                 }}
               >
@@ -356,8 +389,18 @@ export function AnalyticsDashboard({ data, onRefresh, onDateRangeChange, onCateg
                     <YAxis />
                     <ChartTooltip content={<ChartTooltipContent />} />
                     <Legend />
-                    <Bar dataKey="approved" name="approved" stackId="a" fill="var(--color-approved)" />
-                    <Bar dataKey="rejected" name="rejected" stackId="a" fill="var(--color-rejected)" />
+                    <Bar
+                      dataKey="approved"
+                      name="approved"
+                      stackId="a"
+                      fill="var(--color-approved)"
+                    />
+                    <Bar
+                      dataKey="rejected"
+                      name="rejected"
+                      stackId="a"
+                      fill="var(--color-rejected)"
+                    />
                     <Bar dataKey="pending" name="pending" stackId="a" fill="var(--color-pending)" />
                   </RechartsBarChart>
                 </ResponsiveContainer>
@@ -377,8 +420,8 @@ export function AnalyticsDashboard({ data, onRefresh, onDateRangeChange, onCateg
               <ChartContainer
                 config={{
                   count: {
-                    label: "Submissions",
-                    color: "hsl(var(--chart-1))",
+                    label: 'Submissions',
+                    color: 'hsl(var(--chart-1))',
                   },
                 }}
               >
@@ -423,10 +466,10 @@ export function AnalyticsDashboard({ data, onRefresh, onDateRangeChange, onCateg
                           <span
                             className={`px-2 py-1 rounded text-xs ${
                               ip.approvalRate >= 70
-                                ? "bg-green-100 text-green-800"
+                                ? 'bg-green-100 text-green-800'
                                 : ip.approvalRate >= 40
-                                  ? "bg-yellow-100 text-yellow-800"
-                                  : "bg-red-100 text-red-800"
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : 'bg-red-100 text-red-800'
                             }`}
                           >
                             {ip.approvalRate}%
@@ -442,6 +485,5 @@ export function AnalyticsDashboard({ data, onRefresh, onDateRangeChange, onCateg
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }
-

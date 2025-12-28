@@ -34,8 +34,19 @@ const personalInfoSchema = z.object({
 });
 
 // Step 2 schema
+// Step 2 schema - make it required
 const accountTypeSchema = z.object({
-  accountType: z.enum(['artist', 'brand']).optional().default('artist'),
+  accountType: z.enum(['artist', 'brand']), // required, no optional/default here
+});
+
+type AccountTypeValues = z.infer<typeof accountTypeSchema>;
+// Now: { accountType: "artist" | "brand" }
+
+const accountTypeForm = useForm<AccountTypeValues>({
+  resolver: zodResolver(accountTypeSchema),
+  defaultValues: {
+    accountType: 'artist', // set default here instead of in Zod
+  },
 });
 
 // Step 3 schema
@@ -56,7 +67,7 @@ const accountInfoSchema = z
   });
 
 type PersonalInfoValues = z.infer<typeof personalInfoSchema>;
-type AccountTypeValues = z.infer<typeof accountTypeSchema>;
+
 type AccountInfoValues = z.infer<typeof accountInfoSchema>;
 
 export default function SignupPage() {

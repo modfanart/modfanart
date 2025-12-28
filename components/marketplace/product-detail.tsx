@@ -1,68 +1,73 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import Link from "next/link"
-import Image from "next/image"
-import { useToast } from "@/components/ui/use-toaster"
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Separator } from "@/components/ui/separator"
-import { Badge } from "@/components/ui/badge"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Label } from "@/components/ui/label"
-import { ProductReviews } from "@/components/marketplace/product-reviews"
-import { ProductCard } from "@/components/product-card"
-import { ArrowLeft, Check, Heart, Minus, Plus, Share2, ShoppingCart, Star } from "lucide-react"
+import { useState } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { useToast } from '@/components/ui/use-toaster';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { ProductReviews } from '@/components/marketplace/product-reviews';
+import { ProductCard } from '@/components/product-card';
+import { ArrowLeft, Check, Heart, Minus, Plus, Share2, ShoppingCart, Star } from 'lucide-react';
 
 interface ProductDetailProps {
-  product: any
-  relatedProducts: any[]
+  product: any;
+  relatedProducts: any[];
 }
 
 export default function ProductDetail({ product, relatedProducts }: ProductDetailProps) {
-  const { toast } = useToast()
-  const [selectedImage, setSelectedImage] = useState(0)
-  const [quantity, setQuantity] = useState(1)
-  const [selectedSize, setSelectedSize] = useState(product.variations.sizes[0] || "")
-  const [selectedColor, setSelectedColor] = useState(product.variations.colors[0] || "")
+  const { toast } = useToast();
+  const [selectedImage, setSelectedImage] = useState(0);
+  const [quantity, setQuantity] = useState(1);
+  const [selectedSize, setSelectedSize] = useState(product.variations.sizes[0] || '');
+  const [selectedColor, setSelectedColor] = useState(product.variations.colors[0] || '');
 
   const handleAddToCart = () => {
     toast({
-      title: "Added to cart",
-      description: `${product.title} (${selectedSize}${selectedColor ? `, ${selectedColor}` : ""}) × ${quantity}`,
-      action: (
-        <Link href="/marketplace/cart">
-          <Button variant="outline" size="sm">
-            View Cart
+      title: 'Added to cart',
+      description: (
+        <div className="flex flex-col gap-3">
+          <span>
+            {product.title} ({selectedSize}
+            {selectedColor ? `, ${selectedColor}` : ''}) × {quantity}
+          </span>
+          <Button variant="outline" size="sm" asChild className="w-full">
+            <Link href="/marketplace/cart">View Cart →</Link>
           </Button>
-        </Link>
+        </div>
       ),
-    })
-  }
+    });
+  };
 
   const handleBuyNow = () => {
     toast({
-      title: "Proceeding to checkout",
-      description: `${product.title} (${selectedSize}${selectedColor ? `, ${selectedColor}` : ""}) × ${quantity}`,
-    })
+      title: 'Proceeding to checkout',
+      description: `${product.title} (${selectedSize}${
+        selectedColor ? `, ${selectedColor}` : ''
+      }) × ${quantity}`,
+    });
     // In a real app, this would redirect to checkout
-  }
+  };
 
   const handleWishlist = () => {
     toast({
-      title: "Added to wishlist",
+      title: 'Added to wishlist',
       description: `${product.title} has been added to your wishlist.`,
-    })
-  }
+    });
+  };
 
   const handleShare = () => {
     // In a real app, this would open a share dialog
-    navigator.clipboard.writeText(window.location.href)
+    navigator.clipboard.writeText(window.location.href);
     toast({
-      title: "Link copied",
-      description: "Product link has been copied to clipboard.",
-    })
-  }
+      title: 'Link copied',
+      description: 'Product link has been copied to clipboard.',
+    });
+  };
 
   return (
     <div className="container px-4 py-8 md:px-6 md:py-12">
@@ -79,15 +84,19 @@ export default function ProductDetail({ product, relatedProducts }: ProductDetai
           <div className="flex flex-col gap-4 lg:w-1/2">
             <div className="relative aspect-square overflow-hidden rounded-lg border bg-background">
               <Image
-                src={product.images[selectedImage] || "/placeholder.svg"}
+                src={product.images[selectedImage] || '/placeholder.svg'}
                 alt={product.title}
                 fill
                 className="object-contain"
                 priority
               />
-              {product.isNew && <Badge className="absolute left-2 top-2 bg-blue-500 hover:bg-blue-600">New</Badge>}
+              {product.isNew && (
+                <Badge className="absolute left-2 top-2 bg-blue-500 hover:bg-blue-600">New</Badge>
+              )}
               {product.isBestseller && (
-                <Badge className="absolute left-2 top-2 bg-amber-500 hover:bg-amber-600">Bestseller</Badge>
+                <Badge className="absolute left-2 top-2 bg-amber-500 hover:bg-amber-600">
+                  Bestseller
+                </Badge>
               )}
             </div>
             <div className="flex gap-2 overflow-x-auto pb-2">
@@ -95,12 +104,12 @@ export default function ProductDetail({ product, relatedProducts }: ProductDetai
                 <button
                   key={index}
                   className={`relative h-20 w-20 overflow-hidden rounded-md border ${
-                    selectedImage === index ? "ring-2 ring-primary" : ""
+                    selectedImage === index ? 'ring-2 ring-primary' : ''
                   }`}
                   onClick={() => setSelectedImage(index)}
                 >
                   <Image
-                    src={image || "/placeholder.svg"}
+                    src={image || '/placeholder.svg'}
                     alt={`${product.title} - view ${index + 1}`}
                     fill
                     className="object-cover"
@@ -123,7 +132,7 @@ export default function ProductDetail({ product, relatedProducts }: ProductDetai
                     >
                       {product.brand}
                     </Link>
-                    {" • "}
+                    {' • '}
                     <Link
                       href={`/marketplace/artist/${product.artistId}`}
                       className="text-sm text-muted-foreground hover:text-primary hover:underline"
@@ -142,22 +151,25 @@ export default function ProductDetail({ product, relatedProducts }: ProductDetai
                       key={i}
                       className={`h-4 w-4 ${
                         i < Math.floor(product.rating)
-                          ? "fill-yellow-400 text-yellow-400"
+                          ? 'fill-yellow-400 text-yellow-400'
                           : i < product.rating
-                            ? "fill-yellow-400 text-yellow-400"
-                            : "text-gray-300"
+                          ? 'fill-yellow-400 text-yellow-400'
+                          : 'text-gray-300'
                       }`}
                     />
                   ))}
                 </div>
                 <span className="ml-2 text-sm font-medium">{product.rating}</span>
                 <span className="mx-2 text-sm text-muted-foreground">•</span>
-                <Link href="#reviews" className="text-sm text-muted-foreground hover:text-primary hover:underline">
+                <Link
+                  href="#reviews"
+                  className="text-sm text-muted-foreground hover:text-primary hover:underline"
+                >
                   {product.reviewCount} reviews
                 </Link>
                 <span className="mx-2 text-sm text-muted-foreground">•</span>
-                <span className={`text-sm ${product.inStock ? "text-green-600" : "text-red-600"}`}>
-                  {product.inStock ? "In stock" : "Out of stock"}
+                <span className={`text-sm ${product.inStock ? 'text-green-600' : 'text-red-600'}`}>
+                  {product.inStock ? 'In stock' : 'Out of stock'}
                 </span>
               </div>
 
@@ -168,10 +180,18 @@ export default function ProductDetail({ product, relatedProducts }: ProductDetai
                 {product.variations.sizes.length > 0 && (
                   <div>
                     <h3 className="mb-3 text-sm font-medium">Size</h3>
-                    <RadioGroup value={selectedSize} onValueChange={setSelectedSize} className="flex flex-wrap gap-2">
+                    <RadioGroup
+                      value={selectedSize}
+                      onValueChange={setSelectedSize}
+                      className="flex flex-wrap gap-2"
+                    >
                       {product.variations.sizes.map((size: string) => (
                         <div key={size}>
-                          <RadioGroupItem value={size} id={`size-${size}`} className="peer sr-only" />
+                          <RadioGroupItem
+                            value={size}
+                            id={`size-${size}`}
+                            className="peer sr-only"
+                          />
                           <Label
                             htmlFor={`size-${size}`}
                             className="flex h-10 w-14 cursor-pointer items-center justify-center rounded-md border border-muted bg-transparent text-sm font-medium ring-offset-background peer-data-[state=checked]:border-primary peer-data-[state=checked]:text-primary"
@@ -188,10 +208,18 @@ export default function ProductDetail({ product, relatedProducts }: ProductDetai
                 {product.variations.colors.length > 0 && (
                   <div>
                     <h3 className="mb-3 text-sm font-medium">Color</h3>
-                    <RadioGroup value={selectedColor} onValueChange={setSelectedColor} className="flex flex-wrap gap-2">
+                    <RadioGroup
+                      value={selectedColor}
+                      onValueChange={setSelectedColor}
+                      className="flex flex-wrap gap-2"
+                    >
                       {product.variations.colors.map((color: string) => (
                         <div key={color}>
-                          <RadioGroupItem value={color} id={`color-${color}`} className="peer sr-only" />
+                          <RadioGroupItem
+                            value={color}
+                            id={`color-${color}`}
+                            className="peer sr-only"
+                          />
                           <Label
                             htmlFor={`color-${color}`}
                             className="flex h-10 min-w-[2.5rem] cursor-pointer items-center justify-center rounded-md border border-muted bg-transparent px-3 text-sm font-medium ring-offset-background peer-data-[state=checked]:border-primary peer-data-[state=checked]:text-primary"
@@ -218,7 +246,9 @@ export default function ProductDetail({ product, relatedProducts }: ProductDetai
                       <Minus className="h-4 w-4" />
                       <span className="sr-only">Decrease quantity</span>
                     </Button>
-                    <div className="flex h-full flex-1 items-center justify-center border-y">{quantity}</div>
+                    <div className="flex h-full flex-1 items-center justify-center border-y">
+                      {quantity}
+                    </div>
                     <Button
                       variant="outline"
                       size="icon"
@@ -233,7 +263,11 @@ export default function ProductDetail({ product, relatedProducts }: ProductDetai
 
                 {/* Add to Cart / Buy Now */}
                 <div className="flex flex-col gap-3 sm:flex-row">
-                  <Button className="flex-1 gap-2" onClick={handleAddToCart} disabled={!product.inStock}>
+                  <Button
+                    className="flex-1 gap-2"
+                    onClick={handleAddToCart}
+                    disabled={!product.inStock}
+                  >
                     <ShoppingCart className="h-4 w-4" />
                     Add to Cart
                   </Button>
@@ -287,8 +321,12 @@ export default function ProductDetail({ product, relatedProducts }: ProductDetai
                 <p>International shipping available to select countries</p>
               </TabsContent>
               <TabsContent value="licensing" className="mt-4 space-y-4">
-                <p>This product features officially licensed fan art approved by {product.brand}.</p>
-                <p>The design was created by {product.artist} and is protected under copyright law.</p>
+                <p>
+                  This product features officially licensed fan art approved by {product.brand}.
+                </p>
+                <p>
+                  The design was created by {product.artist} and is protected under copyright law.
+                </p>
                 <p>A portion of each sale goes to the original IP holder and the artist.</p>
                 <p>For licensing inquiries, please contact licensing@modplatform.com</p>
               </TabsContent>
@@ -300,7 +338,11 @@ export default function ProductDetail({ product, relatedProducts }: ProductDetai
       {/* Customer Reviews */}
       <div id="reviews" className="mt-16 scroll-mt-16">
         <h2 className="mb-6 text-2xl font-bold">Customer Reviews</h2>
-        <ProductReviews productId={product.id} rating={product.rating} reviewCount={product.reviewCount} />
+        <ProductReviews
+          productId={product.id}
+          rating={product.rating}
+          reviewCount={product.reviewCount}
+        />
       </div>
 
       {/* Related Products */}
@@ -313,6 +355,5 @@ export default function ProductDetail({ product, relatedProducts }: ProductDetai
         </div>
       </div>
     </div>
-  )
+  );
 }
-

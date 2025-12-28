@@ -58,8 +58,8 @@ const formSchema = z.object({
     .max(500, {
       message: 'Description must not exceed 500 characters.',
     }),
-  category: z.string({
-    required_error: 'Please select a category.',
+  category: z.string().refine((val) => val.length > 0, {
+    message: 'Please select a category.',
   }),
   originalIp: z
     .string()
