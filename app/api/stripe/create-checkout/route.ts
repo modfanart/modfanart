@@ -118,8 +118,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { tier, planId, userId, returnUrl } = validation.data;
-
+    const { tier, planId, userId, returnUrl } = validation.data as {
+      tier: string;
+      userId: string;
+      planId?: string;
+      returnUrl?: string;
+    };
     // Sanitize return URL to prevent open redirect vulnerabilities
     const sanitizedReturnUrl = returnUrl
       ? sanitizeRedirectUrl(returnUrl, ALLOWED_DOMAINS)

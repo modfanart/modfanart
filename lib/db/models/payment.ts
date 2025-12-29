@@ -12,7 +12,7 @@ const CreatePaymentSchema = z.object({
   status: z.enum(['pending', 'completed', 'failed', 'refunded']).default('pending'),
   paymentMethod: z.string().min(2).max(50),
   paymentIntentId: z.string().optional(),
-  metadata: z.record(z.any()).optional(),
+  metadata: z.record(z.string(), z.any()).optional(), // ← Fixed
 });
 
 export interface Payment {
@@ -22,10 +22,10 @@ export interface Payment {
   currency: string;
   status: PaymentStatus;
   paymentMethod: string;
-  paymentIntentId?: string;
+  paymentIntentId?: string | undefined;
   createdAt: Date;
   updatedAt: Date;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, any> | undefined;
 }
 
 /**
@@ -51,14 +51,14 @@ export async function createPayment(
       .values({
         id: payment.id,
         user_id: payment.userId,
-        amount: payment.amount.toString(), // PostgreSQL Numeric often expects string to preserve precision
+        amount: payment.amount.toString(), // safe for Numeric
         currency: payment.currency,
         status: payment.status,
         payment_method: payment.paymentMethod,
         payment_intent_id: payment.paymentIntentId ?? null,
         created_at: payment.createdAt,
         updated_at: payment.updatedAt,
-        metadata: JSON.stringify(payment.metadata ?? {}),
+        metadata: payment.metadata ?? null, // pass object directly if JSONB
       })
       .execute();
 
@@ -68,8 +68,12 @@ export async function createPayment(
     });
 
     return payment;
-  } catch (error: any) {
-    logger.error('Failed to create payment', { context: 'payment-model', error });
+  } catch (error: unknown) {
+    logger.error('Failed to create payment', {
+      context: 'payment-model',
+      error, // ← full error object
+    });
+
     if (error instanceof z.ZodError) {
       throw new Error(`Invalid payment data: ${JSON.stringify(error.issues)}`);
     }
@@ -125,12 +129,13 @@ export async function updatePaymentStatus(
     const currentPayment = mapRowToPayment(existingRow);
     const now = new Date();
 
-    // Prepare metadata with status history
+    const currentHistory = (currentPayment.metadata?.['statusHistory'] as any[]) ?? [];
+
     const updatedMetadata = {
       ...(currentPayment.metadata ?? {}),
       ...(metadata ?? {}),
-      statusHistory: [
-        ...(currentPayment.metadata?.statusHistory ?? []),
+      ['statusHistory']: [
+        ...currentHistory,
         {
           from: currentPayment.status,
           to: status,
@@ -144,7 +149,7 @@ export async function updatePaymentStatus(
       .set({
         status,
         updated_at: now,
-        metadata: JSON.stringify(updatedMetadata),
+        metadata: updatedMetadata, // direct object if JSONB
       })
       .where('id', '=', id)
       .execute();
@@ -172,6 +177,6 @@ function mapRowToPayment(row: any): Payment {
     paymentIntentId: row.payment_intent_id ?? undefined,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
-    metadata: typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata,
+    metadata: row.metadata ?? undefined, // if passing object directly
   };
 }

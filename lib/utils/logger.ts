@@ -1,99 +1,58 @@
-import debug from "debug"
+import debug from 'debug';
 
 // Initialize namespaces
-const appDebug = debug("mod:app")
-const apiDebug = debug("mod:api")
-const dbDebug = debug("mod:db")
-const aiDebug = debug("mod:ai")
-const authDebug = debug("mod:auth")
+const appDebug = debug('mod:app');
+const apiDebug = debug('mod:api');
+const dbDebug = debug('mod:db');
+const aiDebug = debug('mod:ai');
+const authDebug = debug('mod:auth');
 
 // Enable debug based on environment variable
 if (process.env.DEBUG) {
-  debug.enable(process.env.DEBUG)
+  debug.enable(process.env.DEBUG);
 } else {
-  // Disable all debug logs by default
-  debug.disable()
+  debug.disable();
 }
 
-type LogLevel = "info" | "warn" | "error" | "debug"
-type LogContext = {
-  context?: string
-  data?: Record<string, any>
-}
+type LogMeta = {
+  context?: string;
+  error?: Error;
+  [key: string]: any; // Allow any additional fields (requestId, userId, etc.)
+};
 
 /**
  * Structured logger for the application
  */
 export const logger = {
-  /**
-   * Log informational message
-   */
-  info(message: string, contextOrData?: LogContext | Record<string, any>): void {
-    const context = normalizeContext(contextOrData)
-    console.log(`[INFO] ${message}`, context.data ? context.data : "")
-    appDebug("[INFO] %s %o", message, context)
+  info(message: string, meta?: LogMeta): void {
+    console.log(`[INFO] ${message}`, meta ?? '');
+    appDebug('[INFO] %s %O', message, meta ?? {});
   },
 
-  /**
-   * Log warning message
-   */
-  warn(message: string, contextOrData?: LogContext | Record<string, any>): void {
-    const context = normalizeContext(contextOrData)
-    console.warn(`[WARN] ${message}`, context.data ? context.data : "")
-    appDebug("[WARN] %s %o", message, context)
+  warn(message: string, meta?: LogMeta): void {
+    console.warn(`[WARN] ${message}`, meta ?? '');
+    appDebug('[WARN] %s %O', message, meta ?? {});
   },
 
-  /**
-   * Log error message
-   */
-  error(message: string, error?: Error, contextOrData?: LogContext | Record<string, any>): void {
-    const context = normalizeContext(contextOrData)
-    console.error(`[ERROR] ${message}`, error, context.data ? context.data : "")
-    appDebug("[ERROR] %s %o %o", message, error, context)
+  error(message: string, meta?: LogMeta): void {
+    const err = meta?.error;
+    console.error(`[ERROR] ${message}`, err ?? '', meta ?? '');
+    appDebug('[ERROR] %s %O %O', message, err ?? '', meta ?? {});
   },
 
-  /**
-   * Log debug message (only shown when DEBUG is enabled)
-   */
-  debug(message: string, contextOrData?: LogContext | Record<string, any>): void {
-    const context = normalizeContext(contextOrData)
-    appDebug("[DEBUG] %s %o", message, context)
+  debug(message: string, meta?: LogMeta): void {
+    appDebug('[DEBUG] %s %O', message, meta ?? {});
   },
 
-  /**
-   * Get a namespaced debug logger
-   */
   namespace(namespace: string): debug.Debugger {
-    return debug(`mod:${namespace}`)
+    return debug(`mod:${namespace}`);
   },
 
-  // Specific namespaced loggers
+  // Namespaced debuggers
   api: apiDebug,
   db: dbDebug,
   ai: aiDebug,
   auth: authDebug,
-}
+};
 
-/**
- * Normalize context object
- */
-function normalizeContext(contextOrData?: LogContext | Record<string, any>): LogContext {
-  if (!contextOrData) {
-    return { context: undefined, data: undefined }
-  }
-
-  if ("context" in contextOrData) {
-    return contextOrData as LogContext
-  }
-
-  return { context: undefined, data: contextOrData as Record<string, any> }
-}
-
-/**
- * Format debug message with timestamp
- */
-debug.formatters.t = () => {
-  const now = new Date()
-  return now.toISOString()
-}
-
+debug.formatters['t'] = () => new Date().toISOString();

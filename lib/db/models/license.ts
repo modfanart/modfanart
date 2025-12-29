@@ -24,7 +24,7 @@ const CreateLicenseSchema = z.object({
   terms: LicenseTermsSchema,
   expiresAt: z.date().optional(),
   paymentId: z.string().uuid().optional(),
-  metadata: z.record(z.any()).optional(),
+  metadata: z.record(z.string(), z.any()).optional(),
 });
 
 export interface License {
@@ -36,9 +36,9 @@ export interface License {
   terms: LicenseTerms;
   createdAt: Date;
   updatedAt: Date;
-  expiresAt?: Date;
-  paymentId?: string;
-  metadata?: Record<string, any>;
+  expiresAt?: Date | undefined; // ← explicitly allow undefined
+  paymentId?: string | undefined;
+  metadata?: Record<string, any> | undefined;
 }
 
 /**
@@ -157,7 +157,7 @@ export async function updateLicenseStatus(
       reason: reason ?? null,
     };
 
-    const currentHistory = (currentLicense.metadata?.statusHistory as any[]) ?? [];
+    const currentHistory = (currentLicense.metadata?.['statusHistory'] as any[]) ?? [];
     const updatedMetadata: Record<string, any> = {
       ...(currentLicense.metadata ?? {}),
       statusHistory: [...currentHistory, historyEntry],

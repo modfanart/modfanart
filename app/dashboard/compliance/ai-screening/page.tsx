@@ -1,21 +1,37 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { ArrowLeft, Save, Bot, AlertTriangle, Info, Sliders, BarChart3, CheckCircle2, XCircle } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Slider } from "@/components/ui/slider"
-import { Switch } from "@/components/ui/switch"
-import { DashboardShell } from "@/components/dashboard-shell"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import {
+  ArrowLeft,
+  Save,
+  Bot,
+  AlertTriangle,
+  Info,
+  Sliders,
+  BarChart3,
+  CheckCircle2,
+  XCircle,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
+import { DashboardShell } from '@/components/dashboard-shell';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 export default function AIScreeningPage() {
-  const router = useRouter()
+  const router = useRouter();
 
   const [settings, setSettings] = useState({
     enabled: true,
@@ -23,18 +39,18 @@ export default function AIScreeningPage() {
     autoRejectAI: true,
     notifyArtist: true,
     requireHumanReview: false,
-    sensitivityLevel: "balanced",
-    allowedAITools: ["Stable Diffusion", "Midjourney"],
+    sensitivityLevel: 'balanced',
+    allowedAITools: ['Stable Diffusion', 'Midjourney'],
     customPrompt:
-      "Analyze this artwork and determine if it was created by AI or a human artist. Consider brush strokes, details, and overall composition.",
-  })
+      'Analyze this artwork and determine if it was created by AI or a human artist. Consider brush strokes, details, and overall composition.',
+  });
 
   const handleSave = () => {
     // In a real app, this would save to a database
-    console.log("Saving AI screening settings:", settings)
+    console.log('Saving AI screening settings:', settings);
     // Show success message and redirect
-    router.push("/dashboard/compliance")
-  }
+    router.push('/dashboard/compliance');
+  };
 
   return (
     <DashboardShell>
@@ -46,7 +62,9 @@ export default function AIScreeningPage() {
         </Link>
         <div>
           <h1 className="text-2xl font-bold tracking-tight">AI Screening Configuration</h1>
-          <p className="text-muted-foreground">Configure how AI-generated content is detected and handled</p>
+          <p className="text-muted-foreground">
+            Configure how AI-generated content is detected and handled
+          </p>
         </div>
       </div>
 
@@ -54,8 +72,8 @@ export default function AIScreeningPage() {
         <Info className="h-4 w-4" />
         <AlertTitle>About AI Screening</AlertTitle>
         <AlertDescription>
-          Our platform uses AIORNOT API to detect AI-generated artwork with high accuracy. Configure your preferences
-          below to determine how AI content is handled.
+          Our platform uses AIORNOT API to detect AI-generated artwork with high accuracy. Configure
+          your preferences below to determine how AI content is handled.
         </AlertDescription>
       </Alert>
 
@@ -72,7 +90,9 @@ export default function AIScreeningPage() {
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label htmlFor="ai-detection">Enable AI Detection</Label>
-                <p className="text-sm text-muted-foreground">Screen all submissions for AI-generated content</p>
+                <p className="text-sm text-muted-foreground">
+                  Screen all submissions for AI-generated content
+                </p>
               </div>
               <Switch
                 id="ai-detection"
@@ -83,15 +103,17 @@ export default function AIScreeningPage() {
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label htmlFor="confidence-threshold">AI Confidence Threshold: {settings.confidenceThreshold}%</Label>
+                <Label htmlFor="confidence-threshold">
+                  AI Confidence Threshold: {settings.confidenceThreshold}%
+                </Label>
                 <span className="text-sm text-muted-foreground">
                   {settings.confidenceThreshold < 50
-                    ? "Lenient"
+                    ? 'Lenient'
                     : settings.confidenceThreshold < 75
-                      ? "Moderate"
-                      : settings.confidenceThreshold < 90
-                        ? "Strict"
-                        : "Very Strict"}
+                    ? 'Moderate'
+                    : settings.confidenceThreshold < 90
+                    ? 'Strict'
+                    : 'Very Strict'}
                 </span>
               </div>
               <Slider
@@ -99,12 +121,16 @@ export default function AIScreeningPage() {
                 min={30}
                 max={95}
                 step={5}
-                value={[settings.confidenceThreshold]}
-                onValueChange={(value) => setSettings({ ...settings, confidenceThreshold: value[0] })}
+                value={[settings.confidenceThreshold]} // This is fine — it's a number
+                onValueChange={(value) => {
+                  // value is number[], and it will always have at least one element
+                  // But to satisfy TypeScript, use non-null assertion or default
+                  setSettings({ ...settings, confidenceThreshold: value[0] ?? 75 });
+                }}
               />
               <p className="text-sm text-muted-foreground">
-                Set the confidence level required to flag content as AI-generated. Higher values mean fewer false
-                positives but might miss some AI art.
+                Set the confidence level required to flag content as AI-generated. Higher values
+                mean fewer false positives but might miss some AI art.
               </p>
             </div>
 
@@ -124,7 +150,9 @@ export default function AIScreeningPage() {
                   <SelectItem value="very-strict">Very Strict - Minimize AI content</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-sm text-muted-foreground">Adjust the overall sensitivity of the AI detection system</p>
+              <p className="text-sm text-muted-foreground">
+                Adjust the overall sensitivity of the AI detection system
+              </p>
             </div>
 
             <div className="space-y-3">
@@ -147,7 +175,9 @@ export default function AIScreeningPage() {
               <Sliders className="mr-2 h-5 w-5" />
               Response Actions
             </CardTitle>
-            <CardDescription>Configure how the system responds to detected AI content</CardDescription>
+            <CardDescription>
+              Configure how the system responds to detected AI content
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
@@ -188,7 +218,9 @@ export default function AIScreeningPage() {
               <Switch
                 id="human-review"
                 checked={settings.requireHumanReview}
-                onCheckedChange={(checked) => setSettings({ ...settings, requireHumanReview: checked })}
+                onCheckedChange={(checked) =>
+                  setSettings({ ...settings, requireHumanReview: checked })
+                }
               />
             </div>
           </CardContent>
@@ -200,15 +232,17 @@ export default function AIScreeningPage() {
               <CheckCircle2 className="mr-2 h-5 w-5" />
               Allowed AI Tools
             </CardTitle>
-            <CardDescription>Configure which AI tools are acceptable in your submissions</CardDescription>
+            <CardDescription>
+              Configure which AI tools are acceptable in your submissions
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <Alert variant="warning">
               <AlertTriangle className="h-4 w-4" />
               <AlertTitle>Optional Configuration</AlertTitle>
               <AlertDescription>
-                If you want to allow some AI-assisted tools but not others, configure them here. Leave empty to reject
-                all AI-generated content.
+                If you want to allow some AI-assisted tools but not others, configure them here.
+                Leave empty to reject all AI-generated content.
               </AlertDescription>
             </Alert>
 
@@ -222,7 +256,9 @@ export default function AIScreeningPage() {
                   <SelectItem value="stable-diffusion">Stable Diffusion</SelectItem>
                   <SelectItem value="midjourney">Midjourney</SelectItem>
                   <SelectItem value="dall-e">DALL-E</SelectItem>
-                  <SelectItem value="photoshop-generative-fill">Photoshop Generative Fill</SelectItem>
+                  <SelectItem value="photoshop-generative-fill">
+                    Photoshop Generative Fill
+                  </SelectItem>
                   <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
@@ -230,15 +266,18 @@ export default function AIScreeningPage() {
 
             <div className="space-y-2">
               {settings.allowedAITools.map((tool, index) => (
-                <div key={index} className="flex items-center justify-between rounded-md border px-3 py-2">
+                <div
+                  key={index}
+                  className="flex items-center justify-between rounded-md border px-3 py-2"
+                >
                   <span>{tool}</span>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => {
-                      const updatedTools = [...settings.allowedAITools]
-                      updatedTools.splice(index, 1)
-                      setSettings({ ...settings, allowedAITools: updatedTools })
+                      const updatedTools = [...settings.allowedAITools];
+                      updatedTools.splice(index, 1);
+                      setSettings({ ...settings, allowedAITools: updatedTools });
                     }}
                     className="h-8 w-8 p-0 text-muted-foreground"
                   >
@@ -267,7 +306,9 @@ export default function AIScreeningPage() {
                   </div>
                   <div className="space-y-1">
                     <p className="text-sm font-medium">Upload a test image</p>
-                    <p className="text-xs text-muted-foreground">Upload an image to test the AI detection system</p>
+                    <p className="text-xs text-muted-foreground">
+                      Upload an image to test the AI detection system
+                    </p>
                   </div>
                   <Button size="sm">Upload Image</Button>
                 </div>
@@ -287,6 +328,5 @@ export default function AIScreeningPage() {
         </Button>
       </div>
     </DashboardShell>
-  )
+  );
 }
-

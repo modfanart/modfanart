@@ -1,18 +1,18 @@
-import Link from "next/link"
-import Image from "next/image"
-import { ArrowRight, Share2, BookmarkPlus, Eye } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import Link from 'next/link';
+import Image from 'next/image';
+import { ArrowRight, Share2, BookmarkPlus, Eye } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // This would normally come from a database
 const getOpportunityById = (id: string) => {
   const contests = [
     {
-      id: "contest-1",
-      title: "Anime Expo 2023 Fan Art Contest",
-      description: "Create original fan art for popular anime series featured at Anime Expo 2023.",
+      id: 'contest-1',
+      title: 'Anime Expo 2023 Fan Art Contest',
+      description: 'Create original fan art for popular anime series featured at Anime Expo 2023.',
       fullDescription: `
         <p>Anime Expo is excited to announce our 2023 Fan Art Contest! We're looking for original fan art inspired by the anime series that will be featured at this year's expo.</p>
         
@@ -35,40 +35,44 @@ const getOpportunityById = (id: string) => {
         <p><strong>3rd Place:</strong> $250, Featured in Anime Expo digital gallery</p>
         <p><strong>People's Choice:</strong> $250, Featured in Anime Expo social media</p>
       `,
-      image: "https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=2070&auto=format&fit=crop",
-      organizer: "Anime Expo",
-      organizerLogo: "https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=2070&auto=format&fit=crop",
-      deadline: "2023-06-15",
-      prize: "$1,000",
+      image:
+        'https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=2070&auto=format&fit=crop',
+      organizer: 'Anime Expo',
+      organizerLogo:
+        'https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=2070&auto=format&fit=crop',
+      deadline: '2023-06-15',
+      prize: '$1,000',
       entries: 156,
-      status: "active",
-      categories: ["Anime", "Digital Art"],
+      status: 'active',
+      categories: ['Anime', 'Digital Art'],
       featured: true,
       requirements: [
-        "Original artwork created by you",
-        "Based on officially licensed anime series",
-        "Digital or traditional media",
-        "Appropriate for all ages",
-        "High-resolution digital file (min. 300 DPI)",
+        'Original artwork created by you',
+        'Based on officially licensed anime series',
+        'Digital or traditional media',
+        'Appropriate for all ages',
+        'High-resolution digital file (min. 300 DPI)',
       ],
       judges: [
         {
-          name: "Miyazaki Hayao",
-          role: "Renowned Animator",
-          image: "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?q=80&w=2070&auto=format&fit=crop",
+          name: 'Miyazaki Hayao',
+          role: 'Renowned Animator',
+          image:
+            'https://images.unsplash.com/photo-1568602471122-7832951cc4c5?q=80&w=2070&auto=format&fit=crop',
         },
         {
-          name: "Takahashi Rumiko",
-          role: "Manga Artist",
-          image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=1961&auto=format&fit=crop",
+          name: 'Takahashi Rumiko',
+          role: 'Manga Artist',
+          image:
+            'https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=1961&auto=format&fit=crop',
         },
       ],
-      type: "contest",
+      type: 'contest',
     },
     {
-      id: "contest-2",
-      title: "Marvel Cinematic Universe Art Challenge",
-      description: "Design fan art inspired by the latest Marvel movies and TV shows.",
+      id: 'contest-2',
+      title: 'Marvel Cinematic Universe Art Challenge',
+      description: 'Design fan art inspired by the latest Marvel movies and TV shows.',
       fullDescription: `
         <p>Marvel Entertainment is launching an exciting art challenge for fans to create original artwork inspired by the latest Marvel Cinematic Universe movies and TV shows!</p>
         
@@ -90,43 +94,47 @@ const getOpportunityById = (id: string) => {
         <p><strong>Runner-up (5):</strong> $500 each, Featured in Marvel digital gallery</p>
         <p><strong>Honorable Mentions (10):</strong> Marvel merchandise package valued at $100</p>
       `,
-      image: "https://images.unsplash.com/photo-1612036782180-6f0b6cd846fe?q=80&w=2070&auto=format&fit=crop",
-      organizer: "Marvel Entertainment",
-      organizerLogo: "https://images.unsplash.com/photo-1612036782180-6f0b6cd846fe?q=80&w=2070&auto=format&fit=crop",
-      deadline: "2023-07-30",
-      prize: "$2,500",
+      image:
+        'https://images.unsplash.com/photo-1612036782180-6f0b6cd846fe?q=80&w=2070&auto=format&fit=crop',
+      organizer: 'Marvel Entertainment',
+      organizerLogo:
+        'https://images.unsplash.com/photo-1612036782180-6f0b6cd846fe?q=80&w=2070&auto=format&fit=crop',
+      deadline: '2023-07-30',
+      prize: '$2,500',
       entries: 342,
-      status: "active",
-      categories: ["Superhero", "Movies"],
+      status: 'active',
+      categories: ['Superhero', 'Movies'],
       featured: true,
       requirements: [
-        "Original artwork created by you",
-        "Based on Marvel Cinematic Universe Phase 4",
-        "Digital or traditional media",
-        "Appropriate for general audiences",
-        "High-resolution digital file (min. 300 DPI)",
+        'Original artwork created by you',
+        'Based on Marvel Cinematic Universe Phase 4',
+        'Digital or traditional media',
+        'Appropriate for general audiences',
+        'High-resolution digital file (min. 300 DPI)',
       ],
       judges: [
         {
-          name: "Ryan Meinerding",
-          role: "Head of Visual Development at Marvel Studios",
-          image: "https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=1974&auto=format&fit=crop",
+          name: 'Ryan Meinerding',
+          role: 'Head of Visual Development at Marvel Studios',
+          image:
+            'https://images.unsplash.com/photo-1566492031773-4f4e44671857?q=80&w=1974&auto=format&fit=crop',
         },
         {
-          name: "Andy Park",
-          role: "Director of Visual Development at Marvel Studios",
-          image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=2070&auto=format&fit=crop",
+          name: 'Andy Park',
+          role: 'Director of Visual Development at Marvel Studios',
+          image:
+            'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=2070&auto=format&fit=crop',
         },
       ],
-      type: "contest",
+      type: 'contest',
     },
-  ]
+  ];
 
   const rfds = [
     {
-      id: "rfd-1",
-      title: "Star Wars Celebration Merchandise",
-      description: "Looking for unique Star Wars fan art designs for official merchandise.",
+      id: 'rfd-1',
+      title: 'Star Wars Celebration Merchandise',
+      description: 'Looking for unique Star Wars fan art designs for official merchandise.',
       fullDescription: `
         <p>Lucasfilm Ltd. is seeking talented artists to create unique Star Wars fan art designs for official merchandise for the upcoming Star Wars Celebration event.</p>
         
@@ -152,32 +160,34 @@ const getOpportunityById = (id: string) => {
           <li>Potential for ongoing collaboration opportunities</li>
         </ul>
       `,
-      image: "https://images.unsplash.com/photo-1472457897821-70d3819a0e24?q=80&w=2069&auto=format&fit=crop",
-      organizer: "Lucasfilm Ltd.",
-      organizerLogo: "https://images.unsplash.com/photo-1472457897821-70d3819a0e24?q=80&w=2069&auto=format&fit=crop",
-      deadline: "2023-09-01",
-      compensation: "Royalty-based",
-      status: "active",
-      categories: ["Movies", "Merchandise"],
+      image:
+        'https://images.unsplash.com/photo-1472457897821-70d3819a0e24?q=80&w=2069&auto=format&fit=crop',
+      organizer: 'Lucasfilm Ltd.',
+      organizerLogo:
+        'https://images.unsplash.com/photo-1472457897821-70d3819a0e24?q=80&w=2069&auto=format&fit=crop',
+      deadline: '2023-09-01',
+      compensation: 'Royalty-based',
+      status: 'active',
+      categories: ['Movies', 'Merchandise'],
       featured: true,
       requirements: [
-        "Original artwork created by you",
-        "Recognizable Star Wars elements",
-        "Appropriate for all ages",
-        "High-resolution vector files preferred",
-        "Ability to revise designs based on feedback",
+        'Original artwork created by you',
+        'Recognizable Star Wars elements',
+        'Appropriate for all ages',
+        'High-resolution vector files preferred',
+        'Ability to revise designs based on feedback',
       ],
       contactPerson: {
-        name: "Sarah Johnson",
-        role: "Licensing Manager",
-        email: "licensing@example.com",
+        name: 'Sarah Johnson',
+        role: 'Licensing Manager',
+        email: 'licensing@example.com',
       },
-      type: "rfd",
+      type: 'rfd',
     },
     {
-      id: "rfd-2",
-      title: "Fantasy Novel Cover Art",
-      description: "Seeking artists to create cover art for upcoming fantasy novel series.",
+      id: 'rfd-2',
+      title: 'Fantasy Novel Cover Art',
+      description: 'Seeking artists to create cover art for upcoming fantasy novel series.',
       fullDescription: `
         <p>Penguin Random House is seeking talented artists to create cover art for an upcoming fantasy novel series by bestselling author J.K. Rowling.</p>
         
@@ -203,52 +213,61 @@ const getOpportunityById = (id: string) => {
           <li>Exposure through Penguin Random House's global distribution network</li>
         </ul>
       `,
-      image: "https://images.unsplash.com/photo-1518281361980-b26bfd556770?q=80&w=2070&auto=format&fit=crop",
-      organizer: "Penguin Random House",
-      organizerLogo: "https://images.unsplash.com/photo-1518281361980-b26bfd556770?q=80&w=2070&auto=format&fit=crop",
-      deadline: "2023-07-20",
-      compensation: "$3,000 per cover",
-      status: "active",
-      categories: ["Books", "Fantasy"],
+      image:
+        'https://images.unsplash.com/photo-1518281361980-b26bfd556770?q=80&w=2070&auto=format&fit=crop',
+      organizer: 'Penguin Random House',
+      organizerLogo:
+        'https://images.unsplash.com/photo-1518281361980-b26bfd556770?q=80&w=2070&auto=format&fit=crop',
+      deadline: '2023-07-20',
+      compensation: '$3,000 per cover',
+      status: 'active',
+      categories: ['Books', 'Fantasy'],
       requirements: [
-        "Experience with fantasy illustration",
-        "Strong character design skills",
-        "Understanding of book cover design principles",
-        "Ability to work with art directors",
-        "Portfolio demonstrating relevant experience",
+        'Experience with fantasy illustration',
+        'Strong character design skills',
+        'Understanding of book cover design principles',
+        'Ability to work with art directors',
+        'Portfolio demonstrating relevant experience',
       ],
       contactPerson: {
-        name: "Michael Chen",
-        role: "Art Director",
-        email: "artdirector@example.com",
+        name: 'Michael Chen',
+        role: 'Art Director',
+        email: 'artdirector@example.com',
       },
-      type: "rfd",
+      type: 'rfd',
     },
-  ]
+  ];
 
   // Combine all opportunities
-  const allOpportunities = [...contests, ...rfds]
+  const allOpportunities = [...contests, ...rfds];
 
   // Find the opportunity by ID
-  return allOpportunities.find((opp) => opp.id === id)
-}
+  return allOpportunities.find((opp) => opp.id === id);
+};
 
-export default function OpportunityDetailPage({ params }: { params: { id: string } }) {
-  const opportunity = getOpportunityById(params.id)
+export default async function OpportunityDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params; // ← Unwrap the promise here
+  const opportunity = getOpportunityById(id);
 
   if (!opportunity) {
     return (
       <div className="container py-10">
         <h1 className="text-2xl font-bold">Opportunity not found</h1>
-        <p className="mt-4">The opportunity you're looking for doesn't exist or has been removed.</p>
+        <p className="mt-4">
+          The opportunity you're looking for doesn't exist or has been removed.
+        </p>
         <Link href="/opportunities" className="mt-6 inline-block">
           <Button>Back to Opportunities</Button>
         </Link>
       </div>
-    )
+    );
   }
 
-  const isContest = opportunity.type === "contest"
+  const isContest = opportunity.type === 'contest';
 
   return (
     <div className="container py-10">
@@ -264,7 +283,7 @@ export default function OpportunityDetailPage({ params }: { params: { id: string
         <div className="lg:col-span-2">
           <div className="relative mb-6 aspect-video w-full overflow-hidden rounded-lg">
             <Image
-              src={opportunity.image || "/placeholder.svg"}
+              src={opportunity.image || '/placeholder.svg'}
               alt={opportunity.title}
               fill
               className="object-cover"
@@ -289,7 +308,7 @@ export default function OpportunityDetailPage({ params }: { params: { id: string
             <div className="flex items-center gap-2">
               <div className="relative h-8 w-8 overflow-hidden rounded-full">
                 <Image
-                  src={opportunity.organizerLogo || "/placeholder.svg"}
+                  src={opportunity.organizerLogo || '/placeholder.svg'}
                   alt={opportunity.organizer}
                   fill
                   className="object-cover"
@@ -298,7 +317,7 @@ export default function OpportunityDetailPage({ params }: { params: { id: string
               <span className="font-medium">{opportunity.organizer}</span>
             </div>
             <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-100">
-              {opportunity.status === "active" ? "Active" : "Closed"}
+              {opportunity.status === 'active' ? 'Active' : 'Closed'}
             </Badge>
             <div className="flex items-center gap-1">
               <Eye className="h-4 w-4 text-muted-foreground" />
@@ -314,7 +333,10 @@ export default function OpportunityDetailPage({ params }: { params: { id: string
               {!isContest && <TabsTrigger value="contact">Contact</TabsTrigger>}
             </TabsList>
             <TabsContent value="details" className="mt-4">
-              <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: opportunity.fullDescription }} />
+              <div
+                className="prose max-w-none"
+                dangerouslySetInnerHTML={{ __html: opportunity.fullDescription }}
+              />
             </TabsContent>
             <TabsContent value="requirements" className="mt-4">
               <h3 className="mb-4 text-xl font-semibold">Submission Requirements</h3>
@@ -336,7 +358,7 @@ export default function OpportunityDetailPage({ params }: { params: { id: string
                       <CardContent className="flex items-center gap-4 p-4">
                         <div className="relative h-16 w-16 overflow-hidden rounded-full">
                           <Image
-                            src={judge.image || "/placeholder.svg"}
+                            src={judge.image || '/placeholder.svg'}
                             alt={judge.name}
                             fill
                             className="object-cover"
@@ -381,10 +403,14 @@ export default function OpportunityDetailPage({ params }: { params: { id: string
               <div className="mb-6 space-y-4">
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">Deadline</span>
-                  <span className="font-medium">{new Date(opportunity.deadline).toLocaleDateString()}</span>
+                  <span className="font-medium">
+                    {new Date(opportunity.deadline).toLocaleDateString()}
+                  </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">{isContest ? "Prize" : "Compensation"}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {isContest ? 'Prize' : 'Compensation'}
+                  </span>
                   <span className="font-medium">
                     {isContest ? (opportunity as any).prize : (opportunity as any).compensation}
                   </span>
@@ -414,13 +440,14 @@ export default function OpportunityDetailPage({ params }: { params: { id: string
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </Link>
-                <p className="text-center text-sm text-muted-foreground">Submission will open in your dashboard</p>
+                <p className="text-center text-sm text-muted-foreground">
+                  Submission will open in your dashboard
+                </p>
               </div>
             </CardContent>
           </Card>
         </div>
       </div>
     </div>
-  )
+  );
 }
-

@@ -80,9 +80,8 @@ const defaultSettings = {
 // Rate limiter middleware (assumed to return NextResponse on limit exceeded, null otherwise)
 const limiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 500, // Adjust based on your implementation (unique tokens or requests)
+  limit: 500, // ← Correct property name
 });
-
 // Edge Config client (read-only at runtime)
 const edgeConfigClient = process.env.EDGE_CONFIG ? createClient(process.env.EDGE_CONFIG) : null;
 

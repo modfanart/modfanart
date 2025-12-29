@@ -16,12 +16,11 @@ const store: RateLimitStore = {};
 setInterval(() => {
   const now = Date.now();
   for (const key in store) {
-    if (store[key].resetTime < now) {
+    if (store[key] && store[key].resetTime < now) {
       delete store[key];
     }
   }
-}, 60000); // Every minute
-
+}, 60000);
 export interface RateLimitOptions {
   limit?: number;
   windowMs?: number;
@@ -34,9 +33,8 @@ export const defaultRateLimitOptions: Required<RateLimitOptions> = {
   limit: 60, // 60 requests
   windowMs: 60 * 1000, // per minute
   keyGenerator: (req: NextRequest) => {
-    // Reliable IP detection (works across providers, including Vercel)
     const forwarded = req.headers.get('x-forwarded-for');
-    return forwarded ? forwarded.split(',')[0].trim() : 'unknown';
+    return forwarded?.split(',')[0]?.trim() || 'unknown';
   },
   skipSuccessfulRequests: false,
   identifyBot: true,

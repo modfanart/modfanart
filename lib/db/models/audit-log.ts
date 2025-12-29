@@ -147,7 +147,7 @@ export async function searchAuditLogs(params: {
     };
   } catch (error: any) {
     logger.error('Failed to search audit logs', {
-      error: error instanceof Error ? error.message : String(error),
+      error, // Pass the entire error object
     });
     throw new Error(`Failed to search audit logs: ${error.message}`);
   }

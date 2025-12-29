@@ -14,7 +14,19 @@ import { Separator } from '@/components/ui/separator';
 import { ShoppingCart, Heart, Share2, ArrowLeft, Check, Star, StarHalf } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toaster';
 import { ProductCard } from '@/components/product-card';
-
+interface Review {
+  id: string;
+  productId: string;
+  userId: string;
+  userName: string;
+  userAvatar: string;
+  rating: number;
+  title: string;
+  comment: string;
+  date: string; // ← Required string
+  helpfulCount: number;
+  verified: boolean;
+}
 // Sample product data - in a real app, this would come from an API or database
 const products = {
   'hulk-nature-tshirt': {
@@ -321,7 +333,7 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
   const [quantity, setQuantity] = useState(1);
-  const [reviews, setReviews] = useState(sampleReviews);
+  const [reviews, setReviews] = useState<Review[]>(sampleReviews);
   const [reviewFilter, setReviewFilter] = useState('all');
   const [reviewSort, setReviewSort] = useState('newest');
   const [showReviewForm, setShowReviewForm] = useState(false);
@@ -470,7 +482,17 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
     }
   });
 
-  const getRelatedProducts = () => {
+  const getRelatedProducts = (): {
+    id: string;
+    title: string;
+    price: number;
+    imageUrl: string;
+    artist: string;
+    brand: string;
+    isNew: boolean;
+    isBestseller: boolean;
+    slug: string;
+  }[] => {
     return product.relatedProducts.map(
       (slug: string) => relatedProductsData[slug as keyof typeof relatedProductsData]
     );

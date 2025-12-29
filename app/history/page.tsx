@@ -104,7 +104,7 @@ const groupActivitiesByDate = (activities: Activity[]): Record<string, Activity[
   const thisWeekStart = new Date(today);
   thisWeekStart.setDate(thisWeekStart.getDate() - thisWeekStart.getDay());
 
-  return activities.reduce((groups: Record<string, Activity[]>, activity: Activity) => {
+  return activities.reduce((groups, activity) => {
     const activityDate = new Date(activity.timestamp);
     activityDate.setHours(0, 0, 0, 0);
 
@@ -119,11 +119,9 @@ const groupActivitiesByDate = (activities: Activity[]): Record<string, Activity[
       group = 'Earlier';
     }
 
-    if (!groups[group]) {
-      groups[group] = [];
-    }
+    // ← This single line fixes the error
+    (groups[group] ??= []).push(activity);
 
-    groups[group].push(activity);
     return groups;
   }, {} as Record<string, Activity[]>);
 };
