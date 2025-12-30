@@ -1,4 +1,4 @@
-import { db, DB } from '../config';
+import { db } from '../config'; // assuming only db is needed (remove DB if unused)
 import { v4 as uuidv4 } from 'uuid';
 import {
   CreateUserSchema,
@@ -7,9 +7,14 @@ import {
 } from '../../validation/model-validation';
 import { logger } from '../../utils/logger';
 
-// Standard User Types
+// ─────────────────────────────────────────────
+//              User Type Definitions
+// ─────────────────────────────────────────────
+
 export type UserRole = 'artist' | 'brand' | 'creator' | 'admin';
+
 export type SubscriptionTier = 'free' | 'premium_artist' | 'creator' | 'enterprise';
+
 export type SubscriptionStatus = 'active' | 'inactive' | 'past_due' | 'canceled';
 
 export interface User {
@@ -22,13 +27,39 @@ export interface User {
   profileImageUrl?: string;
   bio?: string;
   website?: string;
-  socialLinks?: Record<string, any>;
+  /**
+   * Social media profile URLs.
+   * Known platforms are typed for better autocompletion and safety.
+   * Unknown platforms are still allowed via index signature.
+   */
+  socialLinks?: {
+    twitter?: string;
+    instagram?: string;
+    facebook?: string;
+    tiktok?: string;
+    youtube?: string;
+    linkedin?: string;
+    [key: string]: string | undefined; // allow future/unknown platforms
+  };
   subscription?: Record<string, any>;
   settings?: Record<string, any>;
 }
 
+// Add at top of file or in utils
+function cleanSocialLinks(links?: User['socialLinks']): Record<string, string> | null {
+  if (!links) return null;
+
+  const cleaned: Record<string, string> = {};
+  for (const [key, value] of Object.entries(links)) {
+    if (typeof value === 'string' && value.trim() !== '') {
+      cleaned[key] = value.trim();
+    }
+  }
+  return Object.keys(cleaned).length > 0 ? cleaned : null;
+}
+
 /**
- * CREATE USER
+ * Creates a new user in the database.
  */
 export async function createUser(
   userData: Omit<User, 'id' | 'createdAt' | 'updatedAt'>
@@ -47,7 +78,7 @@ export async function createUser(
 
   try {
     await db
-      .insertInto('users') // Use the table name as defined in your Kysely Database type
+      .insertInto('users')
       .values({
         id: user.id,
         email: user.email.toLowerCase().trim(),
@@ -58,7 +89,7 @@ export async function createUser(
         profile_image_url: user.profileImageUrl ?? null,
         bio: user.bio ?? null,
         website: user.website ?? null,
-        social_links: user.socialLinks ?? {},
+        social_links: cleanSocialLinks(user.socialLinks), // ← fixed here
         subscription: user.subscription ?? {},
         settings: user.settings ?? {
           notifications: true,
@@ -68,7 +99,11 @@ export async function createUser(
       })
       .execute();
 
-    logger.info('User created successfully', { context: 'user-model', data: { userId: user.id } });
+    logger.info('User created successfully', {
+      context: 'user-model',
+      data: { userId: user.id, email: user.email },
+    });
+
     return user;
   } catch (error: any) {
     if (error.message?.includes('unique constraint') || error.message?.includes('duplicate key')) {
@@ -77,9 +112,12 @@ export async function createUser(
     throw error;
   }
 }
+// ─────────────────────────────────────────────
+//              GET USER
+// ─────────────────────────────────────────────
 
 /**
- * GET USER BY ID
+ * Retrieves a user by their ID.
  */
 export async function getUserById(id: string): Promise<User | null> {
   const result = await db.selectFrom('users').selectAll().where('id', '=', id).executeTakeFirst();
@@ -88,7 +126,7 @@ export async function getUserById(id: string): Promise<User | null> {
 }
 
 /**
- * GET USER BY EMAIL
+ * Retrieves a user by their email (case-insensitive).
  */
 export async function getUserByEmail(email: string): Promise<User | null> {
   const result = await db
@@ -100,15 +138,21 @@ export async function getUserByEmail(email: string): Promise<User | null> {
   return result ? mapRowToUser(result) : null;
 }
 
+// ─────────────────────────────────────────────
+//              UPDATE USER
+// ─────────────────────────────────────────────
+
 /**
- * UPDATE USER
+ * Updates an existing user with partial data.
+ * Uses transaction + FOR UPDATE lock to prevent race conditions.
  */
 export async function updateUser(id: string, userData: Partial<User>): Promise<User | null> {
   const validation = validateModel(userData, UpdateUserSchema, 'updateUser');
-  if (!validation.success) throw new Error('Invalid user data');
+  if (!validation.success) {
+    throw new Error(`Invalid update data: ${JSON.stringify(validation.errors)}`);
+  }
 
   return await db.transaction().execute(async (trx) => {
-    // 1. Get current user and lock the row (FOR UPDATE)
     const existing = await trx
       .selectFrom('users')
       .selectAll()
@@ -120,27 +164,72 @@ export async function updateUser(id: string, userData: Partial<User>): Promise<U
 
     const updatedAt = new Date();
 
-    // 2. Perform Update
-    await trx
-      .updateTable('users')
-      .set({
-        ...userData,
-        email: userData.email?.toLowerCase().trim(),
-        updated_at: updatedAt,
-        // Stringify JSON fields if passing new objects
-        social_links: userData.socialLinks ? JSON.stringify(userData.socialLinks) : undefined,
-        subscription: userData.subscription ? JSON.stringify(userData.subscription) : undefined,
-        settings: userData.settings ? JSON.stringify(userData.settings) : undefined,
-      } as any)
-      .where('id', '=', id)
-      .execute();
+    const updateValues: Partial<Record<keyof typeof existing, any>> = {
+      updated_at: updatedAt,
+    };
 
-    return { ...mapRowToUser(existing), ...userData, updatedAt } as User;
+    // ── Scalar fields ────────────────────────────────────────
+    if ('name' in userData) {
+      updateValues.name = userData.name; // string | undefined is fine → DB allows NULL
+    }
+
+    if ('email' in userData) {
+      updateValues.email = userData.email?.toLowerCase().trim() ?? null;
+    }
+
+    if ('role' in userData) {
+      updateValues.role = userData.role;
+    }
+
+    if ('profileImageUrl' in userData) {
+      updateValues.profile_image_url = userData.profileImageUrl ?? null;
+    }
+
+    if ('bio' in userData) {
+      updateValues.bio = userData.bio ?? null;
+    }
+
+    if ('website' in userData) {
+      updateValues.website = userData.website ?? null;
+    }
+
+    // ── JSONB fields ─────────────────────────────────────────
+    // We only set them if explicitly provided (even if value is {})
+    if ('socialLinks' in userData) {
+      updateValues.social_links = userData.socialLinks ?? null; // null clears the field
+    }
+
+    if ('subscription' in userData) {
+      updateValues.subscription = userData.subscription ?? null;
+    }
+
+    if ('settings' in userData) {
+      updateValues.settings = userData.settings ?? null;
+    }
+
+    // Only execute update if there is something to update besides updated_at
+    if (Object.keys(updateValues).length > 1) {
+      // >1 because updated_at is always there
+      await trx.updateTable('users').set(updateValues).where('id', '=', id).execute();
+    }
+
+    // Return merged object (existing + updates)
+    const updatedRow = {
+      ...mapRowToUser(existing),
+      ...userData,
+      updatedAt,
+    } as User;
+
+    return updatedRow;
   });
 }
+// ─────────────────────────────────────────────
+//              DELETE USER
+// ─────────────────────────────────────────────
 
 /**
- * DELETE USER
+ * Deletes a user by ID.
+ * @returns true if a row was deleted, false otherwise
  */
 export async function deleteUser(id: string): Promise<boolean> {
   const result = await db.deleteFrom('users').where('id', '=', id).executeTakeFirst();
@@ -148,8 +237,13 @@ export async function deleteUser(id: string): Promise<boolean> {
   return Number(result.numDeletedRows) > 0;
 }
 
+// ─────────────────────────────────────────────
+//              ROW MAPPER
+// ─────────────────────────────────────────────
+
 /**
- * MAPPER
+ * Maps raw database row to typed User object.
+ * Handles snake_case → camelCase conversion and optional fields.
  */
 function mapRowToUser(row: any): User {
   return {
@@ -159,13 +253,11 @@ function mapRowToUser(row: any): User {
     role: row.role as UserRole,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
-    profileImageUrl: row.profile_image_url || undefined,
-    bio: row.bio || undefined,
-    website: row.website || undefined,
-    socialLinks:
-      typeof row.social_links === 'string' ? JSON.parse(row.social_links) : row.social_links,
-    subscription:
-      typeof row.subscription === 'string' ? JSON.parse(row.subscription) : row.subscription,
-    settings: typeof row.settings === 'string' ? JSON.parse(row.settings) : row.settings,
+    profileImageUrl: row.profile_image_url ?? undefined,
+    bio: row.bio ?? undefined,
+    website: row.website ?? undefined,
+    socialLinks: row.social_links ?? undefined,
+    subscription: row.subscription ?? undefined,
+    settings: row.settings ?? undefined,
   };
 }

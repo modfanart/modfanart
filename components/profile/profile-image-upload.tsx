@@ -1,78 +1,82 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { FileUpload } from "@/components/ui/file-upload"
-import { uploadProfileImage } from "@/lib/actions/profile-actions"
-import { toast } from "@/components/ui/use-toast"
-import { Loader2 } from "lucide-react"
+import { useState } from 'react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { FileUpload } from '@/components/ui/file-upload';
+import { uploadProfileImage } from '@/lib/actions/profile-actions';
+import { toast } from '@/components/ui/use-toast';
+import { Loader2 } from 'lucide-react';
 
 interface ProfileImageUploadProps {
-  currentImage: string | null
-  onImageChange: (url: string | null) => void
-  userInitials: string
+  currentImage: string | null;
+  onImageChange: (url: string | null) => void;
+  userInitials: string;
 }
 
-export function ProfileImageUpload({ currentImage, onImageChange, userInitials }: ProfileImageUploadProps) {
-  const [isUploading, setIsUploading] = useState(false)
+export function ProfileImageUpload({
+  currentImage,
+  onImageChange,
+  userInitials,
+}: ProfileImageUploadProps) {
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleImageUpload = async (file: File) => {
-    if (!file) return
+    if (!file) return;
 
     // Validate file type
-    const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"]
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     if (!validTypes.includes(file.type)) {
       toast({
-        title: "Invalid file type",
-        description: "Please upload a JPEG, PNG, GIF, or WebP image.",
-        variant: "destructive",
-      })
-      return
+        title: 'Invalid file type',
+        description: 'Please upload a JPEG, PNG, GIF, or WebP image.',
+        variant: 'destructive',
+      });
+      return;
     }
 
     // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024 // 5MB
+    const maxSize = 5 * 1024 * 1024; // 5MB
     if (file.size > maxSize) {
       toast({
-        title: "File too large",
-        description: "Please upload an image smaller than 5MB.",
-        variant: "destructive",
-      })
-      return
+        title: 'File too large',
+        description: 'Please upload an image smaller than 5MB.',
+        variant: 'destructive',
+      });
+      return;
     }
 
-    setIsUploading(true)
+    setIsUploading(true);
     try {
-      const result = await uploadProfileImage(file)
+      const result = await uploadProfileImage(file);
       if (result.success && result.url) {
-        onImageChange(result.url)
+        onImageChange(result.url.url);
         toast({
-          title: "Image uploaded",
-          description: "Your profile image has been updated.",
-        })
+          title: 'Image uploaded',
+          description: 'Your profile image has been updated.',
+        });
       } else {
-        throw new Error(result.error || "Failed to upload image")
+        throw new Error(result.error || 'Failed to upload image');
       }
     } catch (error) {
-      console.error("Error uploading image:", error)
+      console.error('Error uploading image:', error);
       toast({
-        title: "Upload failed",
-        description: error instanceof Error ? error.message : "Failed to upload image",
-        variant: "destructive",
-      })
+        title: 'Upload failed',
+        description: error instanceof Error ? error.message : 'Failed to upload image',
+        variant: 'destructive',
+      });
     } finally {
-      setIsUploading(false)
+      setIsUploading(false);
     }
-  }
+  };
 
   const handleRemoveImage = () => {
-    onImageChange(null)
+    onImageChange(null);
     toast({
-      title: "Image removed",
-      description: "Your profile image has been removed.",
-    })
-  }
+      title: 'Image removed',
+      description: 'Your profile image has been removed.',
+    });
+  };
 
   return (
     <div className="flex items-center gap-6">
@@ -83,7 +87,7 @@ export function ProfileImageUpload({ currentImage, onImageChange, userInitials }
           </div>
         ) : (
           <>
-            <AvatarImage src={currentImage || ""} alt="Profile" />
+            <AvatarImage src={currentImage || ''} alt="Profile" />
             <AvatarFallback className="text-lg">{userInitials}</AvatarFallback>
           </>
         )}
@@ -104,6 +108,5 @@ export function ProfileImageUpload({ currentImage, onImageChange, userInitials }
         </div>
       </div>
     </div>
-  )
+  );
 }
-

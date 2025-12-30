@@ -1,115 +1,117 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import * as z from "zod"
-import { Button } from "@/components/ui/button"
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { toast } from "@/components/ui/use-toast"
-import { ProfileImageUpload } from "@/components/profile/profile-image-upload"
-import { updateUserProfile } from "@/lib/actions/profile-actions"
-import type { User } from "@/lib/db/models/user"
+import { useState } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
+import { Button } from '@/components/ui/button';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from '@/components/ui/use-toast';
+import { ProfileImageUpload } from '@/components/profile/profile-image-upload';
+import { updateUserProfile } from '@/lib/actions/profile-actions';
+import type { User } from '@/lib/db/models/user';
 
 const profileFormSchema = z.object({
   name: z
     .string()
     .min(2, {
-      message: "Name must be at least 2 characters.",
+      message: 'Name must be at least 2 characters.',
     })
     .max(50, {
-      message: "Name must not be longer than 50 characters.",
+      message: 'Name must not be longer than 50 characters.',
     }),
   bio: z
     .string()
     .max(500, {
-      message: "Bio must not be longer than 500 characters.",
+      message: 'Bio must not be longer than 500 characters.',
     })
     .optional(),
   website: z
     .string()
     .url({
-      message: "Please enter a valid URL.",
+      message: 'Please enter a valid URL.',
     })
     .optional()
-    .or(z.literal("")),
+    .or(z.literal('')),
   twitter: z
     .string()
     .url({
-      message: "Please enter a valid URL.",
+      message: 'Please enter a valid URL.',
     })
     .optional()
-    .or(z.literal("")),
+    .or(z.literal('')),
   instagram: z
     .string()
     .url({
-      message: "Please enter a valid URL.",
+      message: 'Please enter a valid URL.',
     })
     .optional()
-    .or(z.literal("")),
-})
+    .or(z.literal('')),
+});
 
-type ProfileFormValues = z.infer<typeof profileFormSchema>
+type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 interface ProfileFormProps {
-  user: User
+  user: User;
 }
 
 export function ProfileForm({ user }: ProfileFormProps) {
-  const [isLoading, setIsLoading] = useState<boolean>(false)
-  const [profileImage, setProfileImage] = useState<string | null>(user.profileImageUrl || null)
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [profileImage, setProfileImage] = useState<string | null>(user.profileImageUrl || null);
 
   // Initialize form with user data
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
       name: user.name,
-      bio: user.bio || "",
-      website: user.website || "",
-      twitter: user.socialLinks?.twitter || "",
-      instagram: user.socialLinks?.instagram || "",
+      bio: user.bio || '',
+      website: user.website || '',
+      twitter: user.socialLinks?.['twitter'] || '', // ← bracket notation
+      instagram: user.socialLinks?.['instagram'] || '', // ← bracket notation
     },
-    mode: "onChange",
-  })
+    mode: 'onChange',
+  });
 
   async function onSubmit(data: ProfileFormValues) {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      // Prepare the data for submission
+      const socialLinks = Object.fromEntries(
+        Object.entries({
+          twitter: data.twitter?.trim() || null,
+          instagram: data.instagram?.trim() || null,
+        }).filter(([_, value]) => value !== null)
+      );
+
       const profileData = {
-        name: data.name,
-        bio: data.bio,
-        website: data.website || null,
-        socialLinks: {
-          twitter: data.twitter || null,
-          instagram: data.instagram || null,
-          ...(user.socialLinks || {}), // Preserve other social links
-        },
-        profileImageUrl: profileImage,
-      }
+        name: data.name.trim(),
+        bio: data.bio?.trim() || null,
+        website: data.website?.trim() || null,
+        socialLinks,
+        profileImageUrl: profileImage || null,
+      };
 
-      // Update the user profile
-      const result = await updateUserProfile(profileData)
+      const result = await updateUserProfile(profileData);
+      if (!result.success) throw new Error(result.error);
 
-      if (result.success) {
-        toast({
-          title: "Profile updated",
-          description: "Your profile has been updated successfully.",
-        })
-      } else {
-        throw new Error(result.error || "Failed to update profile")
-      }
+      toast({ title: 'Profile updated', description: 'Changes saved successfully.' });
     } catch (error) {
-      console.error("Error updating profile:", error)
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update profile",
-        variant: "destructive",
-      })
+        title: 'Update failed',
+        description: error instanceof Error ? error.message : 'Something went wrong',
+        variant: 'destructive',
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
@@ -145,9 +147,15 @@ export function ProfileForm({ user }: ProfileFormProps) {
               <FormItem>
                 <FormLabel>Bio</FormLabel>
                 <FormControl>
-                  <Textarea placeholder="Tell us about yourself" className="resize-none min-h-[120px]" {...field} />
+                  <Textarea
+                    placeholder="Tell us about yourself"
+                    className="resize-none min-h-[120px]"
+                    {...field}
+                  />
                 </FormControl>
-                <FormDescription>Brief description for your profile. Max 500 characters.</FormDescription>
+                <FormDescription>
+                  Brief description for your profile. Max 500 characters.
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -202,11 +210,10 @@ export function ProfileForm({ user }: ProfileFormProps) {
           </div>
 
           <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Updating..." : "Update profile"}
+            {isLoading ? 'Updating...' : 'Update profile'}
           </Button>
         </form>
       </Form>
     </div>
-  )
+  );
 }
-

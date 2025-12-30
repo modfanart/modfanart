@@ -173,6 +173,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Helper to get current_period_end from the first subscription item (common for single-item subscriptions)
+    const getCurrentPeriodEnd = (subscription: Stripe.Subscription): string | null => {
+      const itemPeriodEnd = subscription.items.data[0]?.price.recurring
+        ? subscription.items.data[0].current_period_end
+        : null;
+      return itemPeriodEnd ? new Date(itemPeriodEnd * 1000).toISOString() : null;
+    };
+
     // Handle the event based on its type
     try {
       switch (event.type) {
@@ -208,7 +216,7 @@ export async function POST(req: NextRequest) {
               subscriptionId: subscription.id,
               customerId: subscription.customer,
               status: subscription.status,
-              currentPeriodEnd: new Date(subscription.current_period_end * 1000).toISOString(),
+              currentPeriodEnd: getCurrentPeriodEnd(subscription),
             },
           });
 
@@ -229,9 +237,7 @@ export async function POST(req: NextRequest) {
               subscriptionId: updatedSubscription.id,
               customerId: updatedSubscription.customer,
               status: updatedSubscription.status,
-              currentPeriodEnd: new Date(
-                updatedSubscription.current_period_end * 1000
-              ).toISOString(),
+              currentPeriodEnd: getCurrentPeriodEnd(updatedSubscription),
             },
           });
 
@@ -275,7 +281,7 @@ export async function POST(req: NextRequest) {
               customerId: invoice.customer,
               amount: invoice.amount_paid,
               currency: invoice.currency,
-              subscriptionId: invoice.subscription,
+              subscriptionId: invoice.subscription, // string | null – safe to log directly
             },
           });
 
@@ -295,7 +301,7 @@ export async function POST(req: NextRequest) {
               customerId: invoice.customer,
               amount: invoice.amount_due,
               currency: invoice.currency,
-              subscriptionId: invoice.subscription,
+              subscriptionId: invoice.subscription, // string | null
               attemptCount: invoice.attempt_count,
             },
           });

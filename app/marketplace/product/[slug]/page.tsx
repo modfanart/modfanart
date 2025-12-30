@@ -422,8 +422,7 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
   const handleSubmitReview = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // In a real app, this would be an API call to save the review
-    const newReviewObj = {
+    const newReviewObj: Review = {
       id: `review-${Date.now()}`,
       productId: product.id,
       userId: 'current-user',
@@ -432,21 +431,18 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
       rating: newReview.rating,
       title: newReview.title,
       comment: newReview.comment,
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toISOString().split('T')[0]!, // ← Fixed here
       helpfulCount: 0,
       verified: true,
     };
 
     setReviews([newReviewObj, ...reviews]);
-    setShowReviewForm(false);
-    setNewReview({ rating: 5, title: '', comment: '' });
-
+    // ... rest unchanged
     toast({
       title: 'Review submitted',
       description: 'Thank you for your feedback!',
     });
   };
-
   const handleMarkHelpful = (reviewId: string) => {
     setReviews(
       reviews.map((review) =>

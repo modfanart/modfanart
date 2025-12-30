@@ -181,7 +181,7 @@ export function ProductReviews({ productId, rating, reviewCount }: ProductReview
 
     // Simulate API call
     setTimeout(() => {
-      const newReviewObj = {
+      const newReviewObj: Review = {
         id: `review-${Date.now()}`,
         user: {
           name: 'You',
@@ -191,7 +191,7 @@ export function ProductReviews({ productId, rating, reviewCount }: ProductReview
         rating: newReview.rating,
         title: newReview.title,
         content: newReview.content,
-        date: new Date().toISOString().split('T')[0],
+        date: new Date().toLocaleDateString('en-CA'), // ← Best solution
         helpful: 0,
         verified: true,
       };

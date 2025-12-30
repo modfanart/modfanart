@@ -1,10 +1,10 @@
-"use client"
+'use client';
 
-import Link from "next/link"
-import Image from "next/image"
-import { usePathname } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { UserNav } from "@/components/user-nav"
+import Link from 'next/link';
+import Image from 'next/image';
+import { usePathname } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { UserNav } from '@/components/user-nav';
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -13,20 +13,21 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
-} from "@/components/ui/navigation-menu"
-import { useEffect } from "react"
+} from '@/components/ui/navigation-menu';
+import { useEffect } from 'react';
 
 export function MainNav() {
-  const pathname = usePathname()
+  const pathname = usePathname();
 
   // Debug logging for navigation
   useEffect(() => {
-    console.log("MainNav rendered with pathname:", pathname)
-  }, [pathname])
+    console.log('MainNav rendered with pathname:', pathname);
+  }, [pathname]);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background">
       <div className="container flex h-16 items-center">
+        {/* Logo */}
         <Link href="/" className="flex items-center mr-8">
           <Image
             src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/mod-logo-dark-gTZuJePnecraDwGyMlBCHe6E6xJgsx.png"
@@ -34,22 +35,32 @@ export function MainNav() {
             width={100}
             height={40}
             className="h-8 w-auto"
+            priority // Helps with LCP for header logo
           />
         </Link>
+
+        {/* Desktop Navigation */}
         <NavigationMenu className="hidden md:flex">
           <NavigationMenuList>
+            {/* Home */}
             <NavigationMenuItem>
-              <Link href="/" className={navigationMenuTriggerStyle()} prefetch={true}>
+              <Link href="/" className={navigationMenuTriggerStyle()} prefetch={false}>
                 Home
               </Link>
             </NavigationMenuItem>
+
+            {/* Pricing */}
             <NavigationMenuItem>
-              <Link href="/pricing" className={navigationMenuTriggerStyle()} prefetch={true}>
+              <Link href="/pricing" className={navigationMenuTriggerStyle()} prefetch={false}>
                 Pricing
               </Link>
             </NavigationMenuItem>
+
+            {/* Gallery Dropdown */}
             <NavigationMenuItem>
-              <NavigationMenuTrigger>Gallery</NavigationMenuTrigger>
+              <NavigationMenuTrigger className={navigationMenuTriggerStyle()}>
+                Gallery
+              </NavigationMenuTrigger>
               <NavigationMenuContent>
                 <ul className="grid gap-3 p-4 md:w-[400px] lg:w-[500px] lg:grid-cols-2">
                   <li>
@@ -71,7 +82,9 @@ export function MainNav() {
                         href="/gallery/available"
                         className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
                       >
-                        <div className="text-sm font-medium leading-none">Available for Licensing</div>
+                        <div className="text-sm font-medium leading-none">
+                          Available for Licensing
+                        </div>
                         <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
                           Discover fan art available for commercial licensing
                         </p>
@@ -81,18 +94,26 @@ export function MainNav() {
                 </ul>
               </NavigationMenuContent>
             </NavigationMenuItem>
+
+            {/* Opportunities */}
             <NavigationMenuItem>
-              <Link href="/opportunities" className={navigationMenuTriggerStyle()} prefetch={true}>
+              <Link href="/opportunities" className={navigationMenuTriggerStyle()} prefetch={false}>
                 Opportunities
               </Link>
             </NavigationMenuItem>
+
+            {/* Marketplace */}
             <NavigationMenuItem>
-              <Link href="/marketplace" className={navigationMenuTriggerStyle()} prefetch={true}>
+              <Link href="/marketplace" className={navigationMenuTriggerStyle()} prefetch={false}>
                 Marketplace
               </Link>
             </NavigationMenuItem>
+
+            {/* Resources Dropdown */}
             <NavigationMenuItem>
-              <NavigationMenuTrigger>Resources</NavigationMenuTrigger>
+              <NavigationMenuTrigger className={navigationMenuTriggerStyle()}>
+                Resources
+              </NavigationMenuTrigger>
               <NavigationMenuContent>
                 <ul className="grid gap-3 p-4 md:w-[400px] lg:w-[500px] lg:grid-cols-2">
                   <li>
@@ -124,8 +145,12 @@ export function MainNav() {
                 </ul>
               </NavigationMenuContent>
             </NavigationMenuItem>
+
+            {/* About Dropdown */}
             <NavigationMenuItem>
-              <NavigationMenuTrigger>About</NavigationMenuTrigger>
+              <NavigationMenuTrigger className={navigationMenuTriggerStyle()}>
+                About
+              </NavigationMenuTrigger>
               <NavigationMenuContent>
                 <ul className="grid gap-3 p-4 md:w-[400px] lg:w-[500px] lg:grid-cols-2">
                   <li>
@@ -172,6 +197,8 @@ export function MainNav() {
             </NavigationMenuItem>
           </NavigationMenuList>
         </NavigationMenu>
+
+        {/* Right side actions */}
         <div className="ml-auto flex items-center gap-2">
           <Link href="/login" className="hidden md:block">
             <Button variant="outline">Log in</Button>
@@ -183,6 +210,5 @@ export function MainNav() {
         </div>
       </div>
     </header>
-  )
+  );
 }
-
