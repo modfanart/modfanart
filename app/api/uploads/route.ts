@@ -4,7 +4,9 @@ import { uploadFile, validateFile } from '@/lib/db/storage';
 import { logger } from '@/lib/logger';
 import { rateLimit } from '@/lib/middleware/rate-limit';
 import { getLimits } from '@/lib/edge-config';
-
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+export const fetchCache = 'force-no-store';
 // Input validation schema
 const UploadRequestSchema = z.object({
   filename: z.string().min(1).max(255),

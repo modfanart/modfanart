@@ -8,9 +8,9 @@ import { requireAuth } from '@/lib/middleware/requireAuth';
 import { sanitizeAndValidate, sanitizeRedirectUrl } from '@/lib/utils/sanitize';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-
-export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+export const fetchCache = 'force-no-store';
 
 /* -------------------------------------------------------------------------- */
 /*                                   Schema                                   */

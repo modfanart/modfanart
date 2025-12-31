@@ -3,6 +3,7 @@ import { logger } from '@/lib/logger';
 import { getComplianceRules } from '@/lib/db/config-service';
 import { getSubmissionsByStatus } from '@/lib/db/models/submission';
 
+export const fetchCache = 'force-no-store';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 

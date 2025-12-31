@@ -10,9 +10,9 @@ import { sanitizeRedirectUrl } from '@/lib/utils/sanitize';
 /* -------------------------------------------------------------------------- */
 /*                                  Runtime                                   */
 /* -------------------------------------------------------------------------- */
-
-export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+export const fetchCache = 'force-no-store';
 
 /* -------------------------------------------------------------------------- */
 /*                                   Schema                                   */

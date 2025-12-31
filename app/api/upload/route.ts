@@ -1,6 +1,8 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { uploadFile } from '@/lib/db/storage';
-
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+export const fetchCache = 'force-no-store';
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
