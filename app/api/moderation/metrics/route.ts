@@ -1,11 +1,11 @@
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+export const fetchCache = 'force-no-store';
+export const revalidate = 0;
 import { type NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { getComplianceRules } from '@/lib/db/config-service';
 import { getSubmissionsByStatus } from '@/lib/db/models/submission';
-
-export const fetchCache = 'force-no-store';
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
 
 /* -------------------------------------------------------------------------- */
 /*                                   GET                                      */

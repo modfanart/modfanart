@@ -1,3 +1,7 @@
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+export const fetchCache = 'force-no-store';
+export const revalidate = 0;
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -7,10 +11,6 @@ import { analyzeSubmission } from '@/lib/services/moderation-service';
 import { createSubmission } from '@/lib/db/models/submission';
 import { getUserById } from '@/lib/db/models/user';
 
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
-
-export const fetchCache = 'force-no-store';
 /* -------------------------------------------------------------------------- */
 /*                                   Schema                                   */
 /* -------------------------------------------------------------------------- */

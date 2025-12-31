@@ -1,10 +1,11 @@
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+export const fetchCache = 'force-no-store';
+export const revalidate = 0;
+
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { logger } from '@/lib/logger';
-
-export const fetchCache = 'force-no-store';
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
 
 /* -------------------------------------------------------------------------- */
 /*                                   Schemas                                  */

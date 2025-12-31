@@ -1,8 +1,10 @@
-import { NextResponse } from 'next/server';
-import { getSubmissionById } from '@/lib/db/models/submission';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 export const fetchCache = 'force-no-store';
+export const revalidate = 0;
+import { NextResponse } from 'next/server';
+import { getSubmissionById } from '@/lib/db/models/submission';
+
 type RouteContext = {
   params: Promise<{ id: string }>;
 };

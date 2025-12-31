@@ -1,10 +1,10 @@
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+export const fetchCache = 'force-no-store';
+export const revalidate = 0;
 import { type NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
 import { analyzeSubmission } from '@/lib/services/moderation-service';
-
-export const fetchCache = 'force-no-store';
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
 
 /* -------------------------------------------------------------------------- */
 /*                                    POST                                    */

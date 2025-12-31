@@ -1,7 +1,9 @@
-import { type NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 export const fetchCache = 'force-no-store';
+export const revalidate = 0;
+import { type NextRequest, NextResponse } from 'next/server';
+
 export async function GET(request: NextRequest) {
   try {
     // In a real implementation, this would fetch from your database

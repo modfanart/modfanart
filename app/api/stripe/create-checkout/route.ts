@@ -1,3 +1,7 @@
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+export const fetchCache = 'force-no-store';
+export const revalidate = 0;
 import { type NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { z } from 'zod';
@@ -8,9 +12,6 @@ import { requireAuth } from '@/lib/middleware/requireAuth';
 import { sanitizeAndValidate, sanitizeRedirectUrl } from '@/lib/utils/sanitize';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
-export const fetchCache = 'force-no-store';
 
 /* -------------------------------------------------------------------------- */
 /*                                   Schema                                   */

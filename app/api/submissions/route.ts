@@ -1,3 +1,7 @@
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+export const fetchCache = 'force-no-store';
+export const revalidate = 0;
 import { type NextRequest, NextResponse } from 'next/server';
 import {
   getSubmissionsByUserId,
@@ -5,9 +9,7 @@ import {
   createSubmission,
 } from '@/lib/db/models/submission';
 import { getUserById } from '@/lib/db/models/user';
-export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
-export const fetchCache = 'force-no-store';
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
