@@ -1,10 +1,14 @@
+// app/api/stripe/create-checkout/route.ts
+
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 export const fetchCache = 'force-no-store';
 export const revalidate = 0;
+
 import { type NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { z } from 'zod';
+import crypto from 'crypto';
 
 import { logger } from '@/lib/logger';
 import { rateLimit } from '@/lib/middleware/rate-limit';
@@ -14,9 +18,8 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 
 /* -------------------------------------------------------------------------- */
-/*                                   Schema                                   */
+/* Schema */
 /* -------------------------------------------------------------------------- */
-
 const CheckoutSchema = z.object({
   tier: z.string().min(1, 'Tier is required'),
   planId: z.string().optional(),
@@ -25,9 +28,8 @@ const CheckoutSchema = z.object({
 });
 
 /* -------------------------------------------------------------------------- */
-/*                               Configuration                                */
+/* Configuration */
 /* -------------------------------------------------------------------------- */
-
 const ALLOWED_DOMAINS = [
   'localhost',
   'mod-platform.vercel.app',
@@ -40,18 +42,9 @@ const stripeRateLimit = {
   windowMs: 60 * 1000,
 };
 
-const stripe = (() => {
-  const key = process.env.STRIPE_SECRET_KEY;
-  if (!key) {
-    throw new Error('STRIPE_SECRET_KEY not configured');
-  }
-  return new Stripe(key);
-})();
-
 /* -------------------------------------------------------------------------- */
-/*                                    POST                                    */
+/* POST Handler */
 /* -------------------------------------------------------------------------- */
-
 export async function POST(req: NextRequest) {
   const requestId = crypto.randomUUID();
   const startTime = Date.now();
@@ -62,12 +55,29 @@ export async function POST(req: NextRequest) {
   });
 
   try {
-    /* ---------------------------- Rate Limit ---------------------------- */
+    // ── Lazy Stripe initialization (prevents build-time execution) ──
+    let stripe: Stripe;
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+
+    if (!stripeSecretKey) {
+      logger.error('Missing STRIPE_SECRET_KEY', { requestId });
+      return NextResponse.json(
+        { success: false, error: 'Server configuration error', requestId },
+        { status: 500 }
+      );
+    }
+
+    stripe = new Stripe(stripeSecretKey, {
+      // Optional: pin API version if needed
+      // apiVersion: '2024-10-28.acacia',
+    });
+
+    // ── Rate limiting ──
     const limiter = rateLimit(stripeRateLimit);
     const rateLimitResponse = await limiter(req);
     if (rateLimitResponse) return rateLimitResponse;
 
-    /* ------------------------------ Auth -------------------------------- */
+    // ── Authentication ──
     const authResponse = await requireAuth(req);
     if (authResponse) return authResponse;
 
@@ -79,7 +89,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    /* ------------------------------ Body -------------------------------- */
+    // ── Parse & validate body ──
     let body: unknown;
     try {
       body = await req.json();
@@ -91,7 +101,6 @@ export async function POST(req: NextRequest) {
     }
 
     const validation = sanitizeAndValidate(body, CheckoutSchema, 'stripe-checkout');
-
     if (!validation.success || !validation.data) {
       return NextResponse.json(
         {
@@ -106,7 +115,7 @@ export async function POST(req: NextRequest) {
 
     const { tier, userId, planId, returnUrl } = validation.data;
 
-    /* --------------------------- Authorization --------------------------- */
+    // ── Authorization check ──
     const authenticatedUserId = session.user.id;
     const role = session.user.role ?? 'user';
 
@@ -121,7 +130,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    /* -------------------------- Redirect URL ---------------------------- */
+    // ── Sanitize return URL ──
     const sanitizedReturnUrl = returnUrl
       ? sanitizeRedirectUrl(returnUrl, ALLOWED_DOMAINS)
       : process.env.NEXT_PUBLIC_APP_URL;
@@ -133,9 +142,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    /* --------------------------- Pricing -------------------------------- */
+    // ── Determine Stripe price & mode ──
     let priceId: string;
-    let mode: 'subscription' | 'payment' = 'subscription';
+    let mode: Stripe.Checkout.SessionCreateParams.Mode = 'subscription';
 
     switch (tier) {
       case 'premium_artist':
@@ -158,7 +167,7 @@ export async function POST(req: NextRequest) {
         );
     }
 
-    /* ----------------------- Stripe Session ----------------------------- */
+    // ── Create Stripe Checkout Session ──
     const sessionResult = await stripe.checkout.sessions.create({
       mode,
       payment_method_types: ['card'],
