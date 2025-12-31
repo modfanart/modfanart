@@ -6,6 +6,7 @@ import {
   validateModel,
 } from '../../validation/model-validation';
 import { logger } from '../../utils/logger';
+import type { Database } from '../config';
 
 export type ProductStatus = 'active' | 'inactive' | 'draft' | 'archived';
 
@@ -140,7 +141,7 @@ export async function updateProduct(
 
     const updatedAt = new Date();
 
-    const updatePayload: Partial<DB['products']> = {
+    const updatePayload: Partial<Database['products']> = {
       updated_at: updatedAt,
     };
 
@@ -172,7 +173,7 @@ export async function updateProduct(
       ...current,
       ...productData,
       updatedAt,
-      metadata: productData.metadata ?? current.metadata,
+      ...(productData.metadata !== undefined ? { metadata: productData.metadata } : {}),
     };
 
     logger.info('Product updated', { context: 'product-model', productId: id });

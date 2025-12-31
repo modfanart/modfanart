@@ -2,29 +2,11 @@ import type { NextAuthOptions } from 'next-auth';
 import type { JWT } from 'next-auth/jwt';
 import GoogleProvider from 'next-auth/providers/google';
 import { getServerSession } from 'next-auth/next';
-
+import { User } from '@/lib/db/models/user';
 import { getUserByEmail, getUserById, createUser } from '@/lib/db/models/user'; // ← add createUser
 import { logger } from '@/lib/logger';
 
 // Augment NextAuth types (put this in types/next-auth.d.ts instead of here)
-declare module 'next-auth' {
-  interface Session {
-    user: {
-      id: string;
-      role: string;
-      name?: string | null;
-      email?: string | null;
-      image?: string | null;
-    };
-  }
-}
-
-declare module 'next-auth/jwt' {
-  interface JWT {
-    id: string;
-    role: string;
-  }
-}
 
 export const authOptions: NextAuthOptions = {
   session: {
@@ -56,30 +38,43 @@ export const authOptions: NextAuthOptions = {
 
     async jwt({ token, user, account, profile }) {
       // Initial sign-in only
-      if (user && account && profile) {
+      if (user && account && profile && user.email) {
         // Find or create user in your database
-        let dbUser = await getUserByEmail(user.email!);
+        let dbUser = await getUserByEmail(user.email);
 
         if (!dbUser) {
-          // Create new user in your DB
           try {
-            dbUser = await createUser({
+            const createUserData: Omit<User, 'id' | 'createdAt' | 'updatedAt'> = {
               email: user.email!,
-              name: user.name || null,
-              image: user.image || null,
-              // You might want to set a default role or trigger onboarding
-              role: 'user',
+              name: user.name ?? 'Unknown User',
+              role: 'user' as const,
+            };
+
+            if (user.image) {
+              createUserData.profileImageUrl = user.image;
+            }
+
+            dbUser = await createUser(createUserData);
+
+            logger.info('New user created via OAuth', {
+              userId: dbUser.id,
+              email: user.email,
             });
-            logger.info('New user created via OAuth', { userId: dbUser.id, email: user.email });
           } catch (error) {
-            logger.error('Failed to create user during sign-in', { error, email: user.email });
-            // Optionally reject sign-in here by throwing or returning modified token
+            logger.error('Failed to create user during sign-in', {
+              error,
+              email: user.email,
+            });
+            // Optionally: return false in signIn callback instead of failing here
+            return token; // continue with empty token (user won't be logged in)
           }
         }
 
-        // Attach your app's user ID and role to the token
-        token.id = dbUser.id;
-        token.role = dbUser.role || 'user';
+        // Now dbUser is guaranteed to exist
+        if (dbUser) {
+          token.id = dbUser.id;
+          token.role = dbUser.role;
+        }
       }
 
       return token;

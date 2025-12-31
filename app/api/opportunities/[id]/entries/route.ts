@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 
-// Define the shape of a single entry
 type Entry = {
   id: string;
   title: string;
@@ -10,7 +9,6 @@ type Entry = {
   imageUrl: string;
 };
 
-// Define the mock data with an index signature
 const mockEntriesByOpportunity: Record<string, Entry[]> = {
   'opp-123': [
     {
@@ -58,10 +56,14 @@ const mockEntriesByOpportunity: Record<string, Entry[]> = {
   ],
 };
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
-  try {
-    const entries = mockEntriesByOpportunity[params.id] || [];
+type RouteContext = {
+  params: Promise<{ id: string }>;
+};
 
+export async function GET(request: Request, { params }: RouteContext) {
+  try {
+    const { id } = await params;
+    const entries = mockEntriesByOpportunity[id] || [];
     return NextResponse.json(entries);
   } catch (error) {
     console.error('Error fetching entries:', error);
@@ -69,12 +71,12 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: RouteContext) {
   try {
+    const { id } = await params;
     const body = await request.json();
 
-    // In a real implementation, add the entry to the database
-    console.log(`Adding entry to opportunity ${params.id}:`, body);
+    console.log(`Adding entry to opportunity ${id}:`, body);
 
     return NextResponse.json({
       success: true,

@@ -71,7 +71,7 @@ export async function createPayment(
   } catch (error: unknown) {
     logger.error('Failed to create payment', {
       context: 'payment-model',
-      error, // ← full error object
+      error: error instanceof Error ? error : new Error(String(error)),
     });
 
     if (error instanceof z.ZodError) {

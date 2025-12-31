@@ -1,177 +1,192 @@
-import { type NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { z } from 'zod';
 import { getServerSession } from 'next-auth/next';
+import { getUserById } from '@/lib/db/models/user';
 import { authOptions } from '@/lib/auth';
 import { logger } from '@/lib/logger';
+import { sanitizeRedirectUrl } from '@/lib/utils/sanitize';
 
-// Define validation schema for portal creation
+/* -------------------------------------------------------------------------- */
+/*                                  Runtime                                   */
+/* -------------------------------------------------------------------------- */
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+/* -------------------------------------------------------------------------- */
+/*                                   Schema                                   */
+/* -------------------------------------------------------------------------- */
+
 const PortalSchema = z.object({
   customerId: z.string().min(1, 'Customer ID is required'),
-  returnUrl: z.string().url('Invalid return URL').optional(),
+  returnUrl: z.string().url().optional(),
 });
 
-// Initialize Stripe with the secret key
-const getStripe = () => {
-  const secretKey = process.env.STRIPE_SECRET_KEY;
-  if (!secretKey) {
+/* -------------------------------------------------------------------------- */
+/*                             Allowed Redirects                              */
+/* -------------------------------------------------------------------------- */
+
+const ALLOWED_DOMAINS = [
+  'localhost',
+  'mod-platform.vercel.app',
+  'mod-platform-staging.vercel.app',
+  'mod-platform-prod.vercel.app',
+];
+
+/* -------------------------------------------------------------------------- */
+/*                             Stripe Singleton                               */
+/* -------------------------------------------------------------------------- */
+
+let stripe: Stripe | null = null;
+
+function getStripe(): Stripe {
+  if (stripe) return stripe;
+
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) {
     throw new Error('STRIPE_SECRET_KEY is not configured');
   }
-  return new Stripe(secretKey); // No apiVersion → uses latest stable
-};
+
+  stripe = new Stripe(key);
+  return stripe;
+}
+
+/* -------------------------------------------------------------------------- */
+/*                                    POST                                    */
+/* -------------------------------------------------------------------------- */
 
 export async function POST(req: NextRequest) {
   const requestId = crypto.randomUUID();
   const startTime = Date.now();
 
-  logger.info(`Stripe portal creation request received`, {
+  logger.info('Stripe portal request received', {
     context: 'stripe-portal-api',
     requestId,
-    timestamp: new Date().toISOString(),
   });
 
   try {
-    // Check for Stripe configuration
-    if (!process.env.STRIPE_SECRET_KEY) {
-      logger.error('STRIPE_SECRET_KEY is not configured', {
-        context: 'stripe-portal-api',
-        requestId,
-      });
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Payment service is not configured',
-          requestId,
-        },
-        { status: 500 }
-      );
-    }
-
-    // Check authentication
+    /* ------------------------------- Auth -------------------------------- */
     const session = await getServerSession(authOptions);
-    if (!session || !session.user) {
-      logger.warn('Unauthorized attempt to create billing portal session', {
+
+    if (!session?.user?.id) {
+      logger.warn('Unauthorized portal access attempt', {
         context: 'stripe-portal-api',
         requestId,
-        ip: req.headers.get('x-forwarded-for') || 'unknown',
       });
+
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Unauthorized',
-          requestId,
-        },
+        { success: false, error: 'Unauthorized', requestId },
         { status: 401 }
       );
     }
 
-    // Parse and validate request body
-    let body;
+    const userId = session.user.id;
+    const role = session.user.role ?? 'user';
+
+    /* ------------------------------ Body --------------------------------- */
+    let body: unknown;
+
     try {
       body = await req.json();
-    } catch (error) {
-      logger.warn('Failed to parse request body', {
-        context: 'stripe-portal-api',
-        requestId,
-        error: error instanceof Error ? error.message : String(error),
-      });
+    } catch {
+      return NextResponse.json(
+        { success: false, error: 'Invalid JSON body', requestId },
+        { status: 400 }
+      );
+    }
+
+    const parsed = PortalSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Invalid JSON in request body',
+          error: 'Invalid request data',
+          details: parsed.error.issues,
           requestId,
         },
         { status: 400 }
       );
     }
 
-    // Validate input using Zod
-    const validationResult = PortalSchema.safeParse(body);
-    if (!validationResult.success) {
-      logger.warn('Invalid portal data', {
+    const { customerId, returnUrl } = parsed.data;
+
+    /* -------------------------- Authorization ---------------------------- */
+    /**
+     * CRITICAL SECURITY CHECK
+     *
+     * You MUST verify that this Stripe customer belongs to the user.
+     * Replace this stub with a real DB lookup.
+     */
+
+    const user = await getUserById(userId);
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'User not found', requestId },
+        { status: 404 }
+      );
+    }
+
+    const userStripeCustomerId = user.stripeCustomerId;
+
+    const isAdmin = role === 'admin';
+    const ownsCustomer = customerId === userStripeCustomerId;
+    if (!isAdmin && !ownsCustomer) {
+      logger.warn('Forbidden portal access attempt', {
         context: 'stripe-portal-api',
         requestId,
-        errors: validationResult.error.issues,
-        body: JSON.stringify(body).substring(0, 200) + '...', // Log partial body for debugging
+        data: { userId, customerId },
       });
+
+      return NextResponse.json({ success: false, error: 'Forbidden', requestId }, { status: 403 });
+    }
+
+    /* -------------------------- Redirect URL ----------------------------- */
+    const safeReturnUrl = returnUrl
+      ? sanitizeRedirectUrl(returnUrl, ALLOWED_DOMAINS)
+      : process.env.NEXT_PUBLIC_APP_URL;
+
+    if (!safeReturnUrl) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Invalid portal data',
-          details: validationResult.error.issues,
-          requestId,
-        },
+        { success: false, error: 'Invalid return URL', requestId },
         { status: 400 }
       );
     }
 
-    const { customerId, returnUrl } = validationResult.data;
+    /* ----------------------------- Stripe -------------------------------- */
+    const stripe = getStripe();
 
-    // Verify the user is accessing their own customer portal or has admin rights
-    // In a real app, you would check if the customerId belongs to the current user
-    logger.info(`User accessing customer portal`, {
-      context: 'stripe-portal-api',
-      requestId,
-      data: {
-        userId: session.user.id || session.user.email,
-        customerId,
-        role: session.user.role || 'user',
-      },
-    });
+    let portalSession: Stripe.BillingPortal.Session;
 
-    // Initialize Stripe
-    let stripe;
-    try {
-      stripe = getStripe();
-    } catch (error) {
-      logger.error('Failed to initialize Stripe', {
-        context: 'stripe-portal-api',
-        requestId,
-        error: error instanceof Error ? error.message : String(error),
-      });
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Payment service initialization failed',
-          requestId,
-        },
-        { status: 500 }
-      );
-    }
-
-    // Create a billing portal session
-    let portalSession;
     try {
       portalSession = await stripe.billingPortal.sessions.create({
         customer: customerId,
-        return_url: returnUrl || `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
+        return_url: safeReturnUrl,
       });
-    } catch (stripeError) {
+    } catch (err) {
       logger.error('Stripe portal creation failed', {
         context: 'stripe-portal-api',
         requestId,
-        error: stripeError instanceof Error ? stripeError.message : String(stripeError),
-        data: { customerId },
+        error: err instanceof Error ? err.message : String(err),
       });
 
       return NextResponse.json(
         {
           success: false,
-          error: 'Payment service error',
-          message: stripeError instanceof Error ? stripeError.message : 'Unknown Stripe error',
+          error: 'Stripe service error',
           requestId,
         },
         { status: 502 }
       );
     }
 
-    logger.info(`Billing portal session created successfully`, {
+    /* ------------------------------ Success ------------------------------ */
+    logger.info('Stripe portal session created', {
       context: 'stripe-portal-api',
       requestId,
-      data: {
-        portalSessionId: portalSession.id,
-        processingTime: Date.now() - startTime,
-      },
+      portalSessionId: portalSession.id,
+      processingTime: Date.now() - startTime,
     });
 
     return NextResponse.json({
@@ -184,29 +199,18 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    const errorStack = error instanceof Error ? error.stack : undefined;
-
-    // Log detailed error for debugging but don't expose stack traces to client
-    logger.error('Error creating portal session', {
+    logger.error('Unhandled portal error', {
       context: 'stripe-portal-api',
       requestId,
-      data: {
-        error: errorMessage,
-        stack: errorStack,
-        processingTime: Date.now() - startTime,
-      },
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
     });
 
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to create portal session',
-        message: errorMessage,
-        meta: {
-          requestId,
-          processingTime: Date.now() - startTime,
-        },
+        error: 'Internal server error',
+        requestId,
       },
       { status: 500 }
     );

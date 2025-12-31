@@ -273,6 +273,9 @@ export async function POST(req: NextRequest) {
 
         case 'invoice.payment_succeeded': {
           const invoice = event.data.object as Stripe.Invoice;
+          const subscriptionId =
+            (invoice.lines.data[0]?.subscription as string | undefined) ?? null;
+
           logger.info(`Payment succeeded`, {
             context: 'stripe-webhook',
             requestId,
@@ -281,7 +284,7 @@ export async function POST(req: NextRequest) {
               customerId: invoice.customer,
               amount: invoice.amount_paid,
               currency: invoice.currency,
-              subscriptionId: invoice.subscription, // string | null – safe to log directly
+              subscriptionId,
             },
           });
 
@@ -293,6 +296,9 @@ export async function POST(req: NextRequest) {
 
         case 'invoice.payment_failed': {
           const invoice = event.data.object as Stripe.Invoice;
+          const subscriptionId =
+            (invoice.lines.data[0]?.subscription as string | undefined) ?? null;
+
           logger.warn(`Payment failed`, {
             context: 'stripe-webhook',
             requestId,
@@ -301,7 +307,7 @@ export async function POST(req: NextRequest) {
               customerId: invoice.customer,
               amount: invoice.amount_due,
               currency: invoice.currency,
-              subscriptionId: invoice.subscription, // string | null
+              subscriptionId,
               attemptCount: invoice.attempt_count,
             },
           });

@@ -45,6 +45,7 @@ const PricingConfigSchema = z.object({
     enterprise: PricingTierEnterpriseSchema,
   }),
   stripePriceIds: z.record(
+    z.string(), // ← keys are strings (e.g. "premium_artist", "creator")
     z.object({
       monthly: z.string(),
       yearly: z.string(),

@@ -1,46 +1,97 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { logger } from "@/lib/logger"
-import { analyzeSubmission } from "@/lib/services/moderation-service"
+import { type NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
+import { analyzeSubmission } from '@/lib/services/moderation-service';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+/* -------------------------------------------------------------------------- */
+/*                                    POST                                    */
+/* -------------------------------------------------------------------------- */
 
 export async function POST(request: NextRequest) {
-  // Only allow in development
-  if (process.env.NODE_ENV === "production") {
-    return NextResponse.json({ error: "Endpoint not available in production" }, { status: 404 })
+  /* -------------------- Block in Production -------------------- */
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json(
+      { success: false, error: 'Endpoint not available in production' },
+      { status: 404 }
+    );
   }
 
-  const requestId = crypto.randomUUID()
-  logger.info(`Test moderation request received`, {
-    context: "test-moderation-api",
-    data: { requestId },
-  })
+  const requestId = crypto.randomUUID();
+  const startTime = Date.now();
+
+  logger.info('Test moderation request received', {
+    context: 'test-moderation-api',
+    requestId,
+  });
 
   try {
-    const body = await request.json()
-    const { title, description, category, originalIp, tags, imageUrl } = body
+    /* ---------------------------- Body --------------------------- */
+    let body: any;
 
-    // Analyze submission using AI services
-    const analysis = await analyzeSubmission(title, description, category, originalIp, tags, imageUrl)
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Invalid JSON body',
+          requestId,
+        },
+        { status: 400 }
+      );
+    }
+
+    const {
+      title = '',
+      description = '',
+      category = '',
+      originalIp = '',
+      tags = [],
+      imageUrl = null,
+    } = body ?? {};
+
+    /* ------------------------ Moderation ------------------------- */
+    const analysis = await analyzeSubmission(
+      title,
+      description,
+      category,
+      originalIp,
+      tags,
+      imageUrl
+    );
+
+    logger.info('Test moderation completed', {
+      context: 'test-moderation-api',
+      requestId,
+      processingTime: Date.now() - startTime,
+    });
 
     return NextResponse.json({
       success: true,
       analysis,
-      requestId,
-    })
+      meta: {
+        requestId,
+        processingTime: Date.now() - startTime,
+      },
+    });
   } catch (error) {
-    logger.error("Error in test moderation API", error, {
-      context: "test-moderation-api",
-      data: { requestId },
-    })
+    logger.error('Error in test moderation API', {
+      context: 'test-moderation-api',
+      requestId,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      processingTime: Date.now() - startTime,
+    });
 
     return NextResponse.json(
       {
         success: false,
-        error: "Failed to process test submission",
-        details: error instanceof Error ? error.message : String(error),
+        error: 'Failed to process test submission',
         requestId,
       },
-      { status: 500 },
-    )
+      { status: 500 }
+    );
   }
 }
-

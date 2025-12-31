@@ -91,7 +91,7 @@ export async function createAuditLog(
     return auditLog;
   } catch (error: any) {
     logger.error('Failed to create audit log', {
-      error: error instanceof Error ? error.message : String(error),
+      error: error instanceof Error ? error : new Error(String(error)),
     });
 
     if (error instanceof z.ZodError) {
@@ -167,7 +167,7 @@ export async function getAuditLogById(id: string): Promise<AuditLog | null> {
     return row ? mapRowToAuditLog(row) : null;
   } catch (error: any) {
     logger.error('Failed to get audit log by id', {
-      error: error instanceof Error ? error.message : String(error),
+      error: error instanceof Error ? error : new Error(String(error)),
       id,
     });
     throw new Error(`Failed to retrieve audit log: ${error.message}`);
@@ -190,7 +190,7 @@ export async function getAuditLogsByUserId(userId: string, limit = 100): Promise
     return results.map(mapRowToAuditLog);
   } catch (error: any) {
     logger.error('Failed to get audit logs by user id', {
-      error: error instanceof Error ? error.message : String(error),
+      error: error instanceof Error ? error : new Error(String(error)),
       userId,
     });
     throw new Error(`Failed to retrieve audit logs for user: ${error.message}`);

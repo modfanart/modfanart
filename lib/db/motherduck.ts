@@ -12,7 +12,7 @@ export function getMotherDuckConnection() {
     logger.info('Creating new MotherDuck connection', { context: 'motherduck' });
 
     client = MDConnection.create({
-      mdToken: config.duckDb.token, // you must have a valid mdToken in your config
+      mdToken: config.duckDb.mdToken,
     });
   }
   return client;
@@ -23,17 +23,22 @@ export function getMotherDuckConnection() {
  */
 export async function executeQuery<T = any>(query: string, params: any[] = []): Promise<T[]> {
   const conn = getMotherDuckConnection();
-
-  // Wait for initialization (optional, but recommended)
   await conn.isInitialized();
 
   try {
     const result = await conn.evaluateQuery(query);
-    return result.toRows() as T[]; // or adapt depending on how you want results
+
+    // Ensure we have materialized data
+    if (result.type === 'materialized' && result.data) {
+      return result.data.toRows() as T[];
+    }
+
+    // Fallback: no rows
+    return [];
   } catch (error) {
     logger.error('Error executing MotherDuck query', error, {
       context: 'motherduck',
-      query,
+      data: { query },
     });
     throw error;
   }
@@ -124,8 +129,9 @@ export async function trackSubmission(submission: {
   } catch (error) {
     logger.error('Failed to track submission in analytics', error, {
       context: 'motherduck',
-      submissionId: submission.id,
+      data: { submissionId: submission.id },
     });
+
     // Don't throw - analytics failures shouldn't break the main flow
   }
 }
@@ -169,8 +175,9 @@ export async function trackUserActivity(activity: {
   } catch (error) {
     logger.error('Failed to track user activity', error, {
       context: 'motherduck',
-      userId: activity.userId,
+      data: { userId: activity.userId },
     });
+
     // Don't throw - analytics failures shouldn't break the main flow
   }
 }

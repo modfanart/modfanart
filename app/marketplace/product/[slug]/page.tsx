@@ -1,6 +1,6 @@
 'use client';
 
-import type React from 'react';
+import React from 'react';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -14,6 +14,17 @@ import { Separator } from '@/components/ui/separator';
 import { ShoppingCart, Heart, Share2, ArrowLeft, Check, Star, StarHalf } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toaster';
 import { ProductCard } from '@/components/product-card';
+interface RelatedProductCardProps {
+  id: string;
+  title: string;
+  price: number;
+  imageUrl: string;
+  artist: string;
+  brand: string;
+  isNew: boolean;
+  isBestseller: boolean;
+  slug: string;
+}
 interface Review {
   id: string;
   productId: string;
@@ -23,11 +34,12 @@ interface Review {
   rating: number;
   title: string;
   comment: string;
-  date: string; // ← Required string
+  date: string;
   helpfulCount: number;
   verified: boolean;
 }
-// Sample product data - in a real app, this would come from an API or database
+
+// Sample product data
 const products = {
   'hulk-nature-tshirt': {
     id: 'prod-1',
@@ -214,7 +226,7 @@ const products = {
   },
 };
 
-// Related products data
+// Related products data (for ProductCard usage)
 const relatedProductsData = {
   'hulk-nature-tshirt': {
     id: 'prod-1',
@@ -276,8 +288,8 @@ const relatedProductsData = {
   },
 };
 
-// Sample reviews data
-const sampleReviews = [
+// Sample reviews
+const sampleReviews: Review[] = [
   {
     id: 'review-1',
     productId: 'prod-1',
@@ -322,8 +334,10 @@ const sampleReviews = [
   },
 ];
 
-export default function ProductPage({ params }: { params: { slug: string } }) {
-  const { slug } = params;
+export default function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
+  // Await params for Next.js 15+ compatibility
+  const { slug } = React.use(params);
+
   const router = useRouter();
   const { toast } = useToast();
 
@@ -344,7 +358,6 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
   });
 
   useEffect(() => {
-    // In a real app, this would be an API call
     const fetchProduct = () => {
       setLoading(true);
       try {
@@ -361,7 +374,9 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
       }
     };
 
-    fetchProduct();
+    if (slug) {
+      fetchProduct();
+    }
   }, [slug]);
 
   if (loading) {
@@ -408,14 +423,12 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
   };
 
   const handleBuyNow = () => {
-    // In a real app, this would add to cart and redirect to checkout
     toast({
       title: 'Proceeding to checkout',
       description: `${product.title} (${selectedSize}${
         selectedColor ? `, ${selectedColor}` : ''
       }) × ${quantity}`,
     });
-    // Redirect to checkout page
     router.push('/marketplace/checkout');
   };
 
@@ -431,18 +444,21 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
       rating: newReview.rating,
       title: newReview.title,
       comment: newReview.comment,
-      date: new Date().toISOString().split('T')[0]!, // ← Fixed here
+      date: new Date().toISOString().split('T')[0]!, // <-- add ! to assert it's not undefined
       helpfulCount: 0,
       verified: true,
     };
 
     setReviews([newReviewObj, ...reviews]);
-    // ... rest unchanged
+    setNewReview({ rating: 5, title: '', comment: '' });
+    setShowReviewForm(false);
+
     toast({
       title: 'Review submitted',
       description: 'Thank you for your feedback!',
     });
   };
+
   const handleMarkHelpful = (reviewId: string) => {
     setReviews(
       reviews.map((review) =>
@@ -478,19 +494,10 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
     }
   });
 
-  const getRelatedProducts = (): {
-    id: string;
-    title: string;
-    price: number;
-    imageUrl: string;
-    artist: string;
-    brand: string;
-    isNew: boolean;
-    isBestseller: boolean;
-    slug: string;
-  }[] => {
+  const getRelatedProducts = () => {
     return product.relatedProducts.map(
-      (slug: string) => relatedProductsData[slug as keyof typeof relatedProductsData]
+      (slug: string): RelatedProductCardProps =>
+        relatedProductsData[slug as keyof typeof relatedProductsData]
     );
   };
 
@@ -715,7 +722,7 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
 
             <Separator className="my-8" />
 
-            {/* Product Details */}
+            {/* Product Details Tabs */}
             <Tabs defaultValue="details">
               <TabsList>
                 <TabsTrigger value="details">Details</TabsTrigger>
@@ -768,7 +775,6 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
               </div>
             </div>
 
-            {/* Rating Distribution */}
             <div className="mt-6 space-y-2">
               {[5, 4, 3, 2, 1].map((star) => {
                 const percentage =
@@ -790,7 +796,6 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
               })}
             </div>
 
-            {/* Write a Review */}
             <Button className="mt-6 w-full" onClick={() => setShowReviewForm(!showReviewForm)}>
               {showReviewForm ? 'Cancel Review' : 'Write a Review'}
             </Button>
@@ -798,7 +803,6 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
 
           {/* Review List */}
           <div className="flex-1">
-            {/* Review Form */}
             {showReviewForm && (
               <div className="mb-8 rounded-lg border p-6">
                 <h3 className="mb-4 text-lg font-semibold">Write a Review</h3>
@@ -860,7 +864,6 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
               </div>
             )}
 
-            {/* Review Filters */}
             <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-2">
                 <span className="text-sm">Filter:</span>
@@ -894,7 +897,6 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
               </div>
             </div>
 
-            {/* Reviews */}
             {sortedReviews.length === 0 ? (
               <div className="rounded-lg border border-dashed p-8 text-center">
                 <p className="text-muted-foreground">No reviews match your filter</p>
@@ -956,7 +958,7 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
       <div className="mt-16">
         <h2 className="mb-6 text-2xl font-bold">You May Also Like</h2>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {getRelatedProducts().map((relatedProduct) => (
+          {getRelatedProducts().map((relatedProduct: RelatedProductCardProps) => (
             <ProductCard key={relatedProduct.id} {...relatedProduct} />
           ))}
         </div>

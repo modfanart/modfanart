@@ -13,7 +13,7 @@ declare namespace NodeJS {
 
     BLOB_STORAGE_KEY?: string;
     DUCKDB_CONNECTION_STRING?: string;
-
+    MOTHERDUCK_TOKEN?: string;
     EDGE_CONFIG?: string;
     EDGE_CONFIG_KEY?: string;
 
@@ -28,5 +28,6 @@ declare namespace NodeJS {
     NEXT_PUBLIC_DEBUG?: string;
 
     DEBUG?: string;
+    DEBUG_LEVEL?: string;
   }
 }

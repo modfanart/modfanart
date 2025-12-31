@@ -8,6 +8,7 @@ import {
 } from '../../validation/model-validation';
 import { logger } from '../../utils/logger';
 import { sanitizeFilename } from '../../validation/file-validation';
+import type { Database } from '../config';
 
 export type SubmissionStatus = 'pending' | 'review' | 'approved' | 'rejected' | 'licensed';
 
@@ -96,7 +97,7 @@ export async function createSubmission(
       imageUrl = `https://bbdx-mod-fan-art.s3.amazonaws.com/${key}`;
     } catch (error: any) {
       logger.error('Failed to upload image to S3', {
-        error: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error : new Error(String(error)),
         submissionId: id,
       });
       throw new Error(`Image upload failed: ${error.message}`);
@@ -127,7 +128,10 @@ export async function createSubmission(
         submitted_at: submission.submittedAt,
         updated_at: submission.updatedAt,
         user_id: submission.userId,
-        analysis: submission.analysis ?? null,
+        analysis: submission.analysis
+          ? (submission.analysis as unknown as Record<string, unknown>)
+          : null,
+
         review_notes: submission.reviewNotes ?? null,
         reviewed_by: submission.reviewedBy ?? null,
         reviewed_at: submission.reviewedAt ?? null,
@@ -138,7 +142,7 @@ export async function createSubmission(
     return submission;
   } catch (error: any) {
     logger.error('Failed to create submission in database', {
-      error: error instanceof Error ? error.message : String(error),
+      error: error instanceof Error ? error : new Error(String(error)),
       submissionId: id,
     });
     throw new Error(`Database error: ${error.message}`);
@@ -210,7 +214,7 @@ export async function updateSubmission(
 
     const updatedAt = new Date();
 
-    const updatePayload: Partial<typeof existing> = {
+    const updatePayload: Partial<Database['submissions']> = {
       updated_at: updatedAt,
     };
 
@@ -226,8 +230,13 @@ export async function updateSubmission(
       updatePayload.license_type = submissionData.licenseType;
     if (submissionData.status !== undefined) updatePayload.status = submissionData.status;
     if (submissionData.tags !== undefined) updatePayload.tags = submissionData.tags;
-    if (submissionData.analysis !== undefined)
-      updatePayload.analysis = submissionData.analysis ?? null;
+    if (submissionData.analysis !== undefined) {
+      updatePayload.analysis =
+        submissionData.analysis === null
+          ? null
+          : (submissionData.analysis as unknown as Record<string, unknown>);
+    }
+
     if (submissionData.reviewNotes !== undefined)
       updatePayload.review_notes = submissionData.reviewNotes ?? null;
     if (submissionData.reviewedBy !== undefined)
@@ -236,13 +245,13 @@ export async function updateSubmission(
       updatePayload.reviewed_at = submissionData.reviewedAt ?? null;
 
     await trx.updateTable(DB.SUBMISSIONS).set(updatePayload).where('id', '=', id).execute();
+    const base = mapRowToSubmission(existing);
 
     const updated: Submission = {
-      ...mapRowToSubmission(existing),
+      ...base,
       ...submissionData,
       updatedAt,
-      // Preserve existing reviewedAt if not updated
-      reviewedAt: submissionData.reviewedAt ?? mapRowToSubmission(existing).reviewedAt,
+      ...(submissionData.reviewedAt !== undefined ? { reviewedAt: submissionData.reviewedAt } : {}),
     };
 
     logger.info('Submission updated successfully', { submissionId: id });
@@ -275,16 +284,17 @@ function mapRowToSubmission(row: any): Submission {
     description: row.description,
     category: row.category,
     originalIp: row.original_ip,
-    tags: Array.isArray(row.tags) ? row.tags : [], // Ensure it's always an array
+    tags: Array.isArray(row.tags) ? row.tags : [],
     status: row.status as SubmissionStatus,
     imageUrl: row.image_url,
     licenseType: row.license_type,
     submittedAt: new Date(row.submitted_at),
     updatedAt: new Date(row.updated_at),
     userId: row.user_id,
-    analysis: row.analysis ?? undefined,
-    reviewNotes: row.review_notes ?? undefined,
-    reviewedBy: row.reviewed_by ?? undefined,
-    reviewedAt: row.reviewed_at ? new Date(row.reviewed_at) : undefined,
+
+    ...(row.analysis ? { analysis: row.analysis as AIAnalysis } : {}),
+    ...(row.review_notes ? { reviewNotes: row.review_notes } : {}),
+    ...(row.reviewed_by ? { reviewedBy: row.reviewed_by } : {}),
+    ...(row.reviewed_at ? { reviewedAt: new Date(row.reviewed_at) } : {}),
   };
 }

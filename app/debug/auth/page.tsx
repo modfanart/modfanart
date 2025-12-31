@@ -1,10 +1,15 @@
-import { redirect } from "next/navigation"
-import { AuthDebug } from "@/components/auth-debug"
+'use client';
+
+import { redirect } from 'next/navigation';
+import dynamic from 'next/dynamic';
+
+const AuthDebug = dynamic(() => import('@/components/auth-debug').then((mod) => mod.AuthDebug), {
+  ssr: false,
+});
 
 export default function AuthDebugPage() {
-  // Redirect to home in production
-  if (process.env.NODE_ENV !== "development" && !process.env.NEXT_PUBLIC_DEBUG) {
-    redirect("/")
+  if (process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_DEBUG !== 'true') {
+    redirect('/');
   }
 
   return (
@@ -14,6 +19,5 @@ export default function AuthDebugPage() {
         <AuthDebug />
       </div>
     </div>
-  )
+  );
 }
-

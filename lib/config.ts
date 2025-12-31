@@ -2,7 +2,7 @@
 
 import { get } from '@vercel/edge-config';
 // Safe fetch with fallback
-
+import { LogLevel } from 'kysely';
 // Full application configuration object
 export const config = {
   // Blob Store configuration
@@ -19,11 +19,11 @@ export const config = {
     timeout: 30000, // 30 seconds
   },
 
-  // DuckDB configuration
   duckDb: {
     connectionString: process.env.DUCKDB_CONNECTION_STRING || '',
+    mdToken: process.env.MOTHERDUCK_TOKEN || '', // ← add this
     maxConnections: 5,
-    idleTimeout: 60000, // 60 seconds
+    idleTimeout: 60000,
   },
 
   // Edge Config configuration
@@ -74,7 +74,16 @@ export const config = {
   },
 
   // Debug settings
-  debug: process.env.DEBUG || 'mod:*',
+  debug: {
+    enabled: process.env.NODE_ENV !== 'production' || process.env.DEBUG === 'true',
+    level: (process.env.DEBUG_LEVEL ||
+      (process.env.NODE_ENV === 'production' ? 'info' : 'debug')) as
+      | 'debug'
+      | 'info'
+      | 'warn'
+      | 'error',
+    pattern: process.env.DEBUG || (process.env.NODE_ENV === 'production' ? '' : 'mod:*'),
+  },
   clientDebug: process.env.NEXT_PUBLIC_DEBUG === 'true',
 };
 
@@ -118,7 +127,7 @@ export type FeatureFlags = {
   enableAutoApproval: boolean;
   enableAnalytics: boolean;
   enableBetaFeatures: boolean;
-  [key: string]: boolean;
+  [key: string]: boolean; // ✅ allow dynamic string indexing
 };
 
 export type ModerationSettings = {

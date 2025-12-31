@@ -50,7 +50,7 @@ export function ProfileImageUpload({
     try {
       const result = await uploadProfileImage(file);
       if (result.success && result.url) {
-        onImageChange(result.url.url);
+        onImageChange(result.url);
         toast({
           title: 'Image uploaded',
           description: 'Your profile image has been updated.',

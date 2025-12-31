@@ -1,11 +1,11 @@
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { analyzeSubmissionContent } from '@/lib/ai/grok-client';
-import analyzeSubmission from '@/lib/ai/analyze-submission';
+
 import { logger } from '@/lib/logger';
-import { rateLimit } from '@/lib/middleware/rate-limit';
-import { getFeatureFlag } from '@/lib/edge-config';
-import { trackUserActivity } from '@/lib/db/motherduck';
+
 import { randomUUID } from 'crypto'; // Node.js crypto
 
 // Input validation schema
@@ -31,9 +31,11 @@ type AnalysisResult = {
 export async function POST(request: NextRequest) {
   try {
     // 1. Initialize the middleware with options
+    const { rateLimit } = await import('@/lib/middleware/rate-limit');
+
     const limiter = rateLimit({
       limit: 10,
-      windowMs: 60 * 1000, // 1 minute
+      windowMs: 60 * 1000,
     });
 
     // 2. Execute it by passing the request
@@ -45,7 +47,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if AI moderation is enabled
+    const { getFeatureFlag } = await import('@/lib/edge-config');
+
     const isAiModerationEnabled = await getFeatureFlag('enableAiModeration');
+
     if (!isAiModerationEnabled) {
       return NextResponse.json(
         { error: 'Submission analysis is currently disabled.' },
@@ -81,7 +86,8 @@ export async function POST(request: NextRequest) {
     let analysis: AnalysisResult;
 
     if (isGrokEnabled) {
-      // Use Grok AI
+      const { analyzeSubmissionContent } = await import('@/lib/ai/grok-client');
+
       const grokResult = await analyzeSubmissionContent({
         title,
         description,
@@ -96,14 +102,9 @@ export async function POST(request: NextRequest) {
         reasoning: grokResult.reasoning,
         suggestedTags: grokResult.suggestedTags ?? [category, originalIp],
       };
-
-      logger.info('Grok AI analysis completed', {
-        context: 'submission-analysis',
-        isAppropriate: analysis.isAppropriate,
-        confidenceScore: analysis.confidenceScore,
-      });
     } else {
-      // Fallback to legacy OpenAI + AIorNot pipeline
+      const { default: analyzeSubmission } = await import('@/lib/ai/analyze-submission');
+
       const legacyResult = await analyzeSubmission({
         title,
         description,
@@ -113,24 +114,18 @@ export async function POST(request: NextRequest) {
         imageUrl,
       });
 
-      // Map legacy result to unified shape
       analysis = {
         isAppropriate: legacyResult.finalRecommendation !== 'reject',
         confidenceScore: Math.round((1 - legacyResult.aiDetection.score) * 100),
         reasoning: legacyResult.contentAnalysis.reasoningSummary || 'No reasoning provided',
         suggestedTags: [category, originalIp],
       };
-
-      logger.info('Legacy AI analysis completed', {
-        context: 'submission-analysis',
-        recommendation: legacyResult.finalRecommendation,
-        aiScore: legacyResult.aiDetection.score,
-      });
     }
 
     // Track analytics if enabled
     const isAnalyticsEnabled = await getFeatureFlag('enableAnalytics');
     if (isAnalyticsEnabled) {
+      const { trackUserActivity } = await import('@/lib/db/motherduck');
       await trackUserActivity({
         userId,
         actionType: 'submission_analysis',

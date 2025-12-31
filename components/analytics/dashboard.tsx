@@ -31,7 +31,11 @@ import {
   Cell,
 } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-
+type CategoryEntry = {
+  category: string;
+  count: number;
+  percentage: number;
+};
 // Types
 type AnalyticsData = {
   submissionsByDate: {
@@ -345,8 +349,9 @@ export function AnalyticsDashboard({
                 fill="#8884d8"
                 dataKey="count"
                 nameKey="category"
-                label={(entry) => {
-                  const { category, percentage } = entry.payload;
+                label={({ payload }) => {
+                  // Safely assert payload shape (Recharts types payload as any)
+                  const { category, percentage } = payload as CategoryEntry;
                   return `${category}: ${percentage.toFixed(1)}%`;
                 }}
               >

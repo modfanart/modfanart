@@ -1,25 +1,25 @@
-import { config } from "../config"
-import { logger } from "../logger"
-import { getFeatureFlag } from "../edge-config"
-import { withRetry, isRetryableError } from "./grok-retry"
+import { config } from '../config';
+import { logger } from '../logger';
+import { getFeatureFlag } from '../edge-config';
+import { withRetry, isRetryableError } from './grok-retry';
 
 // Types
 export type GrokAiRequest = {
-  prompt: string
-  imageUrl?: string
-  maxTokens?: number
-  temperature?: number
-}
+  prompt: string;
+  imageUrl?: string;
+  maxTokens?: number;
+  temperature?: number;
+};
 
 export type GrokAiResponse = {
-  id: string
-  text: string
+  id: string;
+  text: string;
   usage: {
-    promptTokens: number
-    completionTokens: number
-    totalTokens: number
-  }
-}
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
+};
 
 /**
  * Call GrokAi API with retry logic
@@ -27,44 +27,44 @@ export type GrokAiResponse = {
 export async function callGrokAi(request: GrokAiRequest): Promise<GrokAiResponse> {
   try {
     // Check if GrokAi integration is enabled
-    const isEnabled = await getFeatureFlag("enableGrokIntegration")
+    const isEnabled = await getFeatureFlag('enableGrokIntegration');
     if (!isEnabled) {
-      throw new Error("GrokAi integration is disabled")
+      throw new Error('GrokAi integration is disabled');
     }
 
-    logger.info("Calling GrokAi API", {
-      context: "grok-ai",
+    logger.info('Calling GrokAi API', {
+      context: 'grok-ai',
       promptLength: request.prompt.length,
       hasImage: !!request.imageUrl,
-    })
+    });
 
     // Use retry logic for the API call
     return await withRetry(
       async () => {
         const response = await fetch(`${config.grokAi.baseUrl}/completions`, {
-          method: "POST",
+          method: 'POST',
           headers: {
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
             Authorization: `Bearer ${config.grokAi.apiKey}`,
           },
           body: JSON.stringify({
-            model: "grok-1",
+            model: 'grok-1',
             prompt: request.prompt,
             image_url: request.imageUrl,
             max_tokens: request.maxTokens || 1000,
             temperature: request.temperature || 0.7,
           }),
           signal: AbortSignal.timeout(config.grokAi.timeout),
-        })
+        });
 
         if (!response.ok) {
-          const errorText = await response.text()
-          const error = new Error(`GrokAi API error: ${response.status} ${errorText}`)
-          ;(error as any).status = response.status
-          throw error
+          const errorText = await response.text();
+          const error = new Error(`GrokAi API error: ${response.status} ${errorText}`);
+          (error as any).status = response.status;
+          throw error;
         }
 
-        const data = await response.json()
+        const data = await response.json();
 
         return {
           id: data.id,
@@ -74,25 +74,25 @@ export async function callGrokAi(request: GrokAiRequest): Promise<GrokAiResponse
             completionTokens: data.usage.completion_tokens,
             totalTokens: data.usage.total_tokens,
           },
-        }
+        };
       },
       {
         maxRetries: 3,
         initialDelay: 500,
         maxDelay: 5000,
-      },
-    )
+      }
+    );
   } catch (error) {
-    logger.error("Error calling GrokAi API", error, { context: "grok-ai" })
+    logger.error('Error calling GrokAi API', error, { context: 'grok-ai' });
 
     // Check if we should retry based on the error
     if (isRetryableError(error)) {
-      logger.info("Retryable error encountered, already handled by retry logic", {
-        context: "grok-ai",
-      })
+      logger.info('Retryable error encountered, already handled by retry logic', {
+        context: 'grok-ai',
+      });
     }
 
-    throw new Error(`GrokAi API error: ${(error as Error).message}`)
+    throw new Error(`GrokAi API error: ${(error as Error).message}`);
   }
 }
 
@@ -100,19 +100,19 @@ export async function callGrokAi(request: GrokAiRequest): Promise<GrokAiResponse
  * Analyze submission content using GrokAi
  */
 export async function analyzeSubmissionContent(params: {
-  title: string
-  description: string
-  category: string
-  originalIp: string
-  imageUrl: string
+  title: string;
+  description: string;
+  category: string;
+  originalIp: string;
+  imageUrl: string;
 }): Promise<{
-  isAppropriate: boolean
-  confidenceScore: number
-  reasoning: string
-  suggestedTags: string[]
+  isAppropriate: boolean;
+  confidenceScore: number;
+  reasoning: string;
+  suggestedTags: string[];
 }> {
   try {
-    const { title, description, category, originalIp, imageUrl } = params
+    const { title, description, category, originalIp, imageUrl } = params;
 
     // Create a prompt for GrokAi
     const prompt = `
@@ -136,46 +136,48 @@ export async function analyzeSubmissionContent(params: {
         "reasoning": "string",
         "suggestedTags": ["tag1", "tag2", ...]
       }
-    `
+    `;
 
     const response = await callGrokAi({
       prompt,
       imageUrl,
       temperature: 0.3, // Lower temperature for more consistent results
-    })
+    });
 
     // Parse the JSON response
     try {
       // Extract JSON from the response text
-      const jsonMatch = response.text.match(/\{[\s\S]*\}/)
+      const jsonMatch = response.text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        throw new Error("No JSON found in response")
+        throw new Error('No JSON found in response');
       }
 
-      const analysis = JSON.parse(jsonMatch[0])
+      const analysis = JSON.parse(jsonMatch[0]);
 
       return {
         isAppropriate: analysis.isAppropriate,
         confidenceScore: analysis.confidenceScore,
         reasoning: analysis.reasoning,
         suggestedTags: analysis.suggestedTags,
-      }
+      };
     } catch (parseError) {
-      logger.error("Error parsing GrokAi response", parseError, {
-        context: "grok-ai",
-        responseText: response.text,
-      })
+      logger.error('Error parsing GrokAi response', parseError, {
+        context: 'grok-ai',
+        data: {
+          responseText: response.text,
+        },
+      });
 
       // Return a fallback response
       return {
         isAppropriate: false,
         confidenceScore: 0,
-        reasoning: "Failed to parse AI response",
+        reasoning: 'Failed to parse AI response',
         suggestedTags: [],
-      }
+      };
     }
   } catch (error) {
-    logger.error("Error analyzing submission with GrokAi", error, { context: "grok-ai" })
+    logger.error('Error analyzing submission with GrokAi', error, { context: 'grok-ai' });
 
     // Return a fallback response
     return {
@@ -183,7 +185,7 @@ export async function analyzeSubmissionContent(params: {
       confidenceScore: 0,
       reasoning: `AI analysis failed: ${(error as Error).message}`,
       suggestedTags: [],
-    }
+    };
   }
 }
 
@@ -196,43 +198,45 @@ export async function generateImageTags(imageUrl: string, category: string): Pro
       Generate 5-10 relevant tags for this ${category} fan art image.
       Return only a JSON array of tags, nothing else.
       Example: ["character", "style", "mood", "colors", "theme"]
-    `
+    `;
 
     const response = await callGrokAi({
       prompt,
       imageUrl,
       temperature: 0.3,
-    })
+    });
 
     // Parse the JSON response
     try {
       // Extract JSON array from the response text
-      const jsonMatch = response.text.match(/\[[\s\S]*\]/)
+      const jsonMatch = response.text.match(/\[[\s\S]*\]/);
       if (!jsonMatch) {
-        throw new Error("No JSON array found in response")
+        throw new Error('No JSON array found in response');
       }
 
-      const tags = JSON.parse(jsonMatch[0])
+      const tags = JSON.parse(jsonMatch[0]);
 
       if (!Array.isArray(tags)) {
-        throw new Error("Response is not an array")
+        throw new Error('Response is not an array');
       }
 
-      return tags.slice(0, 10) // Limit to 10 tags
+      return tags.slice(0, 10); // Limit to 10 tags
     } catch (parseError) {
-      logger.error("Error parsing GrokAi tags response", parseError, {
-        context: "grok-ai",
-        responseText: response.text,
-      })
+      logger.error('Error parsing GrokAi tags response', parseError, {
+        context: 'grok-ai',
+        data: {
+          responseText: response.text,
+        },
+      });
 
       // Return default tags based on category
-      return getDefaultTags(category)
+      return getDefaultTags(category);
     }
   } catch (error) {
-    logger.error("Error generating image tags with GrokAi", error, { context: "grok-ai" })
+    logger.error('Error generating image tags with GrokAi', error, { context: 'grok-ai' });
 
     // Return default tags based on category
-    return getDefaultTags(category)
+    return getDefaultTags(category);
   }
 }
 
@@ -241,13 +245,12 @@ export async function generateImageTags(imageUrl: string, category: string): Pro
  */
 function getDefaultTags(category: string): string[] {
   const defaultTags: Record<string, string[]> = {
-    anime: ["anime", "manga", "character", "illustration", "fanart"],
-    gaming: ["game", "character", "videogame", "fanart", "digital"],
-    movies: ["movie", "character", "film", "fanart", "cinema"],
-    comics: ["comic", "superhero", "character", "illustration", "fanart"],
-    other: ["fanart", "character", "illustration", "digital", "creative"],
-  }
+    anime: ['anime', 'manga', 'character', 'illustration', 'fanart'],
+    gaming: ['game', 'character', 'videogame', 'fanart', 'digital'],
+    movies: ['movie', 'character', 'film', 'fanart', 'cinema'],
+    comics: ['comic', 'superhero', 'character', 'illustration', 'fanart'],
+    other: ['fanart', 'character', 'illustration', 'digital', 'creative'],
+  };
 
-  return defaultTags[category] || defaultTags.other
+  return defaultTags[category.toLowerCase()] ?? defaultTags['other']!;
 }
-

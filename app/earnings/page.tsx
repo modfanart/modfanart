@@ -21,7 +21,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { BarChart, LineChart } from '@/components/ui/chart';
+import { Bar, BarChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts';
+
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+  ChartTooltip,
+  ChartTooltipContent,
+} from '@/components/ui/chart';
 import {
   DollarSign,
   Download,
@@ -32,6 +41,27 @@ import {
   Calendar,
 } from 'lucide-react';
 import { DateRangePicker } from '@/components/ui/date-picker';
+const earningsChartConfig = {
+  total: {
+    label: 'Earnings',
+    color: 'hsl(var(--chart-1))', // Uses shadcn's built-in chart colors
+  },
+} satisfies ChartConfig;
+
+const revenueChartConfig = {
+  Standard: {
+    label: 'Standard',
+    color: 'hsl(var(--chart-1))',
+  },
+  Commercial: {
+    label: 'Commercial',
+    color: 'hsl(var(--chart-2))',
+  },
+  Premium: {
+    label: 'Premium',
+    color: 'hsl(var(--chart-3))',
+  },
+} satisfies ChartConfig;
 type DateRange = {
   from: Date | undefined;
   to: Date | undefined;
@@ -158,17 +188,30 @@ export default function EarningsPage() {
                 <CardDescription>Your earnings over the past 6 months</CardDescription>
               </CardHeader>
               <CardContent className="pl-2">
-                <LineChart
-                  data={[
-                    { name: 'Oct', total: 220 },
-                    { name: 'Nov', total: 380 },
-                    { name: 'Dec', total: 475 },
-                    { name: 'Jan', total: 520 },
-                    { name: 'Feb', total: 590 },
-                    { name: 'Mar', total: 615 },
-                  ]}
-                  className="aspect-[3/2]"
-                />
+                <ChartContainer config={earningsChartConfig} className="aspect-[3/2]">
+                  <LineChart
+                    data={[
+                      { name: 'Oct', total: 220 },
+                      { name: 'Nov', total: 380 },
+                      { name: 'Dec', total: 475 },
+                      { name: 'Jan', total: 520 },
+                      { name: 'Feb', total: 590 },
+                      { name: 'Mar', total: 615 },
+                    ]}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <ChartLegend content={<ChartLegendContent />} />
+                    <Line
+                      type="monotone"
+                      dataKey="total"
+                      stroke="var(--color-total)"
+                      strokeWidth={2}
+                    />
+                  </LineChart>
+                </ChartContainer>
               </CardContent>
             </Card>
             <Card className="col-span-3">
@@ -177,14 +220,23 @@ export default function EarningsPage() {
                 <CardDescription>Distribution of your earnings</CardDescription>
               </CardHeader>
               <CardContent>
-                <BarChart
-                  data={[
-                    { name: 'Standard', total: 580 },
-                    { name: 'Commercial', total: 420 },
-                    { name: 'Premium', total: 245 },
-                  ]}
-                  className="aspect-[3/2]"
-                />
+                <ChartContainer config={revenueChartConfig} className="aspect-[3/2]">
+                  <BarChart
+                    data={[
+                      { name: 'Standard', total: 580 },
+                      { name: 'Commercial', total: 420 },
+                      { name: 'Premium', total: 245 },
+                    ]}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <ChartLegend content={<ChartLegendContent />} />
+                    <Bar dataKey="total" fill="var(--color-Standard)" radius={4} />{' '}
+                    {/* Repeat <Bar /> for multiple series if needed */}
+                  </BarChart>
+                </ChartContainer>
               </CardContent>
             </Card>
           </div>

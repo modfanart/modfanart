@@ -1,251 +1,153 @@
-import { postgresClient, DB } from "../lib/db/config"
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb"
-import { CreateTableCommand } from "@aws-sdk/client-dynamodb"
-
+import { db, DB } from '@/lib/db/config';
 async function setupPostgresTables() {
   try {
-    // Create users table
-    await postgresClient.sql`
-      CREATE TABLE IF NOT EXISTS ${DB.USERS} (
-        id VARCHAR(36) PRIMARY KEY,
-        email VARCHAR(255) UNIQUE NOT NULL,
-        name VARCHAR(255) NOT NULL,
-        role VARCHAR(50) NOT NULL,
-        created_at TIMESTAMP NOT NULL,
-        updated_at TIMESTAMP NOT NULL,
-        profile_image_url TEXT,
-        bio TEXT,
-        website TEXT,
-        social_links JSONB,
-        subscription JSONB,
-        settings JSONB
-      )
-    `
+    // === Users Table ===
+    await db.schema
+      .createTable(DB.USERS)
+      .ifNotExists()
+      .addColumn('id', 'varchar(36)', (col) => col.primaryKey())
+      .addColumn('email', 'varchar(255)', (col) => col.notNull().unique())
+      .addColumn('name', 'varchar(255)', (col) => col.notNull())
+      .addColumn('role', 'varchar(50)', (col) => col.notNull())
+      .addColumn('created_at', 'timestamp', (col) => col.notNull())
+      .addColumn('updated_at', 'timestamp', (col) => col.notNull())
+      .addColumn('profile_image_url', 'text')
+      .addColumn('bio', 'text')
+      .addColumn('website', 'text')
+      .addColumn('social_links', 'jsonb')
+      .addColumn('subscription', 'jsonb')
+      .addColumn('settings', 'jsonb')
+      .execute();
 
-    // Create submissions table
-    await postgresClient.sql`
-      CREATE TABLE IF NOT EXISTS ${DB.SUBMISSIONS} (
-        id VARCHAR(36) PRIMARY KEY,
-        title VARCHAR(255) NOT NULL,
-        description TEXT NOT NULL,
-        category VARCHAR(100) NOT NULL,
-        original_ip VARCHAR(255) NOT NULL,
-        tags JSONB NOT NULL,
-        status VARCHAR(50) NOT NULL,
-        image_url TEXT NOT NULL,
-        license_type VARCHAR(100) NOT NULL,
-        submitted_at TIMESTAMP NOT NULL,
-        updated_at TIMESTAMP NOT NULL,
-        user_id VARCHAR(36) NOT NULL REFERENCES ${DB.USERS}(id),
-        analysis JSONB,
-        review_notes TEXT,
-        reviewed_by VARCHAR(36),
-        reviewed_at TIMESTAMP
-      )
-    `
+    // === Submissions Table ===
+    await db.schema
+      .createTable(DB.SUBMISSIONS)
+      .ifNotExists()
+      .addColumn('id', 'varchar(36)', (col) => col.primaryKey())
+      .addColumn('title', 'varchar(255)', (col) => col.notNull())
+      .addColumn('description', 'text', (col) => col.notNull())
+      .addColumn('category', 'varchar(100)', (col) => col.notNull())
+      .addColumn('original_ip', 'varchar(255)', (col) => col.notNull())
+      .addColumn('tags', 'jsonb')
+      .addColumn('status', 'varchar(50)', (col) => col.notNull())
+      .addColumn('image_url', 'text', (col) => col.notNull())
+      .addColumn('license_type', 'varchar(100)', (col) => col.notNull())
+      .addColumn('submitted_at', 'timestamp', (col) => col.notNull())
+      .addColumn('updated_at', 'timestamp', (col) => col.notNull())
+      .addColumn('user_id', 'varchar(36)', (col) => col.notNull())
+      .addForeignKeyConstraint('submissions_user_fk', ['user_id'], DB.USERS, ['id'])
+      .addColumn('analysis', 'jsonb')
+      .addColumn('review_notes', 'text')
+      .addColumn('reviewed_by', 'varchar(36)')
+      .addColumn('reviewed_at', 'timestamp')
+      .execute();
 
-    // Create licenses table
-    await postgresClient.sql`
-      CREATE TABLE IF NOT EXISTS ${DB.LICENSES} (
-        id VARCHAR(36) PRIMARY KEY,
-        submission_id VARCHAR(36) NOT NULL REFERENCES ${DB.SUBMISSIONS}(id),
-        artist_id VARCHAR(36) NOT NULL REFERENCES ${DB.USERS}(id),
-        brand_id VARCHAR(36) REFERENCES ${DB.USERS}(id),
-        terms JSONB NOT NULL,
-        status VARCHAR(50) NOT NULL,
-        created_at TIMESTAMP NOT NULL,
-        updated_at TIMESTAMP NOT NULL,
-        expires_at TIMESTAMP,
-        revenue_split DECIMAL(5,2) NOT NULL,
-        usage_rights TEXT NOT NULL,
-        territories JSONB,
-        restrictions TEXT
-      )
-    `
+    // === Licenses Table ===
+    await db.schema
+      .createTable(DB.LICENSES)
+      .ifNotExists()
+      .addColumn('id', 'varchar(36)', (col) => col.primaryKey())
+      .addColumn('submission_id', 'varchar(36)', (col) => col.notNull())
+      .addForeignKeyConstraint('licenses_submission_fk', ['submission_id'], DB.SUBMISSIONS, ['id'])
+      .addColumn('user_id', 'varchar(36)', (col) => col.notNull())
+      .addForeignKeyConstraint('licenses_user_fk', ['user_id'], DB.USERS, ['id'])
+      .addColumn('license_type', 'varchar(50)', (col) => col.notNull())
+      .addColumn('status', 'varchar(50)', (col) => col.notNull())
+      .addColumn('terms', 'jsonb', (col) => col.notNull())
+      .addColumn('created_at', 'timestamp', (col) => col.notNull())
+      .addColumn('updated_at', 'timestamp', (col) => col.notNull())
+      .addColumn('expires_at', 'timestamp')
+      .addColumn('payment_id', 'varchar(36)')
+      .addColumn('metadata', 'jsonb')
+      .execute();
 
-    // Create orders table
-    await postgresClient.sql`
-      CREATE TABLE IF NOT EXISTS ${DB.ORDERS} (
-        id VARCHAR(36) PRIMARY KEY,
-        user_id VARCHAR(36) REFERENCES ${DB.USERS}(id),
-        status VARCHAR(50) NOT NULL,
-        total_amount DECIMAL(10,2) NOT NULL,
-        items JSONB NOT NULL,
-        shipping_address JSONB,
-        billing_address JSONB,
-        payment_intent_id VARCHAR(255),
-        created_at TIMESTAMP NOT NULL,
-        updated_at TIMESTAMP NOT NULL,
-        completed_at TIMESTAMP,
-        notes TEXT
-      )
-    `
+    // === Orders Table ===
+    await db.schema
+      .createTable(DB.ORDERS)
+      .ifNotExists()
+      .addColumn('id', 'varchar(36)', (col) => col.primaryKey())
+      .addColumn('user_id', 'varchar(36)')
+      .addForeignKeyConstraint('orders_user_fk', ['user_id'], DB.USERS, ['id'])
+      .addColumn('status', 'varchar(50)', (col) => col.notNull())
+      .addColumn('total_amount', 'numeric', (col) => col.notNull())
+      .addColumn('items', 'jsonb', (col) => col.notNull())
+      .addColumn('shipping_address', 'jsonb')
+      .addColumn('billing_address', 'jsonb')
+      .addColumn('payment_intent_id', 'varchar(255)')
+      .addColumn('created_at', 'timestamp', (col) => col.notNull())
+      .addColumn('updated_at', 'timestamp', (col) => col.notNull())
+      .addColumn('completed_at', 'timestamp')
+      .addColumn('notes', 'text')
+      .execute();
 
-    // Create analytics table
-    await postgresClient.sql`
-      CREATE TABLE IF NOT EXISTS ${DB.ANALYTICS} (
-        id VARCHAR(36) PRIMARY KEY,
-        user_id VARCHAR(36) REFERENCES ${DB.USERS}(id),
-        event_type VARCHAR(100) NOT NULL,
-        event_data JSONB NOT NULL,
-        created_at TIMESTAMP NOT NULL,
-        ip_address VARCHAR(50),
-        user_agent TEXT,
-        referrer TEXT
-      )
-    `
+    // === Payments Table ===
+    await db.schema
+      .createTable(DB.PAYMENTS)
+      .ifNotExists()
+      .addColumn('id', 'varchar(36)', (col) => col.primaryKey())
+      .addColumn('user_id', 'varchar(36)')
+      .addForeignKeyConstraint('payments_user_fk', ['user_id'], DB.USERS, ['id'])
+      .addColumn('amount', 'numeric', (col) => col.notNull())
+      .addColumn('currency', 'varchar(10)', (col) => col.notNull())
+      .addColumn('status', 'varchar(20)', (col) => col.notNull())
+      .addColumn('payment_method', 'varchar(50)', (col) => col.notNull())
+      .addColumn('payment_intent_id', 'varchar(255)')
+      .addColumn('metadata', 'jsonb')
+      .addColumn('created_at', 'timestamp', (col) => col.notNull())
+      .addColumn('updated_at', 'timestamp', (col) => col.notNull())
+      .execute();
 
-    console.log("PostgreSQL tables created successfully")
-  } catch (error) {
-    console.error("Error creating PostgreSQL tables:", error)
-    throw error
+    // === Analytics Table ===
+    await db.schema
+      .createTable(DB.ANALYTICS)
+      .ifNotExists()
+      .addColumn('id', 'varchar(36)', (col) => col.primaryKey())
+      .addColumn('user_id', 'varchar(36)')
+      .addForeignKeyConstraint('analytics_user_fk', ['user_id'], DB.USERS, ['id'])
+      .addColumn('event_type', 'varchar(100)', (col) => col.notNull())
+      .addColumn('event_data', 'jsonb', (col) => col.notNull())
+      .addColumn('created_at', 'timestamp', (col) => col.notNull())
+      .addColumn('ip_address', 'varchar(50)')
+      .addColumn('user_agent', 'text')
+      .addColumn('referrer', 'text')
+      .execute();
+
+    // === Audit Logs Table ===
+    await db.schema
+      .createTable(DB.AUDIT_LOGS)
+      .ifNotExists()
+      .addColumn('id', 'varchar(36)', (col) => col.primaryKey())
+      .addColumn('user_id', 'varchar(36)')
+      .addForeignKeyConstraint('audit_logs_user_fk', ['user_id'], DB.USERS, ['id'])
+      .addColumn('action', 'varchar(255)', (col) => col.notNull())
+      .addColumn('entity_type', 'varchar(100)', (col) => col.notNull())
+      .addColumn('entity_id', 'varchar(36)')
+      .addColumn('details', 'jsonb', (col) => col.notNull())
+      .addColumn('ip_address', 'varchar(50)')
+      .addColumn('user_agent', 'text')
+      .addColumn('created_at', 'timestamp', (col) => col.notNull())
+      .execute();
+
+    console.log('All PostgreSQL tables created successfully!');
+  } catch (error: unknown) {
+    console.error(
+      'Error setting up PostgreSQL tables:',
+      error instanceof Error ? error.message : error
+    );
+    throw error;
   }
 }
 
-async function setupDynamoDBTables() {
-  const dynamoClient = new DynamoDBClient({
-    region: "us-east-1", // Update with your region
-  })
-
-  try {
-    // Create products table
-    await dynamoClient.send(
-      new CreateTableCommand({
-        TableName: DB.PRODUCTS,
-        KeySchema: [
-          { AttributeName: "pk", KeyType: "HASH" },
-          { AttributeName: "sk", KeyType: "RANGE" },
-        ],
-        AttributeDefinitions: [
-          { AttributeName: "pk", AttributeType: "S" },
-          { AttributeName: "sk", AttributeType: "S" },
-          { AttributeName: "gsi1pk", AttributeType: "S" },
-          { AttributeName: "gsi1sk", AttributeType: "S" },
-          { AttributeName: "gsi2pk", AttributeType: "S" },
-          { AttributeName: "gsi2sk", AttributeType: "S" },
-          { AttributeName: "gsi3pk", AttributeType: "S" },
-          { AttributeName: "gsi3sk", AttributeType: "S" },
-          { AttributeName: "slug", AttributeType: "S" },
-        ],
-        GlobalSecondaryIndexes: [
-          {
-            IndexName: "GSI1",
-            KeySchema: [
-              { AttributeName: "gsi1pk", KeyType: "HASH" },
-              { AttributeName: "gsi1sk", KeyType: "RANGE" },
-            ],
-            Projection: { ProjectionType: "ALL" },
-            ProvisionedThroughput: {
-              ReadCapacityUnits: 5,
-              WriteCapacityUnits: 5,
-            },
-          },
-          {
-            IndexName: "GSI2",
-            KeySchema: [
-              { AttributeName: "gsi2pk", KeyType: "HASH" },
-              { AttributeName: "gsi2sk", KeyType: "RANGE" },
-            ],
-            Projection: { ProjectionType: "ALL" },
-            ProvisionedThroughput: {
-              ReadCapacityUnits: 5,
-              WriteCapacityUnits: 5,
-            },
-          },
-          {
-            IndexName: "GSI3",
-            KeySchema: [
-              { AttributeName: "gsi3pk", KeyType: "HASH" },
-              { AttributeName: "gsi3sk", KeyType: "RANGE" },
-            ],
-            Projection: { ProjectionType: "ALL" },
-            ProvisionedThroughput: {
-              ReadCapacityUnits: 5,
-              WriteCapacityUnits: 5,
-            },
-          },
-          {
-            IndexName: "SlugIndex",
-            KeySchema: [{ AttributeName: "slug", KeyType: "HASH" }],
-            Projection: { ProjectionType: "ALL" },
-            ProvisionedThroughput: {
-              ReadCapacityUnits: 5,
-              WriteCapacityUnits: 5,
-            },
-          },
-        ],
-        ProvisionedThroughput: {
-          ReadCapacityUnits: 5,
-          WriteCapacityUnits: 5,
-        },
-      }),
-    )
-
-    // Create storefronts table
-    await dynamoClient.send(
-      new CreateTableCommand({
-        TableName: DB.STOREFRONTS,
-        KeySchema: [{ AttributeName: "id", KeyType: "HASH" }],
-        AttributeDefinitions: [
-          { AttributeName: "id", AttributeType: "S" },
-          { AttributeName: "owner_id", AttributeType: "S" },
-          { AttributeName: "storefront_type", AttributeType: "S" },
-          { AttributeName: "slug", AttributeType: "S" },
-        ],
-        GlobalSecondaryIndexes: [
-          {
-            IndexName: "OwnerIndex",
-            KeySchema: [{ AttributeName: "owner_id", KeyType: "HASH" }],
-            Projection: { ProjectionType: "ALL" },
-            ProvisionedThroughput: {
-              ReadCapacityUnits: 5,
-              WriteCapacityUnits: 5,
-            },
-          },
-          {
-            IndexName: "TypeIndex",
-            KeySchema: [{ AttributeName: "storefront_type", KeyType: "HASH" }],
-            Projection: { ProjectionType: "ALL" },
-            ProvisionedThroughput: {
-              ReadCapacityUnits: 5,
-              WriteCapacityUnits: 5,
-            },
-          },
-          {
-            IndexName: "SlugIndex",
-            KeySchema: [{ AttributeName: "slug", KeyType: "HASH" }],
-            Projection: { ProjectionType: "ALL" },
-            ProvisionedThroughput: {
-              ReadCapacityUnits: 5,
-              WriteCapacityUnits: 5,
-            },
-          },
-        ],
-        ProvisionedThroughput: {
-          ReadCapacityUnits: 5,
-          WriteCapacityUnits: 5,
-        },
-      }),
-    )
-
-    console.log("DynamoDB tables created successfully")
-  } catch (error) {
-    console.error("Error creating DynamoDB tables:", error)
-    throw error
-  }
-}
-
+// === Run Setup ===
 async function main() {
   try {
-    await setupPostgresTables()
-    await setupDynamoDBTables()
-    console.log("Database setup completed successfully")
+    await setupPostgresTables();
+    console.log('Database setup completed successfully');
   } catch (error) {
-    console.error("Database setup failed:", error)
+    console.error('Database setup failed:', error instanceof Error ? error.message : error);
   } finally {
-    process.exit()
+    process.exit(0);
   }
 }
 
-main()
-
+main();

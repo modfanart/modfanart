@@ -69,9 +69,10 @@ export async function checkDatabaseHealth(forceCheck = false): Promise<DatabaseH
     isHealthy,
     responseTime: Date.now() - startTime,
     connections: connectionStats,
-    lastError,
     timestamp: new Date(),
+    ...(lastError ? { lastError } : {}),
   };
+
   lastCheckTime = now;
 
   if (connectionStats.total > connectionStats.maxConnections * 0.8) {

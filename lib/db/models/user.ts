@@ -11,7 +11,7 @@ import { logger } from '../../utils/logger';
 //              User Type Definitions
 // ─────────────────────────────────────────────
 
-export type UserRole = 'artist' | 'brand' | 'creator' | 'admin';
+export type UserRole = 'user' | 'artist' | 'brand' | 'creator' | 'admin';
 
 export type SubscriptionTier = 'free' | 'premium_artist' | 'creator' | 'enterprise';
 
@@ -43,6 +43,8 @@ export interface User {
   };
   subscription?: Record<string, any>;
   settings?: Record<string, any>;
+  stripeCustomerId?: string;
+  stripeEmail?: string;
 }
 
 // Add at top of file or in utils
@@ -89,13 +91,15 @@ export async function createUser(
         profile_image_url: user.profileImageUrl ?? null,
         bio: user.bio ?? null,
         website: user.website ?? null,
-        social_links: cleanSocialLinks(user.socialLinks), // ← fixed here
+        social_links: cleanSocialLinks(user.socialLinks),
         subscription: user.subscription ?? {},
         settings: user.settings ?? {
           notifications: true,
           marketingEmails: true,
           twoFactorEnabled: false,
         },
+        stripe_customer_id: user.stripeCustomerId ?? null, // NEW
+        stripe_email: user.stripeEmail ?? null, // NEW
       })
       .execute();
 
@@ -206,6 +210,13 @@ export async function updateUser(id: string, userData: Partial<User>): Promise<U
     if ('settings' in userData) {
       updateValues.settings = userData.settings ?? null;
     }
+    if ('stripeCustomerId' in userData) {
+      updateValues.stripe_customer_id = userData.stripeCustomerId ?? null;
+    }
+
+    if ('stripeEmail' in userData) {
+      updateValues.stripe_email = userData.stripeEmail ?? null;
+    }
 
     // Only execute update if there is something to update besides updated_at
     if (Object.keys(updateValues).length > 1) {
@@ -259,5 +270,9 @@ function mapRowToUser(row: any): User {
     socialLinks: row.social_links ?? undefined,
     subscription: row.subscription ?? undefined,
     settings: row.settings ?? undefined,
+
+    // NEW fields
+    stripeCustomerId: row.stripe_customer_id ?? undefined,
+    stripeEmail: row.stripe_email ?? undefined,
   };
 }

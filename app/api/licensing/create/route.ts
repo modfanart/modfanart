@@ -1,35 +1,34 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
 import { logger } from '@/lib/logger';
-import { rateLimit } from '@/lib/middleware/rate-limit';
-import { requireAuth } from '@/lib/middleware/auth';
-import { createSanitizedStringSchema, sanitizeAndValidate } from '@/lib/utils/sanitize';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+/* -------------------------------------------------------------------------- */
+/*                                   Schemas                                  */
+/* -------------------------------------------------------------------------- */
 
 const LicenseTermsSchema = z.object({
-  duration: createSanitizedStringSchema({ min: 1, max: 100, errorMessage: 'Duration is required' }),
-  territory: createSanitizedStringSchema({
-    min: 1,
-    max: 100,
-    errorMessage: 'Territory is required',
-  }),
+  duration: z.string().min(1).max(100),
+  territory: z.string().min(1).max(100),
   exclusivity: z.boolean(),
   royaltyRate: z.number().min(0).max(100).optional(),
-  restrictions: z.array(createSanitizedStringSchema({ max: 500 })).optional(),
+  restrictions: z.array(z.string().max(500)).optional(),
 });
 
 const CreateLicenseSchema = z.object({
-  submissionId: z.string().min(1, 'Submission ID is required'),
-  artistId: z.string().min(1, 'Artist ID is required'),
-  brandId: z.string().min(1, 'Brand ID is required'),
-  licenseType: z.enum(['personal', 'commercial', 'full'], {
-    message: 'License type must be personal, commercial, or full',
-  }),
+  submissionId: z.string().min(1),
+  artistId: z.string().min(1),
+  brandId: z.string().min(1),
+  licenseType: z.enum(['personal', 'commercial', 'full']),
   terms: LicenseTermsSchema.optional(),
 });
 
-// Fixed: restrictions is required (non-optional), royaltyRate allows undefined explicitly
+/* -------------------------------------------------------------------------- */
+/*                                   Types                                    */
+/* -------------------------------------------------------------------------- */
+
 export interface LicenseAgreement {
   id: string;
   submissionId: string;
@@ -40,141 +39,173 @@ export interface LicenseAgreement {
     duration: string;
     territory: string;
     exclusivity: boolean;
-    royaltyRate?: number | undefined; // Explicitly allow undefined
-    restrictions: string[]; // Required array — provide default
+    royaltyRate?: number;
+    restrictions: string[];
   };
   status: 'draft' | 'pending' | 'active' | 'expired';
   createdAt: string;
   updatedAt: string;
 }
 
-const licensingRateLimitOptions = {
-  limit: 30,
-  windowMs: 60 * 1000,
-};
+/* -------------------------------------------------------------------------- */
+/*                                    POST                                    */
+/* -------------------------------------------------------------------------- */
 
 export async function POST(req: NextRequest) {
-  const requestId = crypto.randomUUID();
+  const { randomUUID } = await import('crypto');
+
+  const requestId = randomUUID();
   const startTime = Date.now();
 
-  logger.info(`License creation request received`, {
+  logger.info('License creation request received', {
     context: 'licensing-api',
     requestId,
-    timestamp: new Date().toISOString(),
   });
 
   try {
-    const rateLimitResult = await rateLimit(licensingRateLimitOptions)(req);
-    if (rateLimitResult) return rateLimitResult;
+    /* -------------------------- Rate Limiting -------------------------- */
+    const { rateLimit } = await import('@/lib/middleware/rate-limit');
 
-    const authResult = await requireAuth(req);
-    if (authResult) return authResult;
+    const limiter = rateLimit({
+      limit: 30,
+      windowMs: 60 * 1000,
+    });
 
-    let body;
+    const rateLimitResponse = await limiter(req);
+    if (rateLimitResponse) return rateLimitResponse;
+
+    /* --------------------------- Auth Guard ---------------------------- */
+    const { requireAuth } = await import('@/lib/middleware/requireAuth');
+
+    const authResponse = await requireAuth(req);
+    if (authResponse) return authResponse;
+
+    const { getServerSession } = await import('next-auth/next');
+    const { authOptions } = await import('@/lib/auth');
+
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized', requestId },
+        { status: 401 }
+      );
+    }
+
+    /* ----------------------------- Body ------------------------------- */
+    let body: unknown;
+
     try {
       body = await req.json();
     } catch {
       return NextResponse.json(
-        { success: false, error: 'Invalid JSON in request body', requestId },
+        { success: false, error: 'Invalid JSON body', requestId },
         { status: 400 }
       );
     }
 
-    const validation = sanitizeAndValidate(body, CreateLicenseSchema, 'licensing-api');
-    if (!validation.success) {
-      logger.warn('Invalid license data', {
+    const parsed = CreateLicenseSchema.safeParse(body);
+
+    if (!parsed.success) {
+      logger.warn('Invalid license payload', {
         context: 'licensing-api',
         requestId,
-        errors: validation.errors,
-        bodySnippet: JSON.stringify(body).slice(0, 200) + '...',
+        errors: parsed.error.flatten(),
       });
+
       return NextResponse.json(
         {
           success: false,
           error: 'Invalid license data',
-          details: validation.errors,
+          details: parsed.error.flatten(),
           requestId,
         },
         { status: 400 }
       );
     }
 
-    const { submissionId, artistId, brandId, licenseType, terms } = validation.data!;
+    const { submissionId, artistId, brandId, licenseType, terms } = parsed.data;
 
-    const session = await getServerSession(authOptions);
-    const userId = session?.user?.id;
-    const userRole = session?.user?.role;
+    const userId = session.user.id;
+    const userRole = session.user.role;
 
-    logger.info(`Creating license agreement`, {
-      context: 'licensing-api',
-      requestId,
-      data: { licenseType, submissionId, artistId, brandId, userId, userRole },
-    });
-
-    const hasPermission =
-      userRole === 'admin' || userId === brandId || (userRole === 'brand' && userId === brandId);
+    /* -------------------------- Permission ----------------------------- */
+    const hasPermission = userRole === 'admin' || (userRole === 'brand' && userId === brandId);
 
     if (!hasPermission) {
-      logger.warn(`Permission denied for license creation`, {
+      logger.warn('Permission denied', {
         context: 'licensing-api',
         requestId,
-        data: { userId, userRole, brandId },
+        userId,
+        userRole,
+        brandId,
       });
+
       return NextResponse.json(
         {
           success: false,
-          error: "You don't have permission to create licenses for this brand",
+          error: 'You do not have permission to create this license',
           requestId,
         },
         { status: 403 }
       );
     }
 
+    /* ------------------------ License Object --------------------------- */
+    const baseTerms = {
+      duration: terms?.duration ?? '1 year',
+      territory: terms?.territory ?? 'Worldwide',
+      exclusivity: terms?.exclusivity ?? false,
+      restrictions: terms?.restrictions ?? [
+        'No unauthorized redistribution',
+        'Attribution required',
+      ],
+    };
+
     const licenseAgreement: LicenseAgreement = {
-      id: `LICENSE-${Math.floor(Math.random() * 10000)}`,
+      id: `LICENSE-${Math.floor(Math.random() * 100000)}`,
       submissionId,
       artistId,
       brandId,
       licenseType,
-      terms: {
-        duration: terms?.duration ?? '1 year',
-        territory: terms?.territory ?? 'Worldwide',
-        exclusivity: terms?.exclusivity ?? false,
-        royaltyRate: terms?.royaltyRate, // already optional
-        restrictions: terms?.restrictions ?? ['No modifications allowed', 'Attribution required'],
-      },
+      terms:
+        terms?.royaltyRate !== undefined
+          ? { ...baseTerms, royaltyRate: terms.royaltyRate }
+          : baseTerms,
       status: 'draft',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
 
-    logger.info(`License agreement created successfully`, {
+    logger.info('License agreement created', {
       context: 'licensing-api',
       requestId,
-      data: { licenseId: licenseAgreement.id, processingTime: Date.now() - startTime },
+      licenseId: licenseAgreement.id,
+      processingTime: Date.now() - startTime,
     });
 
     return NextResponse.json({
       success: true,
       licenseAgreement,
-      meta: { requestId, processingTime: Date.now() - startTime },
+      meta: {
+        requestId,
+        processingTime: Date.now() - startTime,
+      },
     });
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    const errorStack = error instanceof Error ? error.stack : undefined;
-
-    logger.error('Error creating license agreement', {
+    logger.error('License creation failed', {
       context: 'licensing-api',
       requestId,
-      data: { error: errorMessage, stack: errorStack, processingTime: Date.now() - startTime },
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      processingTime: Date.now() - startTime,
     });
 
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to create license agreement',
-        message: errorMessage,
-        meta: { requestId, processingTime: Date.now() - startTime },
+        error: 'Failed to create license',
+        requestId,
       },
       { status: 500 }
     );

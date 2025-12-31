@@ -221,17 +221,18 @@ export class SubmissionRepository {
       description: row.description,
       category: row.category,
       originalIp: row.original_ip,
-      tags: row.tags,
+      tags: Array.isArray(row.tags) ? row.tags : [],
       status: row.status,
       imageUrl: row.image_url,
       licenseType: row.license_type,
       submittedAt: new Date(row.submitted_at),
       updatedAt: new Date(row.updated_at),
       userId: row.user_id,
-      analysis: row.analysis,
-      reviewNotes: row.review_notes,
-      reviewedBy: row.reviewed_by,
-      reviewedAt: row.reviewed_at ? new Date(row.reviewed_at) : undefined,
+
+      ...(row.analysis ? { analysis: row.analysis } : {}),
+      ...(row.review_notes ? { reviewNotes: row.review_notes } : {}),
+      ...(row.reviewed_by ? { reviewedBy: row.reviewed_by } : {}),
+      ...(row.reviewed_at ? { reviewedAt: new Date(row.reviewed_at) } : {}),
     };
   }
 }

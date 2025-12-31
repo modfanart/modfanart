@@ -1,41 +1,62 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { logger } from "@/lib/logger"
-import { getComplianceRules } from "@/lib/db/config-service"
-import { getSubmissionsByStatus } from "@/lib/db/models/submission"
+import { type NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/logger';
+import { getComplianceRules } from '@/lib/db/config-service';
+import { getSubmissionsByStatus } from '@/lib/db/models/submission';
 
-// Only allow access from authenticated admin users
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+/* -------------------------------------------------------------------------- */
+/*                                   GET                                      */
+/* -------------------------------------------------------------------------- */
+
 export async function GET(request: NextRequest) {
-  // Check for admin authorization
-  const authHeader = request.headers.get("authorization")
-  if (!process.env.BYPASS_AUTH && (!authHeader || !authHeader.startsWith("Bearer "))) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  const requestId = crypto.randomUUID();
+  const startTime = Date.now();
+
+  /* ---------------------------- Auth Guard ---------------------------- */
+  const authHeader = request.headers.get('authorization');
+
+  if (!process.env.BYPASS_AUTH) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized', requestId },
+        { status: 401 }
+      );
+    }
   }
 
   try {
-    // Get metrics data
-    const pendingSubmissions = await getSubmissionsByStatus("pending")
-    const reviewSubmissions = await getSubmissionsByStatus("review")
-    const approvedSubmissions = await getSubmissionsByStatus("approved")
-    const rejectedSubmissions = await getSubmissionsByStatus("rejected")
-    const licensedSubmissions = await getSubmissionsByStatus("licensed")
+    /* ---------------------- Fetch Data (Parallel) ---------------------- */
+    const [
+      pendingSubmissions,
+      reviewSubmissions,
+      approvedSubmissions,
+      rejectedSubmissions,
+      licensedSubmissions,
+      complianceRules,
+    ] = await Promise.all([
+      getSubmissionsByStatus('pending'),
+      getSubmissionsByStatus('review'),
+      getSubmissionsByStatus('approved'),
+      getSubmissionsByStatus('rejected'),
+      getSubmissionsByStatus('licensed'),
+      getComplianceRules(),
+    ]);
 
-    // Get compliance rules
-    const complianceRules = await getComplianceRules()
+    /* ---------------------------- Metrics ----------------------------- */
+    const submissionCounts = {
+      pending: pendingSubmissions.length,
+      review: reviewSubmissions.length,
+      approved: approvedSubmissions.length,
+      rejected: rejectedSubmissions.length,
+      licensed: licensedSubmissions.length,
+    };
 
-    // Calculate metrics
     const metrics = {
       submissionCounts: {
-        pending: pendingSubmissions.length,
-        review: reviewSubmissions.length,
-        approved: approvedSubmissions.length,
-        rejected: rejectedSubmissions.length,
-        licensed: licensedSubmissions.length,
-        total:
-          pendingSubmissions.length +
-          reviewSubmissions.length +
-          approvedSubmissions.length +
-          rejectedSubmissions.length +
-          licensedSubmissions.length,
+        ...submissionCounts,
+        total: Object.values(submissionCounts).reduce((a, b) => a + b, 0),
       },
       aiDetection: {
         threshold: complianceRules.aiDetectionThreshold,
@@ -48,30 +69,39 @@ export async function GET(request: NextRequest) {
         ipComplianceThreshold: complianceRules.ipComplianceThreshold,
       },
       timestamp: new Date().toISOString(),
-    }
+    };
 
-    logger.info(`Moderation metrics requested`, {
-      context: "moderation-metrics",
-      data: { metrics: metrics.submissionCounts },
-    })
+    logger.info('Moderation metrics requested', {
+      context: 'moderation-metrics',
+      requestId,
+      data: metrics.submissionCounts,
+      processingTime: Date.now() - startTime,
+    });
 
     return NextResponse.json({
       success: true,
       metrics,
-    })
+      meta: {
+        requestId,
+        processingTime: Date.now() - startTime,
+      },
+    });
   } catch (error) {
-    logger.error("Error fetching moderation metrics", error, {
-      context: "moderation-metrics",
-    })
+    logger.error('Error fetching moderation metrics', {
+      context: 'moderation-metrics',
+      requestId,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      processingTime: Date.now() - startTime,
+    });
 
     return NextResponse.json(
       {
         success: false,
-        error: "Failed to fetch moderation metrics",
-        details: error instanceof Error ? error.message : String(error),
+        error: 'Failed to fetch moderation metrics',
+        requestId,
       },
-      { status: 500 },
-    )
+      { status: 500 }
+    );
   }
 }
-

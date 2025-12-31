@@ -90,8 +90,16 @@ export const CreateProductSchema = z.object({
 
 export const UpdateProductSchema = CreateProductSchema.partial();
 
-// Validation helper function
-// Validation helper function
+/**
+ * Generic validation helper that safely parses data against a Zod schema.
+ * Returns a consistent result object with success flag, validated data (if successful),
+ * or ZodError (if validation failed).
+ */
+/**
+ * Generic validation helper that safely parses data against a Zod schema.
+ * Returns a consistent result object with success flag, validated data (if successful),
+ * or ZodError (if validation failed).
+ */
 export function validateModel<T>(
   data: unknown,
   schema: z.ZodSchema<T>,
@@ -106,25 +114,19 @@ export function validateModel<T>(
     return { success: true, data: validatedData };
   } catch (error) {
     if (error instanceof z.ZodError) {
-      // Log a safe, serializable version of the errors
+      // Log Zod validation errors at warn level with structured data
       logger.warn(`Validation error in ${context}`, {
         context: 'model-validation',
-        // Use .flatten() or .format() for clean, plain-object errors
         errors: error.flatten(),
-        // Or just the issues array: errors: error.issues,
-        // Optionally include a sanitized version of input data if needed (be careful with PII!)
       });
 
       return { success: false, errors: error };
     }
 
-    logger.error(`Unexpected validation error in ${context}`, {
-      context: 'model-validation',
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-    });
+    // Unexpected error (not a ZodError) — use your logger's exact signature
+    logger.error(`Unexpected validation error in ${context}`, error as Error);
 
-    // Fallback empty ZodError to keep return type consistent
+    // Fallback to empty ZodError for type consistency
     return { success: false, errors: new z.ZodError([]) };
   }
 }

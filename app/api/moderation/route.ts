@@ -1,104 +1,158 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { createSubmission } from "@/lib/db/models/submission"
-import { getUserById } from "@/lib/db/models/user"
-import { logger } from "@/lib/logger"
-import { z } from "zod"
-import { validateRequest } from "@/lib/validation"
-import { analyzeSubmission } from "@/lib/services/moderation-service"
+import { type NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 
-// Schema for request validation
-const moderationRequestSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  description: z.string().min(1, "Description is required"),
-  category: z.string().min(1, "Category is required"),
-  originalIp: z.string().min(1, "Original IP is required"),
-  tags: z.union([z.string(), z.array(z.string())]),
-  imageUrl: z.string().url("Valid image URL is required"),
-  licenseType: z.string().min(1, "License type is required"),
-  userId: z.string().min(1, "User ID is required"),
-})
+import { logger } from '@/lib/logger';
+import { validateRequest } from '@/lib/validation';
+import { analyzeSubmission } from '@/lib/services/moderation-service';
+import { createSubmission } from '@/lib/db/models/submission';
+import { getUserById } from '@/lib/db/models/user';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+/* -------------------------------------------------------------------------- */
+/*                                   Schema                                   */
+/* -------------------------------------------------------------------------- */
+
+const ModerationRequestSchema = z.object({
+  title: z.string().min(1, 'Title is required'),
+  description: z.string().min(1, 'Description is required'),
+  category: z.string().min(1, 'Category is required'),
+  originalIp: z.string().min(1, 'Original IP is required'),
+  tags: z.union([z.string(), z.array(z.string())]).optional(),
+  imageUrl: z.string().url('Valid image URL is required'),
+  licenseType: z.string().min(1, 'License type is required'),
+  userId: z.string().min(1, 'User ID is required'),
+});
+
+/* -------------------------------------------------------------------------- */
+/*                                    POST                                    */
+/* -------------------------------------------------------------------------- */
 
 export async function POST(request: NextRequest) {
-  const requestId = crypto.randomUUID()
-  const startTime = Date.now()
+  const requestId = crypto.randomUUID();
+  const startTime = Date.now();
 
-  logger.info(`Moderation request received`, {
-    context: "moderation-api",
-    data: { requestId },
-  })
+  logger.info('Moderation request received', {
+    context: 'moderation-api',
+    requestId,
+  });
 
   try {
-    // Validate request body
-    const body = await request.json()
-    const validation = validateRequest(moderationRequestSchema, body, "moderation-request")
+    /* ---------------------------- Parse Body ---------------------------- */
+    let body: unknown;
+
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Invalid JSON body',
+          requestId,
+        },
+        { status: 400 }
+      );
+    }
+
+    const validation = validateRequest(ModerationRequestSchema, body, 'moderation-request');
 
     if (!validation.success) {
-      return validation.response
+      return validation.response;
     }
 
-    const { title, description, category, originalIp, tags, imageUrl, licenseType, userId } = validation.data
+    const { title, description, category, originalIp, tags, imageUrl, licenseType, userId } =
+      validation.data;
 
-    // Verify user exists
-    const user = await getUserById(userId)
+    /* ----------------------------- User -------------------------------- */
+    const user = await getUserById(userId);
+
     if (!user) {
-      logger.warn(`User not found: ${userId}`, {
-        context: "moderation-api",
-        data: { requestId, userId },
-      })
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
+      logger.warn('User not found', {
+        context: 'moderation-api',
+        requestId,
+        userId,
+      });
+
+      return NextResponse.json(
+        { success: false, error: 'User not found', requestId },
+        { status: 404 }
+      );
     }
 
-    // Analyze submission using AI services
-    const analysis = await analyzeSubmission(title, description, category, originalIp, tags, imageUrl)
+    /* ------------------------- Normalize Tags --------------------------- */
+    const normalizedTags =
+      typeof tags === 'string'
+        ? tags
+            .split(',')
+            .map((t) => t.trim())
+            .filter(Boolean)
+        : Array.isArray(tags)
+        ? tags
+        : [];
 
-    // Create a submission record
+    /* ------------------------- AI Moderation ---------------------------- */
+    const analysis = await analyzeSubmission(
+      title,
+      description,
+      category,
+      originalIp,
+      normalizedTags,
+      imageUrl
+    );
+
+    /* ------------------------- Submission ------------------------------- */
     const submission = await createSubmission({
       title,
       description,
       category,
       originalIp,
-      tags: typeof tags === "string" ? tags.split(",").map((tag) => tag.trim()) : tags,
-      status: analysis.finalRecommendation === "approve" ? "pending" : "review",
+      tags: normalizedTags,
       imageUrl,
       licenseType,
       userId,
       analysis,
-    })
+      status: analysis.finalRecommendation === 'approve' ? 'pending' : 'review',
+    });
 
-    const duration = Date.now() - startTime
-    logger.info(`Moderation request completed successfully`, {
-      context: "moderation-api",
-      data: {
-        requestId,
-        duration,
-        submissionId: submission.id,
-        recommendation: analysis.finalRecommendation,
-        needsHumanReview: analysis.needsHumanReview,
-      },
-    })
+    const processingTime = Date.now() - startTime;
+
+    logger.info('Moderation completed successfully', {
+      context: 'moderation-api',
+      requestId,
+      submissionId: submission.id,
+      recommendation: analysis.finalRecommendation,
+      needsHumanReview: analysis.needsHumanReview,
+      processingTime,
+    });
 
     return NextResponse.json({
       success: true,
-      analysis,
       submission,
-      requestId,
-    })
+      analysis,
+      meta: {
+        requestId,
+        processingTime,
+      },
+    });
   } catch (error) {
-    const duration = Date.now() - startTime
-    logger.error("Error in moderation API", error, {
-      context: "moderation-api",
-      data: { requestId, duration },
-    })
+    const processingTime = Date.now() - startTime;
+
+    logger.error('Moderation API failed', {
+      context: 'moderation-api',
+      requestId,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      processingTime,
+    });
 
     return NextResponse.json(
       {
         success: false,
-        error: "Failed to process submission",
-        details: error instanceof Error ? error.message : String(error),
+        error: 'Failed to process submission',
         requestId,
       },
-      { status: 500 },
-    )
+      { status: 500 }
+    );
   }
 }
-

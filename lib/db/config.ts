@@ -1,13 +1,14 @@
 import { Kysely, PostgresDialect } from 'kysely';
 import { Pool } from 'pg';
 import { S3Client } from '@aws-sdk/client-s3';
+export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'refunded';
 
 // === Database Interface ===
 // Use Kysely's recommended pattern: column types should reflect what comes from DB
 // Use Generated<string> for UUIDs if you're using uuid_generate_v4(), etc.
 
 interface UsersTable {
-  id: string; // assuming uuid as string
+  id: string; // uuid
   email: string;
   name: string;
   role: string;
@@ -19,6 +20,10 @@ interface UsersTable {
   social_links: Record<string, string> | null;
   subscription: Record<string, unknown> | null;
   settings: Record<string, unknown> | null;
+
+  // STRIPE
+  stripe_customer_id: string | null;
+  stripe_email: string | null;
 }
 
 interface SubmissionsTable {
@@ -88,6 +93,18 @@ interface OrdersTable {
   completed_at: Date | null;
   notes: string | null;
 }
+interface PaymentsTable {
+  id: string;
+  user_id: string;
+  amount: string; // NUMERIC comes as string
+  currency: string;
+  status: PaymentStatus;
+  payment_method: string;
+  payment_intent_id: string | null;
+  metadata: Record<string, any> | null;
+  created_at: Date;
+  updated_at: Date;
+}
 
 interface AnalyticsTable {
   id: string;
@@ -113,12 +130,13 @@ interface AuditLogsTable {
 }
 
 // === Kysely Database Interface ===
-interface Database {
+export interface Database {
   users: UsersTable;
   submissions: SubmissionsTable;
   licenses: LicensesTable;
   products: ProductsTable;
   orders: OrdersTable;
+  payments: PaymentsTable;
   analytics: AnalyticsTable;
   audit_logs: AuditLogsTable;
 }
@@ -130,6 +148,7 @@ export const DB = {
   LICENSES: 'licenses' as const,
   PRODUCTS: 'products' as const,
   ORDERS: 'orders' as const,
+  PAYMENTS: 'payments' as const, // ✅ ADD
   ANALYTICS: 'analytics' as const,
   AUDIT_LOGS: 'audit_logs' as const,
 };

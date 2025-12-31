@@ -106,7 +106,7 @@ export async function createLicense(
     });
   } catch (error: any) {
     logger.error('Failed to create license', {
-      error: error instanceof Error ? error : String(error),
+      error: error instanceof Error ? error : new Error(String(error)),
       submissionId: licenseData.submissionId,
     });
 

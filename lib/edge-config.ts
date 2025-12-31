@@ -50,15 +50,19 @@ export async function getEdgeConfig(): Promise<EdgeConfigData> {
  * Get a specific feature flag
  */
 export async function getFeatureFlag(key: keyof FeatureFlags): Promise<boolean> {
-  // <-- Restrict key to valid flags
   try {
     const client = getEdgeConfigClient();
     const featureFlags = (await client.get('featureFlags')) as FeatureFlags | undefined;
 
-    return featureFlags?.[key] ?? config.edgeConfig.defaults.featureFlags[key] ?? false;
+    // Use type assertion to satisfy TypeScript
+    return (
+      featureFlags?.[key as keyof FeatureFlags] ??
+      (config.edgeConfig.defaults.featureFlags as FeatureFlags)[key] ??
+      false
+    );
   } catch (error) {
     logger.error(`Failed to retrieve feature flag: ${key}`, error, { context: 'edge-config' });
-    return config.edgeConfig.defaults.featureFlags[key] ?? false;
+    return (config.edgeConfig.defaults.featureFlags as FeatureFlags)[key] ?? false;
   }
 }
 
@@ -96,11 +100,14 @@ export async function getLimits(): Promise<Limits> {
  * Check if a feature is enabled (client-side safe)
  */
 export function isFeatureEnabled(key: keyof FeatureFlags): boolean {
-  // <-- Also restrict here
   if (typeof window !== 'undefined') {
-    return (window as any).__NEXT_DATA__?.props?.pageProps?.featureFlags?.[key] ?? false;
+    const clientFlags = (window as any).__NEXT_DATA__?.props?.pageProps?.featureFlags as
+      | FeatureFlags
+      | undefined;
+    return clientFlags?.[key as keyof FeatureFlags] ?? false;
   }
-  return config.edgeConfig.defaults.featureFlags[key] ?? false;
+
+  return (config.edgeConfig.defaults.featureFlags as FeatureFlags)[key] ?? false;
 }
 
 /**

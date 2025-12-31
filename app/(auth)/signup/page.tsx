@@ -34,20 +34,12 @@ const personalInfoSchema = z.object({
 });
 
 // Step 2 schema
-// Step 2 schema - make it required
 const accountTypeSchema = z.object({
-  accountType: z.enum(['artist', 'brand']), // required, no optional/default here
+  accountType: z.enum(['artist', 'brand']),
 });
 
+type PersonalInfoValues = z.infer<typeof personalInfoSchema>;
 type AccountTypeValues = z.infer<typeof accountTypeSchema>;
-// Now: { accountType: "artist" | "brand" }
-
-const accountTypeForm = useForm<AccountTypeValues>({
-  resolver: zodResolver(accountTypeSchema),
-  defaultValues: {
-    accountType: 'artist', // set default here instead of in Zod
-  },
-});
 
 // Step 3 schema
 const accountInfoSchema = z
@@ -66,8 +58,6 @@ const accountInfoSchema = z
     path: ['confirmPassword'],
   });
 
-type PersonalInfoValues = z.infer<typeof personalInfoSchema>;
-
 type AccountInfoValues = z.infer<typeof accountInfoSchema>;
 
 export default function SignupPage() {
@@ -80,7 +70,7 @@ export default function SignupPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [accountCreated, setAccountCreated] = useState(false);
 
-  // Forms
+  // Forms (all instantiated inside the component)
   const personalInfoForm = useForm<PersonalInfoValues>({
     resolver: zodResolver(personalInfoSchema),
     defaultValues: {
@@ -90,7 +80,6 @@ export default function SignupPage() {
     },
   });
 
-  // Example for the Account Type Form
   const accountTypeForm = useForm<AccountTypeValues>({
     resolver: zodResolver(accountTypeSchema),
     defaultValues: {

@@ -290,9 +290,11 @@ export default function AnalyticsPage() {
                         outerRadius={100}
                         fill="#8884d8"
                         dataKey="value"
-                        label={({ name, percent }) =>
-                          `${name} ${((percent ?? 0) * 100).toFixed(0)}%`
-                        }
+                        label={({ name, percent }) => {
+                          const percentage =
+                            percent != null ? Math.round((percent as number) * 100) : 0;
+                          return `${name} ${percentage}%`;
+                        }}
                       >
                         {categoryData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
