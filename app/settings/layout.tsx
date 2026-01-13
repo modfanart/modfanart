@@ -6,6 +6,6 @@ export default function SettingsLayout({
 }: {
   children: React.ReactNode
 }) {
-  return <DashboardShell>{children}</DashboardShell>
+  return children
 }
 
