@@ -128,7 +128,7 @@ export default function SignupPage() {
       // Store tokens + user in redux
       dispatch(
         setCredentials({
-          accessToken: response.access_token,
+     accessToken: response.accessToken,
           user: response.user,
         })
       );
