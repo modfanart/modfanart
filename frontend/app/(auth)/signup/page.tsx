@@ -19,29 +19,22 @@ import { Input } from '@/components/ui/input';
 import { ArrowLeft, Eye, EyeOff, Palette, Building2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-
-// Step 1 schema
+import { useRegisterMutation } from '@/app/api/authApi';
+import { useDispatch } from 'react-redux';
+import { setCredentials } from '@/app/api/features/authSlice';
+// ────────────────────────────────────────────────
+// Zod Schemas (unchanged)
+// ────────────────────────────────────────────────
 const personalInfoSchema = z.object({
-  firstName: z.string().min(2, {
-    message: 'First name must be at least 2 characters.',
-  }),
-  lastName: z.string().min(2, {
-    message: 'Last name must be at least 2 characters.',
-  }),
-  email: z.string().email({
-    message: 'Please enter a valid email address.',
-  }),
+  firstName: z.string().min(2, { message: 'First name must be at least 2 characters.' }),
+  lastName: z.string().min(2, { message: 'Last name must be at least 2 characters.' }),
+  email: z.string().email({ message: 'Please enter a valid email address.' }),
 });
 
-// Step 2 schema
 const accountTypeSchema = z.object({
   accountType: z.enum(['artist', 'brand']),
 });
 
-type PersonalInfoValues = z.infer<typeof personalInfoSchema>;
-type AccountTypeValues = z.infer<typeof accountTypeSchema>;
-
-// Step 3 schema
 const accountInfoSchema = z
   .object({
     username: z
@@ -58,19 +51,26 @@ const accountInfoSchema = z
     path: ['confirmPassword'],
   });
 
+type PersonalInfoValues = z.infer<typeof personalInfoSchema>;
+type AccountTypeValues = z.infer<typeof accountTypeSchema>;
 type AccountInfoValues = z.infer<typeof accountInfoSchema>;
 
 export default function SignupPage() {
   const router = useRouter();
+  const dispatch = useDispatch();
+
   const [step, setStep] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
   const [personalInfo, setPersonalInfo] = useState<PersonalInfoValues | null>(null);
   const [accountType, setAccountType] = useState<AccountTypeValues | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [accountCreated, setAccountCreated] = useState(false);
 
-  // Forms (all instantiated inside the component)
+  const [register, { isLoading: isRegistering, error: registerError }] = useRegisterMutation();
+
+  // ────────────────────────────────────────────────
+  // Form instances
+  // ────────────────────────────────────────────────
   const personalInfoForm = useForm<PersonalInfoValues>({
     resolver: zodResolver(personalInfoSchema),
     defaultValues: {
@@ -96,37 +96,57 @@ export default function SignupPage() {
     },
   });
 
-  function onPersonalInfoSubmit(values: PersonalInfoValues) {
+  // ────────────────────────────────────────────────
+  // Submit handlers
+  // ────────────────────────────────────────────────
+  const onPersonalInfoSubmit = (values: PersonalInfoValues) => {
     setPersonalInfo(values);
     setStep(2);
-  }
+  };
 
-  function onAccountTypeSubmit(values: AccountTypeValues) {
+  const onAccountTypeSubmit = (values: AccountTypeValues) => {
     setAccountType(values);
     setStep(3);
-  }
+  };
 
-  function onAccountInfoSubmit(values: AccountInfoValues) {
-    setIsLoading(true);
+  const onAccountInfoSubmit = async (values: AccountInfoValues) => {
+    if (!personalInfo || !accountType) return;
 
-    const formData = {
-      ...personalInfo!,
-      ...accountType!,
-      ...values,
-    };
+    try {
+      const payload = {
+        username: values.username.trim(),
+        email: personalInfo.email.trim(),
+        password: values.password,
+        // Optional: if your backend supports sending extra profile data during signup
+        // firstName: personalInfo.firstName,
+        // lastName: personalInfo.lastName,
+        // accountType: accountType.accountType,
+      };
 
-    // Simulate API call
-    setTimeout(() => {
-      console.log('Signup complete:', formData);
-      setIsLoading(false);
+      const response = await register(payload).unwrap();
+
+      // Store tokens + user in redux
+      dispatch(
+        setCredentials({
+          accessToken: response.access_token,
+          user: response.user,
+        })
+      );
+
       setAccountCreated(true);
-    }, 1500);
-  }
+    } catch (err) {
+      // RTK Query error is already caught → shown in UI below
+      console.error('Registration error:', err);
+    }
+  };
 
-  function handleBackToSignIn() {
+  const handleBackToSignIn = () => {
     router.push('/login');
-  }
+  };
 
+  // ────────────────────────────────────────────────
+  // Success screen (unchanged)
+  // ────────────────────────────────────────────────
   if (accountCreated) {
     return (
       <div className="space-y-8">
@@ -150,6 +170,14 @@ export default function SignupPage() {
       </div>
     );
   }
+
+  // Extract server error message safely
+  const serverErrorMessage =
+    registerError && 'data' in registerError
+      ? (registerError.data as any)?.message ||
+        (registerError.data as any)?.error ||
+        'Something went wrong. Please try again.'
+      : null;
 
   return (
     <div className="space-y-8">
@@ -244,8 +272,9 @@ export default function SignupPage() {
               variant="outline"
               type="button"
               className="w-full mt-6 h-12 border-gray-300"
-              onClick={() => console.log('Google sign up')}
+              onClick={() => console.log('Google sign up')} // ← replace with real Google OAuth later
             >
+              {/* Google SVG unchanged */}
               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" aria-hidden="true">
                 <path
                   d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -383,6 +412,13 @@ export default function SignupPage() {
             </p>
           </div>
 
+          {/* Minimal error display – doesn't break layout */}
+          {serverErrorMessage && (
+            <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-md text-sm mb-6">
+              {serverErrorMessage}
+            </div>
+          )}
+
           <Form {...accountInfoForm}>
             <form
               onSubmit={accountInfoForm.handleSubmit(onAccountInfoSubmit)}
@@ -469,10 +505,10 @@ export default function SignupPage() {
 
               <Button
                 type="submit"
-                disabled={isLoading}
+                disabled={isRegistering}
                 className="w-full h-12 bg-black hover:bg-gray-800 text-white"
               >
-                {isLoading ? 'Creating account...' : 'Create Account'}
+                {isRegistering ? 'Creating account...' : 'Create Account'}
               </Button>
             </form>
           </Form>

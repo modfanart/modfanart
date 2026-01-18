@@ -1,14 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ProductCard } from '@/components/product-card';
-import { MarketplaceFilters } from '@/components/marketplace-filters';
-import { Search } from '@/components/search';
+import { ArrowRight, Filter, Search as SearchIcon, Loader2 } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowRight, Filter } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -18,506 +17,247 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 
-// ---------- Types ----------
-interface Variant {
-  id: string;
-  name: string;
-  price: number;
-  options: {
-    size: string;
-    color: string;
-  };
-  inventory: number;
-  sku: string;
-}
-
-interface Product {
+import { useGetArtworksQuery } from '../api/artworkApi';
+// ── Types ───────────────────────────────────────────────────────────────
+interface MarketplaceProduct {
   id: string;
   title: string;
-  description: string;
+  description: string | null;
   price: number;
   imageUrl: string;
-  additionalImages?: string[];
-  artist: string;
-  artistId: string;
-  brand: string;
-  isNew: boolean;
-  isBestseller: boolean;
-  slug: string;
-  category: string;
-  tags: string[];
-  status: string;
-  variants?: Variant[];
-}
-
-interface Storefront {
-  id: string;
-  name: string;
-  type: 'brand' | 'artist';
-  imageUrl: string;
-  slug: string;
-  productCount: number;
-  featured: boolean;
-  description: string;
-  ownerId: string;
-}
-
-interface GalleryItem {
-  id: string;
-  title: string;
-  description?: string;
-  price?: number;
-  imageUrl: string;
-  additionalImages?: string[];
   artistName: string;
   artistId: string;
-  originalIp?: string;
-  approvedDate?: string;
-  featured?: boolean;
-  slug?: string;
-  category?: string;
-  tags?: string[];
-  variants?: any;
+  isNew: boolean;
+  isPopular: boolean;
+  slug: string;
+  favoritesCount: number;
+  createdAt: string;
 }
 
-export default function MarketplacePage() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [featuredStorefronts, setFeaturedStorefronts] = useState<Storefront[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        setIsLoading(true);
-
-        // Fetch approved artwork from the Gallery
-        const galleryResponse = await fetch('/api/gallery/approved');
-        if (!galleryResponse.ok) {
-          throw new Error('Failed to fetch gallery items');
-        }
-        const galleryData: { items: GalleryItem[] } = await galleryResponse.json();
-
-        // Transform gallery items into marketplace products
-        const productsFromGallery: Product[] = galleryData.items.map((item: GalleryItem) => ({
-          id: item.id,
-          title: item.title,
-          description: item.description || 'Licensed fan art available for purchase',
-          price: item.price ?? Math.floor(Math.random() * 40) + 10 + 0.99,
-          imageUrl: item.imageUrl,
-          additionalImages: item.additionalImages || [],
-          artist: item.artistName,
-          artistId: item.artistId,
-          brand: item.originalIp || 'Various',
-          isNew: item.approvedDate
-            ? new Date(item.approvedDate).getTime() > Date.now() - 30 * 24 * 60 * 60 * 1000
-            : false,
-          isBestseller: item.featured || false,
-          slug: item.slug || `product-${item.id}`,
-          category: item.category || 'apparel',
-          tags: item.tags || [],
-          status: 'active',
-          variants: item.variants || [
-            {
-              id: `variant-${item.id}-1`,
-              name: 'Standard',
-              price: item.price ?? Math.floor(Math.random() * 40) + 10 + 0.99,
-              options: {
-                size: 'M',
-                color: 'Default',
-              },
-              inventory: 100,
-              sku: `SKU-${item.id}-STD`,
-            },
-          ],
-        }));
-
-        // Hard-coded featured storefronts (could be fetched separately in a real app)
-        const featuredBrands: Storefront[] = [
-          {
-            id: 'brand-marvel',
-            name: 'Marvel Entertainment',
-            type: 'brand',
-            imageUrl: '/placeholder.svg?height=400&width=600&text=Marvel',
-            slug: 'marvel',
-            productCount: 42,
-            featured: true,
-            description: 'Official Marvel merchandise featuring your favorite superheroes',
-            ownerId: 'marvel-official',
-          },
-          {
-            id: 'brand-nintendo',
-            name: 'Nintendo',
-            type: 'brand',
-            imageUrl: '/placeholder.svg?height=400&width=600&text=Nintendo',
-            slug: 'nintendo',
-            productCount: 38,
-            featured: true,
-            description: 'Licensed Nintendo character merchandise and collectibles',
-            ownerId: 'nintendo-official',
-          },
-          {
-            id: 'artist-johndoe',
-            name: 'John Doe Art Studio',
-            type: 'artist',
-            imageUrl: '/placeholder.svg?height=400&width=600&text=John+Doe',
-            slug: 'john-doe-art',
-            productCount: 24,
-            featured: true,
-            description: 'Unique fan art creations by renowned digital artist John Doe',
-            ownerId: 'john-doe-123',
-          },
-        ];
-
-        setProducts(productsFromGallery);
-        setFilteredProducts(productsFromGallery);
-        setFeaturedStorefronts(featuredBrands);
-      } catch (err) {
-        console.error('Error fetching marketplace data:', err);
-
-        // Fallback sample data
-        const sampleProducts: Product[] = [
-          {
-            id: 'sample-1',
-            title: 'Superhero T-Shirt',
-            description: 'Premium cotton t-shirt with licensed superhero design',
-            price: 29.99,
-            imageUrl: '/placeholder.svg?height=300&width=300&text=Superhero+Tee',
-            artist: 'Jane Artist',
-            artistId: 'jane-123',
-            brand: 'Marvel',
-            isNew: true,
-            isBestseller: true,
-            slug: 'superhero-tshirt',
-            category: 'apparel',
-            tags: ['superhero', 't-shirt', 'cotton'],
-            status: 'active',
-          },
-          {
-            id: 'sample-2',
-            title: 'Game Character Poster',
-            description: 'High-quality art print featuring your favorite game character',
-            price: 19.99,
-            imageUrl: '/placeholder.svg?height=300&width=300&text=Game+Poster',
-            artist: 'John Creator',
-            artistId: 'john-456',
-            brand: 'Nintendo',
-            isNew: false,
-            isBestseller: true,
-            slug: 'game-character-poster',
-            category: 'posters',
-            tags: ['gaming', 'poster', 'wall-art'],
-            status: 'active',
-          },
-          {
-            id: 'sample-3',
-            title: 'Fantasy Creature Figurine',
-            description: 'Hand-painted collectible figurine',
-            price: 49.99,
-            imageUrl: '/placeholder.svg?height=300&width=300&text=Fantasy+Figurine',
-            artist: 'Sculpture Studio',
-            artistId: 'studio-789',
-            brand: 'Fantasy World',
-            isNew: true,
-            isBestseller: false,
-            slug: 'fantasy-figurine',
-            category: 'collectibles',
-            tags: ['fantasy', 'figurine', 'collectible'],
-            status: 'active',
-          },
-          {
-            id: 'sample-4',
-            title: 'Anime Character Stickers',
-            description: 'Set of 10 waterproof vinyl stickers',
-            price: 12.99,
-            imageUrl: '/placeholder.svg?height=300&width=300&text=Anime+Stickers',
-            artist: 'Sticker Artist',
-            artistId: 'sticker-101',
-            brand: 'Anime Studio',
-            isNew: false,
-            isBestseller: false,
-            slug: 'anime-stickers',
-            category: 'stickers',
-            tags: ['anime', 'stickers', 'vinyl'],
-            status: 'active',
-          },
-        ];
-
-        const sampleStorefronts: Storefront[] = [
-          {
-            id: 'brand-marvel',
-            name: 'Marvel Entertainment',
-            type: 'brand',
-            imageUrl: '/placeholder.svg?height=400&width=600&text=Marvel',
-            slug: 'marvel',
-            productCount: 42,
-            featured: true,
-            description: 'Official Marvel merchandise featuring your favorite superheroes',
-            ownerId: 'marvel-official',
-          },
-          {
-            id: 'brand-nintendo',
-            name: 'Nintendo',
-            type: 'brand',
-            imageUrl: '/placeholder.svg?height=400&width=600&text=Nintendo',
-            slug: 'nintendo',
-            productCount: 38,
-            featured: true,
-            description: 'Licensed Nintendo character merchandise and collectibles',
-            ownerId: 'nintendo-official',
-          },
-          {
-            id: 'artist-johndoe',
-            name: 'John Doe Art Studio',
-            type: 'artist',
-            imageUrl: '/placeholder.svg?height=400&width=600&text=John+Doe',
-            slug: 'john-doe-art',
-            productCount: 24,
-            featured: true,
-            description: 'Unique fan art creations by renowned digital artist John Doe',
-            ownerId: 'john-doe-123',
-          },
-        ];
-
-        setProducts(sampleProducts);
-        setFilteredProducts(sampleProducts);
-        setFeaturedStorefronts(sampleStorefronts);
-        setError('Unable to load gallery items. Showing sample products instead.');
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    fetchData();
-  }, []);
-
-  const handleFilterChange = useCallback(
-    (filters: {
-      categories?: string[];
-      brands?: string[];
-      priceRange?: number[]; // ← Change to number[]
-    }) => {
-      let filtered = [...products];
-
-      if (filters.categories && filters.categories.length > 0) {
-        filtered = filtered.filter((product) => filters.categories!.includes(product.category));
-      }
-
-      if (filters.brands && filters.brands.length > 0) {
-        filtered = filtered.filter((product) => {
-          const brandId = product.brand?.toLowerCase().replace(/\s+/g, '') || '';
-          return filters.brands!.some((b) => brandId.includes(b.toLowerCase()));
-        });
-      }
-
-      // Safely handle priceRange as number[] with length check
-      if (filters.priceRange && filters.priceRange.length >= 2) {
-        const [min, max] = filters.priceRange;
-
-        // Add a runtime guard — this also helps TypeScript narrow the type
-        if (typeof min === 'number' && typeof max === 'number') {
-          filtered = filtered.filter((product) => product.price >= min && product.price <= max);
-        }
-      }
-
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        filtered = filtered.filter(
-          (product) =>
-            product.title?.toLowerCase().includes(query) ||
-            product.artist?.toLowerCase().includes(query) ||
-            product.brand?.toLowerCase().includes(query)
-        );
-      }
-
-      setFilteredProducts(filtered);
-    },
-    [products, searchQuery]
-  );
-  const handleSearch = useCallback(
-    (query: string) => {
-      setSearchQuery(query);
-
-      if (!query) {
-        setFilteredProducts(products);
-        return;
-      }
-
-      const filtered = products.filter((product) => {
-        const searchTerm = query.toLowerCase();
-        return (
-          product.title?.toLowerCase().includes(searchTerm) ||
-          product.artist?.toLowerCase().includes(searchTerm) ||
-          product.brand?.toLowerCase().includes(searchTerm)
-        );
-      });
-
-      setFilteredProducts(filtered);
-    },
-    [products]
-  );
-
-  if (isLoading) {
-    return (
-      <div className="container flex items-center justify-center min-h-[60vh]">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Loading marketplace...</p>
+// ── Product Card ────────────────────────────────────────────────────────
+function ProductCard({ product }: { product: MarketplaceProduct }) {
+  return (
+    <Link
+      href={`/marketplace/product/${product.slug}`}
+      className="group block overflow-hidden rounded-xl border bg-card hover:shadow-xl hover:border-primary/30 transition-all duration-300"
+    >
+      <div className="relative aspect-square overflow-hidden bg-muted/40">
+        <Image
+          src={product.imageUrl}
+          alt={product.title}
+          fill
+          className="object-cover transition-transform duration-500 group-hover:scale-110"
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          placeholder="blur"
+          blurDataURL="/placeholder-product-lowres.jpg"
+        />
+        {product.isNew && (
+          <span className="absolute top-3 left-3 bg-primary text-primary-foreground text-xs font-medium px-2.5 py-1 rounded-full shadow-sm">
+            New
+          </span>
+        )}
+      </div>
+      <div className="p-4">
+        <h3 className="font-medium line-clamp-2 leading-tight mb-1 group-hover:text-primary transition-colors">
+          {product.title}
+        </h3>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+          <span>by {product.artistName}</span>
         </div>
+        <div className="font-semibold text-lg">${product.price.toFixed(2)}</div>
+      </div>
+    </Link>
+  );
+}
+
+// ── Main Component ──────────────────────────────────────────────────────
+export default function MarketplacePage() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState('all');
+
+  const {
+    data: artworksResponse,
+    isLoading: artworksLoading,
+    isError: artworksError,
+  } = useGetArtworksQuery(
+    {
+      status: 'published',
+      limit: 60,
+      page: 1,
+    },
+    { refetchOnMountOrArgChange: true }
+  );
+  // Transform artworks → products (using placeholder artist info)
+  const products = useMemo<MarketplaceProduct[]>(() => {
+    const artworks = artworksResponse?.artworks ?? [];
+
+    return artworks.map((art: any) => {
+      const daysOld = (Date.now() - new Date(art.created_at).getTime()) / (1000 * 60 * 60 * 24);
+
+      // Option A: Simple placeholder artist name
+      const shortId = art.creator_id.slice(0, 8);
+      const artistName = `Creator ${shortId}`; // or just "Anonymous Creator"
+
+      return {
+        id: art.id,
+        title: art.title,
+        description: art.description,
+        price: 49.99, // placeholder — to be replaced with real pricing later
+        imageUrl: art.thumbnail_url || art.file_url || '/placeholder-artwork.jpg',
+        artistName,
+        artistId: art.creator_id,
+        isNew: daysOld <= 14,
+        isPopular: (art.favorites_count || 0) >= 10,
+        slug: `${art.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${art.id.slice(0, 8)}`,
+        favoritesCount: art.favorites_count || 0,
+        createdAt: art.created_at,
+      };
+    });
+  }, [artworksResponse]);
+
+  // Client-side search & tab filtering
+  const filteredProducts = useMemo(() => {
+    if (!searchQuery.trim()) return products;
+
+    const q = searchQuery.toLowerCase().trim();
+    return products.filter(
+      (p) => p.title.toLowerCase().includes(q) || p.artistName.toLowerCase().includes(q)
+    );
+  }, [products, searchQuery]);
+
+  const displayedProducts = useMemo(() => {
+    if (activeTab === 'new') return filteredProducts.filter((p) => p.isNew);
+    if (activeTab === 'popular') return filteredProducts.filter((p) => p.isPopular);
+    return filteredProducts;
+  }, [filteredProducts, activeTab]);
+
+  return (
+    <div className="container mx-auto px-4 py-8 md:px-6 lg:py-12 max-w-7xl">
+      {/* Header */}
+      <div className="mb-10">
+        <h1 className="text-4xl md:text-5xl font-bold tracking-tight">Marketplace</h1>
+        <p className="mt-3 text-lg text-muted-foreground">
+          Discover unique digital art & officially licensed designs
+        </p>
+      </div>
+
+      {/* Search + Filters */}
+      <div className="flex flex-col sm:flex-row gap-4 mb-10 items-stretch sm:items-center justify-between">
+        <div className="relative flex-1 max-w-lg">
+          <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <Input
+            placeholder="Search artwork, characters..."
+            className="pl-12 h-11 text-base"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="outline" className="gap-2 h-11 px-6">
+              <Filter className="h-4 w-4" />
+              Filters
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-[90%] sm:w-96">
+            <SheetHeader>
+              <SheetTitle>Filters</SheetTitle>
+              <SheetDescription>More options coming soon</SheetDescription>
+            </SheetHeader>
+            <div className="py-10 text-center text-muted-foreground">
+              Categories • Price • License type • Sort
+            </div>
+          </SheetContent>
+        </Sheet>
+      </div>
+
+      {artworksLoading ? (
+        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
+          <Loader2 className="h-14 w-14 animate-spin text-primary" />
+          <p className="text-lg text-muted-foreground animate-pulse">Loading fresh creations...</p>
+        </div>
+      ) : artworksError ? (
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-12 text-center max-w-2xl mx-auto">
+          <h3 className="text-xl font-semibold text-destructive mb-4">
+            Couldn't load the marketplace
+          </h3>
+          <Button onClick={() => window.location.reload()}>Refresh</Button>
+        </div>
+      ) : (
+        <>
+          <Tabs defaultValue="all" className="space-y-8" onValueChange={setActiveTab as any}>
+            <TabsList className="inline-flex h-auto border-b bg-transparent p-0 rounded-none w-full justify-start gap-10">
+              <TabsTrigger
+                value="all"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary pb-3 text-base"
+              >
+                All
+              </TabsTrigger>
+              <TabsTrigger
+                value="new"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary pb-3 text-base"
+              >
+                New Arrivals
+              </TabsTrigger>
+              <TabsTrigger
+                value="popular"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary pb-3 text-base"
+              >
+                Popular
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="all" className="mt-10">
+              <ProductGrid products={displayedProducts} />
+            </TabsContent>
+            <TabsContent value="new" className="mt-10">
+              <ProductGrid
+                products={displayedProducts}
+                emptyMessage="No new pieces in the last 14 days"
+              />
+            </TabsContent>
+            <TabsContent value="popular" className="mt-10">
+              <ProductGrid products={displayedProducts} emptyMessage="Nothing popular yet" />
+            </TabsContent>
+          </Tabs>
+
+          {/* Featured Creators & Brands - optional / disabled for now */}
+          {/* Uncomment when you're ready to show brands & creators */}
+          {/* 
+          {featuredStorefronts.length > 0 && (
+            <section className="mt-20 pt-10 border-t">
+              ...
+            </section>
+          )}
+          */}
+        </>
+      )}
+    </div>
+  );
+}
+
+function ProductGrid({
+  products,
+  emptyMessage = 'No artworks found',
+}: {
+  products: MarketplaceProduct[];
+  emptyMessage?: string;
+}) {
+  if (products.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-12 border rounded-xl bg-muted/30">
+        <p className="text-xl font-medium text-muted-foreground mb-3">{emptyMessage}</p>
+        <p className="text-sm text-muted-foreground">Try a different search or check back soon</p>
       </div>
     );
   }
 
   return (
-    <div className="container px-4 py-8 md:px-6 md:py-12">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight md:text-4xl">Marketplace</h1>
-        <p className="mt-2 text-muted-foreground">
-          Browse and purchase officially licensed fan art merchandise
-        </p>
-        {error && (
-          <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded text-amber-700 text-sm">
-            {error}
-          </div>
-        )}
-      </div>
-
-      <div className="flex flex-col gap-6 md:flex-row">
-        {/* Desktop Filters */}
-        <div className="hidden w-64 shrink-0 md:block">
-          <div className="sticky top-24">
-            <MarketplaceFilters onFilterChange={handleFilterChange} />
-          </div>
-        </div>
-
-        {/* Mobile Filters */}
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="outline" className="mb-4 flex items-center gap-2 md:hidden">
-              <Filter className="h-4 w-4" />
-              Filters
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left">
-            <SheetHeader>
-              <SheetTitle>Filters</SheetTitle>
-              <SheetDescription>Narrow down products by applying filters</SheetDescription>
-            </SheetHeader>
-            <div className="mt-6">
-              <MarketplaceFilters onFilterChange={handleFilterChange} />
-            </div>
-          </SheetContent>
-        </Sheet>
-
-        {/* Main Content */}
-        <div className="flex-1">
-          {/* Search & Sort */}
-          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="w-full sm:max-w-md">
-              <Search onSearch={handleSearch} />
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Sort by:</span>
-              <select className="rounded-md border border-input bg-background px-3 py-1 text-sm">
-                <option value="newest">Newest</option>
-                <option value="price-low">Price: Low to High</option>
-                <option value="price-high">Price: High to Low</option>
-                <option value="popular">Most Popular</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Product Tabs */}
-          <Tabs defaultValue="all" className="mb-8">
-            <TabsList>
-              <TabsTrigger value="all">All Products</TabsTrigger>
-              <TabsTrigger value="new">New Arrivals</TabsTrigger>
-              <TabsTrigger value="bestsellers">Bestsellers</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="all" className="mt-6">
-              {filteredProducts.length === 0 ? (
-                <div className="flex h-40 flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
-                  <p className="text-muted-foreground">No products match your filters</p>
-                  <Button
-                    variant="link"
-                    onClick={() => {
-                      setFilteredProducts(products);
-                      setSearchQuery('');
-                    }}
-                  >
-                    Clear all filters
-                  </Button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {filteredProducts.map((product) => (
-                    <ProductCard key={product.id} {...product} />
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="new" className="mt-6">
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {filteredProducts
-                  .filter((product) => product.isNew)
-                  .map((product) => (
-                    <ProductCard key={product.id} {...product} />
-                  ))}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="bestsellers" className="mt-6">
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {filteredProducts
-                  .filter((product) => product.isBestseller)
-                  .map((product) => (
-                    <ProductCard key={product.id} {...product} />
-                  ))}
-              </div>
-            </TabsContent>
-          </Tabs>
-
-          {/* Featured Storefronts */}
-          <div className="mt-12">
-            <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-2xl font-bold tracking-tight">Featured Storefronts</h2>
-              <Link
-                href="/marketplace/storefronts"
-                className="flex items-center text-sm text-primary hover:underline"
-              >
-                View All <ArrowRight className="ml-1 h-4 w-4" />
-              </Link>
-            </div>
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {featuredStorefronts.map((storefront) => (
-                <Link key={storefront.id} href={`/marketplace/storefront/${storefront.slug}`}>
-                  <div className="group overflow-hidden rounded-lg border">
-                    <div className="relative h-40 w-full overflow-hidden">
-                      <Image
-                        src={storefront.imageUrl || '/placeholder.svg'}
-                        alt={storefront.name}
-                        fill
-                        className="object-cover transition-transform group-hover:scale-105"
-                      />
-                    </div>
-                    <div className="p-4">
-                      <h3 className="font-semibold">{storefront.name}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {storefront.type === 'brand' ? 'Official Brand' : 'Artist Storefront'}
-                      </p>
-                      <p className="mt-1 text-sm">{storefront.productCount} products</p>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 md:gap-8">
+      {products.map((product) => (
+        <ProductCard key={product.id} product={product} />
+      ))}
     </div>
   );
 }

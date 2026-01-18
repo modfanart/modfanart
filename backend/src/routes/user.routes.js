@@ -1,27 +1,24 @@
-// backend/src/routes/user.routes.js
 const express = require('express');
+const UserController = require('../controller/user.controller');
+const { authenticateToken } = require('../middleware/auth.middleware');
+const multer = require('multer');
+
+// Temporary in-memory storage — replace with real disk/s3 buffer storage
+const upload = multer({ storage: multer.memoryStorage() });
+
 const router = express.Router();
-const {
-  createUserHandler,
-  getUserByIdHandler,
-  getUserByEmailHandler,
-  updateUserHandler,
-  deleteUserHandler,
-} = require('../controllers/user.controller');
 
-// POST /api/users
-router.post('/', createUserHandler);
+// router.use(authenticateToken); // All user routes require auth
 
-// GET /api/users/:id
-router.get('/:id', getUserByIdHandler);
-
-// GET /api/users?email=...
-router.get('/', getUserByEmailHandler);
-
-// PATCH /api/users/:id
-router.patch('/:id', updateUserHandler);
-
-// DELETE /api/users/:id
-router.delete('/:id', deleteUserHandler);
+router.get('/me', UserController.getCurrentUser);
+router.patch('/me', UserController.updateProfile);
+router.patch('/me/password', UserController.changePassword);
+router.post('/me/avatar', upload.single('avatar'), UserController.uploadAvatar);
+router.delete('/me/avatar', UserController.removeAvatar);
+router.get('/all', UserController.getAllUsers);
+router.get('/:id',  UserController.getUserById);
+router.patch('/:id/status', UserController.updateUserStatus);
+// Future: router.patch('/me/banner', ...)
+// Future: router.post('/me/payout-setup', ...)
 
 module.exports = router;

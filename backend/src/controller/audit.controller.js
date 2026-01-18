@@ -4,7 +4,7 @@ const {
   getAuditLogById,
   getAuditLogsByUserId,
   searchAuditLogs,
-} = require('../models/audit');
+} = require('../models/auditedEvent.model');
 
 async function createAuditLogHandler(req, res, next) {
   try {

@@ -2,7 +2,7 @@
 const { logger } = require('../utils/logger');
 const { getSubmissionsByStatus } = require('../models/submission');
 const { getComplianceRules } = require('../config/compliance'); // adapt from your config-service
-const { createModeratedSubmission } = require('../models/moderation');
+const { createModeratedSubmission } = require('../models/moderation.model');
 
 async function getModerationMetrics(req, res, next) {
   const requestId = crypto.randomUUID();
