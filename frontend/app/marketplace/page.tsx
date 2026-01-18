@@ -38,7 +38,7 @@ interface MarketplaceProduct {
 function ProductCard({ product }: { product: MarketplaceProduct }) {
   return (
     <Link
-      href={`/marketplace/product/${product.slug}`}
+      href={`/marketplace/product/${product.id}`}
       className="group block overflow-hidden rounded-xl border bg-card hover:shadow-xl hover:border-primary/30 transition-all duration-300"
     >
       <div className="relative aspect-square overflow-hidden bg-muted/40">

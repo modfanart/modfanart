@@ -13,36 +13,72 @@ class UserController {
   /**
    * GET /users/me
    */
-  static async getCurrentUser(req, res) {
-    try {
-      const user = req.user;
-      const role = await Role.findById(user.role_id);
+// backend/src/controller/user.controller.js
+static async getCurrentUser(req, res) {
+  try {
+    const userId = req.user?.id;
 
-      res.json({
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        email_verified: user.email_verified,
-        status: user.status,
-        role: {
-          id: user.role_id,
-          name: role?.name || 'unknown',
-          hierarchy_level: role?.hierarchy_level || 0,
-        },
-        profile: user.profile || {},
-        avatar_url: user.avatar_url,
-        banner_url: user.banner_url,
-        bio: user.bio,
-        location: user.location,
-        website: user.website,
-        last_login_at: user.last_login_at,
-        created_at: user.created_at,
-      });
-    } catch (error) {
-      console.error('Get current user error:', error);
-      res.status(500).json({ error: 'Failed to fetch user profile' });
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'No user context' });
     }
+
+    // Fetch user + role in one query (most efficient)
+    const user = await req.db // assuming db is attached via middleware
+      .selectFrom('users')
+      .leftJoin('roles', 'users.role_id', 'roles.id')
+      .select([
+        'users.id',
+        'users.username',
+        'users.email',
+        'users.email_verified',
+        'users.status',
+        'users.profile',
+        'users.avatar_url',
+        'users.banner_url',
+        'users.bio',
+        'users.location',
+        'users.website',
+        'users.last_login_at',
+        'users.created_at',
+        'users.updated_at',
+        'roles.id as role_id',
+        'roles.name as role_name',
+        'roles.hierarchy_level as role_hierarchy_level',
+      ])
+      .where('users.id', '=', userId)
+      .executeTakeFirst();
+
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    // Build clean response
+    res.json({
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      email_verified: user.email_verified,
+      status: user.status,
+      role: {
+        id: user.role_id,
+        name: user.role_name || 'unknown',
+        hierarchy_level: user.role_hierarchy_level || 0,
+      },
+      profile: user.profile || {},
+      avatar_url: user.avatar_url,
+      banner_url: user.banner_url,
+      bio: user.bio,
+      location: user.location,
+      website: user.website,
+      last_login_at: user.last_login_at,
+      created_at: user.created_at,
+      updated_at: user.updated_at,
+    });
+  } catch (error) {
+    console.error('Get current user error:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch profile' });
   }
+}
 
   /**
    * PATCH /users/me

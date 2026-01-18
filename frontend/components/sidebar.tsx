@@ -67,12 +67,6 @@ export function Sidebar({ className, ...props }: SidebarProps) {
       active: pathname === "/analytics",
     },
     {
-      label: "IP Compliance",
-      icon: <ShieldCheck className="h-5 w-5" />,
-      href: "/dashboard/compliance",
-      active: pathname === "/dashboard/compliance" || pathname.startsWith("/dashboard/compliance/"),
-    },
-    {
       label: "History",
       icon: <History className="h-5 w-5" />,
       href: "/history",
@@ -102,14 +96,6 @@ export function Sidebar({ className, ...props }: SidebarProps) {
       <div className="flex-1 overflow-auto py-2">
         <div className="px-3 py-2">
           <h2 className="mb-2 px-4 text-xs font-semibold uppercase tracking-tight text-gray-500">MENU</h2>
-
-          {/* Add this button */}
-          <Link href="/submissions/new" className="flex items-center justify-center mb-3">
-            <Button className="w-full bg-[#9747ff] hover:bg-[#8035e0]">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              New Submission
-            </Button>
-          </Link>
 
           <nav className="space-y-1">
             {routes.map((route) => (
@@ -142,17 +128,6 @@ export function Sidebar({ className, ...props }: SidebarProps) {
             >
               <Settings className="h-5 w-5" />
               Settings
-            </Link>
-            <Link
-              href="/help"
-              className={cn(
-                "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium",
-                pathname === "/help" ? "bg-[#9747ff] text-white" : "text-gray-700 hover:bg-gray-100",
-              )}
-              prefetch={true}
-            >
-              <HelpCircle className="h-5 w-5" />
-              Help
             </Link>
           </nav>
         </div>

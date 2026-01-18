@@ -22,7 +22,7 @@ export const authSlice = createSlice({
     logout: (state) => {
       state.accessToken = null;
       state.user = null;
-      localStorage.removeItem('access_token');
+      localStorage.removeItem('accessToken');
     },
   },
 });

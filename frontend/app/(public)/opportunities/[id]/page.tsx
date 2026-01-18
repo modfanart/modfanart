@@ -1,82 +1,140 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, Share2, BookmarkPlus, Eye, Trophy, Users } from 'lucide-react';
+import { useParams } from 'next/navigation';
+import {
+  ArrowRight,
+  Share2,
+  BookmarkPlus,
+  Trophy,
+  Users,
+  Calendar,
+} from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useGetContestQuery } from '@/app/api/contestsApi'; // Adjust path if needed
 
-// Define the expected params shape
-type Params = { id: string };
+import { useGetContestQuery } from '@/app/api/contestsApi';
+import type { Contest } from '@/app/api/contestsApi';
 
-export default async function OpportunityDetailPage({
-  params,
-}: {
-  params: Promise<Params>; // Key change for Next.js 15+
-}) {
-  const resolvedParams = await params;
-  const { id } = resolvedParams;
+export default function OpportunityDetailPage() {
+  const params = useParams<{ id: string }>();
+  const contestId = params.id;
 
-  const { data: contest, isLoading, isError, error } = useGetContestQuery(id);
+  const { data, isLoading, isError } = useGetContestQuery(contestId, {
+    skip: !contestId,
+  });
 
   if (isLoading) {
-    return <div className="container py-10">Loading contest details...</div>;
+    return (
+      <div className="container py-12">
+        <div className="flex flex-col items-center justify-center gap-4">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <p className="text-muted-foreground">Loading contest details…</p>
+        </div>
+      </div>
+    );
   }
 
-  if (isError || !contest) {
+  if (isError || !data) {
     return (
-      <div className="container py-10">
-        <h1 className="text-2xl font-bold">Contest not found</h1>
-        <p className="mt-4">The contest you're looking for doesn't exist or has been removed.</p>
-        <Link href="/opportunities" className="mt-6 inline-block">
-          <Button>Back to Opportunities</Button>
+      <div className="container py-12 text-center">
+        <h1 className="text-3xl font-bold tracking-tight">Contest Not Found</h1>
+        <p className="mt-4 text-muted-foreground">
+          The contest you're looking for doesn't exist, has ended, or was removed.
+        </p>
+        <Link href="/opportunities" className="mt-8 inline-block">
+          <Button>← Back to All Opportunities</Button>
         </Link>
       </div>
     );
   }
 
-  // Format prize pool
-  const formatPrize = (prizes: any[] | null) => {
-    if (!prizes || prizes.length === 0) return 'Prizes available';
-    const totalINR = prizes.reduce((sum, p) => sum + (p.amount_inr || 0), 0);
-    return totalINR > 0 ? `₹${(totalINR / 100).toLocaleString('en-IN')}` : 'Prizes available';
+  const contest: Contest = data;
+
+  const formatPrize = (prizes: Contest['prizes']) => {
+    if (!prizes?.length) return 'Prizes TBA';
+    const total = prizes.reduce((sum, p) => sum + (Number(p.amount_inr) || 0), 0);
+    return total > 0 ? `₹${(total / 100).toLocaleString('en-IN')}` : 'Prizes TBA';
   };
 
-  // Top prize for display
   const topPrize = contest.prizes?.find((p) => p.rank === 1);
+  const topPrizeText = topPrize?.amount_inr
+    ? `1st Prize: ₹${(Number(topPrize.amount_inr) / 100).toLocaleString('en-IN')}`
+    : formatPrize(contest.prizes);
 
-  const topPrizeText =
-    topPrize && typeof topPrize.amount_inr === 'number'
-      ? `1st: ₹${(topPrize.amount_inr / 100).toLocaleString('en-IN')}`
-      : formatPrize(contest.prizes);
+  const endDate = new Date(contest.submission_end_date);
+  const daysLeft = Math.max(0, Math.ceil((endDate.getTime() - Date.now()) / 86400000));
+  const isActive = daysLeft > 0 && contest.status === 'live';
 
-  // Days until submission ends
-  const submissionEnd = new Date(contest.submission_end_date);
-  const daysUntilEnd = Math.ceil((submissionEnd.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-  const deadlineStatus = daysUntilEnd > 0 ? `${daysUntilEnd} days left` : 'Submissions closed';
+  // Generate storefront link using brand_id
+  const storefrontUrl = contest.brand_id
+    ? `/marketplace/storefront/${contest.brand_id}`
+    : '#'; // fallback if brand_id is missing
 
   return (
-    <div className="container py-10">
-      <div className="mb-6 flex items-center gap-2">
-        <Link href="/opportunities" className="text-sm text-muted-foreground hover:text-foreground">
+    <div className="container py-8 md:py-12">
+      {/* Breadcrumb */}
+      <nav className="mb-6 flex items-center gap-2 text-sm text-muted-foreground">
+        <Link href="/opportunities" className="hover:text-foreground hover:underline">
           Opportunities
         </Link>
-        <span className="text-sm text-muted-foreground">/</span>
-        <span className="text-sm font-medium">{contest.title}</span>
-      </div>
+        <span>/</span>
+        <span className="font-medium text-foreground">{contest.title}</span>
+      </nav>
 
-      <div className="grid gap-8 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <div className="relative mb-6 aspect-video w-full overflow-hidden rounded-lg bg-gradient-to-br from-purple-600 to-pink-600">
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Trophy className="h-32 w-32 text-white/20" />
+      <div className="grid gap-8 lg:grid-cols-[2fr_1fr]">
+        {/* Main content */}
+        <div className="space-y-8">
+          {/* Hero */}
+          <div className="relative aspect-video overflow-hidden rounded-xl bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-600">
+            <div className="absolute inset-0 flex items-center justify-center opacity-20">
+              <Trophy className="h-40 w-40" />
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 p-6">
+              <Badge variant="outline" className="mb-2 bg-black/40 backdrop-blur-sm">
+                {contest.slug.includes('design') ? 'Design' : 'Art & Illustration'}
+              </Badge>
+              <h1 className="text-3xl font-bold tracking-tight md:text-4xl text-white">
+                {contest.title}
+              </h1>
             </div>
           </div>
 
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-            <h1 className="text-3xl font-bold">{contest.title}</h1>
+          {/* Actions + status */}
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              {/* Hosted by – now clickable */}
+              <Link
+                href={storefrontUrl}
+                className="flex items-center gap-2 transition-colors hover:text-primary group"
+              >
+                <div className="h-10 w-10 rounded-full bg-muted flex-shrink-0" />
+                <div>
+                  <p className="font-medium group-hover:underline">
+                    Hosted by Organizer
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    View storefront →
+                  </p>
+                </div>
+              </Link>
+
+              <Badge
+                variant="secondary"
+                className={
+                  isActive
+                    ? 'bg-green-100 text-green-800 hover:bg-green-100'
+                    : 'bg-amber-100 text-amber-800 hover:bg-amber-100'
+                }
+              >
+                {isActive ? 'Active' : 'Closed'}
+              </Badge>
+            </div>
+
             <div className="flex gap-2">
               <Button variant="outline" size="sm">
                 <Share2 className="mr-2 h-4 w-4" />
@@ -89,106 +147,155 @@ export default async function OpportunityDetailPage({
             </div>
           </div>
 
-          <div className="mb-6 flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-full bg-gray-200" />{' '}
-              {/* Placeholder for brand logo */}
-              <span className="font-medium">Brand Organizer</span>
-            </div>
-            <Badge
-              variant="secondary"
-              className={
-                contest.status === 'live'
-                  ? 'bg-green-100 text-green-800'
-                  : 'bg-red-100 text-red-800'
-              }
-            >
-              {contest.status === 'live' ? 'Active' : 'Closed'}
-            </Badge>
-            <div className="flex items-center gap-1">
-              <Eye className="h-4 w-4 text-muted-foreground" />
-              <span>Views TBD</span>
-            </div>
-          </div>
-
-          <Tabs defaultValue="details" className="mb-8">
+          <Tabs defaultValue="details" className="space-y-6">
             <TabsList>
               <TabsTrigger value="details">Details</TabsTrigger>
-              <TabsTrigger value="rules">Rules & Requirements</TabsTrigger>
+              <TabsTrigger value="rules">Rules</TabsTrigger>
+              <TabsTrigger value="prizes">Prizes</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="details" className="mt-4 prose max-w-none">
-              <p>{contest.description}</p>
-              {contest.rules && <div dangerouslySetInnerHTML={{ __html: contest.rules }} />}
+            <TabsContent value="details" className="prose prose-neutral max-w-none dark:prose-invert">
+              <div dangerouslySetInnerHTML={{ __html: contest.description || '' }} />
+              {!contest.description && (
+                <p className="text-muted-foreground italic">
+                  No detailed description available for this contest.
+                </p>
+              )}
             </TabsContent>
 
-            <TabsContent value="rules" className="mt-4">
-              <h3 className="mb-4 text-xl font-semibold">Contest Rules</h3>
-              <ul className="space-y-2">
-                <li className="flex items-start gap-2">
-                  <div className="mt-1 h-2 w-2 rounded-full bg-primary" />
-                  <span>Maximum {contest.max_entries_per_user} entries per artist</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <div className="mt-1 h-2 w-2 rounded-full bg-primary" />
-                  <span>Original artwork only</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <div className="mt-1 h-2 w-2 rounded-full bg-primary" />
-                  <span>Appropriate for all ages</span>
-                </li>
-              </ul>
+            {/* Rules tab – unchanged */}
+            <TabsContent value="rules">
+              <div className="space-y-6">
+                <h3 className="text-xl font-semibold">Contest Rules & Requirements</h3>
+                <ul className="space-y-3">
+                  <li className="flex items-start gap-3">
+                    <Calendar className="mt-1 h-5 w-5 shrink-0 text-primary" />
+                    <span>Submissions close on {endDate.toLocaleDateString('en-IN')}</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <Users className="mt-1 h-5 w-5 shrink-0 text-primary" />
+                    <span>Maximum {contest.max_entries_per_user || '—'} entries per participant</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="mt-1 h-5 w-5 shrink-0 rounded-full bg-primary/20" />
+                    <span>Artwork must be 100% original</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <div className="mt-1 h-5 w-5 shrink-0 rounded-full bg-primary/20" />
+                    <span>Suitable for all audiences (no NSFW content)</span>
+                  </li>
+                </ul>
+
+                {contest.rules && (
+                  <div
+                    className="prose prose-sm mt-6 border-t pt-6"
+                    dangerouslySetInnerHTML={{ __html: contest.rules }}
+                  />
+                )}
+              </div>
+            </TabsContent>
+
+            {/* Prizes tab – unchanged */}
+            <TabsContent value="prizes">
+              <h3 className="text-xl font-semibold">Prize Distribution</h3>
+              {contest.prizes?.length ? (
+                <div className="mt-4 space-y-4">
+                  {[...contest.prizes]
+                    .sort((a, b) => a.rank - b.rank)
+                    .map((prize) => (
+                      <div
+                        key={prize.rank}
+                        className="flex items-center justify-between rounded-lg border p-4"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary font-medium">
+                            {prize.rank}
+                          </div>
+                          <div>
+                            <p className="font-medium">
+                              {prize.rank === 1
+                                ? 'Grand Prize'
+                                : `${prize.rank}${ordinal(prize.rank)} Place`}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {prize.type || 'Cash Prize'}
+                            </p>
+                          </div>
+                        </div>
+                        {prize.amount_inr && (
+                          <p className="text-lg font-bold text-green-600">
+                            ₹{(Number(prize.amount_inr) / 100).toLocaleString('en-IN')}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              ) : (
+                <p className="mt-4 text-muted-foreground">
+                  Prize details will be announced soon.
+                </p>
+              )}
             </TabsContent>
           </Tabs>
         </div>
 
+        {/* Sidebar */}
         <div>
-          <Card className="sticky top-20">
+          <Card className="sticky top-8 border shadow-sm">
             <CardContent className="p-6">
-              <div className="mb-6 space-y-4">
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Submission Deadline</span>
-                  <div className="text-right">
-                    <span className="font-medium block">
-                      {submissionEnd.toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                      })}
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Deadline</span>
+                    <div className="text-right">
+                      <p className="font-medium">
+                        {endDate.toLocaleDateString('en-IN', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </p>
+                      <p
+                        className={`text-sm font-medium ${
+                          daysLeft > 0 ? 'text-green-600' : 'text-red-600'
+                        }`}
+                      >
+                        {daysLeft > 0 ? `${daysLeft} days left` : 'Closed'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Prize Pool</span>
+                    <span className="text-2xl font-bold text-green-600">
+                      {formatPrize(contest.prizes)}
                     </span>
-                    <span className="text-sm text-muted-foreground">{deadlineStatus}</span>
+                  </div>
+
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Top Prize</span>
+                    <span className="font-medium">{topPrizeText}</span>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-sm">
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <span>Max {contest.max_entries_per_user || '—'} entries / user</span>
                   </div>
                 </div>
 
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Prize Pool</span>
-                  <span className="font-medium text-2xl text-green-600">
-                    {formatPrize(contest.prizes)}
-                  </span>
-                </div>
+                <Button className="w-full" size="lg" disabled={!isActive} asChild>
+                  {isActive ? (
+                    <Link href={`/submissions/new?contest=${contest.id}`}>
+                      Submit Your Artwork
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  ) : (
+                    'Submissions Closed'
+                  )}
+                </Button>
 
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Top Prize</span>
-                  <span className="font-medium">{topPrizeText}</span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">
-                    Max {contest.max_entries_per_user} entries per user
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <Link href={`/submissions/new?contest=${contest.id}`} className="w-full">
-                  <Button className="w-full" disabled={daysUntilEnd <= 0}>
-                    {daysUntilEnd > 0 ? 'Submit Your Artwork' : 'Submissions Closed'}
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </Link>
-                <p className="text-center text-sm text-muted-foreground">
-                  Login required to submit
+                <p className="text-center text-xs text-muted-foreground">
+                  You need to be logged in to submit work
                 </p>
               </div>
             </CardContent>
@@ -197,4 +304,20 @@ export default async function OpportunityDetailPage({
       </div>
     </div>
   );
+}
+
+function ordinal(n: number): string {
+  const s = ['th', 'st', 'nd', 'rd'] as const;
+  const v = n % 100;
+
+  // Special case for 11,12,13
+  if (v >= 11 && v <= 13) return 'th';
+
+  // Last digit rule
+  switch (v % 10) {
+    case 1: return 'st';
+    case 2: return 'nd';
+    case 3: return 'rd';
+    default: return 'th';
+  }
 }

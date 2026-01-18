@@ -43,7 +43,7 @@ export default function LoginPage() {
   // Optional: redirect if already logged in (better via middleware in production)
   useEffect(() => {
     // You can improve this with getCurrentUserQuery or just check for token in localStorage/cookies
-    const token = localStorage.getItem('access_token'); // or document.cookie check
+    const token = localStorage.getItem('accessToken'); // or document.cookie check
     if (token) {
       router.push(callbackUrl);
     }
@@ -76,7 +76,7 @@ export default function LoginPage() {
 
       // Store token persistently if "remember me" (or use httpOnly cookie from backend)
       if (values.rememberMe) {
-        localStorage.setItem('access_token', response.accessToken);
+        localStorage.setItem('accessToken', response.accessToken);
       } else {
         // session only → can clear on tab close or use short-lived cookie
       }
