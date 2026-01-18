@@ -18,36 +18,38 @@ import {
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Eye, EyeOff } from 'lucide-react';
-
+import { useLoginMutation } from '@/app/api/authApi'; // ← import from your RTK Query slice
+import { useAppDispatch } from '@/store/hooks'; // assuming you have typed hooks
+import { setCredentials } from '@/app/api/features/authSlice';
 const formSchema = z.object({
-  email: z.string().email({
-    message: 'Please enter a valid email address.',
-  }),
-  password: z.string().min(8, {
-    message: 'Password must be at least 8 characters.',
-  }),
-  rememberMe: z.boolean().optional(), // Allows boolean | undefined
+  email: z.string().email({ message: 'Please enter a valid email address.' }),
+  password: z.string().min(8, { message: 'Password must be at least 8 characters.' }),
+  rememberMe: z.boolean().optional(),
 });
+
+type FormValues = z.infer<typeof formSchema>;
+
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [isLoading, setIsLoading] = useState(false);
+  const dispatch = useAppDispatch();
+
+  const [login, { isLoading, error: loginError }] = useLoginMutation();
+
   const [showPassword, setShowPassword] = useState(false);
 
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
 
-  // Check if user is already logged in (client-side cookie check)
+  // Optional: redirect if already logged in (better via middleware in production)
   useEffect(() => {
-    const isAuthenticated = document.cookie
-      .split(';')
-      .some((item) => item.trim().startsWith('authToken='));
-    if (isAuthenticated) {
-      console.log('User already authenticated, redirecting to:', callbackUrl);
+    // You can improve this with getCurrentUserQuery or just check for token in localStorage/cookies
+    const token = localStorage.getItem('access_token'); // or document.cookie check
+    if (token) {
       router.push(callbackUrl);
     }
   }, [callbackUrl, router]);
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: '',
@@ -56,26 +58,51 @@ export default function LoginPage() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log('Login form submitted with values:', values);
-    setIsLoading(true);
+  async function onSubmit(values: FormValues) {
+    try {
+      const response = await login({
+        email: values.email,
+        password: values.password,
+      }).unwrap();
 
-    // Simulate authentication
-    setTimeout(() => {
-      document.cookie = `authToken=dummy-token; path=/; max-age=${
-        values.rememberMe ? 30 * 24 * 3600 : 3600
-      }`;
+      // Assuming your backend returns { access_token, user, ... }
+      dispatch(
+        setCredentials({
+          accessToken: response.accessToken,
+          user: response.user,
+          // refreshToken: response.refresh_token, // if using
+        })
+      );
 
-      console.log('Authentication successful, redirecting to:', callbackUrl);
-      setIsLoading(false);
+      // Store token persistently if "remember me" (or use httpOnly cookie from backend)
+      if (values.rememberMe) {
+        localStorage.setItem('access_token', response.accessToken);
+      } else {
+        // session only → can clear on tab close or use short-lived cookie
+      }
+
       router.push(callbackUrl);
-    }, 1500);
+    } catch (err: any) {
+      // RTK Query already sets error state, but you can show custom toast here
+      console.error('Login failed:', err);
+      form.setError('root', {
+        type: 'manual',
+        message: err?.data?.message || 'Invalid email or password. Please try again.',
+      });
+    }
   }
 
   return (
     <>
       <h1 className="text-3xl font-bold mb-2">Sign in</h1>
       <p className="text-gray-600 mb-8">Welcome back! Please enter your information.</p>
+
+      {/* Global form error (e.g. invalid credentials) */}
+      {form.formState.errors.root && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
+          {form.formState.errors.root.message}
+        </div>
+      )}
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -137,7 +164,7 @@ export default function LoginPage() {
                 <FormItem className="flex flex-row items-center space-x-2 space-y-0">
                   <FormControl>
                     <Checkbox
-                      checked={field.value ?? false} // ← This fixes the error
+                      checked={field.value ?? false}
                       onCheckedChange={field.onChange}
                       id="rememberMe"
                     />
@@ -165,7 +192,6 @@ export default function LoginPage() {
           </Button>
         </form>
       </Form>
-
       <div className="mt-8">
         <div className="relative">
           <div className="absolute inset-0 flex items-center">

@@ -1,134 +1,63 @@
-import { LayoutWrapper } from "@/components/layout-wrapper"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import Image from "next/image"
-import Link from "next/link"
-
+'use client';
+import { LayoutWrapper } from '@/components/layout-wrapper';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import Image from 'next/image';
+import Link from 'next/link';
+import { useGetArtworksQuery } from '@/app/api/artworkApi';
+import { Skeleton } from '@/components/ui/skeleton'; // optional – for loading state
+import type { ArtworkListItem } from '@/app/api/artworkApi'; // make sure this is exportedimport type { ArtworkListItem } from '@/services/api/artworkApi';   // make sure this is exported
 export default function FeaturedGalleryPage() {
-  // Featured artwork data with the provided images
-  const featuredArtwork = [
-    {
-      id: "art-1",
-      title: "Philippine Eagle Study",
-      artist: "Elena Rodriguez",
-      imageUrl:
-        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Philippine%20Eagle-2.jpg-VjOQtJxMTxu8VI5ym5jsfB1f9kbF0d.jpeg",
-      ipOwner: "Wildlife Conservation",
-      licenseType: "Commercial",
-      tags: ["wildlife", "illustration", "black and white"],
-    },
-    {
-      id: "art-2",
-      title: "Philippine Eagle Portrait",
-      artist: "Michael Chen",
-      imageUrl:
-        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Philippine%20Eagle-1.jpg-OAS06nLzeyogy0P4YFPYqagYQYSsWF.jpeg",
-      ipOwner: "Wildlife Conservation",
-      licenseType: "Limited Commercial",
-      tags: ["wildlife", "illustration", "black and white"],
-    },
-    {
-      id: "art-3",
-      title: "Apple Nest",
-      artist: "James Wilson",
-      imageUrl: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/APPLE.jpg-59OkRVSwUfpaheS9HO6YlRCy4JDyca.jpeg",
-      ipOwner: "Tech Inspirations",
-      licenseType: "Personal",
-      tags: ["tech", "illustration", "black and white"],
-    },
-    {
-      id: "art-4",
-      title: "Nature Hulk",
-      artist: "Sarah Johnson",
-      imageUrl:
-        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/hulk%20nature-2.jpg-ivaqVZqmxWtiQzqj7KrfCIH3S8XKHP.jpeg",
-      ipOwner: "Marvel Comics",
-      licenseType: "Commercial",
-      tags: ["superhero", "character", "illustration"],
-    },
-    {
-      id: "art-5",
-      title: "Hulk Fusion",
-      artist: "David Park",
-      imageUrl:
-        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/hulk%20nature.jpg-OQGAtfx41MiBFnTF4sYxLXLu3Zqbmg.jpeg",
-      ipOwner: "Marvel Comics",
-      licenseType: "Limited Commercial",
-      tags: ["superhero", "character", "illustration"],
-    },
-    {
-      id: "art-6",
-      title: "Geometric Batman",
-      artist: "Olivia Martinez",
-      imageUrl:
-        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/red%201080X1350-05.jpg-RdoV5YVfj6ZnUOfkceHpJIcTjJut1a.jpeg",
-      ipOwner: "DC Comics",
-      licenseType: "Commercial",
-      tags: ["superhero", "character", "geometric"],
-    },
-    // New artwork
-    {
-      id: "art-7",
-      title: "Squid Game Player 456",
-      artist: "Min-Ji Park",
-      imageUrl:
-        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/456-01.jpg-j6apCWvfzlCr1D8ZyxmoJhhdIfhxNF.jpeg",
-      ipOwner: "Netflix",
-      licenseType: "Limited Commercial",
-      tags: ["tv series", "character", "illustration"],
-    },
-    {
-      id: "art-8",
-      title: "Ahsoka Tano",
-      artist: "Alex Rivera",
-      imageUrl:
-        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/ahsoka-FINAL-01%20%282%29-PO2rMTckglJ6t9uWAalnbK7kR10iY9.png",
-      ipOwner: "Lucasfilm",
-      licenseType: "Commercial",
-      tags: ["star wars", "character", "vector art"],
-    },
-    {
-      id: "art-9",
-      title: "Samurai Warrior",
-      artist: "Hiroshi Tanaka",
-      imageUrl:
-        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Mizu_1_Colour_Reduced%20%281%29-mjT22q6qW7cm30IdGDCWTYfsxvd7fw.png",
-      ipOwner: "Original Creation",
-      licenseType: "Personal",
-      tags: ["samurai", "watercolor", "illustration"],
-    },
-    {
-      id: "art-10",
-      title: "Cherry - Cytus II",
-      artist: "Wei Chen",
-      imageUrl:
-        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/CHERRY-CYTUS-II.jpg-KZxxwPf0sVDgP8RhQq8p5D6Rm4r1cv.jpeg",
-      ipOwner: "Rayark Inc.",
-      licenseType: "Limited Commercial",
-      tags: ["game", "character", "minimalist"],
-    },
-    {
-      id: "art-11",
-      title: "Dark Knight",
-      artist: "Thomas Wayne",
-      imageUrl:
-        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Absolute_Batman_low.jpg-jbjBkbHD8un1TKig37wzR4G3RvZFbk.jpeg",
-      ipOwner: "DC Comics",
-      licenseType: "Commercial",
-      tags: ["superhero", "batman", "dark art"],
-    },
-    {
-      id: "art-12",
-      title: "Man of Steel",
-      artist: "Clark Kent",
-      imageUrl:
-        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Kingdomcome_Superman_Cage.jpg-s85NukrW7EgB7MBvecYgG3p33JcPMZ.jpeg",
-      ipOwner: "DC Comics",
-      licenseType: "Commercial",
-      tags: ["superhero", "superman", "abstract"],
-    },
-  ]
+  // Fetch real artworks (you can later add ?featured=true when backend supports it)
+  const { data, isLoading, error } = useGetArtworksQuery();
+
+  const artworks = data?.artworks ?? [];
+
+  // Optional: better loading + error handling
+  if (isLoading) {
+    return (
+      <LayoutWrapper>
+        <div className="container py-10">
+          <h1 className="text-4xl font-bold tracking-tight mb-8 text-center">
+            Featured Fan Art Gallery
+          </h1>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Card key={i} className="overflow-hidden">
+                <Skeleton className="aspect-square w-full" />
+                <CardHeader>
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-4 w-full mt-2" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </LayoutWrapper>
+    );
+  }
+
+  if (error) {
+    return (
+      <LayoutWrapper>
+        <div className="container py-10 text-center">
+          <h2 className="text-2xl font-bold text-destructive">Failed to load featured artworks</h2>
+          <p className="mt-2 text-muted-foreground">Please try again later</p>
+        </div>
+      </LayoutWrapper>
+    );
+  }
 
   return (
     <LayoutWrapper>
@@ -152,223 +81,56 @@ export default function FeaturedGalleryPage() {
           </div>
 
           <TabsContent value="all" className="mt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {featuredArtwork.map((artwork) => (
-                <Card key={artwork.id} className="overflow-hidden">
-                  <div className="aspect-square relative">
-                    <Image
-                      src={artwork.imageUrl || "/placeholder.svg"}
-                      alt={artwork.title}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                  <CardHeader>
-                    <CardTitle>{artwork.title}</CardTitle>
-                    <CardDescription>
-                      By {artwork.artist} • {artwork.licenseType} License
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground">Based on IP from {artwork.ipOwner}</p>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {artwork.tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="bg-secondary text-secondary-foreground text-xs px-2 py-1 rounded-full"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </CardContent>
-                  <CardFooter>
-                    <Button asChild className="w-full">
-                      <Link href={`/gallery/artwork/${artwork.id}`}>View Details</Link>
-                    </Button>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
+            <ArtworkGrid artworks={artworks} />
           </TabsContent>
 
           <TabsContent value="characters" className="mt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {featuredArtwork
-                .filter((art) => art.tags.includes("character"))
-                .map((artwork) => (
-                  <Card key={artwork.id} className="overflow-hidden">
-                    <div className="aspect-square relative">
-                      <Image
-                        src={artwork.imageUrl || "/placeholder.svg"}
-                        alt={artwork.title}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                    <CardHeader>
-                      <CardTitle>{artwork.title}</CardTitle>
-                      <CardDescription>
-                        By {artwork.artist} • {artwork.licenseType} License
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground">Based on IP from {artwork.ipOwner}</p>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {artwork.tags.map((tag) => (
-                          <span
-                            key={tag}
-                            className="bg-secondary text-secondary-foreground text-xs px-2 py-1 rounded-full"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </CardContent>
-                    <CardFooter>
-                      <Button asChild className="w-full">
-                        <Link href={`/gallery/artwork/${artwork.id}`}>View Details</Link>
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                ))}
-            </div>
+            <ArtworkGrid
+              artworks={artworks.filter(
+                (art) =>
+                  art.title.toLowerCase().includes('hulk') ||
+                  art.title.toLowerCase().includes('batman') ||
+                  art.title.toLowerCase().includes('superman') ||
+                  art.title.toLowerCase().includes('ahsoka') ||
+                  art.title.toLowerCase().includes('squid')
+              )}
+            />
           </TabsContent>
 
           <TabsContent value="superhero" className="mt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {featuredArtwork
-                .filter(
-                  (art) =>
-                    art.tags.includes("superhero") || art.tags.includes("batman") || art.tags.includes("superman"),
-                )
-                .map((artwork) => (
-                  <Card key={artwork.id} className="overflow-hidden">
-                    <div className="aspect-square relative">
-                      <Image
-                        src={artwork.imageUrl || "/placeholder.svg"}
-                        alt={artwork.title}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                    <CardHeader>
-                      <CardTitle>{artwork.title}</CardTitle>
-                      <CardDescription>
-                        By {artwork.artist} • {artwork.licenseType} License
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground">Based on IP from {artwork.ipOwner}</p>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {artwork.tags.map((tag) => (
-                          <span
-                            key={tag}
-                            className="bg-secondary text-secondary-foreground text-xs px-2 py-1 rounded-full"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </CardContent>
-                    <CardFooter>
-                      <Button asChild className="w-full">
-                        <Link href={`/gallery/artwork/${artwork.id}`}>View Details</Link>
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                ))}
-            </div>
+            <ArtworkGrid
+              artworks={artworks.filter(
+                (art) =>
+                  art.title.toLowerCase().includes('hulk') ||
+                  art.title.toLowerCase().includes('batman') ||
+                  art.title.toLowerCase().includes('superman')
+              )}
+            />
           </TabsContent>
 
           <TabsContent value="anime" className="mt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {featuredArtwork
-                .filter(
-                  (art) => art.tags.includes("anime") || art.tags.includes("game") || art.tags.includes("vector art"),
-                )
-                .map((artwork) => (
-                  <Card key={artwork.id} className="overflow-hidden">
-                    <div className="aspect-square relative">
-                      <Image
-                        src={artwork.imageUrl || "/placeholder.svg"}
-                        alt={artwork.title}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                    <CardHeader>
-                      <CardTitle>{artwork.title}</CardTitle>
-                      <CardDescription>
-                        By {artwork.artist} • {artwork.licenseType} License
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground">Based on IP from {artwork.ipOwner}</p>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {artwork.tags.map((tag) => (
-                          <span
-                            key={tag}
-                            className="bg-secondary text-secondary-foreground text-xs px-2 py-1 rounded-full"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </CardContent>
-                    <CardFooter>
-                      <Button asChild className="w-full">
-                        <Link href={`/gallery/artwork/${artwork.id}`}>View Details</Link>
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                ))}
-            </div>
+            <ArtworkGrid
+              artworks={artworks.filter(
+                (art) =>
+                  art.title.toLowerCase().includes('cherry') ||
+                  art.title.toLowerCase().includes('squid') ||
+                  art.title.toLowerCase().includes('ahsoka')
+              )}
+            />
           </TabsContent>
 
           <TabsContent value="other" className="mt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {featuredArtwork
-                .filter(
-                  (art) => art.tags.includes("wildlife") || art.tags.includes("tech") || art.tags.includes("samurai"),
-                )
-                .map((artwork) => (
-                  <Card key={artwork.id} className="overflow-hidden">
-                    <div className="aspect-square relative">
-                      <Image
-                        src={artwork.imageUrl || "/placeholder.svg"}
-                        alt={artwork.title}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                    <CardHeader>
-                      <CardTitle>{artwork.title}</CardTitle>
-                      <CardDescription>
-                        By {artwork.artist} • {artwork.licenseType} License
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground">Based on IP from {artwork.ipOwner}</p>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {artwork.tags.map((tag) => (
-                          <span
-                            key={tag}
-                            className="bg-secondary text-secondary-foreground text-xs px-2 py-1 rounded-full"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </CardContent>
-                    <CardFooter>
-                      <Button asChild className="w-full">
-                        <Link href={`/gallery/artwork/${artwork.id}`}>View Details</Link>
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                ))}
-            </div>
+            <ArtworkGrid
+              artworks={artworks.filter(
+                (art) =>
+                  !art.title.toLowerCase().includes('hulk') &&
+                  !art.title.toLowerCase().includes('batman') &&
+                  !art.title.toLowerCase().includes('superman') &&
+                  !art.title.toLowerCase().includes('cherry') &&
+                  !art.title.toLowerCase().includes('squid') &&
+                  !art.title.toLowerCase().includes('ahsoka')
+              )}
+            />
           </TabsContent>
         </Tabs>
 
@@ -379,6 +141,57 @@ export default function FeaturedGalleryPage() {
         </div>
       </div>
     </LayoutWrapper>
-  )
+  );
 }
 
+// Reusable grid component (DRY)
+function ArtworkGrid({ artworks }: { artworks: ArtworkListItem[] }) {
+  if (artworks.length === 0) {
+    return (
+      <div className="text-center py-12 text-muted-foreground">
+        No artworks found in this category yet...
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {artworks.map((art) => (
+        <Card key={art.id} className="overflow-hidden">
+          <div className="aspect-square relative bg-muted">
+            {art.thumbnail_url ? (
+              <Image
+                src={art.thumbnail_url}
+                alt={art.title}
+                fill
+                className="object-cover transition-transform hover:scale-105"
+              />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                No preview
+              </div>
+            )}
+          </div>
+          <CardHeader>
+            <CardTitle className="line-clamp-1">{art.title}</CardTitle>
+            {/* 
+              Missing artist & license info in current API response
+              → you will need to extend ArtworkListItem in the future
+            */}
+            <CardDescription>Published artwork</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Views: {art.views_count} • ♥ {art.favorites_count}
+            </p>
+          </CardContent>
+          <CardFooter>
+            <Button asChild variant="default" className="w-full">
+              <Link href={`/gallery/artwork/${art.id}`}>View Details</Link>
+            </Button>
+          </CardFooter>
+        </Card>
+      ))}
+    </div>
+  );
+}

@@ -1,47 +1,55 @@
-// backend/src/routes/contest.routes.js
+// src/routes/contest.routes.js
 const express = require('express');
+const ContestController = require('../controller/contest.controller');
+const ContestCategoryController = require('../controller/contestCategory.controller');
+const ContestEntryController = require('../controller/contestEntry.controller');
+const ContestJudgeController = require('../controller/contestJudge.controller');
+const ContestJudgeScoreController = require('../controller/contestJudgeScore.controller');
+const ContestVoteController = require('../controller/contestVote.controller');
+
+const { authenticateToken } = require('../middleware/auth.middleware');
+const { hasPermission } = require('../middleware/permission.middleware');
+
 const router = express.Router();
-const {
-  createContestHandler,
-  getContestByIdHandler,
-  getActiveContestsHandler,
-  updateContestHandler,
-  deleteContestHandler,
-  createContestEntryHandler,
-  getContestEntriesHandler,
-  getContestEntryByIdHandler,
-  updateContestEntryHandler,
-  deleteContestEntryHandler,
-} = require('../controllers/contest.controller');
-const { isAuthenticated, requireRole } = require('../middleware/auth');
 
-// ─────────────────────────────────────────────
-//              Contest Routes (admin only)
-// ─────────────────────────────────────────────
+// Public
+router.get('/', ContestController.getContests);
+router.get('/:id', ContestController.getContest);
+router.get('/:contestId/leaderboard', ContestVoteController.getLeaderboard);
 
-router.post('/', isAuthenticated, requireRole('admin'), createContestHandler);
-router.get('/:id', getContestByIdHandler);
-router.get('/', getActiveContestsHandler);
-router.patch('/:id', isAuthenticated, requireRole('admin'), updateContestHandler);
-router.delete('/:id', isAuthenticated, requireRole('admin'), deleteContestHandler);
+// Auth required below
+// router.use(authenticateToken);
 
-// ─────────────────────────────────────────────
-//              Contest Entries Routes
-// ─────────────────────────────────────────────
+// Contest management
+router.post('/', hasPermission('contests.create'), ContestController.createContest);
+router.patch('/:id', hasPermission('contests.update'), ContestController.updateContest);
+router.delete('/:id', hasPermission('contests.delete'), ContestController.deleteContest);
 
-// POST /api/contests/:contestId/entries
-router.post('/:contestId/entries', isAuthenticated, createContestEntryHandler);
+// Categories
+router.post('/:contestId/categories', hasPermission('contests.update'), ContestCategoryController.addCategory);
+router.delete('/:contestId/categories/:categoryId', hasPermission('contests.update'), ContestCategoryController.removeCategory);
+router.get('/:contestId/categories', ContestCategoryController.getCategories);
 
-// GET /api/contests/:contestId/entries
-router.get('/:contestId/entries', getContestEntriesHandler);
+// Entries
+router.post('/:contestId/entries', hasPermission('contests.enter'), ContestEntryController.submitEntry);
+router.get('/:contestId/entries', ContestEntryController.getEntries);
+router.patch('/:contestId/entries/:entryId/status', hasPermission('contests.moderate'), ContestEntryController.updateEntryStatus);
 
-// GET /api/contests/:contestId/entries/:entryId
-router.get('/:contestId/entries/:entryId', getContestEntryByIdHandler);
+// Judges
+router.post('/:contestId/judges', hasPermission('contests.manage_judges'), ContestJudgeController.inviteJudge);
+router.patch('/:contestId/judges/:judgeId/accept', ContestJudgeController.acceptInvitation);
+router.get('/:contestId/judges', ContestJudgeController.getJudges);
+router.delete('/:contestId/judges/:judgeId', hasPermission('contests.manage_judges'), ContestJudgeController.removeJudge);
 
-// PATCH /api/contests/:contestId/entries/:entryId
-router.patch('/:contestId/entries/:entryId', isAuthenticated, requireRole('admin'), updateContestEntryHandler);
+// Judge Scoring
+router.post('/:contestId/entries/:entryId/score', hasPermission('contests.judge'), ContestJudgeScoreController.submitScore);
+router.get('/:contestId/entries/:entryId/scores', hasPermission('contests.view_scores'), ContestJudgeScoreController.getScoresForEntry);
 
-// DELETE /api/contests/:contestId/entries/:entryId
-router.delete('/:contestId/entries/:entryId', isAuthenticated, requireRole('admin'), deleteContestEntryHandler);
+// Voting
+router.post('/:contestId/entries/:entryId/vote', hasPermission('contests.vote'), ContestVoteController.vote);
+
+// Winner & Prizes
+router.patch('/:id/announce-winners', hasPermission('contests.manage'), ContestController.announceWinners);
+router.post('/:id/distribute-prizes', hasPermission('contests.manage'), ContestController.distributePrizes);
 
 module.exports = router;

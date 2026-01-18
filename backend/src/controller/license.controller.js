@@ -1,187 +1,113 @@
-// backend/src/controllers/license.controller.js
-const { logger } = require('../utils/logger');
-const z = require('zod');
-const crypto = require('crypto');
+// src/controllers/license.controller.js
+const License = require('../models/license.model');
+const { sql } = require('kysely');
 
-// Zod schemas (copied/adapted from your code)
-const LicenseTermsSchema = z.object({
-  duration: z.string().min(1).max(100),
-  territory: z.string().min(1).max(100),
-  exclusivity: z.boolean(),
-  royaltyRate: z.number().min(0).max(100).optional(),
-  restrictions: z.array(z.string().max(500)).optional(),
-});
-
-const CreateLicenseSchema = z.object({
-  submissionId: z.string().min(1),
-  artistId: z.string().min(1),
-  brandId: z.string().min(1),
-  licenseType: z.enum(['personal', 'commercial', 'full']),
-  terms: LicenseTermsSchema.optional(),
-});
-
-// ─────────────────────────────────────────────
-//              Existing Handlers (from previous)
-// ─────────────────────────────────────────────
-
-async function createLicenseHandler(req, res, next) {
-  try {
-    const license = await require('../models/license').createLicense(req.body);
-    res.status(201).json({ success: true, data: license });
-  } catch (error) {
-    next(error);
-  }
-}
-
-async function getLicenseByIdHandler(req, res, next) {
-  try {
-    const license = await require('../models/license').getLicenseById(req.params.id);
-    if (!license) return res.status(404).json({ success: false, error: 'License not found' });
-    res.json({ success: true, data: license });
-  } catch (error) {
-    next(error);
-  }
-}
-
-async function updateLicenseStatusHandler(req, res, next) {
-  try {
-    const { status, reason } = req.body;
-    if (!status) return res.status(400).json({ success: false, error: 'Status is required' });
-
-    const license = await require('../models/license').updateLicenseStatus(req.params.id, status, reason);
-    if (!license) return res.status(404).json({ success: false, error: 'License not found' });
-
-    res.json({ success: true, data: license });
-  } catch (error) {
-    next(error);
-  }
-}
-
-// ─────────────────────────────────────────────
-//              NEW: Create License Agreement (your endpoint)
-// ─────────────────────────────────────────────
-
-async function createLicenseAgreement(req, res, next) {
-  const requestId = crypto.randomUUID();
-  const startTime = Date.now();
-
-  logger.info('License creation request received', {
-    context: 'licensing-api',
-    requestId,
-  });
-
-  try {
-    // Rate limiting is applied in the route — we just handle the logic here
-
-    // Parse & validate body
-    const parseResult = CreateLicenseSchema.safeParse(req.body);
-    if (!parseResult.success) {
-      logger.warn('Invalid license payload', {
-        context: 'licensing-api',
-        requestId,
-        errors: parseResult.error.format(),
-      });
-
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid license data',
-        details: parseResult.error.format(),
-        requestId,
-      });
+class LicenseController {
+  // GET /licenses/me — already good
+  static async getMyLicenses(req, res) {
+    try {
+      const licenses = await License.getLicensesForBuyer(req.user.id);
+      res.json({ licenses });
+    } catch (err) {
+      console.error('Get my licenses error:', err);
+      res.status(500).json({ error: 'Failed to fetch licenses' });
     }
+  }
 
-    const { submissionId, artistId, brandId, licenseType, terms } = parseResult.data;
+  // GET /licenses/:id — already good
+  static async getLicense(req, res) {
+    try {
+      const { id } = req.params;
+      const license = await License.findById(id);
 
-    const user = req.user; // from isAuthenticated middleware
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        error: 'Unauthorized',
-        requestId,
+      if (!license || license.buyer_id !== req.user.id) {
+        return res.status(403).json({ error: 'Not authorized to view this license' });
+      }
+
+      // TODO: in production, generate a signed S3 URL instead of exposing public URL
+      // const signedUrl = await generateSignedS3Url(license.contract_pdf_url, 3600); // 1 hour expiry
+
+      res.json({
+        ...license,
+        contract_url: license.contract_pdf_url, // or signedUrl
       });
+    } catch (err) {
+      console.error('Get license error:', err);
+      res.status(500).json({ error: 'Failed to fetch license' });
     }
+  }
 
-    const userId = user.id;
-    const userRole = user.role;
+  // ────────────────────────────────────────────────
+  // Optional: new methods
+  // ────────────────────────────────────────────────
 
-    // Permission check
-    const hasPermission = userRole === 'admin' || (userRole === 'brand' && userId === brandId);
+  // GET /licenses/issued — licenses issued by current user (seller)
+  static async getIssuedLicenses(req, res) {
+    try {
+      const licenses = await db
+        .selectFrom('licenses')
+        .innerJoin('order_items', 'order_items.id', 'licenses.order_item_id')
+        .innerJoin('orders', 'orders.id', 'order_items.order_id')
+        .select([
+          'licenses.*',
+          'orders.order_number',
+          'orders.created_at as order_date',
+        ])
+        .where('licenses.seller_id', '=', req.user.id)
+        .where('licenses.is_active', '=', true)
+        .orderBy('licenses.created_at', 'desc')
+        .execute();
 
-    if (!hasPermission) {
-      logger.warn('Permission denied', {
-        context: 'licensing-api',
-        requestId,
-        userId,
-        userRole,
-        brandId,
-      });
-
-      return res.status(403).json({
-        success: false,
-        error: 'You do not have permission to create this license',
-        requestId,
-      });
+      res.json({ issuedLicenses: licenses });
+    } catch (err) {
+      console.error('Get issued licenses error:', err);
+      res.status(500).json({ error: 'Failed to fetch issued licenses' });
     }
+  }
 
-    // Build license agreement object
-    const baseTerms = {
-      duration: terms?.duration ?? '1 year',
-      territory: terms?.territory ?? 'Worldwide',
-      exclusivity: terms?.exclusivity ?? false,
-      restrictions: terms?.restrictions ?? [
-        'No unauthorized redistribution',
-        'Attribution required',
-      ],
-    };
+  // PATCH /licenses/:id/revoke
+  static async revokeLicense(req, res) {
+    try {
+      const { id } = req.params;
 
-    const licenseAgreement = {
-      id: `LICENSE-${Math.floor(Math.random() * 100000)}`,
-      submissionId,
-      artistId,
-      brandId,
-      licenseType,
-      terms: terms?.royaltyRate !== undefined
-        ? { ...baseTerms, royaltyRate: terms.royaltyRate }
-        : baseTerms,
-      status: 'draft',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+      const license = await License.findById(id);
+      if (!license) return res.status(404).json({ error: 'License not found' });
 
-    logger.info('License agreement created', {
-      context: 'licensing-api',
-      requestId,
-      licenseId: licenseAgreement.id,
-      processingTime: Date.now() - startTime,
-    });
+      // Only seller or admin can revoke
+      if (license.seller_id !== req.user.id && !req.user.permissions?.['licenses.manage']) {
+        return res.status(403).json({ error: 'Not authorized to revoke this license' });
+      }
 
-    res.json({
-      success: true,
-      licenseAgreement,
-      meta: {
-        requestId,
-        processingTime: Date.now() - startTime,
-      },
-    });
-  } catch (error) {
-    logger.error('License creation failed', {
-      context: 'licensing-api',
-      requestId,
-      error: error.message || 'Unknown error',
-      processingTime: Date.now() - startTime,
-    });
+      if (!license.is_active) {
+        return res.status(400).json({ error: 'License already revoked' });
+      }
 
-    res.status(500).json({
-      success: false,
-      error: 'Failed to create license',
-      requestId,
-    });
+      await License.revoke(id);
+
+      res.json({ message: 'License revoked successfully', licenseId: id });
+    } catch (err) {
+      console.error('Revoke license error:', err);
+      res.status(500).json({ error: 'Failed to revoke license' });
+    }
+  }
+
+  // GET /licenses (admin only)
+  static async getAllLicenses(req, res) {
+    try {
+      // You can add query params for filtering later
+      const licenses = await db
+        .selectFrom('licenses')
+        .selectAll()
+        .orderBy('created_at', 'desc')
+        .limit(100) // pagination later
+        .execute();
+
+      res.json({ licenses });
+    } catch (err) {
+      console.error('Get all licenses error:', err);
+      res.status(500).json({ error: 'Failed to fetch licenses' });
+    }
   }
 }
 
-module.exports = {
-  createLicenseHandler,
-  getLicenseByIdHandler,
-  updateLicenseStatusHandler,
-  createLicenseAgreement, // new export
-};
+module.exports = LicenseController;

@@ -6,7 +6,7 @@ const {
   getAuditLogByIdHandler,
   getAuditLogsByUserIdHandler,
   searchAuditLogsHandler,
-} = require('../controllers/audit.controller');
+} = require('../controller/audit.controller');
 
 // POST /api/audit
 router.post('/', createAuditLogHandler);

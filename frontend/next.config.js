@@ -1,33 +1,55 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+
   images: {
     domains: [
+      'example.com',
       'placeholder.com',
       'via.placeholder.com',
-      'hebbkx1anhila5yf.public.blob.vercel-storage.com', // Add this
+      'hebbkx1anhila5yf.public.blob.vercel-storage.com',
+      // ↑ good — add your real image hosting domains here (e.g. cloudinary, supabase, s3, etc.)
+      // If using Next.js Image with remote images, you can also use remotePatterns (more flexible):
+      // remotePatterns: [{ protocol: 'https', hostname: '**' }], // ← wildcard (less secure)
     ],
   },
-  // Add environment-specific configuration
-  ...(process.env.NODE_ENV === 'development'
+
+  // ── Best way to proxy /api calls to backend ──────────────────────────────
+  // This makes client → /api/artwork → automatically forwarded to backend
+  // → No CSP connect-src changes needed (same origin)
+  // → Works great in dev + production
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination:
+          process.env.NODE_ENV === 'development'
+            ? 'http://localhost:4000/api/:path*'
+            : 'https://your-production-api-domain.com/api/:path*', // ← CHANGE THIS!
+      },
+    ];
+  },
+
+  // Optional: clean production build
+  ...(process.env.NODE_ENV === 'production'
     ? {
-        // Development-only settings
-        webpack: (config) => {
-          // Enable detailed error messages in development
-          config.optimization.minimize = false;
-          return config;
+        poweredByHeader: false, // hides "x-powered-by: Next.js"
+        compiler: {
+          removeConsole: {
+            exclude: ['error'], // keep console.error in production
+          },
         },
       }
     : {
-        // Production-only settings
-        poweredByHeader: false,
-        // Optimize for production
-        compiler: {
-          removeConsole: {
-            exclude: ['error'],
-          },
+        // Dev-only tweaks (your original suggestion)
+        webpack: (config) => {
+          config.optimization.minimize = false;
+          return config;
         },
       }),
+
+  // Optional: if you want stricter image optimization in production
+  // output: 'standalone', // useful for Docker/self-hosting
 };
 
 module.exports = nextConfig;

@@ -1,91 +1,98 @@
-import Link from "next/link"
-import Image from "next/image"
-import { CalendarIcon, Clock, Award, Users, ArrowRight } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+'use client';
 
+import Link from 'next/link';
+import Image from 'next/image';
+import { CalendarIcon, Award, Users, ArrowRight, Trophy } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useGetContestsQuery } from '@/app/api/contestsApi'; // ← Your RTK Query API
+import isApiError from '@/lib/isApiError';
 export default function OpportunitiesPage() {
-  // Sample data for contests and RFDs
-  const contests = [
-    {
-      id: "contest-1",
-      title: "Anime Expo 2023 Fan Art Contest",
-      description: "Create original fan art for popular anime series featured at Anime Expo 2023.",
-      image: "https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=2070&auto=format&fit=crop",
-      organizer: "Anime Expo",
-      deadline: "2023-06-15",
-      prize: "$1,000",
-      entries: 156,
-      status: "active",
-      categories: ["Anime", "Digital Art"],
-      featured: true,
-    },
-    {
-      id: "contest-2",
-      title: "Marvel Cinematic Universe Art Challenge",
-      description: "Design fan art inspired by the latest Marvel movies and TV shows.",
-      image: "https://images.unsplash.com/photo-1612036782180-6f0b6cd846fe?q=80&w=2070&auto=format&fit=crop",
-      organizer: "Marvel Entertainment",
-      deadline: "2023-07-30",
-      prize: "$2,500",
-      entries: 342,
-      status: "active",
-      categories: ["Superhero", "Movies"],
-      featured: true,
-    },
-    {
-      id: "contest-3",
-      title: "Indie Game Character Reimagined",
-      description: "Reimagine characters from popular indie games in your unique style.",
-      image: "https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=2071&auto=format&fit=crop",
-      organizer: "Indie Game Alliance",
-      deadline: "2023-08-10",
-      prize: "$750",
-      entries: 89,
-      status: "active",
-      categories: ["Gaming", "Character Design"],
-    },
-  ]
+  const {
+    data: contestsResponse,
+    isLoading,
+    isError,
+    error,
+  } = useGetContestsQuery({
+    status: 'live',
+    activeOnly: true,
+    limit: 20,
+  });
 
-  const rfds = [
-    {
-      id: "rfd-1",
-      title: "Star Wars Celebration Merchandise",
-      description: "Looking for unique Star Wars fan art designs for official merchandise.",
-      image: "https://images.unsplash.com/photo-1472457897821-70d3819a0e24?q=80&w=2069&auto=format&fit=crop",
-      organizer: "Lucasfilm Ltd.",
-      deadline: "2023-09-01",
-      compensation: "Royalty-based",
-      status: "active",
-      categories: ["Movies", "Merchandise"],
-      featured: true,
-    },
-    {
-      id: "rfd-2",
-      title: "Fantasy Novel Cover Art",
-      description: "Seeking artists to create cover art for upcoming fantasy novel series.",
-      image: "https://images.unsplash.com/photo-1518281361980-b26bfd556770?q=80&w=2070&auto=format&fit=crop",
-      organizer: "Penguin Random House",
-      deadline: "2023-07-20",
-      compensation: "$3,000 per cover",
-      status: "active",
-      categories: ["Books", "Fantasy"],
-    },
-    {
-      id: "rfd-3",
-      title: "Video Game Concept Art",
-      description: "Looking for concept artists to create fan art inspired designs for upcoming RPG.",
-      image: "https://images.unsplash.com/photo-1580327344181-c1163234e5a0?q=80&w=2067&auto=format&fit=crop",
-      organizer: "Epic Games",
-      deadline: "2023-08-15",
-      compensation: "$5,000 + Credit",
-      status: "active",
-      categories: ["Gaming", "Concept Art"],
-      featured: true,
-    },
-  ]
+  // Extract the actual array from the response
+  const contests = contestsResponse?.contests ?? [];
+  // Helper to format prize amount
+  const formatPrize = (prizes: any[] | null) => {
+    if (!prizes || prizes.length === 0) return 'Prizes available';
+    const totalINR = prizes.reduce((sum, p) => sum + (p.amount_inr || 0), 0);
+    if (totalINR === 0) return 'Prizes available';
+    return `₹${(totalINR / 100).toLocaleString('en-IN')}`;
+  };
+
+  // Helper to get main prize rank 1
+  const getTopPrize = (prizes: any[] | null) => {
+    if (!prizes) return null;
+    const top = prizes.find((p) => p.rank === 1);
+    return top ? `1st: ₹${(top.amount_inr / 100).toLocaleString('en-IN')}` : null;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="container py-10">
+        <div className="mb-10 text-center">
+          <h1 className="text-4xl font-bold tracking-tight">Fan Art Opportunities</h1>
+          <p className="mt-4 text-xl text-muted-foreground">
+            Discover contests and licensing opportunities for your fan art
+          </p>
+        </div>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {[...Array(6)].map((_, i) => (
+            <Card key={i} className="overflow-hidden">
+              <Skeleton className="h-48 w-full" />
+              <CardHeader>
+                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-4 w-1/2 mt-2" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-full mt-2" />
+                <Skeleton className="h-4 w-2/3 mt-2" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="container py-10 text-center">
+        <h1 className="text-4xl font-bold mb-4">Fan Art Opportunities</h1>
+        <p className="text-red-600">Failed to load contests. Please try again later.</p>
+
+        {isApiError(error) && error.data?.message && (
+          <p className="text-sm text-muted-foreground mt-2">{error.data.message}</p>
+        )}
+      </div>
+    );
+  }
+
+  const featuredContests = contests.filter((c) =>
+    ['Marvel Cinematic Universe Art Challenge', 'Anime Expo 2023 Fan Art Contest'].includes(c.title)
+  );
+
+  const regularContests = contests.filter((c) => !featuredContests.includes(c));
 
   return (
     <div className="container py-10">
@@ -97,182 +104,177 @@ export default function OpportunitiesPage() {
       </div>
 
       <Tabs defaultValue="all" className="mb-10">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-6">
           <TabsList>
-            <TabsTrigger value="all">All Opportunities</TabsTrigger>
-            <TabsTrigger value="contests">Contests</TabsTrigger>
-            <TabsTrigger value="rfds">Licensing RFDs</TabsTrigger>
+            <TabsTrigger value="all">All Contests</TabsTrigger>
+            <TabsTrigger value="contests">Active Contests</TabsTrigger>
+            <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
           </TabsList>
           <Link href="/dashboard/opportunities/create">
             <Button>
-              Create Opportunity
+              Create Contest
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </Link>
         </div>
 
-        <TabsContent value="all" className="mt-6">
-          <div className="mb-8">
-            <h2 className="mb-4 text-2xl font-bold">Featured Opportunities</h2>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {[...contests, ...rfds]
-                .filter((item) => item.featured)
-                .map((item) => (
-                  <Card key={item.id} className="overflow-hidden">
-                    <div className="relative h-48 w-full">
-                      <Image src={item.image || "/placeholder.svg"} alt={item.title} fill className="object-cover" />
+        <TabsContent value="all" className="mt-6 space-y-12">
+          {/* Featured Contests */}
+          {featuredContests.length > 0 && (
+            <section>
+              <h2 className="mb-6 text-2xl font-bold flex items-center gap-2">
+                <Trophy className="h-6 w-6 text-yellow-500" />
+                Featured Contests
+              </h2>
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {featuredContests.map((contest) => (
+                  <Card
+                    key={contest.id}
+                    className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow"
+                  >
+                    <div className="relative h-48 w-full bg-gradient-to-br from-purple-600 to-pink-600">
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Trophy className="h-20 w-20 text-white/30" />
+                      </div>
                       <div className="absolute right-2 top-2">
-                        <Badge variant="secondary" className="bg-black/70 text-white hover:bg-black/70">
-                          {item.id.startsWith("contest") ? "Contest" : "Licensing RFD"}
-                        </Badge>
+                        <Badge className="bg-black/70 text-white">Featured</Badge>
                       </div>
                     </div>
                     <CardHeader>
-                      <CardTitle className="line-clamp-1">{item.title}</CardTitle>
-                      <CardDescription className="flex items-center gap-1">
-                        <span>By {item.organizer}</span>
+                      <CardTitle className="line-clamp-1 text-lg">{contest.title}</CardTitle>
+                      <CardDescription>
+                        Ends{' '}
+                        {new Date(contest.submission_end_date).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <p className="line-clamp-2 text-sm text-muted-foreground">{item.description}</p>
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {item.categories.map((category) => (
-                          <Badge key={category} variant="outline">
-                            {category}
-                          </Badge>
-                        ))}
-                      </div>
-                      <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-                        <div className="flex items-center gap-1">
-                          <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                          <span>Due {new Date(item.deadline).toLocaleDateString()}</span>
+                      <p className="line-clamp-2 text-sm text-muted-foreground mb-4">
+                        {contest.description}
+                      </p>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">Top Prize</span>
+                          <span className="text-lg font-bold text-green-600">
+                            {getTopPrize(contest.prizes) || formatPrize(contest.prizes)}
+                          </span>
                         </div>
-                        <div className="flex items-center gap-1">
-                          {item.id.startsWith("contest") ? (
-                            <>
-                              <Award className="h-4 w-4 text-muted-foreground" />
-                              <span>Prize: {(item as any).prize}</span>
-                            </>
-                          ) : (
-                            <>
-                              <Clock className="h-4 w-4 text-muted-foreground" />
-                              <span>{(item as any).compensation}</span>
-                            </>
-                          )}
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <CalendarIcon className="h-4 w-4" />
+                          <span>
+                            Submissions close in{' '}
+                            {Math.ceil(
+                              (new Date(contest.submission_end_date).getTime() - Date.now()) /
+                                (1000 * 60 * 60 * 24)
+                            )}{' '}
+                            days
+                          </span>
                         </div>
                       </div>
                     </CardContent>
                     <CardFooter>
-                      <Link href={`/opportunities/${item.id}`} className="w-full">
-                        <Button className="w-full">View Details</Button>
+                      <Link href={`/opportunities/${contest.id}`} className="w-full">
+                        <Button className="w-full">Enter Contest</Button>
                       </Link>
                     </CardFooter>
                   </Card>
                 ))}
-            </div>
-          </div>
+              </div>
+            </section>
+          )}
 
-          <div>
-            <h2 className="mb-4 text-2xl font-bold">All Opportunities</h2>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {[...contests, ...rfds]
-                .filter((item) => !item.featured)
-                .map((item) => (
-                  <Card key={item.id} className="overflow-hidden">
-                    <div className="relative h-48 w-full">
-                      <Image src={item.image || "/placeholder.svg"} alt={item.title} fill className="object-cover" />
-                      <div className="absolute right-2 top-2">
-                        <Badge variant="secondary" className="bg-black/70 text-white hover:bg-black/70">
-                          {item.id.startsWith("contest") ? "Contest" : "Licensing RFD"}
-                        </Badge>
+          {/* All Contests */}
+          <section>
+            <h2 className="mb-6 text-2xl font-bold">All Active Contests</h2>
+            {regularContests.length === 0 && featuredContests.length === 0 ? (
+              <p className="text-center text-muted-foreground py-12">
+                No active contests at the moment. Check back soon!
+              </p>
+            ) : (
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {regularContests.map((contest) => (
+                  <Card
+                    key={contest.id}
+                    className="overflow-hidden hover:shadow-md transition-shadow"
+                  >
+                    <div className="relative h-48 w-full bg-gradient-to-r from-blue-500 to-indigo-600">
+                      <div className="absolute inset-0 bg-black/20" />
+                      <div className="absolute bottom-4 left-4 text-white">
+                        <p className="text-sm font-medium">Total Prize Pool</p>
+                        <p className="text-2xl font-bold">{formatPrize(contest.prizes)}</p>
                       </div>
                     </div>
                     <CardHeader>
-                      <CardTitle className="line-clamp-1">{item.title}</CardTitle>
-                      <CardDescription className="flex items-center gap-1">
-                        <span>By {item.organizer}</span>
+                      <CardTitle className="line-clamp-1">{contest.title}</CardTitle>
+                      <CardDescription>
+                        Ends {new Date(contest.submission_end_date).toLocaleDateString()}
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <p className="line-clamp-2 text-sm text-muted-foreground">{item.description}</p>
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {item.categories.map((category) => (
-                          <Badge key={category} variant="outline">
-                            {category}
-                          </Badge>
-                        ))}
-                      </div>
-                      <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
+                      <p className="line-clamp-2 text-sm text-muted-foreground">
+                        {contest.description}
+                      </p>
+                      <div className="mt-4 flex items-center justify-between text-sm">
                         <div className="flex items-center gap-1">
-                          <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                          <span>Due {new Date(item.deadline).toLocaleDateString()}</span>
+                          <Users className="h-4 w-4 text-muted-foreground" />
+                          <span>Max {contest.max_entries_per_user} entries</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          {item.id.startsWith("contest") ? (
-                            <>
-                              <Award className="h-4 w-4 text-muted-foreground" />
-                              <span>Prize: {(item as any).prize}</span>
-                            </>
-                          ) : (
-                            <>
-                              <Clock className="h-4 w-4 text-muted-foreground" />
-                              <span>{(item as any).compensation}</span>
-                            </>
-                          )}
+                          <Award className="h-4 w-4 text-muted-foreground" />
+                          <span>{contest.prizes?.length || 0} prizes</span>
                         </div>
                       </div>
                     </CardContent>
                     <CardFooter>
-                      <Link href={`/opportunities/${item.id}`} className="w-full">
-                        <Button className="w-full">View Details</Button>
+                      <Link
+                        href={`/opportunities/contests/${contest.slug || contest.id}`}
+                        className="w-full"
+                      >
+                        <Button variant="outline" className="w-full">
+                          View & Enter
+                        </Button>
                       </Link>
                     </CardFooter>
                   </Card>
                 ))}
-            </div>
-          </div>
+              </div>
+            )}
+          </section>
         </TabsContent>
 
         <TabsContent value="contests" className="mt-6">
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {contests.map((contest) => (
               <Card key={contest.id} className="overflow-hidden">
-                <div className="relative h-48 w-full">
-                  <Image src={contest.image || "/placeholder.svg"} alt={contest.title} fill className="object-cover" />
+                <div className="relative h-48 w-full bg-gradient-to-br from-purple-600 to-indigo-700">
+                  <div className="absolute bottom-4 left-4 text-white">
+                    <p className="text-2xl font-bold">{formatPrize(contest.prizes)}</p>
+                  </div>
                 </div>
                 <CardHeader>
                   <CardTitle className="line-clamp-1">{contest.title}</CardTitle>
-                  <CardDescription className="flex items-center gap-1">
-                    <span>By {contest.organizer}</span>
+                  <CardDescription>
+                    Due {new Date(contest.submission_end_date).toLocaleDateString()}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="line-clamp-2 text-sm text-muted-foreground">{contest.description}</p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {contest.categories.map((category) => (
-                      <Badge key={category} variant="outline">
-                        {category}
-                      </Badge>
-                    ))}
-                  </div>
-                  <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-                    <div className="flex items-center gap-1">
-                      <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                      <span>Due {new Date(contest.deadline).toLocaleDateString()}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Award className="h-4 w-4 text-muted-foreground" />
-                      <span>Prize: {contest.prize}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                      <span>{contest.entries} Entries</span>
-                    </div>
+                  <p className="line-clamp-2 text-sm text-muted-foreground">
+                    {contest.description}
+                  </p>
+                  <div className="mt-4 flex items-center gap-2 text-sm">
+                    <Award className="h-4 w-4 text-muted-foreground" />
+                    <span>{contest.prizes?.length || 1} prize(s)</span>
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Link href={`/opportunities/${contest.id}`} className="w-full">
-                    <Button className="w-full">View Details</Button>
+                  <Link
+                    href={`/opportunities/contests/${contest.slug || contest.id}`}
+                    className="w-full"
+                  >
+                    <Button className="w-full">Enter Now</Button>
                   </Link>
                 </CardFooter>
               </Card>
@@ -280,50 +282,12 @@ export default function OpportunitiesPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="rfds" className="mt-6">
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {rfds.map((rfd) => (
-              <Card key={rfd.id} className="overflow-hidden">
-                <div className="relative h-48 w-full">
-                  <Image src={rfd.image || "/placeholder.svg"} alt={rfd.title} fill className="object-cover" />
-                </div>
-                <CardHeader>
-                  <CardTitle className="line-clamp-1">{rfd.title}</CardTitle>
-                  <CardDescription className="flex items-center gap-1">
-                    <span>By {rfd.organizer}</span>
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="line-clamp-2 text-sm text-muted-foreground">{rfd.description}</p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {rfd.categories.map((category) => (
-                      <Badge key={category} variant="outline">
-                        {category}
-                      </Badge>
-                    ))}
-                  </div>
-                  <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-                    <div className="flex items-center gap-1">
-                      <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                      <span>Due {new Date(rfd.deadline).toLocaleDateString()}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span>{rfd.compensation}</span>
-                    </div>
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Link href={`/opportunities/${rfd.id}`} className="w-full">
-                    <Button className="w-full">View Details</Button>
-                  </Link>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
+        <TabsContent value="upcoming" className="mt-6">
+          <p className="text-center text-muted-foreground py-12">
+            Upcoming contests will appear here when announced.
+          </p>
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }
-

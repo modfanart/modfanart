@@ -1,76 +1,410 @@
-// backend/src/controllers/user.controller.js
-const {
-  createUser,
-  getUserById,
-  getUserByEmail,
-  updateUser,
-  deleteUser,
-} = require('../models/user');
+// src/controllers/user.controller.js
+const User = require('../models/user.model');
+const Role = require('../models/role.model');
+const { hashPassword, comparePassword } = require('../utils/password.util');
+const { s3Client } = require('../config');
+const { PutObjectCommand } = require('@aws-sdk/client-s3');
+const crypto = require('crypto');
+const path = require('path');
+const { db } = require('../config');
+const { sql } = require('kysely'); // ← Critical fix for sql`NOW()`
 
-async function createUserHandler(req, res, next) {
-  try {
-    const user = await createUser(req.body);
-    res.status(201).json({
-      success: true,
-      data: user,
-    });
-  } catch (error) {
-    next(error);
-  }
-}
+class UserController {
+  /**
+   * GET /users/me
+   */
+  static async getCurrentUser(req, res) {
+    try {
+      const user = req.user;
+      const role = await Role.findById(user.role_id);
 
-async function getUserByIdHandler(req, res, next) {
-  try {
-    const user = await getUserById(req.params.id);
-    if (!user) {
-      return res.status(404).json({ success: false, error: 'User not found' });
+      res.json({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        email_verified: user.email_verified,
+        status: user.status,
+        role: {
+          id: user.role_id,
+          name: role?.name || 'unknown',
+          hierarchy_level: role?.hierarchy_level || 0,
+        },
+        profile: user.profile || {},
+        avatar_url: user.avatar_url,
+        banner_url: user.banner_url,
+        bio: user.bio,
+        location: user.location,
+        website: user.website,
+        last_login_at: user.last_login_at,
+        created_at: user.created_at,
+      });
+    } catch (error) {
+      console.error('Get current user error:', error);
+      res.status(500).json({ error: 'Failed to fetch user profile' });
     }
-    res.json({ success: true, data: user });
-  } catch (error) {
-    next(error);
   }
-}
 
-async function getUserByEmailHandler(req, res, next) {
-  try {
-    const user = await getUserByEmail(req.query.email);
-    if (!user) {
-      return res.status(404).json({ success: false, error: 'User not found' });
+  /**
+   * PATCH /users/me
+   */
+  static async updateProfile(req, res) {
+    try {
+      const userId = req.user.id;
+      const { bio, location, website, profile } = req.body;
+
+      const updateData = {};
+
+      if (bio !== undefined) updateData.bio = bio;
+      if (location !== undefined) updateData.location = location;
+      if (website !== undefined) updateData.website = website;
+
+      if (profile && typeof profile === 'object') {
+        const currentUser = await User.findById(userId);
+        updateData.profile = { ...currentUser.profile, ...profile };
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        return res.status(400).json({ error: 'No valid fields to update' });
+      }
+
+      const updated = await User.update?.(userId, {
+        ...updateData,
+        updated_at: sql`NOW()`,
+      }) || await db.updateTable('users')
+        .set({ ...updateData, updated_at: sql`NOW()` })
+        .where('id', '=', userId)
+        .returning(['bio', 'location', 'website', 'profile'])
+        .executeTakeFirst();
+
+      res.json({
+        message: 'Profile updated successfully',
+        user: {
+          bio: updated.bio,
+          location: updated.location,
+          website: updated.website,
+          profile: updated.profile,
+        },
+      });
+    } catch (error) {
+      console.error('Update profile error:', error);
+      res.status(500).json({ error: 'Failed to update profile' });
     }
-    res.json({ success: true, data: user });
-  } catch (error) {
-    next(error);
   }
-}
 
-async function updateUserHandler(req, res, next) {
-  try {
-    const user = await updateUser(req.params.id, req.body);
-    if (!user) {
-      return res.status(404).json({ success: false, error: 'User not found' });
+  /**
+   * PATCH /users/me/password
+   */
+  static async changePassword(req, res) {
+    try {
+      const { currentPassword, newPassword } = req.body;
+
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ error: 'Current and new password required' });
+      }
+
+      if (newPassword.length < 8) {
+        return res.status(400).json({ error: 'New password must be at least 8 characters' });
+      }
+
+      const user = await User.findById(req.user.id);
+      if (!user?.password_hash) {
+        return res.status(400).json({ error: 'No password set (social login?)' });
+      }
+
+      const isMatch = await comparePassword(currentPassword, user.password_hash);
+      if (!isMatch) {
+        return res.status(401).json({ error: 'Current password incorrect' });
+      }
+
+      const newHash = await hashPassword(newPassword);
+
+      await db.updateTable('users')
+        .set({
+          password_hash: newHash,
+          updated_at: sql`NOW()`,
+        })
+        .where('id', '=', req.user.id)
+        .execute();
+
+      res.json({ message: 'Password changed successfully' });
+    } catch (error) {
+      console.error('Change password error:', error);
+      res.status(500).json({ error: 'Failed to change password' });
     }
-    res.json({ success: true, data: user });
-  } catch (error) {
-    next(error);
   }
-}
 
-async function deleteUserHandler(req, res, next) {
-  try {
-    const deleted = await deleteUser(req.params.id);
-    if (!deleted) {
-      return res.status(404).json({ success: false, error: 'User not found' });
+  /**
+   * POST /users/me/avatar
+   */
+  static async uploadAvatar(req, res) {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+
+      const userId = req.user.id;
+      const file = req.file;
+      const ext = path.extname(file.originalname).toLowerCase();
+      const allowed = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+
+      if (!allowed.includes(ext)) {
+        return res.status(400).json({ error: 'Invalid file type. Allowed: jpg, png, gif, webp' });
+      }
+
+      const key = `avatars/${userId}/${crypto.randomUUID()}${ext}`;
+
+      await s3Client.send(new PutObjectCommand({
+        Bucket: process.env.S3_BUCKET_NAME,
+        Key: key,
+        Body: file.buffer,
+        ContentType: file.mimetype,
+        ACL: 'public-read',
+      }));
+
+      const avatarUrl = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+
+      await db.updateTable('users')
+        .set({
+          avatar_url: avatarUrl,
+          updated_at: sql`NOW()`,
+        })
+        .where('id', '=', userId)
+        .execute();
+
+      res.json({ message: 'Avatar updated', avatar_url: avatarUrl });
+    } catch (error) {
+      console.error('Avatar upload error:', error);
+      res.status(500).json({ error: 'Failed to upload avatar' });
     }
-    res.json({ success: true, message: 'User deleted' });
-  } catch (error) {
-    next(error);
+  }
+
+  /**
+   * DELETE /users/me/avatar
+   */
+  static async removeAvatar(req, res) {
+    try {
+      const user = await User.findById(req.user.id);
+      if (!user?.avatar_url) {
+        return res.status(400).json({ error: 'No avatar to remove' });
+      }
+
+      await db.updateTable('users')
+        .set({
+          avatar_url: null,
+          updated_at: sql`NOW()`,
+        })
+        .where('id', '=', req.user.id)
+        .execute();
+
+      res.json({ message: 'Avatar removed' });
+    } catch (error) {
+      console.error('Remove avatar error:', error);
+      res.status(500).json({ error: 'Failed to remove avatar' });
+    }
+  }
+
+  /**
+   * GET /users
+   * Admin only: List all users with search, filter, pagination
+   */
+  static async getAllUsers(req, res) {
+    try {
+      // Admin check
+      // const adminRole = await Role.findByName('admin');
+      // if (!adminRole || req.user.role_id !== adminRole.id) {
+      //   return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
+      // }
+
+      const page = Math.max(1, parseInt(req.query.page) || 1);
+      const limit = Math.min(Math.max(1, parseInt(req.query.limit) || 20), 100);
+      const offset = (page - 1) * limit;
+      const search = req.query.search?.trim();
+      const statusFilter = req.query.status;
+      const sort = req.query.sort || 'created_at';
+      const order = req.query.order?.toUpperCase() === 'ASC' ? 'asc' : 'desc';
+
+      const allowedSortFields = ['created_at', 'username', 'email', 'last_login_at', 'status'];
+      const sortField = allowedSortFields.includes(sort) ? sort : 'created_at';
+
+      // Base query
+      let query = db
+        .selectFrom('users as u')
+        .leftJoin('roles as r', 'u.role_id', 'r.id')
+        .select([
+          'u.id',
+          'u.username',
+          'u.email',
+          'u.email_verified',
+          'u.status',
+          'u.bio',
+          'u.location',
+          'u.website',
+          'u.avatar_url',
+          'u.banner_url',
+          'u.last_login_at',
+          'u.created_at',
+          'u.updated_at',
+          'r.name as role_name',
+          'r.hierarchy_level as role_hierarchy_level',
+          'u.profile',
+        ]);
+
+      if (search) {
+        query = query.where(eb => eb.or([
+          eb('u.username', 'ilike', `%${search}%`),
+          eb('u.email', 'ilike', `%${search}%`),
+          eb('u.bio', 'ilike', `%${search}%`),
+        ]));
+      }
+
+      if (statusFilter) {
+        query = query.where('u.status', '=', statusFilter);
+      }
+
+      // Accurate count (no join duplication)
+      let countQuery = db.selectFrom('users').where('deleted_at', 'is', null);
+      if (search) {
+        countQuery = countQuery.where(eb => eb.or([
+          eb('username', 'ilike', `%${search}%`),
+          eb('email', 'ilike', `%${search}%`),
+          eb('bio', 'ilike', `%${search}%`),
+        ]));
+      }
+      if (statusFilter) {
+        countQuery = countQuery.where('status', '=', statusFilter);
+      }
+
+      const { total } = await countQuery.select(db.fn.count('id').as('total')).executeTakeFirst();
+      const totalUsers = parseInt(total || 0);
+      const totalPages = Math.ceil(totalUsers / limit);
+
+      // Final list
+      const usersResult = await query
+        .orderBy(`u.${sortField}`, order)
+        .limit(limit)
+        .offset(offset)
+        .execute();
+
+      const users = usersResult.map(user => ({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        email_verified: user.email_verified,
+        status: user.status,
+        bio: user.bio || null,
+        location: user.location || null,
+        website: user.website || null,
+        avatar_url: user.avatar_url || null,
+        banner_url: user.banner_url || null,
+        last_login_at: user.last_login_at,
+        created_at: user.created_at,
+        updated_at: user.updated_at,
+        role: {
+          name: user.role_name || 'unknown',
+          hierarchy_level: user.role_hierarchy_level ?? 0,
+        },
+        profile: user.profile || {},
+      }));
+
+      res.json({
+        users,
+        pagination: {
+          page,
+          limit,
+          total: totalUsers,
+          total_pages: totalPages,
+          has_next: page < totalPages,
+          has_prev: page > 1,
+        },
+      });
+    } catch (error) {
+      console.error('Get all users error:', error);
+      res.status(500).json({ error: 'Failed to fetch users' });
+    }
+  }
+
+  /**
+   * GET /users/:id
+   * 
+   */
+  static async getUserById(req, res) {
+    try {
+ 
+
+      const user = await User.findById(req.params.id);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const role = await Role.findById(user.role_id);
+
+      res.json({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        email_verified: user.email_verified,
+        status: user.status,
+        role: {
+          id: user.role_id,
+          name: role?.name || 'unknown',
+          hierarchy_level: role?.hierarchy_level || 0,
+        },
+        profile: user.profile || {},
+        avatar_url: user.avatar_url,
+        banner_url: user.banner_url,
+        bio: user.bio,
+        location: user.location,
+        website: user.website,
+        last_login_at: user.last_login_at,
+        created_at: user.created_at,
+        updated_at: user.updated_at,
+      });
+    } catch (error) {
+      console.error('Get user by ID error:', error);
+      res.status(500).json({ error: 'Failed to fetch user' });
+    }
+  }
+
+  /**
+   * PATCH /users/:id/status
+   * Admin only: Update user status (active, suspended, deactivated)
+   */
+  static async updateUserStatus(req, res) {
+    try {
+      const adminRole = await Role.findByName('admin');
+      if (!adminRole || req.user.role_id !== adminRole.id) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+
+      const { status } = req.body;
+      const allowedStatuses = ['active', 'suspended', 'deactivated', 'pending_verification'];
+      if (!allowedStatuses.includes(status)) {
+        return res.status(400).json({ error: 'Invalid status' });
+      }
+
+      const updated = await db.updateTable('users')
+        .set({
+          status,
+          updated_at: sql`NOW()`,
+        })
+        .where('id', '=', req.params.id)
+        .where('deleted_at', 'is', null)
+        .returning(['id', 'username', 'status'])
+        .executeTakeFirst();
+
+      if (!updated) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      res.json({
+        message: 'User status updated',
+        user: { id: updated.id, username: updated.username, status: updated.status },
+      });
+    } catch (error) {
+      console.error('Update user status error:', error);
+      res.status(500).json({ error: 'Failed to update user status' });
+    }
   }
 }
 
-module.exports = {
-  createUserHandler,
-  getUserByIdHandler,
-  getUserByEmailHandler,
-  updateUserHandler,
-  deleteUserHandler,
-};
+module.exports = UserController;

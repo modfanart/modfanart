@@ -5,7 +5,7 @@ const rateLimit = require('../middleware/rate-limit');
 const {
   getAdminSettings,
   postAdminSettings,
-} = require('../controllers/admin.controller');
+} = require('../controller/admin.controller');
 
 // Rate limit: 500 req/min (same as your code)
 const limiter = rateLimit({ windowMs: 60_000, limit: 500 });
