@@ -6,7 +6,7 @@
   "scripts": {
     "migrate": "ts-node src/scripts/migrate.ts",
     "dev": "node index.js",
-    "build": "tsc",
+    "build": "npm install && npm run build",
     "start": "node index.js"
   },
   "keywords": [],
