@@ -1,8 +1,10 @@
 // src/store/index.ts
 import { configureStore } from '@reduxjs/toolkit';
 import { setupListeners } from '@reduxjs/toolkit/query';
-import authApi from '@/app/api/authApi';
-import userApi from '../app/api/userApi';
+
+// RTK Query APIs
+import authApi from '@/app/api/authApi';           // or '@/services/api/authApi'
+import userApi from '@/app/api/userApi';
 import rolesApi from '@/app/api/rolesApi';
 import productsApi from '@/app/api/productApi';
 import ordersApi from '@/app/api/orderApi';
@@ -14,10 +16,13 @@ import categoriesApi from '@/app/api/categoriesApi';
 import auditApi from '@/app/api/auditApi';
 import artworkApi from '@/app/api/artworkApi';
 import artworkTagsApi from '@/app/api/artworkTagsApi';
-// import other reducers as needed
+
+// If you have the auth slice → uncomment when ready
+// import authReducer from '@/store/features/authSlice';
 
 export const store = configureStore({
   reducer: {
+    // RTK Query reducers (automatically generated)
     [authApi.reducerPath]: authApi.reducer,
     [userApi.reducerPath]: userApi.reducer,
     [rolesApi.reducerPath]: rolesApi.reducer,
@@ -31,11 +36,17 @@ export const store = configureStore({
     [auditApi.reducerPath]: auditApi.reducer,
     [artworkApi.reducerPath]: artworkApi.reducer,
     [artworkTagsApi.reducerPath]: artworkTagsApi.reducer,
-    // auth: authReducer,           // add when you create authSlice
-    // other slices...
+
+    // Add this when you activate the slice
+    // auth: authReducer,
+    // user: userReducer,   // if you ever make a non-query user slice
   },
+
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(
+    getDefaultMiddleware({
+      // Optional: turn off serializable check if you store complex objects (like File in form state)
+      serializableCheck: false,
+    }).concat(
       authApi.middleware,
       userApi.middleware,
       rolesApi.middleware,
@@ -50,10 +61,22 @@ export const store = configureStore({
       artworkApi.middleware,
       artworkTagsApi.middleware
     ),
+
   devTools: process.env.NODE_ENV !== 'production',
 });
 
 setupListeners(store.dispatch);
 
+// ────────────────────────────────────────────────
+// Types for the whole app
+// ────────────────────────────────────────────────
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
+
+// Optional: helper type for thunks / async actions
+export type AppThunk<ReturnType = void> = import('@reduxjs/toolkit').ThunkAction<
+  ReturnType,
+  RootState,
+  unknown,
+  import('@reduxjs/toolkit').Action
+>;

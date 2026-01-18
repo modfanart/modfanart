@@ -164,12 +164,6 @@ export const authApi = createApi({
       }),
     }),
 
-    // GET /api/auth/me
-    getCurrentUser: builder.query<User, void>({
-      query: () => '/me',
-      providesTags: ['CurrentUser'],
-    }),
-
     // POST /api/auth/forgot-password
     forgotPassword: builder.mutation<ApiMessageResponse, ForgotPasswordRequest>({
       query: (body) => ({
@@ -214,8 +208,6 @@ export const {
   useLoginMutation,
   useLogoutMutation,
   useRefreshTokenMutation,
-  useGetCurrentUserQuery,
-  useLazyGetCurrentUserQuery,
   useForgotPasswordMutation,
   useResetPasswordMutation,
   useVerifyEmailMutation,
