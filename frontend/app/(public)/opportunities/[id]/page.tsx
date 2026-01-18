@@ -1,22 +1,25 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
-import { ArrowRight, Share2, BookmarkPlus, Eye, CalendarIcon, Trophy, Users } from 'lucide-react';
+import { ArrowRight, Share2, BookmarkPlus, Eye, Trophy, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useGetContestQuery } from '@/app/api/contestsApi'; // Adjust path if needed
 
-export default function OpportunityDetailPage({
+// Define the expected params shape
+type Params = { id: string };
+
+export default async function OpportunityDetailPage({
   params,
 }: {
-  params: { id: string }; // Use slug for better URLs
+  params: Promise<Params>; // Key change for Next.js 15+
 }) {
-  const { id } = params;
+  const resolvedParams = await params;
+  const { id } = resolvedParams;
 
-  const { data: contest, isLoading, isError, error } = useGetContestQuery(id); // Fetch by slug (ensure your backend supports /contest/:slug or change to id)
+  const { data: contest, isLoading, isError, error } = useGetContestQuery(id);
 
   if (isLoading) {
     return <div className="container py-10">Loading contest details...</div>;
@@ -49,7 +52,7 @@ export default function OpportunityDetailPage({
       ? `1st: ₹${(topPrize.amount_inr / 100).toLocaleString('en-IN')}`
       : formatPrize(contest.prizes);
 
-  // Days until submission ends (current date: Jan 9, 2026 – all past, so show "Ended")
+  // Days until submission ends
   const submissionEnd = new Date(contest.submission_end_date);
   const daysUntilEnd = Math.ceil((submissionEnd.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
   const deadlineStatus = daysUntilEnd > 0 ? `${daysUntilEnd} days left` : 'Submissions closed';
