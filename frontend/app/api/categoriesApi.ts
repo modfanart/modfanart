@@ -70,17 +70,27 @@ const categoriesApi = createApi({
   endpoints: (builder) => ({
     // GET /categories
     // → usually returns flat list or optionally tree-structured
-    getAllCategories: builder.query<
-      Category[],
-      { parent_id?: string; activeOnly?: boolean } | void
-    >({
-      query: (params) => ({
-        url: '/categories',
-        params: params ? { parent_id: params.parent_id, active: params.activeOnly } : undefined,
-      }),
-      providesTags: ['Categories'],
-    }),
+getAllCategories: builder.query<
+  Category[],
+  { parent_id?: string; activeOnly?: boolean } | void
+>({
+  query: (arg) => {
+    if (!arg) {
+      return { url: '/categories' };
+    }
 
+    const { parent_id, activeOnly } = arg;
+
+    return {
+      url: '/categories',
+      params: {
+        ...(parent_id !== undefined && { parent_id }),
+        ...(activeOnly !== undefined && { active: activeOnly }),
+      },
+    };
+  },
+  providesTags: ['Categories'],
+}),
     // GET /categories/:id   (or /categories/slug:xxx if slug-based routing)
     getCategory: builder.query<Category, string>({
       query: (id) => `/categories/${id}`,
