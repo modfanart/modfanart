@@ -6,6 +6,8 @@ const nextConfig = {
       'placeholder.com',
       'via.placeholder.com',
       'hebbkx1anhila5yf.public.blob.vercel-storage.com', // Add this
+      'i.postimg.cc',
+      'www.thefilmcatalogue.com'
     ],
   },
   // Add environment-specific configuration

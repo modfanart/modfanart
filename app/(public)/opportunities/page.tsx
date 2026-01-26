@@ -1,3 +1,5 @@
+// 'use client'
+
 import Link from "next/link"
 import Image from "next/image"
 import { CalendarIcon, Clock, Award, Users, ArrowRight } from "lucide-react"
@@ -6,22 +8,28 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
+const OPPORTUNITY_ROUTES: Record<string, string> = {
+  "the-librarians": "/opportunities/the-librarians",
+};
+
+
+
 export default function OpportunitiesPage() {
   // Sample data for contests and RFDs
   const contests = [
     {
-      id: "contest-1",
-      title: "Anime Expo 2023 Fan Art Contest",
-      description: "Create original fan art for popular anime series featured at Anime Expo 2023.",
-      image: "https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=2070&auto=format&fit=crop",
-      organizer: "Anime Expo",
-      deadline: "2023-06-15",
-      prize: "$1,000",
-      entries: 156,
+      id: "the-librarians",
+      title: "The Librarians Official Fan art Contest",
+      description: "Create original fan art inspired by The Librarians universe — past, present, or future.",
+      image: "https://i.postimg.cc/T27x4hk5/New-Images-Artboard-4-(1).png",
+      organizer: "2026 Electric Entertainment, Inc",
+      deadline: "2026-02-29",
+      prize: "$100",
+      entries: 15,
       status: "active",
-      categories: ["Anime", "Digital Art"],
+      categories: ["Fan Art"],
       featured: true,
-    },
+    },/*
     {
       id: "contest-2",
       title: "Marvel Cinematic Universe Art Challenge",
@@ -46,10 +54,10 @@ export default function OpportunitiesPage() {
       entries: 89,
       status: "active",
       categories: ["Gaming", "Character Design"],
-    },
+    },*/
   ]
 
-  const rfds = [
+  const rfds = [/*
     {
       id: "rfd-1",
       title: "Star Wars Celebration Merchandise",
@@ -84,8 +92,11 @@ export default function OpportunitiesPage() {
       status: "active",
       categories: ["Gaming", "Concept Art"],
       featured: true,
-    },
+    },*/
   ]
+  const liveOpps = contests.length + rfds.length
+
+  console.log("Live Opportunities:", liveOpps)
 
   return (
     <div className="container py-10">
@@ -115,7 +126,7 @@ export default function OpportunitiesPage() {
           <div className="mb-8">
             <h2 className="mb-4 text-2xl font-bold">Featured Opportunities</h2>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {[...contests, ...rfds]
+              {[...contests]
                 .filter((item) => item.featured)
                 .map((item) => (
                   <Card key={item.id} className="overflow-hidden">
@@ -172,10 +183,11 @@ export default function OpportunitiesPage() {
             </div>
           </div>
 
+          {(liveOpps > 1 ?
           <div>
             <h2 className="mb-4 text-2xl font-bold">All Opportunities</h2>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {[...contests, ...rfds]
+              {[...contests]
                 .filter((item) => !item.featured)
                 .map((item) => (
                   <Card key={item.id} className="overflow-hidden">
@@ -230,7 +242,9 @@ export default function OpportunitiesPage() {
                   </Card>
                 ))}
             </div>
+            
           </div>
+          : null )}
         </TabsContent>
 
         <TabsContent value="contests" className="mt-6">
@@ -271,7 +285,7 @@ export default function OpportunitiesPage() {
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Link href={`/opportunities/${contest.id}`} className="w-full">
+                  <Link href={OPPORTUNITY_ROUTES[contest.id] ?? "/opportunities"} className="w-full">
                     <Button className="w-full">View Details</Button>
                   </Link>
                 </CardFooter>
@@ -282,7 +296,7 @@ export default function OpportunitiesPage() {
 
         <TabsContent value="rfds" className="mt-6">
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {rfds.map((rfd) => (
+            {/*{rfds.map((rfd) => (
               <Card key={rfd.id} className="overflow-hidden">
                 <div className="relative h-48 w-full">
                   <Image src={rfd.image || "/placeholder.svg"} alt={rfd.title} fill className="object-cover" />
@@ -319,7 +333,7 @@ export default function OpportunitiesPage() {
                   </Link>
                 </CardFooter>
               </Card>
-            ))}
+            ))}*/}
           </div>
         </TabsContent>
       </Tabs>

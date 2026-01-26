@@ -30,6 +30,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
 
   const routes = [
     {
+      //error double sidebars here
       label: "Dashboard",
       icon: <LayoutDashboard className="h-5 w-5" />,
       href: "/dashboard",
@@ -49,6 +50,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
       active: pathname === "/license-requests",
     },
     {
+      //error double sidebars here
       label: "Opportunities",
       icon: <Trophy className="h-5 w-5" />,
       href: "/dashboard/opportunities",
