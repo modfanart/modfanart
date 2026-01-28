@@ -4,7 +4,7 @@ const ContestEntry = require('../models/contestEntry.model');
 const Artwork = require('../models/artwork.model');
 const User = require('../models/user.model');
 const { sql } = require('kysely');
-
+const { db } = require('../config');
 class ContestEntryController {
   /**
    * POST /contests/:contestId/entries

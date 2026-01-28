@@ -1,0 +1,18 @@
+import DocumentationNav from '@/components/docs/DocumentationNav'
+import shareComponentsDocRoutes from './shareComponentsDocRoutes'
+import ShareComponentsDocView from './ShareComponentsDocView'
+
+const SharedComponentsDoc = () => {
+    return (
+        <div className="lg:flex h-full gap-8">
+            <div className="lg:w-[280px] py-2 lg-py-0 px-4 mb-4 border border-gray-200 dark:border-gray-700 rounded-md lg:border-0">
+                <DocumentationNav routes={shareComponentsDocRoutes} />
+            </div>
+            <div className="w-full">
+                <ShareComponentsDocView />
+            </div>
+        </div>
+    )
+}
+
+export default SharedComponentsDoc

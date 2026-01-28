@@ -1,7 +1,7 @@
 // src/controllers/license.controller.js
 const License = require('../models/license.model');
 const { sql } = require('kysely');
-
+const { db } = require('../config');
 class LicenseController {
   // GET /licenses/me — already good
   static async getMyLicenses(req, res) {

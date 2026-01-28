@@ -1,36 +1,74 @@
-import { promises as fs } from 'fs';
-import path from 'path';
-import { FileMigrationProvider, Migrator, NO_MIGRATIONS } from 'kysely';
-import { db } from '../config';
+// migrate.ts
+// Recommended location: root or src/scripts/migrate.ts
+// Run: npx tsx migrate.ts   or   npm run migrate
 
-async function migrateToLatest() {
+import { promises as fs } from 'node:fs';
+import path from 'node:path';
+
+import { FileMigrationProvider, Migrator } from 'kysely';
+
+import { db } from '../config/index.js'; // ← adjust path if needed (relative to this file)
+
+// Use process.cwd() — most reliable when running via tsx / node
+const migrationFolder = path.join(process.cwd(), 'src/migrations');
+// or path.join(process.cwd(), 'migrations') if you put them in root/migrations
+
+async function migrateToLatest(): Promise<void> {
+  console.log('Starting Kysely migrations...');
+  console.log('Migration folder:', migrationFolder);
+
   const migrator = new Migrator({
     db,
     provider: new FileMigrationProvider({
       fs,
       path,
-      migrationFolder: path.join(__dirname, '../migrations'),
+      migrationFolder,
     }),
   });
 
   const { error, results } = await migrator.migrateToLatest();
 
-  results?.forEach((it) => {
-    if (it.status === 'Success') {
-      console.log(`Migration "${it.migrationName}" was executed successfully`);
-    } else if (it.status === 'Error') {
-      console.error(`Failed to execute migration "${it.migrationName}"`);
-    }
-  });
-
+  // Fatal error (couldn't even start / list migrations / acquire lock / etc.)
   if (error) {
-    console.error('Failed to run migrations');
+    console.error('❌ Fatal migration error (setup or lock failure):');
     console.error(error);
     process.exit(1);
   }
 
-  console.log('All migrations completed successfully!');
+  if (!results || results.length === 0) {
+    console.log('ℹ️  No pending migrations. Database is already up to date.');
+    process.exit(0);
+  }
+
+  console.log(`Applying ${results.length} migration(s):`);
+
+  let failed = false;
+
+  for (const res of results) {
+    if (res.status === 'Success') {
+      console.log(`  ✅ ${res.migrationName} applied successfully`);
+    } else if (res.status === 'Error') {
+      failed = true;
+      console.error(`  ❌ ${res.migrationName} FAILED`);
+      // Note: the actual error was thrown earlier — you usually see it in console already
+      // Kysely logs the real DB error before returning the result set
+    } else {
+      console.log(`  ℹ️  ${res.migrationName} → ${res.status}`);
+    }
+  }
+
+  if (failed) {
+    console.error('\n❌ One or more migrations failed → check the error output above.');
+    console.error('   Kysely rolled back to the last successful migration automatically.');
+    process.exit(1);
+  }
+
+  console.log('\n🎉 All pending migrations applied successfully!');
   process.exit(0);
 }
 
-migrateToLatest();
+migrateToLatest().catch((err) => {
+  console.error('❌ Unexpected crash in migration script:');
+  console.error(err);
+  process.exit(1);
+});

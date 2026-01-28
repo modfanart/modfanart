@@ -3,7 +3,7 @@ const ContestJudgeScore = require('../models/contestJudgeScore.model');
 const ContestEntry = require('../models/contestEntry.model');
 const Contest = require('../models/contest.model');
 const { sql } = require('kysely');
-
+const { db } = require('../config');
 class ContestJudgeScoreController {
   /**
    * POST /contests/:contestId/entries/:entryId/score

@@ -3,12 +3,16 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "scripts": {
-    "migrate": "ts-node src/scripts/migrate.ts",
-    "dev": "node index.js",
+"scripts": {
+  "migrate": "tsx src/scripts/migrate.ts",
+  "migrate:up": "tsx src/scripts/migrate.ts",
+  "migrate:latest": "tsx src/scripts/migrate.ts",
+  "db:migrate": "tsx src/scripts/migrate.ts",
+  "migrate:status": "tsx src/scripts/migrate.ts --status", 
+  "dev": "node index.js",
   "build": "tsc",
-    "start": "node index.js"
-  },
+  "start": "node index.js"
+},
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -34,6 +38,7 @@
     "@types/pg": "^8.16.0",
     "nodemon": "^3.1.11",
     "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }
 }

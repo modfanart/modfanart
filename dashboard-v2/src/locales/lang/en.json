@@ -1,0 +1,148 @@
+{
+    "nav": {
+        "dashboard": {
+            "dashboard": "داشبورد",
+            "ecommerce": "تجارت الکترونیک",
+            "analytic": "تحلیلی",
+            "project": "پروژه",
+            "marketing": "بازاریابی"
+        },
+        "concepts": "مفاهیم",
+        "conceptsAi": {
+            "ai": " هوش مصنوعی",
+            "chat": "چت",
+            "image": "تصویر"
+        },
+        "conceptsCustomers": {
+            "customers": "مشتریان",
+            "customerList": "لیست",
+            "customerEdit": "ویرایش",
+            "customerCreate": "ایجاد",
+            "customerDetails": "جزئیات"
+        },
+        "conceptsProducts": {
+            "products": "محصولات",
+            "productList": "لیست",
+            "productEdit": "ویرایش",
+            "productCreate": "ایجاد"
+        },
+        "conceptsProjects": {
+            "projects": "پروژه‌ها",
+            "projectList": "لیست",
+            "projectDetails": "جزئیات",
+            "projectTasks": "وظایف",
+            "projectIssue": "مسئله"
+        },
+        "conceptsOrders": {
+            "orders": "سفارش‌ها",
+            "orderList": "لیست",
+            "orderEdit": "ویرایش",
+            "orderDetails": "جزئیات",
+            "orderCreate": "ایجاد"
+        },
+        "conceptsAccount": {
+            "account": "حساب کاربری",
+            "settings": "تنظیمات",
+            "activityLog": "لاگ فعالیت",
+            "rolesPermissions": "نقش‌ها و مجوزها"
+        },
+        "conceptsHelpCenter": {
+            "helpCenter": "مرکز کمک",
+            "supportHub": "مرکز پشتیبانی",
+            "article": "مقاله",
+            "editArticle": "ویرایش مقاله",
+            "faq": "پرسش‌های متداول"
+        },
+        "calendar": "تقویم",
+        "fileManager": "مدیر فایل‌ها",
+        "mail": "ایمیل",
+        "chat": "چت",
+        "uiComponents": "اجزای رابط کاربری",
+        "uiComponentsCommon": {
+            "common": "مشترک",
+            "grid": "گرید",
+            "button": "دکمه",
+            "typography": "تایپوگرافی",
+            "icons": "آیکون‌ها"
+        },
+        "uiComponentsFeeback": {
+            "feedback": "بازخورد",
+            "alert": "هشدار",
+            "dialog": "دیالوگ",
+            "drawer": "کشو",
+            "progress": "پیشرفت",
+            "skeleton": "اسکلت",
+            "spinner": "اسپینر",
+            "toast": "نوشته"
+        },
+        "uiComponentsDataDisplay": {
+            "dataDisplay": "نمایش داده‌ها",
+            "avatar": "آواتار",
+            "badge": "نشان",
+            "calendar": "تقویم",
+            "cards": "کارت‌ها",
+            "table": "جدول",
+            "tag": "برچسب",
+            "timeline": "خط زمانی",
+            "tooltip": "نشانگر ابزار"
+        },
+        "uiComponentsForms": {
+            "forms": "فرم‌ها",
+            "checkbox": "چک‌باکس",
+            "datePicker": "انتخاب تاریخ",
+            "formControl": "کنترل فرم",
+            "input": "ورودی",
+            "inputGroup": "گروه ورودی",
+            "radio": "رادیو",
+            "segment": "بخش",
+            "select": "انتخاب",
+            "switcher": "سوییچر",
+            "timeInput": "ورودی زمان",
+            "upload": "بارگذاری"
+        },
+        "uiComponentsNavigation": {
+            "navigation": "ناوبری",
+            "dropdown": "منو کشویی",
+            "menu": "منو",
+            "pagination": "صفحه‌بندی",
+            "steps": "مراحل",
+            "tabs": "زیرمنوها"
+        },
+        "uiComponentsGraph": {
+            "graph": "گراف",
+            "charts": "چارت‌ها",
+            "maps": "نقشه‌ها"
+        },
+        "pages": {
+            "pages": "صفحات",
+            "welcome": "خوش آمدید",
+            "accessDenied": "دسترسی ممنوع"
+        },
+        "authentication": {
+            "authentication": "احراز هویت",
+            "signIn": "ورود",
+            "signInSimple": "ساده",
+            "signInSide": "کناری",
+            "signInSplit": "تقسیم شده",
+            "signUp": "ثبت نام",
+            "signUpSimple": "ساده",
+            "signUpSide": "کناری",
+            "signUpSplit": "تقسیم شده",
+            "forgotPassword": "رمز عبور را فراموش کرده‌اید",
+            "forgotPasswordSimple": "ساده",
+            "forgotPasswordSide": "کناری",
+            "forgotPasswordSplit": "تقسیم شده",
+            "resetPassword": "بازنشانی رمز عبور",
+            "resetPasswordSimple": "ساده",
+            "resetPasswordSide": "کناری",
+            "resetPasswordSplit": "تقسیم شده"
+        },
+        "guide": {
+            "guide": "راهنما",
+            "documentation": "مستندات",
+            "sharedComponentDoc": "مستندات کامپوننت مشترک",
+            "utilsDoc": "مستندات ابزارها",
+            "changeLog": "لاگ تغییرات"
+        }
+    }
+}

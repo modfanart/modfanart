@@ -1,6 +1,8 @@
 // src/services/api/authApi.ts
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type { BaseQueryFn, FetchArgs, FetchBaseQueryError } from '@reduxjs/toolkit/query';
+import { setCredentials, logout } from '@/app/api/features/authSlice'; // ← make sure this import is correct
+import type { RootState } from '@/store'; // ← import RootState for type safety
 
 // ────────────────────────────────────────────────
 // Full User shape aligned with UserRow from src/db/types.js
@@ -33,8 +35,7 @@ export interface RegisterRequest {
   username: string;
   email: string;
   password: string;
-  // Optional fields depending on your signup flow
-  referral_key?: string; // if using signup_key_used
+  referral_key?: string;
 }
 
 export interface LoginRequest {
@@ -42,10 +43,12 @@ export interface LoginRequest {
   password: string;
 }
 
-export interface RefreshRequest {
-  refresh_token?: string; // if sent in body (less common now)
+export interface AuthResponse {
+  accessToken: string;
+  refreshToken?: string; // ← note: camelCase to match your Login response
+  user: User;
+  expires_in?: number;
 }
-
 export interface ForgotPasswordRequest {
   email: string;
 }
@@ -54,30 +57,14 @@ export interface ResetPasswordRequest {
   token: string;
   password: string;
 }
-
-export interface AuthResponse {
-  accessToken: string;
-  refresh_token?: string; // if using separate refresh tokens
-  user: User;
-  expires_in?: number; // seconds — optional
-}
-
-// Common success shape for non-token endpoints
-interface ApiMessageResponse {
-  success: boolean;
-  message: string;
-}
-
 // ────────────────────────────────────────────────
-// Base query with automatic token attachment + re-auth logic
+// Base query setup
 // ────────────────────────────────────────────────
 const rawBaseQuery = fetchBaseQuery({
   baseUrl: '/api/auth',
-  credentials: 'include', // important for refresh cookies if using httpOnly refresh tokens
+  credentials: 'include',
   prepareHeaders: (headers, { getState }) => {
-    // Support different slice shapes
-    const token =
-      (getState() as any)?.auth?.accessToken ?? (getState() as any)?.auth?.token ?? null;
+    const token = (getState() as RootState)?.auth?.accessToken;
 
     if (token) {
       headers.set('Authorization', `Bearer ${token}`);
@@ -86,7 +73,9 @@ const rawBaseQuery = fetchBaseQuery({
   },
 });
 
-// Automatic 401 → refresh → retry logic (very common pattern)
+// ────────────────────────────────────────────────
+// Improved re-auth logic – this is the important part
+// ────────────────────────────────────────────────
 const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError> = async (
   args,
   api,
@@ -94,40 +83,70 @@ const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQue
 ) => {
   let result = await rawBaseQuery(args, api, extraOptions);
 
-  if (result.error && result.error.status === 401) {
-    // Attempt refresh
+  // Check for 401
+  if (result.error && (result.error as any).originalStatus === 401) {
+    console.warn('[RTK Query] 401 detected — attempting token refresh');
+
+    const refreshToken = localStorage.getItem('refreshToken');
+
+    if (!refreshToken) {
+      console.warn('[RTK Query] No refresh token found in localStorage → forcing logout');
+      api.dispatch(logout());
+      localStorage.removeItem('accessToken');
+      // Optional: window.location.href = '/login?session=expired';
+      return result; // fail the original request
+    }
+
+    // Try to refresh
     const refreshResult = await rawBaseQuery(
-      { url: '/refresh', method: 'POST' },
+      {
+        url: '/refresh',
+        method: 'POST',
+        body: { refreshToken }, // ← matches what your backend controller expects
+      },
       api,
       extraOptions
     );
 
     if (refreshResult.data) {
-      // Assume your auth slice has a setCredentials / setTokens action
-      api.dispatch({
-        type: 'auth/setTokens',
-        payload: refreshResult.data, // { access_token, refresh_token?, user?, ... }
-      });
+      console.log('[RTK Query] Refresh successful', refreshResult.data);
 
-      // Retry original request with new token
+      const { accessToken } = refreshResult.data as { accessToken: string };
+
+      // Update redux store with new token (keep existing user)
+      api.dispatch(
+        setCredentials({
+          accessToken,
+          user: (api.getState() as RootState).auth.user,
+        })
+      );
+
+      // Persist the new access token
+      localStorage.setItem('accessToken', accessToken);
+
+      // Retry the original request with the new token
       result = await rawBaseQuery(args, api, extraOptions);
     } else {
-      // Refresh failed → logout
-      api.dispatch({ type: 'auth/logout' });
-      // Optional: redirect to login page via custom middleware or listener
+      console.error('[RTK Query] Refresh failed', refreshResult.error);
+      api.dispatch(logout());
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      // Optional: window.location.href = '/login?session=expired';
     }
   }
 
   return result;
 };
 
+// ────────────────────────────────────────────────
+// Create the API
+// ────────────────────────────────────────────────
 export const authApi = createApi({
   reducerPath: 'authApi',
   baseQuery: baseQueryWithReauth,
   tagTypes: ['CurrentUser'],
 
   endpoints: (builder) => ({
-    // POST /api/auth/register
     register: builder.mutation<AuthResponse, RegisterRequest>({
       query: (body) => ({
         url: '/register',
@@ -137,7 +156,6 @@ export const authApi = createApi({
       invalidatesTags: ['CurrentUser'],
     }),
 
-    // POST /api/auth/login
     login: builder.mutation<AuthResponse, LoginRequest>({
       query: (body) => ({
         url: '/login',
@@ -147,8 +165,7 @@ export const authApi = createApi({
       invalidatesTags: ['CurrentUser'],
     }),
 
-    // POST /api/auth/logout
-    logout: builder.mutation<ApiMessageResponse, void>({
+    logout: builder.mutation<{ success: boolean; message: string }, void>({
       query: () => ({
         url: '/logout',
         method: 'POST',
@@ -156,16 +173,16 @@ export const authApi = createApi({
       invalidatesTags: ['CurrentUser'],
     }),
 
-    // POST /api/auth/refresh
-    refreshToken: builder.mutation<{ access_token: string; refresh_token?: string }, void>({
-      query: () => ({
+    // You can keep this endpoint, but we are using raw fetch for refresh in baseQuery
+    refreshToken: builder.mutation<{ accessToken: string }, { refreshToken: string }>({
+      query: (body) => ({
         url: '/refresh',
         method: 'POST',
+        body,
       }),
     }),
 
-    // POST /api/auth/forgot-password
-    forgotPassword: builder.mutation<ApiMessageResponse, ForgotPasswordRequest>({
+    forgotPassword: builder.mutation<{ message: string }, ForgotPasswordRequest>({
       query: (body) => ({
         url: '/forgot-password',
         method: 'POST',
@@ -173,8 +190,7 @@ export const authApi = createApi({
       }),
     }),
 
-    // POST /api/auth/reset-password
-    resetPassword: builder.mutation<ApiMessageResponse, ResetPasswordRequest>({
+    resetPassword: builder.mutation<{ message: string }, ResetPasswordRequest>({
       query: (body) => ({
         url: '/reset-password',
         method: 'POST',
@@ -182,9 +198,7 @@ export const authApi = createApi({
       }),
     }),
 
-    // Usually GET /api/auth/verify-email?token=xxx
-    // but many APIs now use POST for security (CSRF protection)
-    verifyEmail: builder.mutation<ApiMessageResponse, { token: string }>({
+    verifyEmail: builder.mutation<{ message: string }, { token: string }>({
       query: ({ token }) => ({
         url: '/verify-email',
         method: 'POST',
@@ -193,8 +207,7 @@ export const authApi = createApi({
       invalidatesTags: ['CurrentUser'],
     }),
 
-    // Optional: resend verification email
-    resendVerificationEmail: builder.mutation<ApiMessageResponse, void>({
+    resendVerificationEmail: builder.mutation<{ message: string }, void>({
       query: () => ({
         url: '/verify-email/resend',
         method: 'POST',

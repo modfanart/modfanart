@@ -2,7 +2,7 @@
 const Contest = require('../models/contest.model');
 const ContestCategory = require('../models/contestCategory.model');
 const Category = require('../models/category.model');
-
+const { db } = require('../config');
 class ContestCategoryController {
   static async addCategory(req, res) {
     try {

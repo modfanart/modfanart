@@ -353,7 +353,85 @@
  * @property {string | null} user_agent
  * @property {string} created_at
  */
+/**
+ * @typedef {Object} BrandRow
+ * @property {string} id                  UUID
+ * @property {string} user_id             References UserRow.id (the owning user)
+ * @property {string} name
+ * @property {string} slug
+ * @property {string | null} description
+ * @property {string | null} logo_url
+ * @property {string | null} banner_url
+ * @property {string | null} website
+ * @property {object | null} social_links JSONB (e.g. {twitter: '...', instagram: '...'})
+ * @property {'active' | 'suspended' | 'pending' | 'deactivated'} status
+ * @property {string | null} verification_request_id References BrandVerificationRequestRow.id
+ * @property {number} followers_count
+ * @property {string} created_at          timestamptz ISO string
+ * @property {string} updated_at          timestamptz ISO string
+ * @property {string | null} deleted_at   timestamptz ISO string (soft delete)
+ */
 
+/**
+ * @typedef {Object} BrandArtworkRow
+ * @property {string} brand_id
+ * @property {string} artwork_id          References ArtworkRow.id (licensed or owned artworks for storefront)
+ * @property {boolean} is_featured        Whether featured in storefront
+ * @property {number} sort_order
+ * @property {string} added_at
+ */
+
+/**
+ * @typedef {Object} BrandPostRow
+ * @property {string} id                  UUID
+ * @property {string} brand_id            References BrandRow.id
+ * @property {string} title
+ * @property {string | null} content      Markdown or HTML content
+ * @property {string[] | null} media_urls JSONB array of URLs (images/videos)
+ * @property {'draft' | 'published' | 'archived'} status
+ * @property {boolean} is_pinned          Whether pinned to brand timeline
+ * @property {number} likes_count
+ * @property {number} comments_count
+ * @property {number} upvotes_count
+ * @property {string} created_at
+ * @property {string} updated_at
+ * @property {string | null} deleted_at
+ */
+
+/**
+ * @typedef {Object} BrandPostLikeRow
+ * @property {string} post_id
+ * @property {string} user_id
+ * @property {string} created_at
+ */
+
+/**
+ * @typedef {Object} BrandPostCommentRow
+ * @property {string} id                  UUID
+ * @property {string} post_id
+ * @property {string} user_id
+ * @property {string | null} parent_id   For threaded comments
+ * @property {string} content
+ * @property {number} likes_count
+ * @property {string} created_at
+ * @property {string} updated_at
+ * @property {string | null} deleted_at
+ */
+
+/**
+ * @typedef {Object} BrandPostUpvoteRow
+ * @property {string} post_id
+ * @property {string} user_id
+ * @property {number} vote_weight         e.g., 1 for upvote
+ * @property {string} created_at
+ */
+
+/**
+ * @typedef {Object} BrandFollowerRow
+ * @property {string} brand_id
+ * @property {string} user_id
+ * @property {string} followed_at
+ */
 module.exports = {};
 // This file is only for type documentation / IntelliSense
 // No runtime code is needed

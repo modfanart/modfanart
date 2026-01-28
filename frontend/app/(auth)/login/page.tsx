@@ -38,17 +38,6 @@ export default function LoginPage() {
 
   const [showPassword, setShowPassword] = useState(false);
 
-  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
-
-  // Optional: redirect if already logged in (better via middleware in production)
-  useEffect(() => {
-    // You can improve this with getCurrentUserQuery or just check for token in localStorage/cookies
-    const token = localStorage.getItem('accessToken'); // or document.cookie check
-    if (token) {
-      router.push(callbackUrl);
-    }
-  }, [callbackUrl, router]);
-
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -64,7 +53,7 @@ export default function LoginPage() {
         email: values.email,
         password: values.password,
       }).unwrap();
-
+      console.log('Login response:', response); // ← must show accessToken
       // Assuming your backend returns { access_token, user, ... }
       dispatch(
         setCredentials({
@@ -81,7 +70,7 @@ export default function LoginPage() {
         // session only → can clear on tab close or use short-lived cookie
       }
 
-      router.push(callbackUrl);
+      router.push('/');
     } catch (err: any) {
       // RTK Query already sets error state, but you can show custom toast here
       console.error('Login failed:', err);
@@ -192,7 +181,7 @@ export default function LoginPage() {
           </Button>
         </form>
       </Form>
-      <div className="mt-8">
+      {/* <div className="mt-8">
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-gray-300" />
@@ -229,7 +218,7 @@ export default function LoginPage() {
           </svg>
           Continue with Google
         </Button>
-      </div>
+      </div> */}
 
       <p className="mt-8 text-center text-sm text-gray-600">
         Don't have an account yet?{' '}

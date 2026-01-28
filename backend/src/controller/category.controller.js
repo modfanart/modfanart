@@ -1,7 +1,7 @@
 // src/controllers/category.controller.js
 const Category = require('../models/category.model');
 const { sql } = require('kysely');
-
+const { db } = require('../config');
 class CategoryController {
   // ────────────────────────────────────────────────
   // Public: Get all active categories (with optional tree view)

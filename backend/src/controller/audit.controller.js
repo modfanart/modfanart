@@ -5,7 +5,7 @@ const {
   getAuditLogsByUserId,
   searchAuditLogs,
 } = require('../models/auditedEvent.model');
-
+const { db } = require('../config');
 async function createAuditLogHandler(req, res, next) {
   try {
     const log = await createAuditLog(req.body);

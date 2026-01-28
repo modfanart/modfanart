@@ -2,7 +2,7 @@
 const Contest = require('../models/contest.model');
 const ContestJudge = require('../models/contestJudge.model');
 const User = require('../models/user.model');
-
+const { db } = require('../config');
 class ContestJudgeController {
   static async inviteJudge(req, res) {
     try {

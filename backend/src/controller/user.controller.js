@@ -13,72 +13,125 @@ class UserController {
   /**
    * GET /users/me
    */
-// backend/src/controller/user.controller.js
 static async getCurrentUser(req, res) {
-  try {
-    const userId = req.user?.id;
+    try {
+      // 1. Ensure user is authenticated (from auth middleware)
+      const userId = req.user?.id || req.user?.userId; // some JWT payloads use userId instead of id
 
-    if (!userId) {
-      return res.status(401).json({ success: false, error: 'No user context' });
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: 'Authentication required - no user context found',
+        });
+      }
+
+      // 2. Safety check: database must be attached
+      if (!req.db) {
+        console.error('[getCurrentUser] Database instance not attached to request');
+        return res.status(500).json({
+          success: false,
+          message: 'Server configuration error - database unavailable',
+        });
+      }
+
+      // 3. Fetch user + role in a single efficient query
+      const user = await req.db
+        .selectFrom('users')
+        .leftJoin('roles', 'users.role_id', 'roles.id')
+        .select([
+          'users.id',
+          'users.username',
+          'users.email',
+          'users.email_verified',
+          'users.status',
+          'users.profile',           // JSONB
+          'users.avatar_url',
+          'users.banner_url',
+          'users.bio',
+          'users.location',
+          'users.website',
+          'users.payout_method',     // if you have this column
+          'users.stripe_connect_id',
+          'users.last_login_at',
+          'users.created_at',
+          'users.updated_at',
+          'users.deleted_at',        // if using soft deletes
+
+          // Role fields
+          'roles.id as role_id',
+          'roles.name as role_name',
+          'roles.hierarchy_level as role_hierarchy_level',
+          // add more role fields if needed: permissions, description, etc.
+        ])
+        .where('users.id', '=', userId)
+        // Optional: exclude soft-deleted users
+        .where('users.deleted_at', 'is', null)
+        .executeTakeFirst();
+
+      // 4. Not found case
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'User profile not found',
+        });
+      }
+
+      // 5. Optional: Update last_login_at if you want to track it here
+      // (some apps do this on every /me call, others only on login)
+      /*
+      await req.db
+        .updateTable('users')
+        .set({ last_login_at: sql`NOW()` })
+        .where('id', '=', userId)
+        .execute();
+      */
+
+      // 6. Format clean, frontend-friendly response
+      // Match this shape with your TypeScript User interface
+      const response = {
+        success: true,
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          email_verified: user.email_verified,
+          status: user.status,
+          role_id: user.role_id,
+          role: {
+            id: user.role_id,
+            name: user.role_name || 'unknown',
+            hierarchy_level: user.role_hierarchy_level ?? 0,
+          },
+          profile: user.profile || {},
+          avatar_url: user.avatar_url,
+          banner_url: user.banner_url,
+          bio: user.bio,
+          location: user.location,
+          website: user.website,
+          payout_method: user.payout_method || null,
+          stripe_connect_id: user.stripe_connect_id || null,
+          last_login_at: user.last_login_at,
+          created_at: user.created_at,
+          updated_at: user.updated_at,
+          deleted_at: user.deleted_at || null,
+        },
+      };
+
+      return res.status(200).json(response);
+    } catch (error) {
+      console.error('[getCurrentUser] Error:', {
+        message: error.message,
+        stack: error.stack,
+        userId: req.user?.id,
+      });
+
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to fetch user profile',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      });
     }
-
-    // Fetch user + role in one query (most efficient)
-    const user = await req.db // assuming db is attached via middleware
-      .selectFrom('users')
-      .leftJoin('roles', 'users.role_id', 'roles.id')
-      .select([
-        'users.id',
-        'users.username',
-        'users.email',
-        'users.email_verified',
-        'users.status',
-        'users.profile',
-        'users.avatar_url',
-        'users.banner_url',
-        'users.bio',
-        'users.location',
-        'users.website',
-        'users.last_login_at',
-        'users.created_at',
-        'users.updated_at',
-        'roles.id as role_id',
-        'roles.name as role_name',
-        'roles.hierarchy_level as role_hierarchy_level',
-      ])
-      .where('users.id', '=', userId)
-      .executeTakeFirst();
-
-    if (!user) {
-      return res.status(404).json({ success: false, error: 'User not found' });
-    }
-
-    // Build clean response
-    res.json({
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      email_verified: user.email_verified,
-      status: user.status,
-      role: {
-        id: user.role_id,
-        name: user.role_name || 'unknown',
-        hierarchy_level: user.role_hierarchy_level || 0,
-      },
-      profile: user.profile || {},
-      avatar_url: user.avatar_url,
-      banner_url: user.banner_url,
-      bio: user.bio,
-      location: user.location,
-      website: user.website,
-      last_login_at: user.last_login_at,
-      created_at: user.created_at,
-      updated_at: user.updated_at,
-    });
-  } catch (error) {
-    console.error('Get current user error:', error);
-    res.status(500).json({ success: false, error: 'Failed to fetch profile' });
   }
-}
 
   /**
    * PATCH /users/me

@@ -8,7 +8,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 const router = express.Router();
 
-// router.use(authenticateToken); // All user routes require auth
+router.use(authenticateToken); // All user routes require auth
 
 router.get('/me', UserController.getCurrentUser);
 router.patch('/me', UserController.updateProfile);

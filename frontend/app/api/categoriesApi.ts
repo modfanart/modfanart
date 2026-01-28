@@ -1,4 +1,3 @@
-// src/services/api/categoriesApi.ts
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 // ────────────────────────────────────────────────
@@ -68,59 +67,45 @@ const categoriesApi = createApi({
   tagTypes: ['Categories', 'Category'],
 
   endpoints: (builder) => ({
-    // GET /categories
+    // GET /category
     // → usually returns flat list or optionally tree-structured
-getAllCategories: builder.query<
-  Category[],
-  { parent_id?: string; activeOnly?: boolean } | void
->({
-  query: (arg) => {
-    if (!arg) {
-      return { url: '/categories' };
-    }
+    getAllCategories: builder.query<{ categories: Category[] }, void>({
+      query: () => ({
+        url: '/category',
+      }),
+      providesTags: ['Categories'],
+    }),
 
-    const { parent_id, activeOnly } = arg;
-
-    return {
-      url: '/categories',
-      params: {
-        ...(parent_id !== undefined && { parent_id }),
-        ...(activeOnly !== undefined && { active: activeOnly }),
-      },
-    };
-  },
-  providesTags: ['Categories'],
-}),
-    // GET /categories/:id   (or /categories/slug:xxx if slug-based routing)
+    // GET /category/:id   (or /category/slug:xxx if slug-based routing)
     getCategory: builder.query<Category, string>({
-      query: (id) => `/categories/${id}`,
+      query: (id) => `/category/${id}`,
       providesTags: (result, error, id) => [{ type: 'Category', id }],
     }),
 
-    // POST /categories          → admin / moderator only
+    // POST /category          → admin / moderator only
     createCategory: builder.mutation<Category, CreateCategoryRequest>({
       query: (body) => ({
-        url: '/categories',
+        url: '/category',
         method: 'POST',
         body,
       }),
       invalidatesTags: ['Categories'],
     }),
 
-    // PATCH /categories/:id     → admin only
+    // PATCH /category/:id     → admin only
     updateCategory: builder.mutation<Category, UpdateCategoryRequest>({
       query: ({ id, ...patch }) => ({
-        url: `/categories/${id}`,
+        url: `/category/${id}`,
         method: 'PATCH',
         body: patch,
       }),
       invalidatesTags: (result, error, { id }) => ['Categories', { type: 'Category', id }],
     }),
 
-    // DELETE /categories/:id    → admin only (soft or hard delete depending on backend)
+    // DELETE /category/:id    → admin only (soft or hard delete depending on backend)
     deleteCategory: builder.mutation<ApiSuccessResponse, string>({
       query: (id) => ({
-        url: `/categories/${id}`,
+        url: `/category/${id}`,
         method: 'DELETE',
       }),
       invalidatesTags: (result, error, id) => ['Categories', { type: 'Category', id }],
@@ -128,11 +113,11 @@ getAllCategories: builder.query<
 
     // ───────────────────────────────────────────────────────────────
     // Bonus: Get category tree (if your backend supports hierarchical response)
-    // GET /categories/tree?root_id=xxx&depth=3
+    // GET /category/tree?root_id=xxx&depth=3
     // ───────────────────────────────────────────────────────────────
     getCategoryTree: builder.query<Category[], { root_id?: string; depth?: number }>({
       query: (params) => ({
-        url: '/categories/tree',
+        url: '/category/tree',
         params,
       }),
       providesTags: ['Categories'],

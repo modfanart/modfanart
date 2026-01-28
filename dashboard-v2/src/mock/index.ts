@@ -1,0 +1,18 @@
+import { mock } from './MockAdapter'
+import './fakeApi/authFakeApi'
+import './fakeApi/commonFakeApi'
+import './fakeApi/customersFakeApi'
+import './fakeApi/productsFakeApi'
+import './fakeApi/projectsFakeApi'
+import './fakeApi/ordersFakeApi'
+import './fakeApi/fileFakeApi'
+import './fakeApi/logFakeApi'
+import './fakeApi/calendarFakeApi'
+import './fakeApi/mailFakeApi'
+import './fakeApi/accountsFakeApi'
+import './fakeApi/aiFakeApi'
+import './fakeApi/chatFakeApi'
+import './fakeApi/helpCenterFakeApi'
+import './fakeApi/dashboardFakeApi'
+
+mock.onAny().passThrough()

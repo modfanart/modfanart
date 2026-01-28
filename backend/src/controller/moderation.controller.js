@@ -3,7 +3,7 @@ const { logger } = require('../utils/logger');
 const { getSubmissionsByStatus } = require('../models/submission');
 const { getComplianceRules } = require('../config/compliance'); // adapt from your config-service
 const { createModeratedSubmission } = require('../models/moderation.model');
-
+const { db } = require('../config');
 async function getModerationMetrics(req, res, next) {
   const requestId = crypto.randomUUID();
   const startTime = Date.now();

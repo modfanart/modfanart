@@ -12,7 +12,7 @@ const {
 
 const crypto = require('crypto');
 const { sql } = require('kysely');
-
+const { db } = require('../config');
 // Helpers (you can move to utils/email.util.js later)
 async function sendVerificationEmail(user, token) {
   // TODO: implement real email sending (nodemailer, resend, etc.)

@@ -47,21 +47,23 @@ export interface Artwork {
 
   categories?: Category[];
 }
-
 /**
- * Lightweight artwork — returned by /artwork and /artwork/me
+ * Lightweight artwork — returned by /artworks and /artworks/me
  */
 export interface ArtworkListItem {
   id: string;
   title: string;
   description: string | null;
+  file_url: string; // ← added (used for fallback image)
   thumbnail_url: string | null;
-
+  source_file_url: string | null; // ← optional, but returned
+  status: 'draft' | 'published' | 'archived' | 'moderation_pending' | 'rejected';
+  moderation_status?: string; // ← optional, but useful
   views_count: number;
   favorites_count: number;
-
   creator_id: string;
   created_at: string;
+  updated_at?: string; // ← optional
 }
 
 export interface ArtworkListResponse {
@@ -143,7 +145,39 @@ const artworkApi = createApi({
       query: (id) => `/artwork/${id}`,
       providesTags: (result, error, id) => [{ type: 'Artwork', id }],
     }),
+    // ────────────────────────────────────────────────
+    // Public - Artworks by creator
+    // ────────────────────────────────────────────────
+    getArtworksByCreator: builder.query<
+      ArtworkListResponse,
+      { creatorId: string; page?: number; limit?: number; search?: string }
+    >({
+      query: ({ creatorId, page, limit, search }) => {
+        // Use a literal union type instead of broad Record<string, ...>
+        const params: Partial<{
+          page: number;
+          limit: number;
+          search: string;
+        }> = {};
 
+        if (page != null) params.page = page;
+        if (limit != null) params.limit = limit;
+        if (search?.trim()) params.search = search.trim();
+
+        const base = {
+          url: `/by-creator/${creatorId}`,
+        };
+
+        return Object.keys(params).length > 0 ? { ...base, params } : base;
+      },
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.artworks.map((a) => ({ type: 'Artwork' as const, id: a.id })),
+              { type: 'ArtworkList', id: 'BY_CREATOR' },
+            ]
+          : [{ type: 'ArtworkList', id: 'BY_CREATOR' }],
+    }),
     // ────────────────────────────────────────────────
     // Authenticated
     // ────────────────────────────────────────────────
