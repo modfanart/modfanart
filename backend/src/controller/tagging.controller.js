@@ -2,7 +2,7 @@
 const Tag = require('../models/tag.model');
 const Tagging = require('../models/tagging.model');
 const Artwork = require('../models/artwork.model');
-
+const { db } = require('../config');
 class TaggingController {
   // POST /artworks/:artworkId/tags
   static async addTag(req, res) {

@@ -328,7 +328,78 @@ export interface AuditedEventRow {
   created_at: string;
 }
 
+export interface BrandRow {
+  id: string;
+  user_id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  logo_url: string | null;
+  banner_url: string | null;
+  website: string | null;
+  social_links: Record<string, string> | null; // JSONB → object
+  status: 'active' | 'suspended' | 'pending' | 'deactivated';
+  verification_request_id: string | null;
+  followers_count: number;
+  created_at: Date;
+  updated_at: Date;
+  deleted_at: Date | null;
+}
 
+export interface BrandArtworkRow {
+  brand_id: string;
+  artwork_id: string;
+  is_featured: boolean;
+  sort_order: number;
+  added_at: Date;
+}
+
+export interface BrandPostRow {
+  id: string;
+  brand_id: string;
+  title: string;
+  content: string | null;
+  media_urls: string[] | null;
+  status: 'draft' | 'published' | 'archived';
+  is_pinned: boolean;
+  likes_count: number;
+  comments_count: number;
+  upvotes_count: number;
+  created_at: Date;
+  updated_at: Date;
+  deleted_at: Date | null;
+}
+
+export interface BrandPostLikeRow {
+  post_id: string;
+  user_id: string;
+  created_at: Date;
+}
+
+export interface BrandPostCommentRow {
+  id: string;
+  post_id: string;
+  user_id: string;
+  parent_id: string | null;
+  content: string;
+  likes_count: number;
+  created_at: Date;
+  updated_at: Date;
+  deleted_at: Date | null;
+}
+
+export interface BrandPostUpvoteRow {
+  post_id: string;
+  user_id: string;
+  vote_weight: number;
+  created_at: Date;
+}
+
+export interface BrandFollowerRow {
+  brand_id: string;
+  user_id: string;
+  followed_at: Date;
+}
 
 // src/db/types.ts
 
@@ -364,7 +435,13 @@ export interface DB {
   favorites:                FavoriteRow;
   notifications:            NotificationRow;
   audited_events:           AuditedEventRow;
-
+brands: BrandRow;
+  brand_artworks: BrandArtworkRow;
+  brand_posts: BrandPostRow;
+  brand_post_likes: BrandPostLikeRow;
+  brand_post_comments: BrandPostCommentRow;
+  brand_post_upvotes: BrandPostUpvoteRow;
+  brand_followers: BrandFollowerRow;
   // If you use composite primary keys or want stricter typing later,
   // you can replace e.g. UserRow → UserTable (with more specific fields)
 }

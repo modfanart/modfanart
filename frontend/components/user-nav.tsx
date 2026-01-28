@@ -15,12 +15,29 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useDeleteBrandMutation } from '@/app/api/brands';
 
 export function UserNav() {
   const router = useRouter();
 
-  const { data: user, isLoading } = userApi.useGetCurrentUserQuery();
-
+  const {
+    data: userData,
+    isLoading,
+    isError,
+    error,
+    isFetching,
+    isUninitialized,
+  } = userApi.useGetCurrentUserQuery();
+  const user = userData?.user;
+  console.log('[UserNav] Query status:', {
+    isLoading,
+    isFetching,
+    isUninitialized,
+    isError,
+    error: error ? JSON.stringify(error) : null,
+    hasUserData: !!user,
+    user: user ? user.username : 'no user',
+  });
   // Safety: if still loading or no user → don't render (MainNav handles fallback)
   if (isLoading || !user) return null;
 
@@ -57,26 +74,15 @@ export function UserNav() {
           <DropdownMenuSeparator />
 
           <DropdownMenuGroup>
-            <DropdownMenuItem onClick={() => router.push('/dashboard')}>
-              Dashboard
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push('/profile')}>
-              Profile
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push('/settings')}>
-              Settings
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push('/billing')}>
-              Billing
-            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push('/dashboard')}>Dashboard</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push('/profile')}>Profile</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push('/settings')}>Settings</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push('/billing')}>Billing</DropdownMenuItem>
           </DropdownMenuGroup>
 
           <DropdownMenuSeparator />
 
-          <DropdownMenuItem
-            className="text-destructive focus:bg-destructive/10 focus:text-destructive"
-            onClick={() => router.push('/logout')}
-          >
+          <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive">
             Log out
           </DropdownMenuItem>
         </DropdownMenuContent>

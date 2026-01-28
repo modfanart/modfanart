@@ -18,21 +18,47 @@ import {
   navigationMenuTriggerStyle,
 } from '@/components/ui/navigation-menu';
 
-import { userApi } from '@/app/api/userApi'; // ← adjust path to your userApi
+// ────────────────────────────────────────────────
+// Use the correct api slice (authApi or userApi)
+// Make sure this import points to where getCurrentUser is defined
+// ────────────────────────────────────────────────
+import { authApi } from '@/app/api/authApi'; // ← adjust path if needed
+import userApi from '@/app/api/userApi';
+// or: import { userApi } from '@/app/api/userApi';
 
 export function MainNav() {
   const pathname = usePathname();
 
-  // This query will be cached after login and auto-refetched on focus/mount
-  const { data: user, isLoading } = userApi.useGetCurrentUserQuery(undefined, {
-    // pollingInterval: 5 * 60 * 1000, // optional: refresh every 5 min
+  // Fetch current user – should now return the full user object you showed
+  const {
+    data: queryUser,
+    isLoading,
+    isFetching,
+    error,
+  } = userApi.useGetCurrentUserQuery(undefined, {
+    // Optional: skip query if we know user is not logged in (optimization)
+    // skip: typeof window !== 'undefined' && !localStorage.getItem('accessToken'),
+
+    // Optional: refetch when window regains focus
+    refetchOnFocus: true,
+
+    // Optional: refetch every 10 minutes
+    // pollingInterval: 10 * 60 * 1000,
   });
-
-  const isAuthenticated = !!user && !isLoading;
-
+  console.log(queryUser);
+  // For debugging – remove in production
   useEffect(() => {
-    console.log('MainNav → path:', pathname, 'auth:', isAuthenticated);
-  }, [pathname, isAuthenticated]);
+    console.log('MainNav → Current user query:', {
+      user: queryUser,
+      isLoading,
+      isFetching,
+      error: error ? (error as any)?.data?.message || error : null,
+      pathname,
+    });
+  }, [queryUser, isLoading, isFetching, error, pathname]);
+
+  // We consider user authenticated only when we have real data
+  const isAuthenticated = !!queryUser && !isLoading && !isFetching;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -53,7 +79,7 @@ export function MainNav() {
         <NavigationMenu className="hidden md:flex mx-auto">
           <NavigationMenuList className="gap-1">
             <NavigationMenuItem>
-              <Link href="/" legacyBehavior passHref>
+              <Link href="/" passHref>
                 <NavigationMenuLink
                   className={navigationMenuTriggerStyle()}
                   active={pathname === '/'}
@@ -97,7 +123,9 @@ export function MainNav() {
                         href="/gallery/available"
                         className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
                       >
-                        <div className="text-sm font-medium leading-none">Available for Licensing</div>
+                        <div className="text-sm font-medium leading-none">
+                          Available for Licensing
+                        </div>
                         <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
                           Discover fan art available for commercial licensing
                         </p>
@@ -136,17 +164,27 @@ export function MainNav() {
                 <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
                   <li>
                     <NavigationMenuLink asChild>
-                      <Link href="/resources/guidelines" className="block select-none space-y-1 rounded-md p-3 ...">
+                      <Link
+                        href="/resources/guidelines"
+                        className="block select-none space-y-1 rounded-md p-3 ..."
+                      >
                         <div className="text-sm font-medium leading-none">Brand Guidelines</div>
-                        <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">View IP requirements and submission standards</p>
+                        <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                          View IP requirements and submission standards
+                        </p>
                       </Link>
                     </NavigationMenuLink>
                   </li>
                   <li>
                     <NavigationMenuLink asChild>
-                      <Link href="/resources/support" className="block select-none space-y-1 rounded-md p-3 ...">
+                      <Link
+                        href="/resources/support"
+                        className="block select-none space-y-1 rounded-md p-3 ..."
+                      >
                         <div className="text-sm font-medium leading-none">Support</div>
-                        <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">Get help with submissions and licensing</p>
+                        <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                          Get help with submissions and licensing
+                        </p>
                       </Link>
                     </NavigationMenuLink>
                   </li>
@@ -160,25 +198,40 @@ export function MainNav() {
                 <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
                   <li>
                     <NavigationMenuLink asChild>
-                      <Link href="/for-brands" className="block select-none space-y-1 rounded-md p-3 ...">
+                      <Link
+                        href="/for-brands"
+                        className="block select-none space-y-1 rounded-md p-3 ..."
+                      >
                         <div className="text-sm font-medium leading-none">For Brands</div>
-                        <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">Learn how brands can protect IP and monetize fan art</p>
+                        <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                          Learn how brands can protect IP and monetize fan art
+                        </p>
                       </Link>
                     </NavigationMenuLink>
                   </li>
                   <li>
                     <NavigationMenuLink asChild>
-                      <Link href="/for-creators-info" className="block select-none space-y-1 rounded-md p-3 ...">
+                      <Link
+                        href="/for-creators-info"
+                        className="block select-none space-y-1 rounded-md p-3 ..."
+                      >
                         <div className="text-sm font-medium leading-none">For Creators</div>
-                        <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">See how content creators can engage fans and earn royalties</p>
+                        <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                          See how content creators can engage fans and earn royalties
+                        </p>
                       </Link>
                     </NavigationMenuLink>
                   </li>
                   <li>
                     <NavigationMenuLink asChild>
-                      <Link href="/for-artists" className="block select-none space-y-1 rounded-md p-3 ...">
+                      <Link
+                        href="/for-artists"
+                        className="block select-none space-y-1 rounded-md p-3 ..."
+                      >
                         <div className="text-sm font-medium leading-none">For Artists</div>
-                        <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">Discover how artists can license their fan art</p>
+                        <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                          Discover how artists can license their fan art
+                        </p>
                       </Link>
                     </NavigationMenuLink>
                   </li>
@@ -188,9 +241,9 @@ export function MainNav() {
           </NavigationMenuList>
         </NavigationMenu>
 
-        {/* Right side */}
+        {/* Right side – Auth / User area */}
         <div className="flex items-center gap-4">
-          {isLoading ? (
+          {isLoading || isFetching ? (
             <div className="h-9 w-24 animate-pulse rounded bg-muted/60" />
           ) : isAuthenticated ? (
             <UserNav />

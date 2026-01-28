@@ -1,7 +1,7 @@
 // src/controllers/favorite.controller.js
 const Favorite = require('../models/favorite.model');
 const Artwork = require('../models/artwork.model');
-
+const { db } = require('../config');
 class FavoriteController {
   // POST /artworks/:artworkId/favorite
   static async toggleFavorite(req, res) {

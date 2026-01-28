@@ -18,96 +18,107 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/use-toast';
 import { ProfileImageUpload } from '@/components/profile/profile-image-upload';
-import { updateUserProfile } from '@/lib/actions/profile-actions';
-import type { User } from '@/lib/db/models/user';
+import { ProfileUpdateData } from '@/app/api/userApi';
+// ─── Import RTK Query ────────────────────────────────────────────────
+import { userApi } from '@/app/api/userApi'; // adjust path if needed
+import { useUpdateProfileMutation } from '@/app/api/userApi'; // ← if you want to use mutation instead of server action
 
+// If you're still using the server action, keep this import:
+import { updateUserProfile } from '@/lib/actions/profile-actions';
+
+// Reuse the same schema (adjusted field names to match UserProfile)
 const profileFormSchema = z.object({
-  name: z
+  username: z
     .string()
-    .min(2, {
-      message: 'Name must be at least 2 characters.',
-    })
-    .max(50, {
-      message: 'Name must not be longer than 50 characters.',
-    }),
-  bio: z
-    .string()
-    .max(500, {
-      message: 'Bio must not be longer than 500 characters.',
-    })
-    .optional(),
-  website: z
-    .string()
-    .url({
-      message: 'Please enter a valid URL.',
-    })
-    .optional()
-    .or(z.literal('')),
-  twitter: z
-    .string()
-    .url({
-      message: 'Please enter a valid URL.',
-    })
-    .optional()
-    .or(z.literal('')),
-  instagram: z
-    .string()
-    .url({
-      message: 'Please enter a valid URL.',
-    })
-    .optional()
-    .or(z.literal('')),
+    .min(2, { message: 'Username must be at least 2 characters.' })
+    .max(50, { message: 'Username must not be longer than 50 characters.' }),
+  bio: z.string().max(500, { message: 'Bio must not be longer than 500 characters.' }).optional(),
+  website: z.string().url({ message: 'Please enter a valid URL.' }).optional().or(z.literal('')),
+  twitter: z.string().url({ message: 'Please enter a valid URL.' }).optional().or(z.literal('')),
+  instagram: z.string().url({ message: 'Please enter a valid URL.' }).optional().or(z.literal('')),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
-interface ProfileFormProps {
-  user: User;
-}
-
-export function ProfileForm({ user }: ProfileFormProps) {
+export function ProfileForm() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [profileImage, setProfileImage] = useState<string | null>(user.profileImageUrl || null);
 
-  // Initialize form with user data
+  // Fetch current user with RTK Query
+  const {
+    data: userResponse,
+    isLoading: isUserLoading,
+    isError,
+    error,
+  } = userApi.useGetCurrentUserQuery();
+
+  const user = userResponse?.user;
+
+  // Local state for profile image (in case upload happens before submit)
+  const [profileImage, setProfileImage] = useState<string | null>(user?.avatar_url || null);
+
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
-      name: user.name,
-      bio: user.bio || '',
-      website: user.website || '',
-      twitter: user.socialLinks?.['twitter'] || '', // ← bracket notation
-      instagram: user.socialLinks?.['instagram'] || '', // ← bracket notation
+      username: user?.username || '',
+      bio: user?.bio || '',
+      website: user?.website || '',
+      twitter: (user?.profile?.['twitter'] as string | undefined) || '',
+      instagram: (user?.profile?.['instagram'] as string | undefined) || '',
     },
     mode: 'onChange',
   });
 
+  // Re-set default values when user data arrives (important!)
+  // This handles the case where query finishes after initial render
+  if (user && !form.formState.isDirty) {
+    // form.reset()
+    form.reset({
+      username: user?.username || '',
+      bio: user?.bio || '',
+      website: user?.website || '',
+      twitter: (user?.profile?.['twitter'] as string | undefined) || '',
+      instagram: (user?.profile?.['instagram'] as string | undefined) || '',
+    });
+  }
+
+  // Optional: Use RTK mutation instead of server action
+  // const [updateProfile, { isLoading: isMutating }] = useUpdateProfileMutation();
+
   async function onSubmit(data: ProfileFormValues) {
     setIsLoading(true);
-    try {
-      const socialLinks = Object.fromEntries(
-        Object.entries({
-          twitter: data.twitter?.trim() || null,
-          instagram: data.instagram?.trim() || null,
-        }).filter(([_, value]) => value !== null)
-      );
 
-      const profileData = {
-        name: data.name.trim(),
+    try {
+      // now this works
+      const profileData: ProfileUpdateData = {
+        name: data.username.trim(),
         bio: data.bio?.trim() || null,
         website: data.website?.trim() || null,
-        socialLinks,
+        socialLinks: {
+          twitter: data.twitter?.trim() || null, // ← null instead of undefined
+          instagram: data.instagram?.trim() || null,
+        },
         profileImageUrl: profileImage || null,
       };
 
-      const result = await updateUserProfile(profileData);
-      if (!result.success) throw new Error(result.error);
+      // Optional: clean empty social links (already handled in server action, but extra safety)
+      if (!profileData.socialLinks?.twitter && !profileData.socialLinks?.instagram) {
+        delete profileData.socialLinks;
+      }
 
-      toast({ title: 'Profile updated', description: 'Changes saved successfully.' });
-    } catch (error) {
+      const result = await updateUserProfile(profileData);
+
+      if (!result.success) {
+        throw new Error(result.error || 'Update failed');
+      }
+
+      toast({
+        title: 'Profile updated',
+        description: 'Your changes have been saved successfully.',
+      });
+    } catch (err) {
       toast({
         title: 'Update failed',
-        description: error instanceof Error ? error.message : 'Something went wrong',
+        description: err instanceof Error ? err.message : 'An error occurred',
         variant: 'destructive',
       });
     } finally {
@@ -115,26 +126,39 @@ export function ProfileForm({ user }: ProfileFormProps) {
     }
   }
 
+  // Loading / error states
+  if (isUserLoading) {
+    return <div className="p-6">Loading profile...</div>;
+  }
+
+  if (isError || !user) {
+    return (
+      <div className="p-6 text-destructive">
+        Failed to load profile. {error ? String(error) : 'Please try again.'}
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-6">
       <ProfileImageUpload
         currentImage={profileImage}
         onImageChange={setProfileImage}
-        userInitials={user.name.substring(0, 2).toUpperCase()}
+        userInitials={user.username?.substring(0, 2).toUpperCase() || 'U'}
       />
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <FormField
             control={form.control}
-            name="name"
+            name="username"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Name</FormLabel>
+                <FormLabel>Username</FormLabel>
                 <FormControl>
-                  <Input placeholder="Your name" {...field} />
+                  <Input placeholder="Your username" {...field} />
                 </FormControl>
-                <FormDescription>This is your public display name.</FormDescription>
+                <FormDescription>This is your public username.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -151,11 +175,10 @@ export function ProfileForm({ user }: ProfileFormProps) {
                     placeholder="Tell us about yourself"
                     className="resize-none min-h-[120px]"
                     {...field}
+                    value={field.value ?? ''}
                   />
                 </FormControl>
-                <FormDescription>
-                  Brief description for your profile. Max 500 characters.
-                </FormDescription>
+                <FormDescription>Max 500 characters.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -184,7 +207,7 @@ export function ProfileForm({ user }: ProfileFormProps) {
                 name="twitter"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Twitter</FormLabel>
+                    <FormLabel>Twitter / X</FormLabel>
                     <FormControl>
                       <Input placeholder="https://twitter.com/username" {...field} />
                     </FormControl>

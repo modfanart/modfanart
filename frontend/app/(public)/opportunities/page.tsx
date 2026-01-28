@@ -229,10 +229,7 @@ export default function OpportunitiesPage() {
                       </div>
                     </CardContent>
                     <CardFooter>
-                      <Link
-                        href={`/opportunities/contests/${contest.slug || contest.id}`}
-                        className="w-full"
-                      >
+                      <Link href={`/opportunities/contests/${contest.id}`} className="w-full">
                         <Button variant="outline" className="w-full">
                           View & Enter
                         </Button>

@@ -1,37 +1,11 @@
-import type { Metadata } from "next"
-import { DashboardShell } from "@/components/dashboard-shell"
-import { ProfileForm } from "@/components/profile/profile-form"
-import { getUserProfile } from "@/lib/auth"
-import { redirect } from "next/navigation"
+'use client';
 
-export const metadata: Metadata = {
-  title: "Profile | MOD Platform",
-  description: "Manage your profile information and settings",
-}
+import { ProfileView } from '@/components/profile/profile-view';
 
-export default async function ProfilePage() {
-  // Get the current user profile
-  const user = await getUserProfile()
-
-  // If no user is found, redirect to login
-  if (!user) {
-    redirect("/login")
-  }
-
+export default function ProfilePage() {
   return (
-    <DashboardShell>
-      <div className="space-y-6">
-        <div>
-          <h3 className="text-lg font-medium">Profile</h3>
-          <p className="text-sm text-muted-foreground">
-            Manage your profile information and how others see you on the platform.
-          </p>
-        </div>
-        <div className="divide-y divide-border rounded-md border">
-          <ProfileForm user={user} />
-        </div>
-      </div>
-    </DashboardShell>
-  )
+    <div className="container mx-auto px-4 py-8 md:px-6 lg:py-12 max-w-7xl bg-white">
+      <ProfileView isPublic={false} />
+    </div>
+  );
 }
-

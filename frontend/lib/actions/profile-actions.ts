@@ -5,21 +5,7 @@ import { getUserById, updateUser } from '@/lib/db/models/user';
 import { uploadFile } from '@/lib/db/storage';
 import { getSession } from '@/lib/auth';
 import { User } from '@/lib/db/models/user';
-interface ProfileUpdateData {
-  name: string;
-  bio?: string | null;
-  website?: string | null;
-  socialLinks?: {
-    twitter?: string | null;
-    instagram?: string | null;
-    facebook?: string | null;
-    tiktok?: string | null;
-    youtube?: string | null;
-    linkedin?: string | null;
-    [key: string]: string | null | undefined;
-  };
-  profileImageUrl?: string | null;
-}
+import { ProfileUpdateData } from '@/app/api/userApi';
 
 // Helper to clean social links: remove empty, null, or undefined values
 function cleanSocialLinks(

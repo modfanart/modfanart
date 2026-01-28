@@ -17,20 +17,28 @@ export interface UserProfile {
 
   status: 'active' | 'suspended' | 'pending_verification' | 'deactivated';
 
-  // Make role optional — it's enriched only on /me or admin endpoints
   role?: {
     id: string;
     name: string;
     hierarchy_level?: number;
   };
 
-  profile: Record<string, any>;
+  // ── Improved profile type ────────────────────────────────────────
+  profile: {
+    twitter?: string | null;
+    instagram?: string | null;
+    facebook?: string | null;
+    tiktok?: string | null;
+    youtube?: string | null;
+    linkedin?: string | null;
+    [key: string]: any; // ← still allows unknown extra fields
+  };
 
   avatar_url?: string | null;
   banner_url?: string | null;
   bio?: string | null;
   location?: string | null;
-  website?: string | null;
+  website?: string | null; // ← you can keep this top-level if backend sends it separately
 
   last_login_at?: string | null;
   created_at: string;
@@ -44,6 +52,21 @@ export interface UpdateProfileRequest {
   profile?: Record<string, any>;
 }
 
+export interface ProfileUpdateData {
+  name: string;
+  bio?: string | null;
+  website?: string | null;
+  socialLinks?: {
+    twitter?: string | null;
+    instagram?: string | null;
+    facebook?: string | null;
+    tiktok?: string | null;
+    youtube?: string | null;
+    linkedin?: string | null;
+    [key: string]: string | null | undefined;
+  };
+  profileImageUrl?: string | null;
+}
 export interface ChangePasswordRequest {
   currentPassword: string;
   newPassword: string;
@@ -119,7 +142,10 @@ export interface AllViolationsResponse {
     has_prev: boolean;
   };
 }
-
+export interface CurrentUserResponse {
+  success: boolean;
+  user: UserProfile;
+}
 // ─────────────────────────────────────────────────────────────
 
 export const userApi = createApi({
@@ -127,10 +153,21 @@ export const userApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: '/api/users',
     prepareHeaders: (headers, { getState }) => {
-      const token = (getState() as any)?.auth?.accessToken;
-      if (token) {
-        headers.set('Authorization', `Bearer ${token}`);
+      const state = getState() as any;
+      const tokenFromState = state?.auth?.accessToken;
+
+      console.log('userApi prepareHeaders debug:', {
+        hasAuthSlice: !!state?.auth,
+        tokenFromState: tokenFromState
+          ? 'present (starts with ' + tokenFromState.slice(0, 10) + '...'
+          : 'MISSING',
+        tokenLength: tokenFromState?.length || 0,
+      });
+
+      if (tokenFromState) {
+        headers.set('Authorization', `Bearer ${tokenFromState}`);
       }
+
       return headers;
     },
   }),
@@ -139,7 +176,7 @@ export const userApi = createApi({
 
   endpoints: (builder) => ({
     // GET /users/me
-    getCurrentUser: builder.query<UserProfile, void>({
+    getCurrentUser: builder.query<CurrentUserResponse, void>({
       query: () => '/me',
       providesTags: ['CurrentUser'],
     }),

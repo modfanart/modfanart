@@ -2,7 +2,7 @@
 const Artwork = require('../models/artwork.model');
 const Category = require('../models/category.model');
 const ArtworkCategory = require('../models/artworkCategory.model');
-
+const { db } = require('../config');
 class ArtworkCategoryController {
   // POST /artworks/:artworkId/categories
   static async addCategory(req, res) {

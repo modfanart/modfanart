@@ -2,8 +2,10 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { setupListeners } from '@reduxjs/toolkit/query';
 
-// RTK Query APIs
-import authApi from '@/app/api/authApi';           // or '@/services/api/authApi'
+// ────────────────────────────────────────────────
+// RTK Query API slices
+// ────────────────────────────────────────────────
+import authApi from '@/app/api/authApi';
 import userApi from '@/app/api/userApi';
 import rolesApi from '@/app/api/rolesApi';
 import productsApi from '@/app/api/productApi';
@@ -16,13 +18,40 @@ import categoriesApi from '@/app/api/categoriesApi';
 import auditApi from '@/app/api/auditApi';
 import artworkApi from '@/app/api/artworkApi';
 import artworkTagsApi from '@/app/api/artworkTagsApi';
+import brandApi from '@/app/api/brands';
 
-// If you have the auth slice → uncomment when ready
-// import authReducer from '@/store/features/authSlice';
+// ────────────────────────────────────────────────
+// Reducers (slices)
+// ────────────────────────────────────────────────
+import authReducer from '@/app/api/features/authSlice';
+// import otherSliceReducer from '@/features/other/otherSlice';  // add more as needed
 
+// ────────────────────────────────────────────────
+// Persist access token from localStorage (critical for auth surviving reload)
+// ────────────────────────────────────────────────
+const persistedAccessToken =
+  typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+
+const preloadedState = persistedAccessToken
+  ? {
+      auth: {
+        accessToken: persistedAccessToken,
+        user: null, // user will be populated via getCurrentUser query after reload
+      },
+    }
+  : undefined;
+
+// ────────────────────────────────────────────────
+// Create the store
+// ────────────────────────────────────────────────
 export const store = configureStore({
   reducer: {
-    // RTK Query reducers (automatically generated)
+    // Regular slices
+    auth: authReducer,
+    // Add other non-RTK reducers here when you create them
+    // example: theme: themeReducer,
+
+    // RTK Query auto-generated reducers
     [authApi.reducerPath]: authApi.reducer,
     [userApi.reducerPath]: userApi.reducer,
     [rolesApi.reducerPath]: rolesApi.reducer,
@@ -36,17 +65,15 @@ export const store = configureStore({
     [auditApi.reducerPath]: auditApi.reducer,
     [artworkApi.reducerPath]: artworkApi.reducer,
     [artworkTagsApi.reducerPath]: artworkTagsApi.reducer,
-
-    // Add this when you activate the slice
-    // auth: authReducer,
-    // user: userReducer,   // if you ever make a non-query user slice
+    [brandApi.reducerPath]: brandApi.reducer,
   },
 
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      // Optional: turn off serializable check if you store complex objects (like File in form state)
+      // Disable serializable check → allows non-serializable values (File, functions, etc.)
       serializableCheck: false,
     }).concat(
+      // All RTK Query middlewares
       authApi.middleware,
       userApi.middleware,
       rolesApi.middleware,
@@ -59,21 +86,28 @@ export const store = configureStore({
       categoriesApi.middleware,
       auditApi.middleware,
       artworkApi.middleware,
-      artworkTagsApi.middleware
+      artworkTagsApi.middleware,
+      brandApi.middleware
+      // add more .middleware when you create new api slices
     ),
 
+  // Restore persisted auth state on app start
+  preloadedState,
+
+  // Enable Redux DevTools in development only
   devTools: process.env.NODE_ENV !== 'production',
 });
 
+// Optional but very useful: makes refetchOnFocus, refetchOnReconnect, etc. work
 setupListeners(store.dispatch);
 
 // ────────────────────────────────────────────────
-// Types for the whole app
+// TypeScript types for the whole app
 // ────────────────────────────────────────────────
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
 
-// Optional: helper type for thunks / async actions
+// Helper type for thunks / async actions (optional but recommended)
 export type AppThunk<ReturnType = void> = import('@reduxjs/toolkit').ThunkAction<
   ReturnType,
   RootState,

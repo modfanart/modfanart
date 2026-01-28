@@ -1,6 +1,7 @@
 // src/store/features/authSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import type { UserProfile as User } from '../userApi';
+import type { UserProfile as User } from '../userApi'; // ← this is your UserProfile type
+
 interface AuthState {
   accessToken: string | null;
   user: User | null;
@@ -15,7 +16,8 @@ export const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    setCredentials: (state, action: PayloadAction<{ accessToken: string; user: User }>) => {
+    // Allow user to be null (for re-auth preservation or edge cases)
+    setCredentials: (state, action: PayloadAction<{ accessToken: string; user: User | null }>) => {
       state.accessToken = action.payload.accessToken;
       state.user = action.payload.user;
     },
@@ -23,6 +25,7 @@ export const authSlice = createSlice({
       state.accessToken = null;
       state.user = null;
       localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken'); // ← add this for completeness
     },
   },
 });

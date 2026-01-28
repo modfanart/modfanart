@@ -2,7 +2,7 @@
 const Role = require('../models/role.model');
 const User = require('../models/user.model');
 const { sql } = require('kysely');
-
+const { db } = require('../config');
 class RoleController {
   // ────────────────────────────────────────────────
   // Admin: List all roles

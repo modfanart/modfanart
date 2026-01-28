@@ -1,7 +1,7 @@
 // src/controllers/contestVote.controller.js
 const Contest = require('../models/contest.model');
 const ContestEntry = require('../models/contestEntry.model');
-
+const { db } = require('../config');
 class ContestVoteController {
   // POST /contests/:contestId/entries/:entryId/vote
   static async vote(req, res) {

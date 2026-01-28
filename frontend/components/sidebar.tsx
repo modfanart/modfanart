@@ -1,10 +1,10 @@
-"use client"
+'use client';
 
-import type { HTMLAttributes } from "react"
-import Link from "next/link"
-import Image from "next/image"
-import { usePathname } from "next/navigation"
-import { cn } from "@/lib/utils"
+import type { HTMLAttributes } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { usePathname } from 'next/navigation';
+import { cn } from '@/lib/utils';
 import {
   ImageIcon,
   FileCheck,
@@ -17,68 +17,69 @@ import {
   PlusCircle,
   LayoutDashboard,
   Trophy,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface SidebarProps extends HTMLAttributes<HTMLDivElement> {}
 
 export function Sidebar({ className, ...props }: SidebarProps) {
-  const pathname = usePathname()
+  const pathname = usePathname();
 
   // Debug logging for navigation
-  console.log("Sidebar rendered with pathname:", pathname)
+  console.log('Sidebar rendered with pathname:', pathname);
 
   const routes = [
     {
-      label: "Dashboard",
+      label: 'Dashboard',
       icon: <LayoutDashboard className="h-5 w-5" />,
-      href: "/dashboard",
-      active: pathname === "/dashboard",
-      "data-testid": "dashboard-link",
+      href: '/dashboard',
+      active: pathname === '/dashboard',
+      'data-testid': 'dashboard-link',
     },
     {
-      label: "My Submissions",
+      label: 'My Submissions',
       icon: <ImageIcon className="h-5 w-5" />,
-      href: "/submissions/manage",
-      active: pathname.startsWith("/submissions") && !pathname.includes("/new"),
+      href: '/submissions/manage',
+      active: pathname.startsWith('/submissions') && !pathname.includes('/new'),
     },
     {
-      label: "License Requests",
+      label: 'License Requests',
       icon: <FileCheck className="h-5 w-5" />,
-      href: "/license-requests",
-      active: pathname === "/license-requests",
+      href: '/license-requests',
+      active: pathname === '/license-requests',
     },
     {
-      label: "Opportunities",
+      label: 'Opportunities',
       icon: <Trophy className="h-5 w-5" />,
-      href: "/dashboard/opportunities",
-      active: pathname === "/dashboard/opportunities" || pathname.startsWith("/dashboard/opportunities/"),
+      href: '/dashboard/opportunities',
+      active:
+        pathname === '/dashboard/opportunities' || pathname.startsWith('/dashboard/opportunities/'),
     },
     {
-      label: "Earnings",
+      label: 'Earnings',
       icon: <CreditCard className="h-5 w-5" />,
-      href: "/earnings",
-      active: pathname === "/earnings",
+      href: '/earnings',
+      active: pathname === '/earnings',
     },
     {
-      label: "Analytics",
+      label: 'Analytics',
       icon: <BarChart3 className="h-5 w-5" />,
-      href: "/analytics",
-      active: pathname === "/analytics",
+      href: '/analytics',
+      active: pathname === '/analytics',
     },
     {
-      label: "History",
+      label: 'History',
       icon: <History className="h-5 w-5" />,
-      href: "/history",
-      active: pathname === "/history",
+      href: '/history',
+      active: pathname === '/history',
     },
     {
-      label: "Pricing",
+      label: 'Pricing',
       icon: <CreditCard className="h-5 w-5" />,
-      href: "/pricing",
-      active: pathname === "/pricing",
+      href: '/pricing',
+      active: pathname === '/pricing',
     },
-  ]
+  ];
 
   return (
     <div className="flex h-full flex-col border-r bg-white">
@@ -95,7 +96,9 @@ export function Sidebar({ className, ...props }: SidebarProps) {
       </div>
       <div className="flex-1 overflow-auto py-2">
         <div className="px-3 py-2">
-          <h2 className="mb-2 px-4 text-xs font-semibold uppercase tracking-tight text-gray-500">MENU</h2>
+          <h2 className="mb-2 px-4 text-xs font-semibold uppercase tracking-tight text-gray-500">
+            MENU
+          </h2>
 
           <nav className="space-y-1">
             {routes.map((route) => (
@@ -104,10 +107,10 @@ export function Sidebar({ className, ...props }: SidebarProps) {
                 href={route.href}
                 prefetch={true}
                 className={cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium",
-                  route.active ? "bg-[#9747ff] text-white" : "text-gray-700 hover:bg-gray-100",
+                  'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium',
+                  route.active ? 'bg-[#9747ff] text-white' : 'text-gray-700 hover:bg-gray-100'
                 )}
-                data-testid={route["data-testid"]}
+                data-testid={route['data-testid']}
               >
                 {route.icon}
                 {route.label}
@@ -116,13 +119,17 @@ export function Sidebar({ className, ...props }: SidebarProps) {
           </nav>
         </div>
         <div className="px-3 py-2">
-          <h2 className="mb-2 px-4 text-xs font-semibold uppercase tracking-tight text-gray-500">SUPPORT</h2>
+          <h2 className="mb-2 px-4 text-xs font-semibold uppercase tracking-tight text-gray-500">
+            SUPPORT
+          </h2>
           <nav className="space-y-1">
             <Link
               href="/settings"
               className={cn(
-                "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium",
-                pathname === "/settings" ? "bg-[#9747ff] text-white" : "text-gray-700 hover:bg-gray-100",
+                'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium',
+                pathname === '/settings'
+                  ? 'bg-[#9747ff] text-white'
+                  : 'text-gray-700 hover:bg-gray-100'
               )}
               prefetch={true}
             >
@@ -133,6 +140,5 @@ export function Sidebar({ className, ...props }: SidebarProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }
-
