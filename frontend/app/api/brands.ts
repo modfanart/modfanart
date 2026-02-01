@@ -7,14 +7,14 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 export interface Brand {
   id: string;
-  user_id: string; // the brand_manager user who owns/manages it
+  user_id: string;
   name: string;
   slug: string;
   description: string | null;
   logo_url: string | null;
   banner_url: string | null;
   website: string | null;
-  social_links: Record<string, string> | null; // e.g. { instagram: "...", x: "...", linkedin: "..." }
+  social_links: Record<string, string> | null;
   status: 'active' | 'suspended' | 'pending' | 'deactivated';
   verification_request_id: string | null;
   followers_count: number;
@@ -23,7 +23,7 @@ export interface Brand {
   updated_at: string;
   deleted_at: string | null;
 
-  // optional – populated when ?withArtworks=true or ?withPosts=true
+  // optional – populated when requested
   artworks?: BrandArtwork[];
   posts?: BrandPost[];
 }
@@ -65,13 +65,13 @@ export interface BrandFollower {
 
 export interface BrandVerificationRequest {
   id: string;
-  user_id: string | null; // may be null if submitted anonymously via contact page
+  user_id: string | null;
   company_name: string;
   website: string | null;
   contact_email: string;
   contact_phone: string | null;
   description: string | null;
-  documents: string[]; // array of uploaded proof/document URLs
+  documents: string[];
   status: 'pending' | 'approved' | 'rejected' | 'interview_scheduled';
   reviewed_by: string | null;
   reviewed_at: string | null;
@@ -120,7 +120,7 @@ export const brandApi = createApi({
     'BrandPostComments',
     'VerificationRequest',
     'VerificationRequestList',
-  ],
+  ] as const,
 
   endpoints: (builder) => ({
     // ────────────────────────────────────────────────
@@ -142,7 +142,10 @@ export const brandApi = createApi({
         minFollowers?: number;
       }> | void
     >({
-      query: (params = {}) => ({ url: '/brands', params }),
+      query: (params) => ({
+        url: '/brands',
+        ...(params ? { params } : {}),
+      }),
       providesTags: ['Brand'],
     }),
 
@@ -164,17 +167,16 @@ export const brandApi = createApi({
 
     // ────────────────────────────────────────────────
     // Brand Verification / Onboarding Requests
-    // Primary way brands are created (all flows funnel here)
     // ────────────────────────────────────────────────
 
     submitBrandVerificationRequest: builder.mutation<
       { requestId: string; message: string },
       Partial<{
         company_name: string;
-        website?: string | null | undefined;
+        website?: string | null;
         contact_email: string;
-        contact_phone?: string;
-        description?: string;
+        contact_phone?: string | null;
+        description?: string | null;
         documents?: string[];
       }>
     >({
@@ -190,7 +192,10 @@ export const brandApi = createApi({
       BrandVerificationRequest[],
       { status?: 'pending' | 'approved' | 'rejected' | 'interview_scheduled' } | void
     >({
-      query: (params = {}) => ({ url: '/brands/verification-requests', params }),
+      query: (params) => ({
+        url: '/brands/verification-requests',
+        ...(params ? { params } : {}),
+      }),
       providesTags: ['VerificationRequestList'],
     }),
 
@@ -267,8 +272,8 @@ export const brandApi = createApi({
         url: `/brands/${brandId}/artworks`,
         params: {
           featuredOnly: featuredOnly ? 'true' : undefined,
-          limit,
-          offset,
+          limit: limit || undefined,
+          offset: offset || undefined,
         },
       }),
       providesTags: (result, error, { brandId }) => [{ type: 'BrandArtworks', id: brandId }],
@@ -333,7 +338,10 @@ export const brandApi = createApi({
     >({
       query: ({ brandId, limit = 20, offset = 0 }) => ({
         url: `/brands/${brandId}/followers`,
-        params: { limit, offset },
+        params: {
+          limit: limit || undefined,
+          offset: offset || undefined,
+        },
       }),
       providesTags: (result, error, { brandId }) => [{ type: 'BrandFollowers', id: brandId }],
     }),
@@ -369,7 +377,11 @@ export const brandApi = createApi({
     >({
       query: ({ brandId, limit = 12, offset = 0, drafts = false }) => ({
         url: `/brands/${brandId}/posts`,
-        params: { limit, offset, drafts: drafts ? 'true' : undefined },
+        params: {
+          limit: limit || undefined,
+          offset: offset || undefined,
+          drafts: drafts ? 'true' : undefined,
+        },
       }),
       providesTags: (result, error, { brandId }) => [{ type: 'BrandPosts', id: brandId }],
     }),
@@ -461,7 +473,10 @@ export const brandApi = createApi({
     >({
       query: ({ brandId, postId, limit = 20, offset = 0 }) => ({
         url: `/brands/${brandId}/posts/${postId}/comments`,
-        params: { limit, offset },
+        params: {
+          limit: limit || undefined,
+          offset: offset || undefined,
+        },
       }),
       providesTags: (result, error, { postId }) => [{ type: 'BrandPostComments', id: postId }],
     }),
@@ -502,7 +517,6 @@ export const brandApi = createApi({
         url: `/brands/${id}/view`,
         method: 'POST',
       }),
-      // Usually no invalidation – view count not critical for cache
     }),
 
     // ────────────────────────────────────────────────
@@ -538,33 +552,27 @@ export const brandApi = createApi({
 // ────────────────────────────────────────────────
 
 export const {
-  // Discovery
   useGetAllBrandsQuery,
   useGetBrandQuery,
   useGetBrandBySlugQuery,
 
-  // Verification flow (main onboarding path)
   useSubmitBrandVerificationRequestMutation,
   useGetVerificationRequestsQuery,
   useApproveVerificationRequestMutation,
 
-  // Brand management
   useGetMyBrandsQuery,
   useUpdateBrandMutation,
   useDeleteBrandMutation,
 
-  // Artworks
   useGetBrandArtworksQuery,
   useAddArtworkToBrandMutation,
   useRemoveArtworkFromBrandMutation,
 
-  // Social
   useFollowBrandMutation,
   useUnfollowBrandMutation,
   useCheckIfFollowingQuery,
   useGetBrandFollowersQuery,
 
-  // Posts
   useCreateBrandPostMutation,
   useGetBrandPostsQuery,
   useGetBrandPostQuery,
@@ -574,16 +582,13 @@ export const {
   useLikeBrandPostMutation,
   useUnlikeBrandPostMutation,
 
-  // Comments
   useCreateBrandPostCommentMutation,
   useGetBrandPostCommentsQuery,
   useDeleteBrandPostCommentMutation,
   useLikeBrandPostCommentMutation,
 
-  // Views
   useIncrementBrandViewMutation,
 
-  // Admin only
   useAdminCreateBrandMutation,
 } = brandApi;
 
