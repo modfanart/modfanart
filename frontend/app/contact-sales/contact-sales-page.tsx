@@ -1,88 +1,160 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import Link from "next/link"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
-import { CalendarDays, CheckCircle, Clock, Home, Mail, MessageSquare, Phone, Users } from "lucide-react"
+import { useState } from 'react';
+import Link from 'next/link';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import {
+  Building,
+  CalendarDays,
+  CheckCircle,
+  Clock,
+  FileText,
+  Globe,
+  Home,
+  Mail,
+  MessageSquare,
+  Phone,
+  Users,
+} from 'lucide-react';
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { toast } from "@/components/ui/use-toast"
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { toast } from '@/components/ui/use-toast';
 
-const contactFormSchema = z.object({
-  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
-  email: z.string().email({ message: "Please enter a valid email address." }),
-  company: z.string().min(1, { message: "Company name is required." }),
-  phone: z.string().optional(),
+// ────────────────────────────────────────────────
+// Zod schema – matches BrandVerificationRequest backend
+// ────────────────────────────────────────────────
+const brandRequestSchema = z.object({
+  companyName: z
+    .string()
+    .min(2, { message: 'Brand / company name is required (min 2 characters).' }),
+  website: z.string().url({ message: 'Please enter a valid URL' }).optional().or(z.literal('')),
+  contactEmail: z.string().email({ message: 'Valid email is required.' }),
+  contactPhone: z.string().optional(),
+  description: z
+    .string()
+    .min(30, { message: 'Please tell us more about your brand (min 30 characters).' }),
   teamSize: z.string(),
-  message: z.string().min(10, { message: "Message must be at least 10 characters." }),
   howHeard: z.string(),
-})
+  // documents: z.array(z.string()).optional(), // ← add later with file upload
+});
 
-type ContactFormValues = z.infer<typeof contactFormSchema>
+type BrandRequestValues = z.infer<typeof brandRequestSchema>;
 
-const defaultValues: Partial<ContactFormValues> = {
-  teamSize: "1-10",
-  howHeard: "search",
-}
+const defaultValues: Partial<BrandRequestValues> = {
+  teamSize: '1-10',
+  howHeard: 'search',
+};
 
 export function ContactSalesPage() {
-  const [activeTab, setActiveTab] = useState("contact")
-  const [submitted, setSubmitted] = useState(false)
+  const [activeTab, setActiveTab] = useState('request');
+  const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const form = useForm<ContactFormValues>({
-    resolver: zodResolver(contactFormSchema),
+  const form = useForm<BrandRequestValues>({
+    resolver: zodResolver(brandRequestSchema),
     defaultValues,
-  })
+  });
 
-  function onSubmit(data: ContactFormValues) {
-    console.log(data)
-    toast({
-      title: "Request submitted",
-      description: "We'll be in touch with you shortly.",
-    })
-    setSubmitted(true)
+  async function onSubmit(data: BrandRequestValues) {
+    setIsSubmitting(true);
+
+    try {
+      // ────────────────────────────────────────────────
+      // In real app → replace with RTK Query mutation
+      // const [submitRequest] = useSubmitBrandVerificationRequestMutation()
+      // await submitRequest({
+      //   company_name: data.companyName,
+      //   website: data.website || undefined,
+      //   contact_email: data.contactEmail,
+      //   contact_phone: data.contactPhone || undefined,
+      //   description: data.description,
+      //   // documents: uploadedUrls,
+      // }).unwrap()
+
+      // Simulate API delay (remove in production)
+      await new Promise((resolve) => setTimeout(resolve, 1400));
+
+      toast({
+        title: 'Brand request received',
+        description:
+          'Our team will review your submission and contact you within 1–3 business days.',
+      });
+
+      setSubmitted(true);
+    } catch (err: any) {
+      toast({
+        title: 'Something went wrong',
+        description: err?.data?.error || 'Please try again or contact support.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
+  // ────────────────────────────────────────────────
+  // BOOK A DEMO – completely unchanged as requested
+  // ────────────────────────────────────────────────
   const timeSlots = [
-    { date: "Mon, Mar 9", slots: ["10:00 AM", "1:00 PM", "3:30 PM"] },
-    { date: "Tue, Mar 10", slots: ["9:30 AM", "11:00 AM", "2:00 PM", "4:30 PM"] },
-    { date: "Wed, Mar 11", slots: ["10:00 AM", "12:30 PM", "3:00 PM"] },
-    { date: "Thu, Mar 12", slots: ["9:00 AM", "11:30 AM", "2:30 PM", "4:00 PM"] },
-    { date: "Fri, Mar 13", slots: ["10:30 AM", "1:30 PM", "3:30 PM"] },
-  ]
+    { date: 'Mon, Mar 9', slots: ['10:00 AM', '1:00 PM', '3:30 PM'] },
+    { date: 'Tue, Mar 10', slots: ['9:30 AM', '11:00 AM', '2:00 PM', '4:30 PM'] },
+    { date: 'Wed, Mar 11', slots: ['10:00 AM', '12:30 PM', '3:00 PM'] },
+    { date: 'Thu, Mar 12', slots: ['9:00 AM', '11:30 AM', '2:30 PM', '4:00 PM'] },
+    { date: 'Fri, Mar 13', slots: ['10:30 AM', '1:30 PM', '3:30 PM'] },
+  ];
 
-  const [selectedDate, setSelectedDate] = useState("")
-  const [selectedTime, setSelectedTime] = useState("")
-  const [demoSubmitted, setDemoSubmitted] = useState(false)
+  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedTime, setSelectedTime] = useState('');
+  const [demoSubmitted, setDemoSubmitted] = useState(false);
 
   const handleBookDemo = () => {
     if (selectedDate && selectedTime) {
       toast({
-        title: "Demo scheduled",
+        title: 'Demo scheduled',
         description: `Your demo is scheduled for ${selectedDate} at ${selectedTime}.`,
-      })
-      setDemoSubmitted(true)
+      });
+      setDemoSubmitted(true);
     } else {
       toast({
-        title: "Please select a date and time",
-        description: "Both date and time are required to schedule a demo.",
-        variant: "destructive",
-      })
+        title: 'Please select a date and time',
+        description: 'Both date and time are required to schedule a demo.',
+        variant: 'destructive',
+      });
     }
-  }
+  };
 
   return (
-    <div className="container mx-auto px-4 py-12">
-      <div className="flex justify-between items-center mb-8">
+    <div className="container mx-auto px-4 py-12 md:py-16">
+      <div className="flex justify-between items-center mb-8 md:mb-12">
         <Link href="/">
           <Button variant="outline" className="flex items-center gap-2">
             <Home className="h-4 w-4" />
@@ -91,55 +163,68 @@ export function ContactSalesPage() {
         </Link>
       </div>
 
-      <div className="mb-8 text-center">
-        <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">Contact Our Sales Team</h1>
-        <p className="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">
-          Learn how MOD Platform can help you manage fan art licensing, protect intellectual property, and create new
-          revenue streams.
+      <div className="mb-10 md:mb-12 text-center">
+        <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-gray-900">
+          Request Your Brand
+        </h1>
+        <p className="mt-4 text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">
+          Submit your brand details below. Our team will review your request, schedule an onboarding
+          call if needed, and set up a dedicated brand manager account for you or your team.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12 max-w-7xl mx-auto">
+        {/* Main form area */}
         <div className="lg:col-span-2">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-8">
-              <TabsTrigger value="contact">Contact Sales</TabsTrigger>
+              <TabsTrigger value="request">Request Your Brand</TabsTrigger>
               <TabsTrigger value="demo">Book a Demo</TabsTrigger>
             </TabsList>
-            <TabsContent value="contact">
+
+            {/* ────────────────────────────────────────────────
+                REQUEST YOUR BRAND TAB
+            ──────────────────────────────────────────────── */}
+            <TabsContent value="request">
               {!submitted ? (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Get in touch with our sales team</CardTitle>
-                    <CardDescription>
-                      Fill out the form below and one of our representatives will contact you shortly.
+                <Card className="border-none shadow-lg">
+                  <CardHeader className="pb-6">
+                    <CardTitle className="text-2xl">Brand Onboarding Request</CardTitle>
+                    <CardDescription className="text-base">
+                      Please provide accurate details about your brand. This helps us prepare for
+                      the onboarding process (review → call → brand manager account creation).
                     </CardDescription>
                   </CardHeader>
+
                   <CardContent>
                     <Form {...form}>
                       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <FormField
                             control={form.control}
-                            name="name"
+                            name="companyName"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Full Name</FormLabel>
+                                <FormLabel>Brand / Company Name *</FormLabel>
                                 <FormControl>
-                                  <Input placeholder="John Doe" {...field} />
+                                  <Input
+                                    placeholder="Example Studios, Fashion Brand XYZ"
+                                    {...field}
+                                  />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
                             )}
                           />
+
                           <FormField
                             control={form.control}
-                            name="email"
+                            name="website"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Email</FormLabel>
+                                <FormLabel>Official Website / Online Presence</FormLabel>
                                 <FormControl>
-                                  <Input placeholder="john@example.com" {...field} />
+                                  <Input placeholder="https://yourbrand.com" {...field} />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -150,25 +235,26 @@ export function ContactSalesPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <FormField
                             control={form.control}
-                            name="company"
+                            name="contactEmail"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Company</FormLabel>
+                                <FormLabel>Primary Contact Email *</FormLabel>
                                 <FormControl>
-                                  <Input placeholder="Your company" {...field} />
+                                  <Input placeholder="licensing@yourbrand.com" {...field} />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
                             )}
                           />
+
                           <FormField
                             control={form.control}
-                            name="phone"
+                            name="contactPhone"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Phone (optional)</FormLabel>
+                                <FormLabel>Contact Phone (WhatsApp / Mobile preferred)</FormLabel>
                                 <FormControl>
-                                  <Input placeholder="+1 (555) 000-0000" {...field} />
+                                  <Input placeholder="+91 98765 43210" {...field} />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -181,7 +267,7 @@ export function ContactSalesPage() {
                           name="teamSize"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Team Size</FormLabel>
+                              <FormLabel>Approximate Team Size</FormLabel>
                               <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
                                   <SelectTrigger>
@@ -189,11 +275,12 @@ export function ContactSalesPage() {
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  <SelectItem value="1-10">1-10 employees</SelectItem>
-                                  <SelectItem value="11-50">11-50 employees</SelectItem>
-                                  <SelectItem value="51-200">51-200 employees</SelectItem>
-                                  <SelectItem value="201-500">201-500 employees</SelectItem>
-                                  <SelectItem value="501+">501+ employees</SelectItem>
+                                  <SelectItem value="1-10">1–10 people</SelectItem>
+                                  <SelectItem value="11-50">11–50 people</SelectItem>
+                                  <SelectItem value="51-200">51–200 people</SelectItem>
+                                  <SelectItem value="201-500">201–500 people</SelectItem>
+                                  <SelectItem value="501+">501+ people</SelectItem>
+                                  <SelectItem value="agency">Creative Agency / Studio</SelectItem>
                                 </SelectContent>
                               </Select>
                               <FormMessage />
@@ -203,14 +290,14 @@ export function ContactSalesPage() {
 
                         <FormField
                           control={form.control}
-                          name="message"
+                          name="description"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>How can we help?</FormLabel>
+                              <FormLabel>About Your Brand & Goals *</FormLabel>
                               <FormControl>
                                 <Textarea
-                                  placeholder="Tell us about your needs and how we can help with fan art licensing..."
-                                  className="min-h-32"
+                                  placeholder="What is your brand about? Which categories (fashion, entertainment, gaming, etc.)? Are you looking to monetize fan creations, protect IP, build community, or something else?..."
+                                  className="min-h-[120px] resize-y"
                                   {...field}
                                 />
                               </FormControl>
@@ -229,43 +316,60 @@ export function ContactSalesPage() {
                                 <RadioGroup
                                   onValueChange={field.onChange}
                                   defaultValue={field.value}
-                                  className="grid grid-cols-2 md:grid-cols-3 gap-4"
+                                  className="grid grid-cols-2 sm:grid-cols-3 gap-4"
                                 >
-                                  <FormItem className="flex items-center space-x-2 space-y-0">
+                                  <FormItem className="flex items-center space-x-3 space-y-0">
                                     <FormControl>
                                       <RadioGroupItem value="search" />
                                     </FormControl>
-                                    <FormLabel className="font-normal">Search Engine</FormLabel>
+                                    <FormLabel className="font-normal cursor-pointer">
+                                      Search Engine
+                                    </FormLabel>
                                   </FormItem>
-                                  <FormItem className="flex items-center space-x-2 space-y-0">
+
+                                  <FormItem className="flex items-center space-x-3 space-y-0">
                                     <FormControl>
                                       <RadioGroupItem value="social" />
                                     </FormControl>
-                                    <FormLabel className="font-normal">Social Media</FormLabel>
+                                    <FormLabel className="font-normal cursor-pointer">
+                                      Social Media
+                                    </FormLabel>
                                   </FormItem>
-                                  <FormItem className="flex items-center space-x-2 space-y-0">
+
+                                  <FormItem className="flex items-center space-x-3 space-y-0">
                                     <FormControl>
                                       <RadioGroupItem value="referral" />
                                     </FormControl>
-                                    <FormLabel className="font-normal">Referral</FormLabel>
+                                    <FormLabel className="font-normal cursor-pointer">
+                                      Referral
+                                    </FormLabel>
                                   </FormItem>
-                                  <FormItem className="flex items-center space-x-2 space-y-0">
+
+                                  <FormItem className="flex items-center space-x-3 space-y-0">
                                     <FormControl>
                                       <RadioGroupItem value="event" />
                                     </FormControl>
-                                    <FormLabel className="font-normal">Event</FormLabel>
+                                    <FormLabel className="font-normal cursor-pointer">
+                                      Event / Conference
+                                    </FormLabel>
                                   </FormItem>
-                                  <FormItem className="flex items-center space-x-2 space-y-0">
+
+                                  <FormItem className="flex items-center space-x-3 space-y-0">
                                     <FormControl>
-                                      <RadioGroupItem value="press" />
+                                      <RadioGroupItem value="article" />
                                     </FormControl>
-                                    <FormLabel className="font-normal">Press</FormLabel>
+                                    <FormLabel className="font-normal cursor-pointer">
+                                      Article / Press
+                                    </FormLabel>
                                   </FormItem>
-                                  <FormItem className="flex items-center space-x-2 space-y-0">
+
+                                  <FormItem className="flex items-center space-x-3 space-y-0">
                                     <FormControl>
                                       <RadioGroupItem value="other" />
                                     </FormControl>
-                                    <FormLabel className="font-normal">Other</FormLabel>
+                                    <FormLabel className="font-normal cursor-pointer">
+                                      Other
+                                    </FormLabel>
                                   </FormItem>
                                 </RadioGroup>
                               </FormControl>
@@ -274,45 +378,72 @@ export function ContactSalesPage() {
                           )}
                         />
 
-                        <Button type="submit" className="w-full bg-[#9747ff] hover:bg-[#8035e0]">
-                          Submit Request
-                        </Button>
+                        <div className="pt-4">
+                          <Button
+                            type="submit"
+                            disabled={isSubmitting}
+                            className="w-full bg-violet-600 hover:bg-violet-700 text-white h-12 text-lg font-medium"
+                          >
+                            {isSubmitting ? 'Submitting...' : 'Submit Brand Request'}
+                          </Button>
+                        </div>
                       </form>
                     </Form>
                   </CardContent>
                 </Card>
               ) : (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Request Submitted</CardTitle>
-                    <CardDescription>Thank you for contacting our sales team.</CardDescription>
+                <Card className="border-none shadow-lg">
+                  <CardHeader className="pb-6">
+                    <CardTitle className="text-2xl">Thank You!</CardTitle>
+                    <CardDescription className="text-base">
+                      Your brand request has been successfully submitted.
+                    </CardDescription>
                   </CardHeader>
-                  <CardContent className="flex flex-col items-center justify-center py-10">
-                    <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
-                    <h3 className="text-xl font-semibold mb-2">We've received your request</h3>
-                    <p className="text-center text-gray-600 mb-6">
-                      One of our sales representatives will contact you within 24 hours to discuss how MOD Platform can
-                      help your business.
+
+                  <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                    <CheckCircle className="h-20 w-20 text-green-500 mb-6" />
+                    <h3 className="text-2xl font-semibold mb-4">We’ve received your request</h3>
+                    <p className="text-gray-600 text-lg max-w-2xl mb-8 leading-relaxed">
+                      Our onboarding team will carefully review your brand details. You’ll hear back
+                      from us within 1–3 business days to schedule a quick call and move forward
+                      with setting up your brand manager account.
                     </p>
-                    <div className="flex gap-4">
-                      <Button variant="outline" onClick={() => setSubmitted(false)}>
+
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setSubmitted(false);
+                          form.reset();
+                        }}
+                        className="min-w-[180px]"
+                      >
                         Submit Another Request
                       </Button>
-                      <Button onClick={() => setActiveTab("demo")} className="bg-[#9747ff] hover:bg-[#8035e0]">
-                        Book a Demo
+
+                      <Button
+                        onClick={() => setActiveTab('demo')}
+                        className="bg-violet-600 hover:bg-violet-700 min-w-[180px]"
+                      >
+                        Book a Demo Instead
                       </Button>
                     </div>
                   </CardContent>
                 </Card>
               )}
             </TabsContent>
+
+            {/* ────────────────────────────────────────────────
+                 BOOK A DEMO – untouched as requested
+            ──────────────────────────────────────────────── */}
             <TabsContent value="demo">
               {!demoSubmitted ? (
                 <Card>
                   <CardHeader>
                     <CardTitle>Schedule a Demo</CardTitle>
                     <CardDescription>
-                      Select a date and time that works for you, and our team will walk you through the MOD Platform.
+                      Select a date and time that works for you, and our team will walk you through
+                      the MOD Platform.
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -323,9 +454,9 @@ export function ContactSalesPage() {
                           {timeSlots.map((day) => (
                             <div key={day.date} className="flex items-center">
                               <Button
-                                variant={selectedDate === day.date ? "default" : "outline"}
+                                variant={selectedDate === day.date ? 'default' : 'outline'}
                                 className={`w-full justify-start ${
-                                  selectedDate === day.date ? "bg-[#9747ff] hover:bg-[#8035e0]" : ""
+                                  selectedDate === day.date ? 'bg-[#9747ff] hover:bg-[#8035e0]' : ''
                                 }`}
                                 onClick={() => setSelectedDate(day.date)}
                               >
@@ -345,8 +476,8 @@ export function ContactSalesPage() {
                               ?.slots.map((time) => (
                                 <Button
                                   key={time}
-                                  variant={selectedTime === time ? "default" : "outline"}
-                                  className={`${selectedTime === time ? "bg-[#9747ff] hover:bg-[#8035e0]" : ""}`}
+                                  variant={selectedTime === time ? 'default' : 'outline'}
+                                  className={`${selectedTime === time ? 'bg-[#9747ff] hover:bg-[#8035e0]' : ''}`}
                                   onClick={() => setSelectedTime(time)}
                                 >
                                   <Clock className="mr-2 h-4 w-4" />
@@ -369,8 +500,8 @@ export function ContactSalesPage() {
                           <div>
                             <h4 className="font-medium">Who should attend</h4>
                             <p className="text-sm text-gray-600">
-                              Brand managers, IP owners, licensing teams, and anyone involved in managing fan art or
-                              creative content.
+                              Brand managers, IP owners, licensing teams, and anyone involved in
+                              managing fan art or creative content.
                             </p>
                           </div>
                         </div>
@@ -378,7 +509,9 @@ export function ContactSalesPage() {
                           <Clock className="h-5 w-5 mr-3 text-gray-500 mt-0.5" />
                           <div>
                             <h4 className="font-medium">Duration</h4>
-                            <p className="text-sm text-gray-600">45 minutes with additional time for Q&A</p>
+                            <p className="text-sm text-gray-600">
+                              45 minutes with additional time for Q&A
+                            </p>
                           </div>
                         </div>
                         <div className="flex items-start">
@@ -386,8 +519,8 @@ export function ContactSalesPage() {
                           <div>
                             <h4 className="font-medium">What we'll cover</h4>
                             <p className="text-sm text-gray-600">
-                              Platform overview, AI screening capabilities, licensing workflow, revenue models, and
-                              customization options.
+                              Platform overview, AI screening capabilities, licensing workflow,
+                              revenue models, and customization options.
                             </p>
                           </div>
                         </div>
@@ -414,18 +547,22 @@ export function ContactSalesPage() {
                     <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
                     <h3 className="text-xl font-semibold mb-2">You're all set!</h3>
                     <p className="text-center text-gray-600 mb-2">
-                      Your demo is scheduled for <span className="font-semibold">{selectedDate}</span> at{" "}
+                      Your demo is scheduled for{' '}
+                      <span className="font-semibold">{selectedDate}</span> at{' '}
                       <span className="font-semibold">{selectedTime}</span>.
                     </p>
                     <p className="text-center text-gray-600 mb-6">
-                      We've sent a calendar invitation to your email with all the details and a link to join the call.
+                      We've sent a calendar invitation to your email with all the details and a link
+                      to join the call.
                     </p>
                     <div className="flex gap-4">
                       <Button variant="outline" onClick={() => setDemoSubmitted(false)}>
                         Reschedule
                       </Button>
                       <Link href="/">
-                        <Button className="bg-[#9747ff] hover:bg-[#8035e0]">Return to Homepage</Button>
+                        <Button className="bg-[#9747ff] hover:bg-[#8035e0]">
+                          Return to Homepage
+                        </Button>
                       </Link>
                     </div>
                   </CardContent>
@@ -435,49 +572,58 @@ export function ContactSalesPage() {
           </Tabs>
         </div>
 
+        {/* Side info panel */}
         <div className="lg:col-span-1">
-          <Card>
+          <Card className="sticky top-8">
             <CardHeader>
-              <CardTitle>Contact Information</CardTitle>
-              <CardDescription>Reach out to us directly</CardDescription>
+              <CardTitle>Need Help?</CardTitle>
+              <CardDescription>Reach out directly or learn more</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex items-start">
-                <Mail className="h-5 w-5 mr-3 text-gray-500 mt-0.5" />
+              <div className="flex items-start gap-3">
+                <Mail className="h-5 w-5 text-muted-foreground mt-0.5" />
                 <div>
                   <h4 className="font-medium">Email</h4>
-                  <p className="text-sm text-gray-600">sales@modplatform.com</p>
-                  <p className="text-sm text-gray-600">support@modplatform.com</p>
+                  <p className="text-sm text-muted-foreground break-all">
+                    onboarding@modplatform.com
+                    <br />
+                    support@modplatform.com
+                  </p>
                 </div>
               </div>
-              <div className="flex items-start">
-                <Phone className="h-5 w-5 mr-3 text-gray-500 mt-0.5" />
+
+              <div className="flex items-start gap-3">
+                <Phone className="h-5 w-5 text-muted-foreground mt-0.5" />
                 <div>
-                  <h4 className="font-medium">Phone</h4>
-                  <p className="text-sm text-gray-600">+1 (555) 123-4567</p>
+                  <h4 className="font-medium">Phone / WhatsApp</h4>
+                  <p className="text-sm text-muted-foreground">+91 11 4123 4567</p>
                 </div>
               </div>
-              <div className="flex items-start">
-                <Users className="h-5 w-5 mr-3 text-gray-500 mt-0.5" />
+
+              <div className="flex items-start gap-3">
+                <Building className="h-5 w-5 text-muted-foreground mt-0.5" />
                 <div>
-                  <h4 className="font-medium">Enterprise Solutions</h4>
-                  <p className="text-sm text-gray-600">
-                    For enterprise inquiries or custom solutions, please contact our enterprise team at
-                    enterprise@modplatform.com
+                  <h4 className="font-medium">For Brands & IP Owners</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Use the form on the left to start the onboarding process.
                   </p>
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="flex flex-col items-start space-y-4">
-              <div className="w-full p-4 bg-gray-50 rounded-md">
-                <h4 className="font-medium mb-2">What our clients say</h4>
-                <blockquote className="text-sm italic text-gray-600">
-                  "MOD Platform has transformed how we manage fan art licensing. The AI screening saves us countless
-                  hours and the revenue sharing model has created a new income stream for our brand."
+
+            <CardFooter className="flex flex-col items-start gap-4 pt-6 border-t">
+              <div className="w-full p-4 bg-muted/40 rounded-lg">
+                <h4 className="font-medium mb-2">What brands are saying</h4>
+                <blockquote className="text-sm italic text-muted-foreground">
+                  "The team was extremely helpful during onboarding. We now have full control over
+                  fan creations while generating real revenue."
                 </blockquote>
-                <p className="text-sm font-medium mt-2">— Marketing Director, Major Entertainment Studio</p>
+                <p className="text-xs text-muted-foreground mt-2 font-medium">
+                  — Head of Licensing, Global Media Brand
+                </p>
               </div>
-              <Link href="/" className="w-full mt-4">
+
+              <Link href="/" className="w-full">
                 <Button variant="outline" className="w-full flex items-center justify-center gap-2">
                   <Home className="h-4 w-4" />
                   Return to Homepage
@@ -488,6 +634,5 @@ export function ContactSalesPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
-

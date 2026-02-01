@@ -73,12 +73,6 @@ export function Sidebar({ className, ...props }: SidebarProps) {
       href: '/history',
       active: pathname === '/history',
     },
-    {
-      label: 'Pricing',
-      icon: <CreditCard className="h-5 w-5" />,
-      href: '/pricing',
-      active: pathname === '/pricing',
-    },
   ];
 
   return (

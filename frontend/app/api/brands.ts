@@ -2,48 +2,28 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 // ────────────────────────────────────────────────
-// Shared Types (aligned with backend responses)
+// Shared Types (aligned with backend 2025–2026 reality)
 // ────────────────────────────────────────────────
 
 export interface Brand {
   id: string;
-  user_id: string;
+  user_id: string; // the brand_manager user who owns/manages it
   name: string;
   slug: string;
   description: string | null;
   logo_url: string | null;
   banner_url: string | null;
   website: string | null;
-
-  /**
-   * Social media profile links.
-   * Keys are lowercase platform identifiers.
-   * Values are full profile URLs (or empty string / null if not set).
-   * Common keys in 2025–2026: instagram, tiktok, youtube, facebook, x (twitter), linkedin, pinterest, threads, snapchat, ...
-   */
-  social_links: {
-    instagram?: string;
-    tiktok?: string;
-    youtube?: string;
-    facebook?: string;
-    x?: string; // formerly twitter – many APIs migrated to "x"
-    twitter?: string; // keep for backward compatibility if needed
-    linkedin?: string;
-    pinterest?: string;
-    threads?: string;
-    snapchat?: string;
-    [key: string]: string | undefined; // allow any other platform
-  } | null;
-
+  social_links: Record<string, string> | null; // e.g. { instagram: "...", x: "...", linkedin: "..." }
   status: 'active' | 'suspended' | 'pending' | 'deactivated';
   verification_request_id: string | null;
   followers_count: number;
-  views_count?: number;
+  views_count: number;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
 
-  // optional when ?withArtworks=true or ?withPosts=true
+  // optional – populated when ?withArtworks=true or ?withPosts=true
   artworks?: BrandArtwork[];
   posts?: BrandPost[];
 }
@@ -83,22 +63,33 @@ export interface BrandFollower {
   followed_at: string;
 }
 
-interface ApiSuccessResponse<T = unknown> {
-  success?: boolean;
-  message?: string;
-  data?: T;
-  error?: string;
+export interface BrandVerificationRequest {
+  id: string;
+  user_id: string | null; // may be null if submitted anonymously via contact page
+  company_name: string;
+  website: string | null;
+  contact_email: string;
+  contact_phone: string | null;
+  description: string | null;
+  documents: string[]; // array of uploaded proof/document URLs
+  status: 'pending' | 'approved' | 'rejected' | 'interview_scheduled';
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 interface SimpleSuccess {
   success: true;
+  message?: string;
 }
 
 // ────────────────────────────────────────────────
-// API
+// RTK Query API
 // ────────────────────────────────────────────────
 
-const brandApi = createApi({
+export const brandApi = createApi({
   reducerPath: 'brandApi',
 
   baseQuery: fetchBaseQuery({
@@ -108,6 +99,7 @@ const brandApi = createApi({
       const token =
         (getState() as any)?.auth?.token ||
         (getState() as any)?.auth?.accessToken ||
+        localStorage.getItem('accessToken') ||
         localStorage.getItem('token');
 
       if (token) {
@@ -126,46 +118,21 @@ const brandApi = createApi({
     'BrandDetail',
     'BrandPostDetail',
     'BrandPostComments',
+    'VerificationRequest',
+    'VerificationRequestList',
   ],
 
   endpoints: (builder) => ({
     // ────────────────────────────────────────────────
-    // Brand CRUD & Discovery
+    // Public Discovery
     // ────────────────────────────────────────────────
 
-    createBrand: builder.mutation<Brand, Partial<Brand>>({
-      query: (body) => ({
-        url: '/brands',
-        method: 'POST',
-        body,
-      }),
-      invalidatesTags: [{ type: 'MyBrands', id: 'LIST' }],
-    }),
-
-    getMyBrands: builder.query<Brand[], void>({
-      query: () => '/brands/my',
-      providesTags: (result) =>
-        result
-          ? [
-              ...result.map((b) => ({ type: 'Brand' as const, id: b.id })),
-              { type: 'MyBrands', id: 'LIST' },
-            ]
-          : [{ type: 'MyBrands', id: 'LIST' }],
-    }),
-
-    getBrand: builder.query<Brand, string>({
-      query: (id) => `/brands/${id}?withArtworks=true&withPosts=true`,
-      providesTags: (result, error, id) => [
-        { type: 'Brand', id },
-        { type: 'BrandDetail', id },
-      ],
-    }),
     getAllBrands: builder.query<
       {
         brands: Brand[];
         pagination: { total: number; limit: number; offset: number; hasMore: boolean };
       },
-      {
+      Partial<{
         search?: string;
         status?: string;
         sortBy?: 'followers_count' | 'created_at' | 'name';
@@ -173,20 +140,95 @@ const brandApi = createApi({
         limit?: number;
         offset?: number;
         minFollowers?: number;
-      } | void
+      }> | void
     >({
-      query: (params) => ({
-        url: '/brands',
-        params: params ?? {}, // ← safe: undefined → empty object
-      }),
+      query: (params = {}) => ({ url: '/brands', params }),
       providesTags: ['Brand'],
     }),
+
+    getBrand: builder.query<Brand, string>({
+      query: (id) => `/brands/${id}?withArtworks=true&withPosts=true`,
+      providesTags: (result, error, id) =>
+        result
+          ? [
+              { type: 'Brand', id },
+              { type: 'BrandDetail', id },
+            ]
+          : [],
+    }),
+
     getBrandBySlug: builder.query<Brand, string>({
       query: (slug) => `/brands/slug/${slug}?withArtworks=true&withPosts=true`,
-      providesTags: (result): { type: 'Brand'; id: string }[] => {
-        if (!result?.id) return [];
-        return [{ type: 'Brand', id: result.id }];
-      },
+      providesTags: (result) => (result?.id ? [{ type: 'Brand', id: result.id }] : []),
+    }),
+
+    // ────────────────────────────────────────────────
+    // Brand Verification / Onboarding Requests
+    // Primary way brands are created (all flows funnel here)
+    // ────────────────────────────────────────────────
+
+    submitBrandVerificationRequest: builder.mutation<
+      { requestId: string; message: string },
+      Partial<{
+        company_name: string;
+        website?: string | null | undefined;
+        contact_email: string;
+        contact_phone?: string;
+        description?: string;
+        documents?: string[];
+      }>
+    >({
+      query: (body) => ({
+        url: '/brands/verification-requests',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['VerificationRequestList'],
+    }),
+
+    getVerificationRequests: builder.query<
+      BrandVerificationRequest[],
+      { status?: 'pending' | 'approved' | 'rejected' | 'interview_scheduled' } | void
+    >({
+      query: (params = {}) => ({ url: '/brands/verification-requests', params }),
+      providesTags: ['VerificationRequestList'],
+    }),
+
+    approveVerificationRequest: builder.mutation<
+      { success: true; brandId: string; managerUserId: string; message?: string },
+      {
+        requestId: string;
+        manager_username?: string;
+        manager_email?: string;
+        temp_password?: string;
+        notes?: string;
+      }
+    >({
+      query: ({ requestId, ...body }) => ({
+        url: `/brands/verification-requests/${requestId}/approve`,
+        method: 'PATCH',
+        body,
+      }),
+      invalidatesTags: (result, error, { requestId }) => [
+        { type: 'VerificationRequest', id: requestId },
+        'VerificationRequestList',
+        'MyBrands',
+      ],
+    }),
+
+    // ────────────────────────────────────────────────
+    // Brand Management (brand_manager + admin)
+    // ────────────────────────────────────────────────
+
+    getMyBrands: builder.query<Brand[], void>({
+      query: () => '/brands/my',
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.map((brand) => ({ type: 'Brand' as const, id: brand.id })),
+              { type: 'MyBrands', id: 'LIST' },
+            ]
+          : [{ type: 'MyBrands', id: 'LIST' }],
     }),
 
     updateBrand: builder.mutation<Brand, { id: string } & Partial<Brand>>({
@@ -214,8 +256,23 @@ const brandApi = createApi({
     }),
 
     // ────────────────────────────────────────────────
-    // Storefront – Brand Artworks
+    // Storefront – Artworks
     // ────────────────────────────────────────────────
+
+    getBrandArtworks: builder.query<
+      BrandArtwork[],
+      { brandId: string; featuredOnly?: boolean; limit?: number; offset?: number }
+    >({
+      query: ({ brandId, featuredOnly = false, limit = 50, offset = 0 }) => ({
+        url: `/brands/${brandId}/artworks`,
+        params: {
+          featuredOnly: featuredOnly ? 'true' : undefined,
+          limit,
+          offset,
+        },
+      }),
+      providesTags: (result, error, { brandId }) => [{ type: 'BrandArtworks', id: brandId }],
+    }),
 
     addArtworkToBrand: builder.mutation<
       any,
@@ -233,24 +290,6 @@ const brandApi = createApi({
       ],
     }),
 
-    getBrandArtworks: builder.query<
-      BrandArtwork[],
-      { brandId: string; featuredOnly?: boolean; limit?: number; offset?: number }
-    >({
-      query: ({ brandId, featuredOnly = false, limit = 50, offset = 0 }) => ({
-        url: `/brands/${brandId}/artworks`,
-        params: {
-          featuredOnly: featuredOnly ? 'true' : undefined,
-          limit,
-          offset,
-        },
-      }),
-      providesTags: (result, error, { brandId }) => [
-        { type: 'BrandArtworks', id: brandId },
-        ...(result?.map(() => ({ type: 'Brand' as const, id: brandId })) ?? []),
-      ],
-    }),
-
     removeArtworkFromBrand: builder.mutation<void, { brandId: string; artworkId: string }>({
       query: ({ brandId, artworkId }) => ({
         url: `/brands/${brandId}/artworks/${artworkId}`,
@@ -259,41 +298,32 @@ const brandApi = createApi({
       invalidatesTags: (result, error, { brandId }) => [
         { type: 'BrandArtworks', id: brandId },
         { type: 'Brand', id: brandId },
-        { type: 'BrandDetail', id: brandId },
       ],
     }),
 
     // ────────────────────────────────────────────────
-    // Follow / Social
+    // Social / Follow
     // ────────────────────────────────────────────────
 
-    followBrand: builder.mutation<SimpleSuccess & { action: 'followed' }, string>({
-      query: (id) => ({
-        url: `/brands/${id}/follow`,
-        method: 'POST',
-      }),
+    followBrand: builder.mutation<{ success: true; action: 'followed' }, string>({
+      query: (id) => ({ url: `/brands/${id}/follow`, method: 'POST' }),
       invalidatesTags: (result, error, id) => [
         { type: 'Brand', id },
         { type: 'BrandFollowers', id },
-        { type: 'BrandDetail', id },
       ],
     }),
 
-    unfollowBrand: builder.mutation<SimpleSuccess & { action: 'unfollowed' }, string>({
-      query: (id) => ({
-        url: `/brands/${id}/follow`,
-        method: 'DELETE',
-      }),
+    unfollowBrand: builder.mutation<{ success: true; action: 'unfollowed' }, string>({
+      query: (id) => ({ url: `/brands/${id}/follow`, method: 'DELETE' }),
       invalidatesTags: (result, error, id) => [
         { type: 'Brand', id },
         { type: 'BrandFollowers', id },
-        { type: 'BrandDetail', id },
       ],
     }),
 
     checkIfFollowing: builder.query<boolean, string>({
       query: (id) => `/brands/${id}/is-following`,
-      transformResponse: (res: { isFollowing: boolean }) => !!res.isFollowing,
+      transformResponse: (res: { isFollowing: boolean }) => res.isFollowing,
       providesTags: (result, error, id) => [{ type: 'Brand', id }],
     }),
 
@@ -412,12 +442,12 @@ const brandApi = createApi({
 
     createBrandPostComment: builder.mutation<
       any,
-      { brandId: string; postId: string; content: string }
+      { brandId: string; postId: string; content: string; parent_id?: string }
     >({
-      query: ({ brandId, postId, content }) => ({
+      query: ({ brandId, postId, ...body }) => ({
         url: `/brands/${brandId}/posts/${postId}/comments`,
         method: 'POST',
-        body: { content },
+        body,
       }),
       invalidatesTags: (result, error, { postId }) => [
         { type: 'BrandPostComments', id: postId },
@@ -464,7 +494,7 @@ const brandApi = createApi({
     }),
 
     // ────────────────────────────────────────────────
-    // Views
+    // Views / Analytics
     // ────────────────────────────────────────────────
 
     incrementBrandView: builder.mutation<void, string>({
@@ -472,32 +502,69 @@ const brandApi = createApi({
         url: `/brands/${id}/view`,
         method: 'POST',
       }),
-      // No invalidation – view count is usually not critical for cache
+      // Usually no invalidation – view count not critical for cache
+    }),
+
+    // ────────────────────────────────────────────────
+    // Admin-only – Direct brand creation (rare bypass)
+    // ────────────────────────────────────────────────
+
+    adminCreateBrand: builder.mutation<
+      Brand,
+      {
+        ownerUserId: string;
+        name: string;
+        slug?: string;
+        description?: string;
+        logo_url?: string;
+        banner_url?: string;
+        website?: string;
+        social_links?: Record<string, string>;
+        status?: 'active' | 'pending';
+      }
+    >({
+      query: (body) => ({
+        url: '/brands',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['MyBrands', 'Brand'],
     }),
   }),
 });
 
 // ────────────────────────────────────────────────
-// Hooks
+// Auto-generated Hooks
 // ────────────────────────────────────────────────
 
 export const {
-  useCreateBrandMutation,
-  useGetMyBrandsQuery,
+  // Discovery
+  useGetAllBrandsQuery,
   useGetBrandQuery,
   useGetBrandBySlugQuery,
+
+  // Verification flow (main onboarding path)
+  useSubmitBrandVerificationRequestMutation,
+  useGetVerificationRequestsQuery,
+  useApproveVerificationRequestMutation,
+
+  // Brand management
+  useGetMyBrandsQuery,
   useUpdateBrandMutation,
   useDeleteBrandMutation,
-  useGetAllBrandsQuery,
-  useAddArtworkToBrandMutation,
+
+  // Artworks
   useGetBrandArtworksQuery,
+  useAddArtworkToBrandMutation,
   useRemoveArtworkFromBrandMutation,
 
+  // Social
   useFollowBrandMutation,
   useUnfollowBrandMutation,
   useCheckIfFollowingQuery,
   useGetBrandFollowersQuery,
 
+  // Posts
   useCreateBrandPostMutation,
   useGetBrandPostsQuery,
   useGetBrandPostQuery,
@@ -507,12 +574,17 @@ export const {
   useLikeBrandPostMutation,
   useUnlikeBrandPostMutation,
 
+  // Comments
   useCreateBrandPostCommentMutation,
   useGetBrandPostCommentsQuery,
   useDeleteBrandPostCommentMutation,
   useLikeBrandPostCommentMutation,
 
+  // Views
   useIncrementBrandViewMutation,
+
+  // Admin only
+  useAdminCreateBrandMutation,
 } = brandApi;
 
 export default brandApi;

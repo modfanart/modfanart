@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { UserNav } from '@/components/user-nav';
@@ -18,52 +18,60 @@ import {
   navigationMenuTriggerStyle,
 } from '@/components/ui/navigation-menu';
 
-// ────────────────────────────────────────────────
-// Use the correct api slice (authApi or userApi)
-// Make sure this import points to where getCurrentUser is defined
-// ────────────────────────────────────────────────
-import { authApi } from '@/app/api/authApi'; // ← adjust path if needed
-import userApi from '@/app/api/userApi';
-// or: import { userApi } from '@/app/api/userApi';
+import { userApi } from '@/app/api/userApi'; // adjust path if needed
 
 export function MainNav() {
   const pathname = usePathname();
 
-  // Fetch current user – should now return the full user object you showed
+  // ────────────────────────────────────────────────
+  // Only attempt to fetch user if we think they're logged in
+  // This prevents unnecessary API calls on every page load
+  // ────────────────────────────────────────────────
+  const [shouldFetch, setShouldFetch] = useState(false);
+
   const {
-    data: queryUser,
+    data: user,
     isLoading,
     isFetching,
     error,
   } = userApi.useGetCurrentUserQuery(undefined, {
-    // Optional: skip query if we know user is not logged in (optimization)
-    // skip: typeof window !== 'undefined' && !localStorage.getItem('accessToken'),
-
-    // Optional: refetch when window regains focus
+    skip: !shouldFetch,
+    refetchOnMountOrArgChange: 60, // refetch max once per minute
+    refetchOnReconnect: true,
     refetchOnFocus: true,
-
-    // Optional: refetch every 10 minutes
-    // pollingInterval: 10 * 60 * 1000,
   });
-  console.log(queryUser);
-  // For debugging – remove in production
-  useEffect(() => {
-    console.log('MainNav → Current user query:', {
-      user: queryUser,
-      isLoading,
-      isFetching,
-      error: error ? (error as any)?.data?.message || error : null,
-      pathname,
-    });
-  }, [queryUser, isLoading, isFetching, error, pathname]);
 
-  // We consider user authenticated only when we have real data
-  const isAuthenticated = !!queryUser && !isLoading && !isFetching;
+  // Quick client-side token check (very fast)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const hasToken =
+      localStorage.getItem('accessToken') ||
+      document.cookie.split(';').some((c) => c.trim().startsWith('accessToken='));
+
+    setShouldFetch(!!hasToken);
+  }, []);
+
+  // Development-only logging
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[MainNav] User state:', {
+        hasUser: !!user,
+        isLoading,
+        isFetching,
+        error: error ? (error as any)?.data?.message || error : null,
+        pathname,
+      });
+    }
+  }, [user, isLoading, isFetching, error, pathname]);
+
+  const isAuthenticated = !!user && !isLoading && !isFetching;
+  const isPending = shouldFetch && (isLoading || isFetching);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
-        {/* Logo */}
+        {/* Logo – always renders immediately */}
         <Link href="/" className="flex items-center gap-2.5">
           <Image
             src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/mod-logo-dark-gTZuJePnecraDwGyMlBCHe6E6xJgsx.png"
@@ -75,11 +83,11 @@ export function MainNav() {
           />
         </Link>
 
-        {/* Desktop Navigation */}
+        {/* Desktop Navigation – renders instantly */}
         <NavigationMenu className="hidden md:flex mx-auto">
           <NavigationMenuList className="gap-1">
             <NavigationMenuItem>
-              <Link href="/" passHref>
+              <Link href="/" legacyBehavior passHref>
                 <NavigationMenuLink
                   className={navigationMenuTriggerStyle()}
                   active={pathname === '/'}
@@ -108,7 +116,7 @@ export function MainNav() {
                     <NavigationMenuLink asChild>
                       <Link
                         href="/gallery/featured"
-                        className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+                        className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
                       >
                         <div className="text-sm font-medium leading-none">Featured Artwork</div>
                         <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
@@ -121,7 +129,7 @@ export function MainNav() {
                     <NavigationMenuLink asChild>
                       <Link
                         href="/gallery/available"
-                        className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+                        className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
                       >
                         <div className="text-sm font-medium leading-none">
                           Available for Licensing
@@ -166,7 +174,7 @@ export function MainNav() {
                     <NavigationMenuLink asChild>
                       <Link
                         href="/resources/guidelines"
-                        className="block select-none space-y-1 rounded-md p-3 ..."
+                        className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
                       >
                         <div className="text-sm font-medium leading-none">Brand Guidelines</div>
                         <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
@@ -179,7 +187,7 @@ export function MainNav() {
                     <NavigationMenuLink asChild>
                       <Link
                         href="/resources/support"
-                        className="block select-none space-y-1 rounded-md p-3 ..."
+                        className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
                       >
                         <div className="text-sm font-medium leading-none">Support</div>
                         <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
@@ -200,7 +208,7 @@ export function MainNav() {
                     <NavigationMenuLink asChild>
                       <Link
                         href="/for-brands"
-                        className="block select-none space-y-1 rounded-md p-3 ..."
+                        className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
                       >
                         <div className="text-sm font-medium leading-none">For Brands</div>
                         <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
@@ -213,7 +221,7 @@ export function MainNav() {
                     <NavigationMenuLink asChild>
                       <Link
                         href="/for-creators-info"
-                        className="block select-none space-y-1 rounded-md p-3 ..."
+                        className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
                       >
                         <div className="text-sm font-medium leading-none">For Creators</div>
                         <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
@@ -226,7 +234,7 @@ export function MainNav() {
                     <NavigationMenuLink asChild>
                       <Link
                         href="/for-artists"
-                        className="block select-none space-y-1 rounded-md p-3 ..."
+                        className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
                       >
                         <div className="text-sm font-medium leading-none">For Artists</div>
                         <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
@@ -241,10 +249,10 @@ export function MainNav() {
           </NavigationMenuList>
         </NavigationMenu>
 
-        {/* Right side – Auth / User area */}
+        {/* Right side – Auth / User */}
         <div className="flex items-center gap-4">
-          {isLoading || isFetching ? (
-            <div className="h-9 w-24 animate-pulse rounded bg-muted/60" />
+          {isPending ? (
+            <div className="h-9 w-32 animate-pulse rounded-md bg-muted/70" />
           ) : isAuthenticated ? (
             <UserNav />
           ) : (
