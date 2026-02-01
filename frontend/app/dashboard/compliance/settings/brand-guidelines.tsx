@@ -243,24 +243,34 @@ export default function BrandGuidelinesSettings() {
                 <Label>Main Logo</Label>
                 <FileUpload
                   accept="image/*"
-                  onChange={(file) =>
+                  onChange={(file) => {
+                    if (!file) return;
+
                     setGuidelines({
                       ...guidelines,
-                      logos: { ...guidelines.logos, main: URL.createObjectURL(file) },
-                    })
-                  }
+                      logos: {
+                        ...guidelines.logos,
+                        main: URL.createObjectURL(file),
+                      },
+                    });
+                  }}
                 />
               </div>
               <div className="space-y-2">
                 <Label>Alternate Logo</Label>
                 <FileUpload
                   accept="image/*"
-                  onChange={(file) =>
+                  onChange={(file) => {
+                    if (!file) return;
+
                     setGuidelines({
                       ...guidelines,
-                      logos: { ...guidelines.logos, alternate: URL.createObjectURL(file) },
-                    })
-                  }
+                      logos: {
+                        ...guidelines.logos,
+                        alternate: URL.createObjectURL(file),
+                      },
+                    });
+                  }}
                 />
               </div>
               <div className="space-y-2">
