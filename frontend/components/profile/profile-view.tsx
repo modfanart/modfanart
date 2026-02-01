@@ -279,9 +279,7 @@ export function ProfileView({ isPublic = false, userId }: ProfileViewProps) {
                       <Image src={col.cover} alt={col.name} fill className="object-cover" />
                     </div>
                     <h3 className="font-semibold">{col.name}</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {col.count} items • {col.owner}
-                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">{col.count} items</p>
                   </CardContent>
                 </Card>
               ))}
