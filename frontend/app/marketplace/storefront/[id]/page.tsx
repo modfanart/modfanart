@@ -103,12 +103,10 @@ export default function BrandStorefrontPage() {
   const banner: string = brand.banner_url || '/placeholder.svg?height=300&width=1200';
 
   // Combine website + social_links (which is Record<string, string> | null)
-  const socialLinks: Record<'website' | 'twitter' | 'instagram', string | undefined> = {
+  const socialLinks: Record<'website', string | undefined> = {
     website: brand.website ?? undefined,
-    twitter: brand.social_links?.twitter ?? undefined,
-    instagram: brand.social_links?.instagram ?? undefined,
   };
-  const hasSocials = !!(socialLinks.website || socialLinks.twitter || socialLinks.instagram);
+  const hasSocials = !!socialLinks.website;
 
   return (
     <div className="container px-4 py-8 md:px-6 md:py-12">
@@ -140,28 +138,6 @@ export default function BrandStorefrontPage() {
                   className="rounded-full p-2.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                 >
                   <Globe className="h-5 w-5" />
-                </a>
-              )}
-              {socialLinks.twitter && (
-                <a
-                  href={socialLinks.twitter}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Twitter"
-                  className="rounded-full p-2.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                >
-                  <Twitter className="h-5 w-5" />
-                </a>
-              )}
-              {socialLinks.instagram && (
-                <a
-                  href={socialLinks.instagram}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Instagram"
-                  className="rounded-full p-2.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                >
-                  <Instagram className="h-5 w-5" />
                 </a>
               )}
             </div>
