@@ -21,35 +21,35 @@ router.get('/:contestId/leaderboard', ContestVoteController.getLeaderboard);
 // router.use(authenticateToken);
 
 // Contest management
-router.post('/', hasPermission('contests.create'), ContestController.createContest);
-router.patch('/:id', hasPermission('contests.update'), ContestController.updateContest);
-router.delete('/:id', hasPermission('contests.delete'), ContestController.deleteContest);
+router.post('/',  ContestController.createContest);
+router.patch('/:id',  ContestController.updateContest);
+router.delete('/:id', ContestController.deleteContest);
 
 // Categories
-router.post('/:contestId/categories', hasPermission('contests.update'), ContestCategoryController.addCategory);
-router.delete('/:contestId/categories/:categoryId', hasPermission('contests.update'), ContestCategoryController.removeCategory);
+router.post('/:contestId/categories', ContestCategoryController.addCategory);
+router.delete('/:contestId/categories/:categoryId',  ContestCategoryController.removeCategory);
 router.get('/:contestId/categories', ContestCategoryController.getCategories);
 
 // Entries
-router.post('/:contestId/entries', hasPermission('contests.enter'), ContestEntryController.submitEntry);
+router.post('/:contestId/entries', ContestEntryController.submitEntry);
 router.get('/:contestId/entries', ContestEntryController.getEntries);
-router.patch('/:contestId/entries/:entryId/status', hasPermission('contests.moderate'), ContestEntryController.updateEntryStatus);
+router.patch('/:contestId/entries/:entryId/status',  ContestEntryController.updateEntryStatus);
 
 // Judges
-router.post('/:contestId/judges', hasPermission('contests.manage_judges'), ContestJudgeController.inviteJudge);
+router.post('/:contestId/judges', ContestJudgeController.inviteJudge);
 router.patch('/:contestId/judges/:judgeId/accept', ContestJudgeController.acceptInvitation);
 router.get('/:contestId/judges', ContestJudgeController.getJudges);
-router.delete('/:contestId/judges/:judgeId', hasPermission('contests.manage_judges'), ContestJudgeController.removeJudge);
+router.delete('/:contestId/judges/:judgeId', ContestJudgeController.removeJudge);
 
 // Judge Scoring
-router.post('/:contestId/entries/:entryId/score', hasPermission('contests.judge'), ContestJudgeScoreController.submitScore);
-router.get('/:contestId/entries/:entryId/scores', hasPermission('contests.view_scores'), ContestJudgeScoreController.getScoresForEntry);
+router.post('/:contestId/entries/:entryId/score',  ContestJudgeScoreController.submitScore);
+router.get('/:contestId/entries/:entryId/scores',  ContestJudgeScoreController.getScoresForEntry);
 
 // Voting
-router.post('/:contestId/entries/:entryId/vote', hasPermission('contests.vote'), ContestVoteController.vote);
+router.post('/:contestId/entries/:entryId/vote',  ContestVoteController.vote);
 
 // Winner & Prizes
-router.patch('/:id/announce-winners', hasPermission('contests.manage'), ContestController.announceWinners);
-router.post('/:id/distribute-prizes', hasPermission('contests.manage'), ContestController.distributePrizes);
+router.patch('/:id/announce-winners',  ContestController.announceWinners);
+router.post('/:id/distribute-prizes', ContestController.distributePrizes);
 
 module.exports = router;

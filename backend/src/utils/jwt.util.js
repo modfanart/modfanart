@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 const ACCESS_TOKEN_SECRET = process.env.JWT_ACCESS_SECRET || 'your-very-long-random-secret';
 const REFRESH_TOKEN_SECRET = process.env.JWT_REFRESH_SECRET || 'another-very-long-random-secret';
 
-const ACCESS_TOKEN_EXPIRY = '15m';   // short-lived
+const ACCESS_TOKEN_EXPIRY = '1d';   // short-lived
 const REFRESH_TOKEN_EXPIRY = '7d';   // longer-lived
 
 function generateAccessToken(payload) {

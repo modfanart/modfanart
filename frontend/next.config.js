@@ -7,9 +7,11 @@ const nextConfig = {
       'example.com',
       'placeholder.com',
       'via.placeholder.com',
-      'hebbkx1anhila5yf.public.blob.vercel-storage.com',
       'images.unsplash.com',
       'amzn-artwork-images.s3.eu-north-1.amazonaws.com',
+      'amzn-artwork-images.s3.undefined.amazonaws.com',
+      'www.thefilmcatalogue.com',
+      'hebbkx1anhila5yf.public.blob.vercel-storage.com',
       // ↑ good — add your real image hosting domains here (e.g. cloudinary, supabase, s3, etc.)
       // If using Next.js Image with remote images, you can also use remotePatterns (more flexible):
       // remotePatterns: [{ protocol: 'https', hostname: '**' }], // ← wildcard (less secure)

@@ -2,161 +2,217 @@
 const express = require('express');
 const router = express.Router();
 
-const {
-  createBrand,
-  getBrand,
-  getBrandBySlug,
-  getMyBrands,
-  updateBrand,
-  deleteBrand,
-getAllBrands,
-  addArtworkToBrand,
-  getAllBrandArtworks,
-  removeArtworkFromBrand,
-
-  followBrand,
-  unfollowBrand,
-  getBrandFollowers,
-  checkIfFollowing,
-
-  createBrandPost,
-  getBrandPosts,
-  getBrandPost,
-  updateBrandPost,
-  deleteBrandPost,
-  togglePinBrandPost,
-  likeBrandPost,
-  unlikeBrandPost,
-
-  createBrandPostComment,
-  getBrandPostComments,
-  deleteBrandPostComment,
-  likeBrandPostComment,
-
-  incrementBrandView,
-} = require('../controller/brand.controller');
+const brandController = require('../controller/brand.controller');
 
 // ───────────────────────────────────────────────
-// Authentication middleware
-// Sets req.user or throws 401 Unauthorized
+// Middleware Imports
 // ───────────────────────────────────────────────
+const { authenticateToken } = require('../middleware/auth.middleware');  // sets req.user or 401
+const { authorize } = require('../middleware/auth.middleware');          // role_id based
+const { hasPermission } = require('../middleware/permission.middleware'); // granular "resource.action"
+const { ensureBrandOwnership } = require('../controller/brand.controller'); // assume you create this
 
-// Optional: rate limiting, validation, etc.
+// Optional: rate limiting on mutation endpoints
 // const rateLimit = require('express-rate-limit');
-// const validate = require('../middleware/validate'); // if you use Joi/Zod
+// const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
 
 // ───────────────────────────────────────────────
-// Brand CRUD & Discovery
-// ───────────────────────────────────────────────
-// Public: Browse / discover all brands
-router.get('/', getAllBrands);
-// Create new brand (authenticated user becomes owner)
-router.post('/', createBrand);
-
-// List all brands owned by the current user
-router.get('/my', getMyBrands);
-
-// Get single brand by numeric ID (public + optional relations)
-router.get('/:id', getBrand);
-
-// Get single brand by slug (public – good for SEO / vanity URLs)
-router.get('/slug/:slug', getBrandBySlug);
-
-// Update brand (owner only)
-router.patch('/:id', updateBrand);
-
-// Soft-delete brand (owner only)
-router.delete('/:id', deleteBrand);
-
-// ───────────────────────────────────────────────
-// Storefront – Brand Artworks
+// Public Routes (no authentication required)
 // ───────────────────────────────────────────────
 
-// Add artwork to brand's storefront/collection
-router.post('/:brandId/artworks', addArtworkToBrand);
+// Discover brands (search, filter, paginate)
+router.get('/', brandController.getAllBrands);
 
-// List artworks in brand's storefront (public, paginated, filters)
-router.get('/:brandId/artworks', getAllBrandArtworks);
+// Get brand by ID
+router.get('/:id', brandController.getBrand);
 
-// Remove artwork from brand
-router.delete('/:brandId/artworks/:artworkId', removeArtworkFromBrand);
+// Get brand by slug (SEO friendly)
+router.get('/slug/:slug', brandController.getBrandBySlug);
 
-// ───────────────────────────────────────────────
-// Follow & Social Features
-// ───────────────────────────────────────────────
+// View brand storefront artworks
+router.get('/:brandId/artworks', brandController.getAllBrandArtworks);
 
-// Follow a brand
-router.post('/:id/follow', followBrand);
+// View brand posts feed
+router.get('/:brandId/posts', brandController.getBrandPosts);
 
-// Unfollow a brand
-router.delete('/:id/follow', unfollowBrand);
+// View single post
+router.get('/:brandId/posts/:postId', brandController.getBrandPost);
 
-// Check if current authenticated user follows this brand
-router.get('/:id/is-following', checkIfFollowing);
+// View post comments
+router.get('/:brandId/posts/:postId/comments', brandController.getBrandPostComments);
 
-// Get list of followers (public, paginated)
-router.get('/:id/followers', getBrandFollowers);
-
-// ───────────────────────────────────────────────
-// Brand Posts (like social media feed/timeline)
-// ───────────────────────────────────────────────
-
-// Create new post for the brand (owner only)
-router.post('/:brandId/posts', createBrandPost);
-
-// List posts for a brand (public, pagination + draft filter)
-router.get('/:brandId/posts', getBrandPosts);
-
-// Get single brand post
-router.get('/:brandId/posts/:postId', getBrandPost);
-
-// Update post (owner only)
-router.patch('/:brandId/posts/:postId', updateBrandPost);
-
-// Soft-delete post (owner only)
-router.delete('/:brandId/posts/:postId', deleteBrandPost);
-
-// Pin / unpin post (owner only)
-router.patch('/:brandId/posts/:postId/pin', togglePinBrandPost);
-
-// Like a post
-router.post('/:brandId/posts/:postId/like', likeBrandPost);
-
-// Unlike a post
-router.delete('/:brandId/posts/:postId/like', unlikeBrandPost);
+// Record view (usually called from client – no auth)
+router.post('/:id/view', brandController.incrementBrandView);
 
 // ───────────────────────────────────────────────
-// Brand Post Comments
+// Authenticated Routes (login required)
 // ───────────────────────────────────────────────
 
-// Add comment to a post (any logged-in user)
-router.post('/:brandId/posts/:postId/comments', createBrandPostComment);
-
-// Get comments for a post (public, paginated)
-router.get('/:brandId/posts/:postId/comments', getBrandPostComments);
-
-// Delete own comment (soft delete)
-router.delete(
-  '/:brandId/posts/:postId/comments/:commentId',
-
-  deleteBrandPostComment
+// Submit brand verification/onboarding request
+// (main entry for flow 1 & 3 – can be anonymous or logged-in)
+router.post(
+  '/verification-requests',
+  // authenticateToken,   ← uncomment if you want only logged-in users to submit
+  brandController.submitBrandVerificationRequest
 );
 
-// Like a comment
+// Follow / unfollow brand
+router.post('/:id/follow', authenticateToken, brandController.followBrand);
+router.delete('/:id/follow', authenticateToken, brandController.unfollowBrand);
+
+// Check follow status
+router.get('/:id/is-following', authenticateToken, brandController.checkIfFollowing);
+
+// Like / unlike post
+router.post('/:brandId/posts/:postId/like', authenticateToken, brandController.likeBrandPost);
+router.delete('/:brandId/posts/:postId/like', authenticateToken, brandController.unlikeBrandPost);
+
+// Comment on post
+router.post('/:brandId/posts/:postId/comments', authenticateToken, brandController.createBrandPostComment);
+
+// Like comment
 router.post(
   '/:brandId/posts/:postId/comments/:commentId/like',
-
-  likeBrandPostComment
+  authenticateToken,
+  brandController.likeBrandPostComment
 );
 
 // ───────────────────────────────────────────────
-// Analytics / Views (usually called client-side)
+// Brand Manager + Admin Routes
 // ───────────────────────────────────────────────
 
-// Increment brand profile view count
-router.post('/:id/view', incrementBrandView);
+// List my managed brands
+router.get(
+  '/my',
+  authenticateToken,
+  authorize(['brand_manager', 'admin', 'superadmin', 'moderator']), // role_ids or names – adjust as needed
+  brandController.getMyBrands
+);
+
+// Update brand
+router.patch(
+  '/:id',
+  authenticateToken,
+  ensureBrandOwnership,
+  authorize(['brand_manager', 'admin', 'superadmin', 'moderator']),
+  hasPermission('brands.update'),
+  brandController.updateBrand
+);
+
+// Delete brand (soft)
+router.delete(
+  '/:id',
+  authenticateToken,
+  ensureBrandOwnership,
+  authorize(['brand_manager', 'admin', 'superadmin', 'moderator']),
+  hasPermission('brands.delete'),
+  brandController.deleteBrand
+);
+
+// Manage storefront artworks
+router.post(
+  '/:brandId/artworks',
+  authenticateToken,
+  ensureBrandOwnership,
+  authorize(['brand_manager', 'admin', 'superadmin', 'moderator']),
+  hasPermission('brands.artworks.manage'),
+  brandController.addArtworkToBrand
+);
+
+router.delete(
+  '/:brandId/artworks/:artworkId',
+  authenticateToken,
+  ensureBrandOwnership,
+  authorize(['brand_manager', 'admin', 'superadmin', 'moderator']),
+  hasPermission('brands.artworks.manage'),
+  brandController.removeArtworkFromBrand
+);
+
+// Manage brand posts
+router.post(
+  '/:brandId/posts',
+  authenticateToken,
+  ensureBrandOwnership,
+  authorize(['brand_manager', 'admin', 'superadmin', 'moderator']),
+  hasPermission('brands.posts.create'),
+  brandController.createBrandPost
+);
+
+router.patch(
+  '/:brandId/posts/:postId',
+  authenticateToken,
+  ensureBrandOwnership,
+  authorize(['brand_manager', 'admin', 'superadmin', 'moderator']),
+  hasPermission('brands.posts.update'),
+  brandController.updateBrandPost
+);
+
+router.delete(
+  '/:brandId/posts/:postId',
+  authenticateToken,
+  ensureBrandOwnership,
+  authorize(['brand_manager', 'admin', 'superadmin', 'moderator']),
+  hasPermission('brands.posts.delete'),
+  brandController.deleteBrandPost
+);
+
+router.patch(
+  '/:brandId/posts/:postId/pin',
+  authenticateToken,
+  ensureBrandOwnership,
+  authorize(['brand_manager', 'admin', 'superadmin', 'moderator']),
+  hasPermission('brands.posts.pin'),
+  brandController.togglePinBrandPost
+);
+
+// Delete own comment (any authenticated user)
+router.delete(
+  '/:brandId/posts/:postId/comments/:commentId',
+  authenticateToken,
+  brandController.deleteBrandPostComment
+);
 
 // ───────────────────────────────────────────────
-// Export the router
+// Internal Team / Admin Only Routes
+// ───────────────────────────────────────────────
+
+// List all verification requests (review dashboard)
+router.get(
+  '/verification-requests',
+  authenticateToken,
+  authorize(['admin', 'superadmin', 'moderator']),
+  hasPermission('brands.verification.review'),
+  brandController.getBrandVerificationRequests
+);
+
+// Approve verification request → create brand + brand_manager user
+router.patch(
+  '/verification-requests/:requestId/approve',
+  authenticateToken,
+  authorize(['admin', 'superadmin', 'moderator']),
+  hasPermission('brands.verification.approve'),
+  brandController.approveBrandVerificationRequest
+);
+
+// Optional: reject request
+// router.patch(
+//   '/verification-requests/:requestId/reject',
+//   authenticateToken,
+//   authorize(['admin', 'superadmin', 'moderator']),
+//   hasPermission('brands.verification.reject'),
+//   brandController.rejectBrandVerificationRequest
+// );
+
+// Direct brand creation (bypass verification – internal use only)
+router.post(
+  '/',
+  authenticateToken,
+  authorize(['admin', 'superadmin']),
+  hasPermission('brands.create'),
+  brandController.adminCreateBrand
+);
+
+// ───────────────────────────────────────────────
+// Export
 // ───────────────────────────────────────────────
 module.exports = router;
