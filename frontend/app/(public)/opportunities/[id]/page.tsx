@@ -25,7 +25,7 @@ import 'swiper/css/navigation';
 import { cn } from '@/lib/utils';
 import { useGetContestQuery } from '@/app/api/contestsApi';
 import type { Contest } from '@/app/api/contestsApi';
-
+import type { ContestDetail } from '@/app/api/contestsApi';
 export default function ContestDetailPage() {
   const params = useParams<{ id: string }>();
   const contestId = params.id;
@@ -39,7 +39,8 @@ export default function ContestDetailPage() {
   });
 
   const contest = data ?? null;
-
+  // Prize helpers – safe now
+  const prizes = contest?.prizes ?? [];
   const deadline = contest?.submission_end_date
     ? new Date(contest.submission_end_date)
     : new Date();
@@ -91,17 +92,21 @@ export default function ContestDetailPage() {
   }, [isActive, deadline, contest]);
 
   // Prize formatting helpers (safe to define unconditionally)
-  const formatPrize = (prizes: Contest['prizes'] = []) => {
+  // Replace the current formatPrize with this version:
+  const formatPrize = (prizesInput: ContestDetail['prizes'] = []) => {
+    // Normalize null/undefined → empty array
+    const prizes = prizesInput ?? [];
+
     if (!prizes.length) return 'TBA';
+
     const total = prizes.reduce((sum, p) => sum + (Number(p.amount_inr) || 0), 0);
     return total > 0 ? `₹${(total / 100).toLocaleString('en-IN')}` : 'TBA';
   };
 
-  const topPrize = contest?.prizes?.find((p) => p.rank === 1);
+  const topPrize = prizes.find((p) => p.rank === 1);
   const topPrizeText = topPrize?.amount_inr
     ? `₹${(Number(topPrize.amount_inr) / 100).toLocaleString('en-IN')}`
-    : formatPrize(contest?.prizes);
-
+    : formatPrize();
   const storefrontUrl = contest?.brand_id ? `/marketplace/storefront/${contest.brand_id}` : '#';
 
   // ─────────────────────────────────────────────────────────────
@@ -228,7 +233,7 @@ export default function ContestDetailPage() {
               </div>
               <div className="bg-primary/10 rounded-xl p-6 text-center">
                 <div className="text-4xl font-black text-primary">
-                  {formatPrize(contest.prizes)}
+                  {formatPrize(contest?.prizes)}
                 </div>
                 <p className="mt-2 text-sm uppercase tracking-wide text-muted-foreground">
                   Prize Pool

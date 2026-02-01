@@ -7,16 +7,16 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 export interface Contest {
   id: string;
-  brand_id: string; // usually the company/brand user
+  brand_id: string;
   title: string;
   slug: string;
   description: string;
   rules?: string | null;
   prizes: Array<{ rank: number; amount_inr?: number; type: string; [key: string]: any }> | null;
-  start_date: string; // ISO
-  submission_end_date: string; // ISO
-  voting_end_date?: string | null; // ISO
-  judging_end_date?: string | null; // ISO
+  start_date: string;
+  submission_end_date: string;
+  voting_end_date?: string | null;
+  judging_end_date?: string | null;
   status: 'draft' | 'published' | 'live' | 'judging' | 'completed' | 'archived';
   visibility: 'public' | 'private' | 'unlisted';
   max_entries_per_user: number;
@@ -27,7 +27,32 @@ export interface Contest {
   updated_at: string;
   deleted_at?: string | null;
 }
+export interface ContestDetail extends Contest {
+  // Hero / visual
+  hero_image?: string | null; // main banner/cover image
+  gallery?: string[]; // optional multiple images (for Swiper)
 
+  // Brand info (likely populated via ?populate=brand or join)
+  brand_name?: string | null;
+  brand_logo?: string | null;
+  brand_slug?: string | null; // if you want direct link to brand page
+
+  // Stats / engagement
+  view_count?: number;
+  entry_count?: number; // optional – number of submissions
+  // vote_count?: number;              // if public voting is shown
+
+  // Optional extras you might add later
+  categories?: string[]; // if you populate categories
+  judges_count?: number;
+}
+
+export interface GetContestsResponse {
+  contests: Contest[]; // list uses minimal Contest
+  total?: number;
+  page?: number;
+  limit?: number;
+}
 export interface ContestEntry {
   id: string;
   contest_id: string;
@@ -144,11 +169,10 @@ const contestsApi = createApi({
       providesTags: ['Contests'],
     }),
 
-    getContest: builder.query<Contest, string>({
-      query: (id) => `/contest/${id}`,
+    getContest: builder.query<ContestDetail, string>({
+      query: (id) => `/contest/${id}`, // ← add ?populate=brand if your backend needs it
       providesTags: (result, error, id) => [{ type: 'Contest', id }, 'Contests'],
     }),
-
     // ── CRUD ─────────────────────────────────────────────────
 
     createContest: builder.mutation<Contest, Partial<Contest>>({
