@@ -40,7 +40,7 @@ export default async function ArtistProfilePage({ params }: ArtistProfilePagePro
     <div className="container mx-auto py-8">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="md:col-span-1">
-          <ProfileView user={user} isPublic={true} />
+          <ProfileView isPublic={true} />
         </div>
         <div className="md:col-span-2">
           <h2 className="text-2xl font-bold mb-6">Artwork</h2>
