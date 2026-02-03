@@ -673,3 +673,49 @@
 .modfd__btn:active {
   background-color: #2a2a2d;
 }
+
+.main-content {
+    display: block;
+    min-height: 300px;
+}
+
+.page-content--with-blocks {
+    padding-bottom: 0;
+}
+
+.page-width {
+    max-width: 1500px;
+    margin: 0 auto;
+}
+
+.grid {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 0 -22px;
+}
+
+.grid__item {
+    float: left;
+    padding-left: 22px;
+    width: 100%;
+    min-height: 1px;
+}
+
+.section-header {
+    margin-bottom: 30px;
+}
+
+.section-header__title {
+    margin-bottom: 0;
+}
+
+.rte-h2 {
+    display: block;
+    font-size: 1.5em;
+    margin-block-start: 0.83em;
+    margin-block-end: 0.83em;
+    margin-inline-start: 0px;
+    margin-inline-end: 0px;
+    font-weight: bold;
+    unicode-bidi: isolate;
+}

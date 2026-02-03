@@ -690,7 +690,7 @@ const [timeLeft, setTimeLeft] = useState({
 
                       {/* <!-- One single button only (per request) --> */}
                       <div className="modfd__legalCta">
-                        <a className="modfd__btn" href="https://modfanart.com/pages/submission-terms-and-conditions" target="_blank" rel="noopener">Legal Terms and Conditions</a>
+                        <a className="modfd__btn" href="resources/terms" target="_blank" rel="noopener">Legal Terms and Conditions</a>
                       </div>
                     </div>
                   </div>
