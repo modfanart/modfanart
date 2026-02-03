@@ -88,11 +88,11 @@ export default function OpportunitiesPage() {
     );
   }
 
-  const featuredContests = contests.filter((c) =>
-    ['Marvel Cinematic Universe Art Challenge', 'Anime Expo 2023 Fan Art Contest'].includes(c.title)
-  );
+  // const featuredContests = contests.filter((c) =>
+  //   ['Marvel Cinematic Universe Art Challenge', 'Anime Expo 2023 Fan Art Contest'].includes(c.title)
+  // );
 
-  const regularContests = contests.filter((c) => !featuredContests.includes(c));
+  // const regularContests = contests.filter((c) => !featuredContests.includes(c));
 
   return (
     <div className="container py-10">
@@ -120,7 +120,7 @@ export default function OpportunitiesPage() {
 
         <TabsContent value="all" className="mt-6 space-y-12">
           {/* Featured Contests */}
-          {featuredContests.length > 0 && (
+          {/* {featuredContests.length > 0 && (
             <section>
               <h2 className="mb-6 text-2xl font-bold flex items-center gap-2">
                 <Trophy className="h-6 w-6 text-yellow-500" />
@@ -184,18 +184,19 @@ export default function OpportunitiesPage() {
                 ))}
               </div>
             </section>
-          )}
+          )} */}
 
           {/* All Contests */}
           <section>
             <h2 className="mb-6 text-2xl font-bold">All Active Contests</h2>
-            {regularContests.length === 0 && featuredContests.length === 0 ? (
+            {/* {regularContests.length === 0 && featuredContests.length === 0 ? ( */}
+            {contests.length === 0 ? (
               <p className="text-center text-muted-foreground py-12">
                 No active contests at the moment. Check back soon!
               </p>
             ) : (
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {regularContests.map((contest) => (
+                {contests.map((contest) => (
                   <Card
                     key={contest.id}
                     className="overflow-hidden hover:shadow-md transition-shadow"
