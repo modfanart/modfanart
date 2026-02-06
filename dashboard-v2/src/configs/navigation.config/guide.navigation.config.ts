@@ -8,74 +8,74 @@ import type { NavigationTree } from '@/@types/navigation'
 
 const guideNavigationConfig: NavigationTree[] = [
     {
-        key: 'راهنما',
+        key: 'guide',
         path: '',
-        title: 'راهنما',
+        title: 'Guide',
         translateKey: 'nav.guide.guide',
-        icon: 'راهنما',
+        icon: 'guide', // ← changed icon key to match English convention
         type: NAV_ITEM_TYPE_TITLE,
         authority: [ADMIN, USER],
         subMenu: [
             {
-                key: 'راهنما.مستندات',
+                key: 'guide.documentation',
                 path: `${GUIDE_PREFIX_PATH}/documentation/introduction`,
-                title: 'مستندات',
+                title: 'Documentation',
                 translateKey: 'nav.guide.documentation',
-                icon: 'مستندات',
+                icon: 'documentation',
                 type: NAV_ITEM_TYPE_ITEM,
                 authority: [ADMIN, USER],
                 meta: {
                     description: {
                         translateKey: 'nav.guide.documentationDesc',
-                        label: 'راهنمای قالب عمومی',
+                        label: 'General template guide',
                     },
                 },
                 subMenu: [],
             },
             {
-                key: 'راهنما.مستندات_کامپوننت_مشترک',
+                key: 'guide.shared-components',
                 path: `${GUIDE_PREFIX_PATH}/shared-component-doc/abbreviate-number`,
-                title: 'کامپوننت مشترک',
+                title: 'Shared Components',
                 translateKey: 'nav.guide.sharedComponentDoc',
-                icon: 'کامپوننت_مشترک',
+                icon: 'shared-components',
                 type: NAV_ITEM_TYPE_ITEM,
                 authority: [ADMIN, USER],
                 meta: {
                     description: {
                         translateKey: 'nav.guide.sharedComponentDocDesc',
-                        label: 'استفاده از کامپوننت مشترک',
+                        label: 'Using shared UI components',
                     },
                 },
                 subMenu: [],
             },
             {
-                key: 'راهنما.مستندات_ابزارها',
+                key: 'guide.utils',
                 path: `${GUIDE_PREFIX_PATH}/utils-doc/use-auth`,
-                title: 'ابزارها',
+                title: 'Utilities',
                 translateKey: 'nav.guide.utilsDoc',
-                icon: 'ابزارها',
+                icon: 'utils',
                 type: NAV_ITEM_TYPE_ITEM,
                 authority: [ADMIN, USER],
                 meta: {
                     description: {
                         translateKey: 'nav.guide.utilsDocDesc',
-                        label: 'مستندات درباره توابع ابزارها',
+                        label: 'Utility functions documentation',
                     },
                 },
                 subMenu: [],
             },
             {
-                key: 'راهنما.تغییرات_نسخه',
+                key: 'guide.changelog',
                 path: `${GUIDE_PREFIX_PATH}/changelog`,
-                title: 'تغییرات نسخه',
+                title: 'Changelog',
                 translateKey: 'nav.guide.changeLog',
-                icon: 'تغییرات_نسخه',
+                icon: 'changelog',
                 type: NAV_ITEM_TYPE_ITEM,
                 authority: [ADMIN, USER],
                 meta: {
                     description: {
                         translateKey: 'nav.guide.changeLogDesc',
-                        label: 'تمام سوابق نسخه‌ها',
+                        label: 'Version history & updates',
                     },
                 },
                 subMenu: [],
@@ -83,6 +83,5 @@ const guideNavigationConfig: NavigationTree[] = [
         ],
     },
 ]
-
 
 export default guideNavigationConfig

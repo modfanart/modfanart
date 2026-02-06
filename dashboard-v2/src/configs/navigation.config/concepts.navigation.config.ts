@@ -11,7 +11,7 @@ const conceptsNavigationConfig: NavigationTree[] = [
     {
         key: 'concepts',
         path: '',
-        title: 'مفاهیم',
+        title: 'Concepts',
         translateKey: 'nav.concepts',
         icon: 'concepts',
         type: NAV_ITEM_TYPE_TITLE,
@@ -26,7 +26,7 @@ const conceptsNavigationConfig: NavigationTree[] = [
             {
                 key: 'concepts.ai',
                 path: '',
-                title: 'هوش مصنوعی',
+                title: 'Artificial Intelligence',
                 translateKey: 'nav.conceptsAi.ai',
                 icon: 'ai',
                 type: NAV_ITEM_TYPE_COLLAPSE,
@@ -34,14 +34,14 @@ const conceptsNavigationConfig: NavigationTree[] = [
                 meta: {
                     description: {
                         translateKey: 'nav.conceptsAi.aiDesc',
-                        label: 'ابزارها و منابع هوش مصنوعی',
+                        label: 'AI tools & resources',
                     },
                 },
                 subMenu: [
                     {
                         key: 'concepts.ai.chat',
                         path: `${CONCEPTS_PREFIX_PATH}/ai/chat`,
-                        title: 'چت',
+                        title: 'Chat',
                         translateKey: 'nav.conceptsAi.chat',
                         icon: 'aiChat',
                         type: NAV_ITEM_TYPE_ITEM,
@@ -49,7 +49,7 @@ const conceptsNavigationConfig: NavigationTree[] = [
                         meta: {
                             description: {
                                 translateKey: 'nav.conceptsAi.chatDesc',
-                                label: 'سیستم‌های چت مبتنی بر هوش مصنوعی',
+                                label: 'AI-powered chat systems',
                             },
                         },
                         subMenu: [],
@@ -57,7 +57,7 @@ const conceptsNavigationConfig: NavigationTree[] = [
                     {
                         key: 'concepts.ai.image',
                         path: `${CONCEPTS_PREFIX_PATH}/ai/image`,
-                        title: 'تصویر',
+                        title: 'Image',
                         translateKey: 'nav.conceptsAi.image',
                         icon: 'aiImage',
                         type: NAV_ITEM_TYPE_ITEM,
@@ -65,7 +65,7 @@ const conceptsNavigationConfig: NavigationTree[] = [
                         meta: {
                             description: {
                                 translateKey: 'nav.conceptsAi.imageDesc',
-                                label: 'پردازش تصویر با هوش مصنوعی',
+                                label: 'AI image processing & generation',
                             },
                         },
                         subMenu: [],
@@ -75,7 +75,7 @@ const conceptsNavigationConfig: NavigationTree[] = [
             {
                 key: 'concepts.projects',
                 path: '',
-                title: 'پروژه‌ها',
+                title: 'Projects',
                 translateKey: 'nav.conceptsProjects.projects',
                 icon: 'projects',
                 type: NAV_ITEM_TYPE_COLLAPSE,
@@ -83,22 +83,23 @@ const conceptsNavigationConfig: NavigationTree[] = [
                 meta: {
                     description: {
                         translateKey: 'nav.conceptsProjects.projectsDesc',
-                        label: 'مدیریت و پیگیری پروژه‌ها',
+                        label: 'Project management & tracking',
                     },
                 },
                 subMenu: [
                     {
                         key: 'concepts.projects.scrumBoard',
                         path: `${CONCEPTS_PREFIX_PATH}/projects/scrum-board`,
-                        title: 'اسکرام بورد',
+                        title: 'Scrum Board',
                         translateKey: 'nav.conceptsProjects.scrumBoard',
                         icon: 'projectScrumBoard',
                         type: NAV_ITEM_TYPE_ITEM,
                         authority: [ADMIN, USER],
                         meta: {
                             description: {
-                                translateKey: 'nav.conceptsProjects.scrumBoardDesc',
-                                label: 'مدیریت گردش کار اسکرام',
+                                translateKey:
+                                    'nav.conceptsProjects.scrumBoardDesc',
+                                label: 'Scrum workflow management',
                             },
                         },
                         subMenu: [],
@@ -106,15 +107,16 @@ const conceptsNavigationConfig: NavigationTree[] = [
                     {
                         key: 'concepts.projects.projectList',
                         path: `${CONCEPTS_PREFIX_PATH}/projects/project-list`,
-                        title: 'فهرست پروژه‌ها',
+                        title: 'Project List',
                         translateKey: 'nav.conceptsProjects.projectList',
                         icon: 'projectList',
                         type: NAV_ITEM_TYPE_ITEM,
                         authority: [ADMIN, USER],
                         meta: {
                             description: {
-                                translateKey: 'nav.conceptsProjects.projectListDesc',
-                                label: 'سازماندهی تمام پروژه‌ها',
+                                translateKey:
+                                    'nav.conceptsProjects.projectListDesc',
+                                label: 'All projects overview',
                             },
                         },
                         subMenu: [],
@@ -122,15 +124,16 @@ const conceptsNavigationConfig: NavigationTree[] = [
                     {
                         key: 'concepts.projects.projectDetails',
                         path: `${CONCEPTS_PREFIX_PATH}/projects/project-details/27`,
-                        title: 'جزئیات',
+                        title: 'Project Details',
                         translateKey: 'nav.conceptsProjects.projectDetails',
                         icon: 'projectDetails',
                         type: NAV_ITEM_TYPE_ITEM,
                         authority: [ADMIN, USER],
                         meta: {
                             description: {
-                                translateKey: 'nav.conceptsProjects.projectDetailsDesc',
-                                label: 'اطلاعات دقیق پروژه',
+                                translateKey:
+                                    'nav.conceptsProjects.projectDetailsDesc',
+                                label: 'Detailed project information',
                             },
                         },
                         subMenu: [],
@@ -138,15 +141,16 @@ const conceptsNavigationConfig: NavigationTree[] = [
                     {
                         key: 'concepts.projects.projectTasks',
                         path: `${CONCEPTS_PREFIX_PATH}/projects/tasks`,
-                        title: 'وظایف',
+                        title: 'Tasks',
                         translateKey: 'nav.conceptsProjects.projectTasks',
                         icon: 'projectTask',
                         type: NAV_ITEM_TYPE_ITEM,
                         authority: [ADMIN, USER],
                         meta: {
                             description: {
-                                translateKey: 'nav.conceptsProjects.projectTasksDesc',
-                                label: 'مدیریت وظایف پروژه',
+                                translateKey:
+                                    'nav.conceptsProjects.projectTasksDesc',
+                                label: 'Project task management',
                             },
                         },
                         subMenu: [],
@@ -154,15 +158,16 @@ const conceptsNavigationConfig: NavigationTree[] = [
                     {
                         key: 'concepts.projects.projectIssue',
                         path: `${CONCEPTS_PREFIX_PATH}/projects/tasks/1`,
-                        title: 'مشکلات',
+                        title: 'Issues',
                         translateKey: 'nav.conceptsProjects.projectIssue',
                         icon: 'projectIssue',
                         type: NAV_ITEM_TYPE_ITEM,
                         authority: [ADMIN, USER],
                         meta: {
                             description: {
-                                translateKey: 'nav.conceptsProjects.projectIssueDesc',
-                                label: 'رفع مشکلات پروژه',
+                                translateKey:
+                                    'nav.conceptsProjects.projectIssueDesc',
+                                label: 'Issue tracking & resolution',
                             },
                         },
                         subMenu: [],
@@ -172,7 +177,7 @@ const conceptsNavigationConfig: NavigationTree[] = [
             {
                 key: 'concepts.customers',
                 path: '',
-                title: 'مشتریان',
+                title: 'Customers',
                 translateKey: 'nav.conceptsCustomers.customers',
                 icon: 'customers',
                 type: NAV_ITEM_TYPE_COLLAPSE,
@@ -180,22 +185,23 @@ const conceptsNavigationConfig: NavigationTree[] = [
                 meta: {
                     description: {
                         translateKey: 'nav.conceptsCustomers.customersDesc',
-                        label: 'مدیریت مشتریان',
+                        label: 'Customer management',
                     },
                 },
                 subMenu: [
                     {
                         key: 'concepts.customers.customerList',
                         path: `${CONCEPTS_PREFIX_PATH}/customers/customer-list`,
-                        title: 'لیست مشتریان',
+                        title: 'Customer List',
                         translateKey: 'nav.conceptsCustomers.customerList',
                         icon: 'customerList',
                         type: NAV_ITEM_TYPE_ITEM,
                         authority: [ADMIN, USER],
                         meta: {
                             description: {
-                                translateKey: 'nav.conceptsCustomers.customerListDesc',
-                                label: 'لیست تمام مشتریان',
+                                translateKey:
+                                    'nav.conceptsCustomers.customerListDesc',
+                                label: 'All customers overview',
                             },
                         },
                         subMenu: [],
@@ -203,15 +209,16 @@ const conceptsNavigationConfig: NavigationTree[] = [
                     {
                         key: 'concepts.customers.customerEdit',
                         path: `${CONCEPTS_PREFIX_PATH}/customers/customer-edit/1`,
-                        title: 'ویرایش مشتری',
+                        title: 'Edit Customer',
                         translateKey: 'nav.conceptsCustomers.customerEdit',
                         icon: 'customerEdit',
                         type: NAV_ITEM_TYPE_ITEM,
                         authority: [ADMIN, USER],
                         meta: {
                             description: {
-                                translateKey: 'nav.conceptsCustomers.customerEditDesc',
-                                label: 'ویرایش اطلاعات مشتری',
+                                translateKey:
+                                    'nav.conceptsCustomers.customerEditDesc',
+                                label: 'Update customer information',
                             },
                         },
                         subMenu: [],
@@ -219,15 +226,16 @@ const conceptsNavigationConfig: NavigationTree[] = [
                     {
                         key: 'concepts.customers.customerCreate',
                         path: `${CONCEPTS_PREFIX_PATH}/customers/customer-create`,
-                        title: 'افزودن مشتری',
+                        title: 'Add Customer',
                         translateKey: 'nav.conceptsCustomers.customerCreate',
                         icon: 'customerCreate',
                         type: NAV_ITEM_TYPE_ITEM,
                         authority: [ADMIN, USER],
                         meta: {
                             description: {
-                                translateKey: 'nav.conceptsCustomers.customerCreateDesc',
-                                label: 'افزودن مشتری جدید',
+                                translateKey:
+                                    'nav.conceptsCustomers.customerCreateDesc',
+                                label: 'Create new customer',
                             },
                         },
                         subMenu: [],
@@ -235,15 +243,16 @@ const conceptsNavigationConfig: NavigationTree[] = [
                     {
                         key: 'concepts.customers.customerDetails',
                         path: `${CONCEPTS_PREFIX_PATH}/customers/customer-details/1`,
-                        title: 'جزئیات مشتری',
+                        title: 'Customer Details',
                         translateKey: 'nav.conceptsCustomers.customerDetails',
                         icon: 'customerDetails',
                         type: NAV_ITEM_TYPE_ITEM,
                         authority: [ADMIN, USER],
                         meta: {
                             description: {
-                                translateKey: 'nav.conceptsCustomers.customerDetailsDesc',
-                                label: 'اطلاعات دقیق مشتری',
+                                translateKey:
+                                    'nav.conceptsCustomers.customerDetailsDesc',
+                                label: 'Detailed customer information',
                             },
                         },
                         subMenu: [],
@@ -253,7 +262,7 @@ const conceptsNavigationConfig: NavigationTree[] = [
             {
                 key: 'concepts.products',
                 path: '',
-                title: 'محصولات',
+                title: 'Products',
                 translateKey: 'nav.conceptsProducts.products',
                 icon: 'products',
                 type: NAV_ITEM_TYPE_COLLAPSE,
@@ -261,22 +270,23 @@ const conceptsNavigationConfig: NavigationTree[] = [
                 meta: {
                     description: {
                         translateKey: 'nav.conceptsProducts.productsDesc',
-                        label: 'مدیریت موجودی محصولات',
+                        label: 'Product & inventory management',
                     },
                 },
                 subMenu: [
                     {
                         key: 'concepts.products.productList',
                         path: `${CONCEPTS_PREFIX_PATH}/products/product-list`,
-                        title: 'لیست محصولات',
+                        title: 'Product List',
                         translateKey: 'nav.conceptsProducts.productList',
                         icon: 'productList',
                         type: NAV_ITEM_TYPE_ITEM,
                         authority: [ADMIN, USER],
                         meta: {
                             description: {
-                                translateKey: 'nav.conceptsProducts.productListDesc',
-                                label: 'تمام محصولات لیست شده',
+                                translateKey:
+                                    'nav.conceptsProducts.productListDesc',
+                                label: 'All products overview',
                             },
                         },
                         subMenu: [],
@@ -284,15 +294,16 @@ const conceptsNavigationConfig: NavigationTree[] = [
                     {
                         key: 'concepts.products.productEdit',
                         path: `${CONCEPTS_PREFIX_PATH}/products/product-edit/12`,
-                        title: 'ویرایش محصول',
+                        title: 'Edit Product',
                         translateKey: 'nav.conceptsProducts.productEdit',
                         icon: 'productEdit',
                         type: NAV_ITEM_TYPE_ITEM,
                         authority: [ADMIN, USER],
                         meta: {
                             description: {
-                                translateKey: 'nav.conceptsProducts.productEditDesc',
-                                label: 'ویرایش جزئیات محصول',
+                                translateKey:
+                                    'nav.conceptsProducts.productEditDesc',
+                                label: 'Update product details',
                             },
                         },
                         subMenu: [],
@@ -300,15 +311,16 @@ const conceptsNavigationConfig: NavigationTree[] = [
                     {
                         key: 'concepts.products.productCreate',
                         path: `${CONCEPTS_PREFIX_PATH}/products/product-create`,
-                        title: 'افزودن محصول',
+                        title: 'Add Product',
                         translateKey: 'nav.conceptsProducts.productCreate',
                         icon: 'productCreate',
                         type: NAV_ITEM_TYPE_ITEM,
                         authority: [ADMIN, USER],
                         meta: {
                             description: {
-                                translateKey: 'nav.conceptsProducts.productCreateDesc',
-                                label: 'افزودن محصول جدید',
+                                translateKey:
+                                    'nav.conceptsProducts.productCreateDesc',
+                                label: 'Create new product',
                             },
                         },
                         subMenu: [],
@@ -318,7 +330,7 @@ const conceptsNavigationConfig: NavigationTree[] = [
             {
                 key: 'concepts.orders',
                 path: '',
-                title: 'سفارش‌ها',
+                title: 'Orders',
                 translateKey: 'nav.conceptsOrders.orders',
                 icon: 'orders',
                 type: NAV_ITEM_TYPE_COLLAPSE,
@@ -326,22 +338,23 @@ const conceptsNavigationConfig: NavigationTree[] = [
                 meta: {
                     description: {
                         translateKey: 'nav.conceptsOrders.ordersDesc',
-                        label: 'مدیریت سفارشات مشتریان',
+                        label: 'Customer order management',
                     },
                 },
                 subMenu: [
                     {
                         key: 'concepts.orders.orderList',
                         path: `${CONCEPTS_PREFIX_PATH}/orders/order-list`,
-                        title: 'لیست سفارش',
+                        title: 'Order List',
                         translateKey: 'nav.conceptsOrders.orderList',
                         icon: 'orderList',
                         type: NAV_ITEM_TYPE_ITEM,
                         authority: [ADMIN, USER],
                         meta: {
                             description: {
-                                translateKey: 'nav.conceptsOrders.orderListDesc',
-                                label: 'مشاهده تمامی سفارشات مشتریان',
+                                translateKey:
+                                    'nav.conceptsOrders.orderListDesc',
+                                label: 'View all customer orders',
                             },
                         },
                         subMenu: [],
@@ -349,15 +362,16 @@ const conceptsNavigationConfig: NavigationTree[] = [
                     {
                         key: 'concepts.orders.orderEdit',
                         path: `${CONCEPTS_PREFIX_PATH}/orders/order-edit/95954`,
-                        title: 'ویرایش سفارش',
+                        title: 'Edit Order',
                         translateKey: 'nav.conceptsOrders.orderEdit',
                         icon: 'orderEdit',
                         type: NAV_ITEM_TYPE_ITEM,
                         authority: [ADMIN, USER],
                         meta: {
                             description: {
-                                translateKey: 'nav.conceptsOrders.orderEditDesc',
-                                label: 'ویرایش جزئیات سفارش',
+                                translateKey:
+                                    'nav.conceptsOrders.orderEditDesc',
+                                label: 'Update order details',
                             },
                         },
                         subMenu: [],
@@ -365,15 +379,16 @@ const conceptsNavigationConfig: NavigationTree[] = [
                     {
                         key: 'concepts.orders.orderCreate',
                         path: `${CONCEPTS_PREFIX_PATH}/orders/order-create`,
-                        title: 'ایجاد سفارش',
+                        title: 'Create Order',
                         translateKey: 'nav.conceptsOrders.orderCreate',
                         icon: 'orderCreate',
                         type: NAV_ITEM_TYPE_ITEM,
                         authority: [ADMIN, USER],
                         meta: {
                             description: {
-                                translateKey: 'nav.conceptsOrders.orderCreateDesc',
-                                label: 'ایجاد سفارش جدید',
+                                translateKey:
+                                    'nav.conceptsOrders.orderCreateDesc',
+                                label: 'Create new order',
                             },
                         },
                         subMenu: [],
@@ -381,15 +396,16 @@ const conceptsNavigationConfig: NavigationTree[] = [
                     {
                         key: 'concepts.orders.orderDetails',
                         path: `${CONCEPTS_PREFIX_PATH}/orders/order-details/95954`,
-                        title: 'جزئیات سفارش',
+                        title: 'Order Details',
                         translateKey: 'nav.conceptsOrders.orderDetails',
-                        icon: 'ordeDetails',
+                        icon: 'orderDetails', // ← fixed typo: ordeDetails → orderDetails
                         type: NAV_ITEM_TYPE_ITEM,
                         authority: [ADMIN, USER],
                         meta: {
                             description: {
-                                translateKey: 'nav.conceptsOrders.orderDetailsDesc',
-                                label: 'اطلاعات دقیق سفارش',
+                                translateKey:
+                                    'nav.conceptsOrders.orderDetailsDesc',
+                                label: 'Detailed order information',
                             },
                         },
                         subMenu: [],
@@ -399,7 +415,7 @@ const conceptsNavigationConfig: NavigationTree[] = [
             {
                 key: 'concepts.account',
                 path: '',
-                title: 'حساب کاربری',
+                title: 'Account',
                 translateKey: 'nav.conceptsAccount.account',
                 icon: 'account',
                 type: NAV_ITEM_TYPE_COLLAPSE,
@@ -407,22 +423,23 @@ const conceptsNavigationConfig: NavigationTree[] = [
                 meta: {
                     description: {
                         translateKey: 'nav.conceptsAccount.accountDesc',
-                        label: 'تنظیمات و اطلاعات حساب کاربری',
+                        label: 'Account settings & information',
                     },
                 },
                 subMenu: [
                     {
                         key: 'concepts.account.settings',
                         path: `${CONCEPTS_PREFIX_PATH}/account/settings`,
-                        title: 'تنظیمات',
+                        title: 'Settings',
                         translateKey: 'nav.conceptsAccount.settings',
                         icon: 'accountSettings',
                         type: NAV_ITEM_TYPE_ITEM,
                         authority: [ADMIN, USER],
                         meta: {
                             description: {
-                                translateKey: 'nav.conceptsAccount.settingsDesc',
-                                label: 'پیکربندی تنظیمات شما',
+                                translateKey:
+                                    'nav.conceptsAccount.settingsDesc',
+                                label: 'Configure your settings',
                             },
                         },
                         subMenu: [],
@@ -430,15 +447,16 @@ const conceptsNavigationConfig: NavigationTree[] = [
                     {
                         key: 'concepts.account.activityLog',
                         path: `${CONCEPTS_PREFIX_PATH}/account/activity-log`,
-                        title: 'گزارش فعالیت',
+                        title: 'Activity Log',
                         translateKey: 'nav.conceptsAccount.activityLog',
                         icon: 'accountActivityLogs',
                         type: NAV_ITEM_TYPE_ITEM,
                         authority: [ADMIN, USER],
                         meta: {
                             description: {
-                                translateKey: 'nav.conceptsAccount.activityLogDesc',
-                                label: 'مشاهده فعالیت‌های اخیر',
+                                translateKey:
+                                    'nav.conceptsAccount.activityLogDesc',
+                                label: 'View recent activity',
                             },
                         },
                         subMenu: [],
@@ -446,15 +464,16 @@ const conceptsNavigationConfig: NavigationTree[] = [
                     {
                         key: 'concepts.account.rolesPermissions',
                         path: `${CONCEPTS_PREFIX_PATH}/account/roles-permissions`,
-                        title: 'نقش‌ها و وظایف',
+                        title: 'Roles & Permissions',
                         translateKey: 'nav.conceptsAccount.rolesPermissions',
                         icon: 'accountRoleAndPermission',
                         type: NAV_ITEM_TYPE_ITEM,
                         authority: [ADMIN, USER],
                         meta: {
                             description: {
-                                translateKey: 'nav.conceptsAccount.rolesPermissionsDesc',
-                                label: 'مدیریت نقش‌ها و وظایف',
+                                translateKey:
+                                    'nav.conceptsAccount.rolesPermissionsDesc',
+                                label: 'Manage roles and permissions',
                             },
                         },
                         subMenu: [],
@@ -462,7 +481,7 @@ const conceptsNavigationConfig: NavigationTree[] = [
                     {
                         key: 'concepts.account.pricing',
                         path: `${CONCEPTS_PREFIX_PATH}/account/pricing`,
-                        title: 'قیمت‌گذاری',
+                        title: 'Pricing',
                         translateKey: 'nav.conceptsAccount.pricing',
                         icon: 'accountPricing',
                         type: NAV_ITEM_TYPE_ITEM,
@@ -470,17 +489,17 @@ const conceptsNavigationConfig: NavigationTree[] = [
                         meta: {
                             description: {
                                 translateKey: 'nav.conceptsAccount.pricingDesc',
-                                label: 'مشاهده طرح‌های قیمت‌گذاری',
+                                label: 'View pricing plans',
                             },
                         },
                         subMenu: [],
                     },
                 ],
-            },         
+            },
             {
                 key: 'concepts.helpCenter',
                 path: '',
-                title: 'مرکز راهنما',
+                title: 'Help Center',
                 translateKey: 'nav.conceptsHelpCenter.helpCenter',
                 icon: 'helpCenter',
                 type: NAV_ITEM_TYPE_COLLAPSE,
@@ -488,22 +507,23 @@ const conceptsNavigationConfig: NavigationTree[] = [
                 meta: {
                     description: {
                         translateKey: 'nav.conceptsHelpCenter.helpCenterDesc',
-                        label: 'پشتیبانی و مقالات',
+                        label: 'Support & articles',
                     },
                 },
                 subMenu: [
                     {
                         key: 'concepts.helpCenter.supportHub',
                         path: `${CONCEPTS_PREFIX_PATH}/help-center/support-hub`,
-                        title: 'مرکز پشتیبانی',
+                        title: 'Support Hub',
                         translateKey: 'nav.conceptsHelpCenter.supportHub',
-                        icon: 'helpCeterSupportHub',
+                        icon: 'helpCenterSupportHub',
                         type: NAV_ITEM_TYPE_ITEM,
                         authority: [ADMIN, USER],
                         meta: {
                             description: {
-                                translateKey: 'nav.conceptsHelpCenter.supportHubDesc',
-                                label: 'مرکز اصلی پشتیبانی',
+                                translateKey:
+                                    'nav.conceptsHelpCenter.supportHubDesc',
+                                label: 'Main support center',
                             },
                         },
                         subMenu: [],
@@ -511,15 +531,16 @@ const conceptsNavigationConfig: NavigationTree[] = [
                     {
                         key: 'concepts.helpCenter.article',
                         path: `${CONCEPTS_PREFIX_PATH}/help-center/article/pWBKE_0UiQ`,
-                        title: 'مقاله',
+                        title: 'Article',
                         translateKey: 'nav.conceptsHelpCenter.article',
-                        icon: 'helpCeterArticle',
+                        icon: 'helpCenterArticle',
                         type: NAV_ITEM_TYPE_ITEM,
                         authority: [ADMIN, USER],
                         meta: {
                             description: {
-                                translateKey: 'nav.conceptsHelpCenter.articleDesc',
-                                label: 'خواندن مقالات پشتیبانی',
+                                translateKey:
+                                    'nav.conceptsHelpCenter.articleDesc',
+                                label: 'Read support articles',
                             },
                         },
                         subMenu: [],
@@ -527,15 +548,16 @@ const conceptsNavigationConfig: NavigationTree[] = [
                     {
                         key: 'concepts.helpCenter.editArticle',
                         path: `${CONCEPTS_PREFIX_PATH}/help-center/edit-article/pWBKE_0UiQ`,
-                        title: 'ویرایش مقاله',
+                        title: 'Edit Article',
                         translateKey: 'nav.conceptsHelpCenter.editArticle',
-                        icon: 'helpCeterEditArticle',
+                        icon: 'helpCenterEditArticle',
                         type: NAV_ITEM_TYPE_ITEM,
                         authority: [ADMIN, USER],
                         meta: {
                             description: {
-                                translateKey: 'nav.conceptsHelpCenter.editArticleDesc',
-                                label: 'ویرایش محتوای مقاله',
+                                translateKey:
+                                    'nav.conceptsHelpCenter.editArticleDesc',
+                                label: 'Edit article content',
                             },
                         },
                         subMenu: [],
@@ -543,15 +565,16 @@ const conceptsNavigationConfig: NavigationTree[] = [
                     {
                         key: 'concepts.helpCenter.manageArticle',
                         path: `${CONCEPTS_PREFIX_PATH}/help-center/manage-article`,
-                        title: 'مدیریت مقاله',
+                        title: 'Manage Articles',
                         translateKey: 'nav.conceptsHelpCenter.manageArticle',
-                        icon: 'helpCeterManageArticle',
+                        icon: 'helpCenterManageArticle',
                         type: NAV_ITEM_TYPE_ITEM,
                         authority: [ADMIN, USER],
                         meta: {
                             description: {
-                                translateKey: 'nav.conceptsHelpCenter.manageArticleDesc',
-                                label: 'مدیریت مقالات',
+                                translateKey:
+                                    'nav.conceptsHelpCenter.manageArticleDesc',
+                                label: 'Manage help articles',
                             },
                         },
                         subMenu: [],
@@ -561,7 +584,7 @@ const conceptsNavigationConfig: NavigationTree[] = [
             {
                 key: 'concepts.calendar',
                 path: `${CONCEPTS_PREFIX_PATH}/calendar`,
-                title: 'تقویم',
+                title: 'Calendar',
                 translateKey: 'nav.calendar',
                 icon: 'calendar',
                 type: NAV_ITEM_TYPE_ITEM,
@@ -569,7 +592,7 @@ const conceptsNavigationConfig: NavigationTree[] = [
                 meta: {
                     description: {
                         translateKey: 'nav.calendarDesc',
-                        label: 'برنامه و رویدادها',
+                        label: 'Schedule & events',
                     },
                 },
                 subMenu: [],
@@ -577,7 +600,7 @@ const conceptsNavigationConfig: NavigationTree[] = [
             {
                 key: 'concepts.fileManager',
                 path: `${CONCEPTS_PREFIX_PATH}/file-manager`,
-                title: 'مدیریت فایل',
+                title: 'File Manager',
                 translateKey: 'nav.fileManager',
                 icon: 'fileManager',
                 type: NAV_ITEM_TYPE_ITEM,
@@ -585,7 +608,7 @@ const conceptsNavigationConfig: NavigationTree[] = [
                 meta: {
                     description: {
                         translateKey: 'nav.fileManagerDesc',
-                        label: 'مدیریت فایل‌های شما',
+                        label: 'Manage your files',
                     },
                 },
                 subMenu: [],
@@ -593,7 +616,7 @@ const conceptsNavigationConfig: NavigationTree[] = [
             {
                 key: 'concepts.mail',
                 path: `${CONCEPTS_PREFIX_PATH}/mail`,
-                title: 'ایمیل',
+                title: 'Mail',
                 translateKey: 'nav.mail',
                 icon: 'mail',
                 type: NAV_ITEM_TYPE_ITEM,
@@ -601,7 +624,7 @@ const conceptsNavigationConfig: NavigationTree[] = [
                 meta: {
                     description: {
                         translateKey: 'nav.mailDesc',
-                        label: 'مدیریت ایمیل‌های شما',
+                        label: 'Manage your emails',
                     },
                 },
                 subMenu: [],
@@ -609,7 +632,7 @@ const conceptsNavigationConfig: NavigationTree[] = [
             {
                 key: 'concepts.chat',
                 path: `${CONCEPTS_PREFIX_PATH}/chat`,
-                title: 'چت',
+                title: 'Chat',
                 translateKey: 'nav.chat',
                 icon: 'chat',
                 type: NAV_ITEM_TYPE_ITEM,
@@ -617,12 +640,11 @@ const conceptsNavigationConfig: NavigationTree[] = [
                 meta: {
                     description: {
                         translateKey: 'nav.chatDesc',
-                        label: 'چت با دوستان',
+                        label: 'Chat with others',
                     },
                 },
                 subMenu: [],
             },
-            
         ],
     },
 ]

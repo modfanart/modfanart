@@ -15,7 +15,7 @@ export function getWeekdaysNames(
 
     // در صورتی که به ترتیب صحیح نیامده باشد، باید روزهای هفته را مرتب کنیم
     for (let i = 0; i < 7; i += 1) {
-        names.push(weekdays[i])  // استفاده از آرایه‌ی روزهای هفته به ترتیب صحیح
+        names.push(weekdays[i]) // استفاده از آرایه‌ی روزهای هفته به ترتیب صحیح
         date.setDate(date.getDate() + 1)
     }
 

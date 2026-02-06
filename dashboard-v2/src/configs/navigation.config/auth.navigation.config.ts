@@ -11,7 +11,7 @@ const authNavigationConfig: NavigationTree[] = [
     {
         key: 'authentication',
         path: '',
-        title: 'احراز هویت',
+        title: 'Authentication',
         translateKey: 'nav.authentication.authentication',
         icon: 'authentication',
         type: NAV_ITEM_TYPE_TITLE,
@@ -25,7 +25,7 @@ const authNavigationConfig: NavigationTree[] = [
             {
                 key: 'authentication.signIn',
                 path: '',
-                title: 'ورود',
+                title: 'Sign In',
                 translateKey: 'nav.authentication.signIn',
                 icon: 'signIn',
                 type: NAV_ITEM_TYPE_COLLAPSE,
@@ -34,7 +34,7 @@ const authNavigationConfig: NavigationTree[] = [
                     {
                         key: 'authentication.signInSimple',
                         path: `${AUTH_PREFIX_PATH}/sign-in-simple`,
-                        title: 'ساده',
+                        title: 'Simple',
                         translateKey: 'nav.authentication.signInSimple',
                         icon: '',
                         type: NAV_ITEM_TYPE_ITEM,
@@ -44,7 +44,7 @@ const authNavigationConfig: NavigationTree[] = [
                     {
                         key: 'authentication.signInSide',
                         path: `${AUTH_PREFIX_PATH}/sign-in-side`,
-                        title: 'کناری',
+                        title: 'Side',
                         translateKey: 'nav.authentication.signInSide',
                         icon: '',
                         type: NAV_ITEM_TYPE_ITEM,
@@ -54,7 +54,7 @@ const authNavigationConfig: NavigationTree[] = [
                     {
                         key: 'authentication.signInSplit',
                         path: `${AUTH_PREFIX_PATH}/sign-in-split`,
-                        title: 'تقسیم',
+                        title: 'Split',
                         translateKey: 'nav.authentication.signInSplit',
                         icon: '',
                         type: NAV_ITEM_TYPE_ITEM,
@@ -66,7 +66,7 @@ const authNavigationConfig: NavigationTree[] = [
             {
                 key: 'authentication.signUp',
                 path: '',
-                title: 'ثبت‌نام',
+                title: 'Sign Up',
                 translateKey: 'nav.authentication.signUp',
                 icon: 'signUp',
                 type: NAV_ITEM_TYPE_COLLAPSE,
@@ -75,7 +75,7 @@ const authNavigationConfig: NavigationTree[] = [
                     {
                         key: 'authentication.signUpSimple',
                         path: `${AUTH_PREFIX_PATH}/sign-up-simple`,
-                        title: 'ساده',
+                        title: 'Simple',
                         translateKey: 'nav.authentication.signUpSimple',
                         icon: '',
                         type: NAV_ITEM_TYPE_ITEM,
@@ -85,7 +85,7 @@ const authNavigationConfig: NavigationTree[] = [
                     {
                         key: 'authentication.signUpSide',
                         path: `${AUTH_PREFIX_PATH}/sign-up-side`,
-                        title: 'کناری',
+                        title: 'Side',
                         translateKey: 'nav.authentication.signUpSide',
                         icon: '',
                         type: NAV_ITEM_TYPE_ITEM,
@@ -95,7 +95,7 @@ const authNavigationConfig: NavigationTree[] = [
                     {
                         key: 'authentication.signUpSplit',
                         path: `${AUTH_PREFIX_PATH}/sign-up-split`,
-                        title: 'تقسیم',
+                        title: 'Split',
                         translateKey: 'nav.authentication.signUpSplit',
                         icon: '',
                         type: NAV_ITEM_TYPE_ITEM,
@@ -107,7 +107,7 @@ const authNavigationConfig: NavigationTree[] = [
             {
                 key: 'authentication.forgotPassword',
                 path: '',
-                title: 'فراموشی رمز عبور',
+                title: 'Forgot Password',
                 translateKey: 'nav.authentication.forgotPassword',
                 icon: 'forgotPassword',
                 type: NAV_ITEM_TYPE_COLLAPSE,
@@ -116,7 +116,7 @@ const authNavigationConfig: NavigationTree[] = [
                     {
                         key: 'authentication.forgotPasswordSimple',
                         path: `${AUTH_PREFIX_PATH}/forgot-password-simple`,
-                        title: 'ساده',
+                        title: 'Simple',
                         translateKey: 'nav.authentication.forgotPasswordSimple',
                         icon: '',
                         type: NAV_ITEM_TYPE_ITEM,
@@ -126,7 +126,7 @@ const authNavigationConfig: NavigationTree[] = [
                     {
                         key: 'authentication.forgotPasswordSide',
                         path: `${AUTH_PREFIX_PATH}/forgot-password-side`,
-                        title: 'کناری',
+                        title: 'Side',
                         translateKey: 'nav.authentication.forgotPasswordSide',
                         icon: '',
                         type: NAV_ITEM_TYPE_ITEM,
@@ -136,7 +136,7 @@ const authNavigationConfig: NavigationTree[] = [
                     {
                         key: 'authentication.forgotPasswordSplit',
                         path: `${AUTH_PREFIX_PATH}/forgot-password-split`,
-                        title: 'تقسیم',
+                        title: 'Split',
                         translateKey: 'nav.authentication.forgotPasswordSplit',
                         icon: '',
                         type: NAV_ITEM_TYPE_ITEM,
@@ -148,7 +148,7 @@ const authNavigationConfig: NavigationTree[] = [
             {
                 key: 'authentication.resetPassword',
                 path: '',
-                title: 'بازنشانی رمز عبور',
+                title: 'Reset Password',
                 translateKey: 'nav.authentication.resetPassword',
                 icon: 'resetPassword',
                 type: NAV_ITEM_TYPE_COLLAPSE,
@@ -157,7 +157,7 @@ const authNavigationConfig: NavigationTree[] = [
                     {
                         key: 'authentication.resetPasswordSimple',
                         path: `${AUTH_PREFIX_PATH}/reset-password-simple`,
-                        title: 'ساده',
+                        title: 'Simple',
                         translateKey: 'nav.authentication.resetPasswordSimple',
                         icon: '',
                         type: NAV_ITEM_TYPE_ITEM,
@@ -167,7 +167,7 @@ const authNavigationConfig: NavigationTree[] = [
                     {
                         key: 'authentication.resetPasswordSide',
                         path: `${AUTH_PREFIX_PATH}/reset-password-side`,
-                        title: 'کناری',
+                        title: 'Side',
                         translateKey: 'nav.authentication.resetPasswordSide',
                         icon: '',
                         type: NAV_ITEM_TYPE_ITEM,
@@ -177,7 +177,7 @@ const authNavigationConfig: NavigationTree[] = [
                     {
                         key: 'authentication.resetPasswordSplit',
                         path: `${AUTH_PREFIX_PATH}/reset-password-split`,
-                        title: 'تقسیم',
+                        title: 'Split',
                         translateKey: 'nav.authentication.resetPasswordSplit',
                         icon: '',
                         type: NAV_ITEM_TYPE_ITEM,
@@ -189,6 +189,5 @@ const authNavigationConfig: NavigationTree[] = [
         ],
     },
 ]
-
 
 export default authNavigationConfig

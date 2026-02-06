@@ -42,34 +42,34 @@ const ticketStatus: Record<
     }
 > = {
     0: {
-        label: 'تکمیل شده',
+        label: 'Completed',
         bgClass: 'bg-emerald-500',
         textClass: 'text-emerald-500',
     },
     1: {
-        label: 'در حال انجام',
+        label: 'In Progress',
         bgClass: 'bg-blue-500',
         textClass: 'text-blue-500',
     },
     2: {
-        label: 'آماده برای تست',
+        label: 'Ready for Testing',
         bgClass: 'bg-amber-500',
         textClass: 'text-amber-500',
     },
 }
 
 const taskLabelColors: Record<string, string> = {
-    'مسئله زنده': 'bg-rose-500',
-    'پشتیبانی': 'bg-blue-500',
-    'خطا': 'bg-amber-400',
-    'اولویت پایین': 'bg-indigo-500',
+    'Live Issue': 'bg-rose-500',
+    Support: 'bg-blue-500',
+    Bug: 'bg-amber-400',
+    'Low Priority': 'bg-indigo-500',
 }
 
 const UnixDateTime = ({ value }: { value: number }) => {
-    const formattedTime = dayjs.unix(value).format('hh:mm A');
-    const persianTime = formattedTime.replace('AM', 'صبح').replace('PM', 'عصر');
-
-    return <>{persianTime}</>;
+    // You can keep 12-hour format with AM/PM or switch to 24-hour
+    // Here we keep your original logic but in English
+    const formattedTime = dayjs.unix(value).format('hh:mm A')
+    return <>{formattedTime}</>
 }
 
 const HighlightedText = ({ children, className }: CommonProps) => {
@@ -82,7 +82,6 @@ const HighlightedText = ({ children, className }: CommonProps) => {
 
 const ActivityEvent = ({ data, compact }: ActivityEventProps) => {
     const options: HTMLReactParserOptions = {
-        // eslint-disable-next-line  @typescript-eslint/no-explicit-any
         replace: (node: any) => {
             if (node.type === 'tag' && node?.name === 'strong') {
                 return (
@@ -106,9 +105,9 @@ const ActivityEvent = ({ data, compact }: ActivityEventProps) => {
                         </span>
                     </div>
                     <div className="mt-2">
-                        <span className="mx-1">تغییر داده است </span>
+                        <span className="mx-1">changed status of</span>
                         <HighlightedText>{data.ticket}</HighlightedText>
-                        <span className="mx-1"> وضعیت را به </span>
+                        <span className="mx-1">to</span>
                         <span className="inline-flex items-center gap-1">
                             <Badge
                                 className={
@@ -124,9 +123,9 @@ const ActivityEvent = ({ data, compact }: ActivityEventProps) => {
             ) : (
                 <p className="my-1">
                     <HighlightedText>{data.userName}</HighlightedText>
-                    <span className="mx-1">تغییر داده است </span>
+                    <span className="mx-1">changed status of</span>
                     <HighlightedText>{data.ticket}</HighlightedText>
-                    <span className="mx-1"> وضعیت را به </span>
+                    <span className="mx-1">to</span>
                     <span className="inline-flex items-center gap-1">
                         <Badge
                             className={ticketStatus[data.status || 0].bgClass}
@@ -135,11 +134,12 @@ const ActivityEvent = ({ data, compact }: ActivityEventProps) => {
                             {ticketStatus[data.status || 0].label}
                         </HighlightedText>
                     </span>
-                    <span className="ml-1 rtl:mr-1 md;ml-3 rtl:md:mr-3 font-semibold">
+                    <span className="ml-1 rtl:mr-1 md:ml-3 rtl:md:mr-3 font-semibold">
                         <UnixDateTime value={data.dateTime} />
                     </span>
                 </p>
             )
+
         case COMMENT:
             return (
                 <>
@@ -154,16 +154,16 @@ const ActivityEvent = ({ data, compact }: ActivityEventProps) => {
                                 </span>
                             </div>
                             <div className="mt-2">
-                                <span className="mx-1">نظر داده است در</span>
-                                <HighlightedText>پست</HighlightedText>
+                                <span className="mx-1">commented on</span>
+                                <HighlightedText>post</HighlightedText>
                             </div>
                         </>
                     ) : (
                         <p className="gap-1 inline-flex items-center flex-wrap">
                             <HighlightedText>{data.userName}</HighlightedText>
-                            <span className="mx-1">نظر داده است در</span>
-                            <HighlightedText>پست</HighlightedText>
-                            <span className="ml-1 rtl:mr-1 md;ml-3 rtl:md:mr-3 font-semibold">
+                            <span className="mx-1">commented on</span>
+                            <HighlightedText>post</HighlightedText>
+                            <span className="ml-1 rtl:mr-1 md:ml-3 rtl:md:mr-3 font-semibold">
                                 <UnixDateTime value={data.dateTime} />
                             </span>
                         </p>
@@ -176,6 +176,7 @@ const ActivityEvent = ({ data, compact }: ActivityEventProps) => {
                     </Card>
                 </>
             )
+
         case COMMENT_MENTION:
             return (
                 <>
@@ -191,19 +192,19 @@ const ActivityEvent = ({ data, compact }: ActivityEventProps) => {
                             </div>
                             <div className="mt-2">
                                 <span className="mx-1">
-                                    به شما در یک نظر اشاره کرده است
+                                    mentioned you in a comment on
                                 </span>
-                                <HighlightedText>پست</HighlightedText>
+                                <HighlightedText>post</HighlightedText>
                             </div>
                         </>
                     ) : (
                         <p className="my-1">
                             <HighlightedText>{data.userName}</HighlightedText>
                             <span className="mx-1">
-                                به شما در یک نظر اشاره کرده است
+                                mentioned you in a comment on
                             </span>
-                            <HighlightedText>پست</HighlightedText>
-                            <span className="ml-1 rtl:mr-1 md;ml-3 rtl:md:mr-3 font-semibold">
+                            <HighlightedText>post</HighlightedText>
+                            <span className="ml-1 rtl:mr-1 md:ml-3 rtl:md:mr-3 font-semibold">
                                 <UnixDateTime value={data.dateTime} />
                             </span>
                         </p>
@@ -216,6 +217,7 @@ const ActivityEvent = ({ data, compact }: ActivityEventProps) => {
                     </Card>
                 </>
             )
+
         case ADD_TAGS_TO_TICKET:
             return compact ? (
                 <>
@@ -226,13 +228,15 @@ const ActivityEvent = ({ data, compact }: ActivityEventProps) => {
                         </span>
                     </div>
                     <div className="mt-2">
-                        <span className="mx-1">برچسب ها را اضافه کرده است </span>
+                        <span className="mx-1">added tags</span>
                         {data?.tags?.map((label, index) => (
                             <Tag
                                 key={label + index}
                                 prefix
                                 className="mx-1"
-                                prefixClass={`${taskLabelColors[label]}`}
+                                prefixClass={
+                                    taskLabelColors[label] || 'bg-gray-400'
+                                }
                             >
                                 {label}
                             </Tag>
@@ -241,24 +245,27 @@ const ActivityEvent = ({ data, compact }: ActivityEventProps) => {
                 </>
             ) : (
                 <div>
-                    <HighlightedText>{data.userName} </HighlightedText>
-                    <span className="mx-1">برچسب ها را اضافه کرده است </span>
+                    <HighlightedText>{data.userName}</HighlightedText>
+                    <span className="mx-1">added tags</span>
                     <span className="inline-flex items-center gap-1">
                         {data?.tags?.map((label, index) => (
                             <Tag
                                 key={label + index}
                                 prefix
-                                prefixClass={`${taskLabelColors[label]}`}
+                                prefixClass={
+                                    taskLabelColors[label] || 'bg-gray-400'
+                                }
                             >
                                 {label}
                             </Tag>
                         ))}
                     </span>
-                    <span className="ml-1 rtl:mr-1 md;ml-3 rtl:md:mr-3 font-semibold">
+                    <span className="ml-1 rtl:mr-1 md:ml-3 rtl:md:mr-3 font-semibold">
                         <UnixDateTime value={data.dateTime} />
                     </span>
                 </div>
             )
+
         case ADD_FILES_TO_TICKET:
             return compact ? (
                 <>
@@ -269,38 +276,33 @@ const ActivityEvent = ({ data, compact }: ActivityEventProps) => {
                         </span>
                     </div>
                     <div className="mt-2">
-                        <span className="mx-1">اضافه کرده است</span>
+                        <span className="mx-1">attached</span>
                         {data?.files?.map((file, index) => (
                             <HighlightedText key={file + index}>
                                 {file}
-                                {!isLastChild(data?.files || [], index) && (
-                                    <span className="ltr:mr-1 rtl:ml-1">
-                                        ,{' '}
-                                    </span>
-                                )}
+                                {!isLastChild(data?.files || [], index) && ', '}
                             </HighlightedText>
                         ))}
                     </div>
                 </>
             ) : (
                 <div className="inline-flex items-center flex-wrap">
-                    <HighlightedText>{data.userName} </HighlightedText>
-                    <span className="mx-1">اضافه کرده است</span>
+                    <HighlightedText>{data.userName}</HighlightedText>
+                    <span className="mx-1">attached</span>
                     {data?.files?.map((file, index) => (
                         <HighlightedText key={file + index}>
                             {file}
-                            {!isLastChild(data?.files || [], index) && (
-                                <span className="ltr:mr-1 rtl:ml-1">, </span>
-                            )}
+                            {!isLastChild(data?.files || [], index) && ', '}
                         </HighlightedText>
                     ))}
-                    <span className="mx-1">به تیکت</span>
-                    <HighlightedText>{data.ticket} </HighlightedText>
-                    <span className="ml-1 rtl:mr-1 md;ml-3 rtl:md:mr-3 font-semibold">
+                    <span className="mx-1">to ticket</span>
+                    <HighlightedText>{data.ticket}</HighlightedText>
+                    <span className="ml-1 rtl:mr-1 md:ml-3 rtl:md:mr-3 font-semibold">
                         <UnixDateTime value={data.dateTime} />
                     </span>
                 </div>
             )
+
         case ASSIGN_TICKET:
             return compact ? (
                 <>
@@ -311,35 +313,37 @@ const ActivityEvent = ({ data, compact }: ActivityEventProps) => {
                         </span>
                     </div>
                     <div className="mt-2">
-                        <span className="mx-1">تیکت را اختصاص داده است</span>
+                        <span className="mx-1">assigned ticket</span>
                         <HighlightedText>{data.ticket}</HighlightedText>
-                        <span className="mx-1">به</span>
-                        <HighlightedText>{data?.assignee} </HighlightedText>
+                        <span className="mx-1">to</span>
+                        <HighlightedText>{data?.assignee}</HighlightedText>
                     </div>
                 </>
             ) : (
                 <div>
-                    <HighlightedText>{data.userName} </HighlightedText>
-                    <span className="mx-1">تیکت را اختصاص داده است</span>
+                    <HighlightedText>{data.userName}</HighlightedText>
+                    <span className="mx-1">assigned ticket</span>
                     <HighlightedText>{data.ticket}</HighlightedText>
-                    <span className="mx-1">به</span>
-                    <HighlightedText>{data.assignee} </HighlightedText>
-                    <span className="ml-1 rtl:mr-1 md;ml-3 rtl:md:mr-3 font-semibold">
+                    <span className="mx-1">to</span>
+                    <HighlightedText>{data.assignee}</HighlightedText>
+                    <span className="ml-1 rtl:mr-1 md:ml-3 rtl:md:mr-3 font-semibold">
                         <UnixDateTime value={data.dateTime} />
                     </span>
                 </div>
             )
+
         case CREATE_TICKET:
             return (
                 <div className="inline-flex items-center flex-wrap">
-                    <HighlightedText>{data.userName} </HighlightedText>
-                    <span className="mx-1">تیکت را ایجاد کرده است</span>
+                    <HighlightedText>{data.userName}</HighlightedText>
+                    <span className="mx-1">created ticket</span>
                     <HighlightedText>{data.ticket}</HighlightedText>
-                    <span className="ml-1 rtl:mr-1 md;ml-3 rtl:md:mr-3 font-semibold">
+                    <span className="ml-1 rtl:mr-1 md:ml-3 rtl:md:mr-3 font-semibold">
                         <UnixDateTime value={data.dateTime} />
                     </span>
                 </div>
             )
+
         default:
             return null
     }

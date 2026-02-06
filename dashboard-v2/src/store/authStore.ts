@@ -1,59 +1,71 @@
+// src/store/authStore.ts  (or wherever this file lives)
+import { create } from 'zustand'
+import { persist, createJSONStorage } from 'zustand/middleware'
 import cookiesStorage from '@/utils/cookiesStorage'
 import appConfig from '@/configs/app.config'
 import { TOKEN_NAME_IN_STORAGE } from '@/constants/api.constant'
-import { create } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
 import type { User } from '@/@types/auth'
 
-type Session = {
+// ────────────────────────────────────────────────
+//  Storage Helper (used by both session & token)
+const getStorage = () => {
+    const strategy = appConfig.accessTokenPersistStrategy
+
+    if (strategy === 'localStorage') {
+        return localStorage
+    }
+    if (strategy === 'sessionStorage') {
+        return sessionStorage
+    }
+    // fallback to cookies (your custom implementation)
+    return cookiesStorage
+}
+
+// ────────────────────────────────────────────────
+// Session / User Store (persistent)
+interface Session {
     signedIn: boolean
 }
 
-type AuthState = {
+interface AuthState {
     session: Session
     user: User
 }
 
-type AuthAction = {
-    setSessionSignedIn: (payload: boolean) => void
-    setUser: (payload: User) => void
+interface AuthActions {
+    setSessionSignedIn: (signedIn: boolean) => void
+    setUser: (user: Partial<User>) => void
+    resetSession: () => void
 }
 
-const getPersistStorage = () => {
-    if (appConfig.accessTokenPersistStrategy === 'localStorage') {
-        return localStorage
-    }
-
-    if (appConfig.accessTokenPersistStrategy === 'sessionStorage') {
-        return sessionStorage
-    }
-
-    return cookiesStorage
+const initialUser: User = {
+    avatar: '',
+    userName: '',
+    email: '',
+    authority: [],
+    // add any other required User fields here
 }
 
 const initialState: AuthState = {
     session: {
         signedIn: false,
     },
-    user: {
-        avatar: '',
-        userName: '',
-        email: '',
-        authority: [],
-    },
+    user: initialUser,
 }
 
-export const useSessionUser = create<AuthState & AuthAction>()(
+export const useSessionUser = create<AuthState & AuthActions>()(
     persist(
         (set) => ({
             ...initialState,
-            setSessionSignedIn: (payload) =>
+
+            setSessionSignedIn: (signedIn) =>
                 set((state) => ({
                     session: {
                         ...state.session,
-                        signedIn: payload,
+                        signedIn,
                     },
                 })),
+
             setUser: (payload) =>
                 set((state) => ({
                     user: {
@@ -61,20 +73,87 @@ export const useSessionUser = create<AuthState & AuthAction>()(
                         ...payload,
                     },
                 })),
+
+            resetSession: () =>
+                set({
+                    session: { signedIn: false },
+                    user: initialUser,
+                }),
         }),
-        { name: 'sessionUser', storage: createJSONStorage(() => localStorage) },
+        {
+            name: 'session-user-storage', // unique storage key
+            storage: createJSONStorage(getStorage), // respects appConfig strategy
+            partialize: (state) => ({
+                // only persist these fields (optional optimization)
+                session: state.session,
+                user: state.user,
+            }),
+        },
     ),
 )
 
-export const useToken = () => {
-    const storage = getPersistStorage()
+// ────────────────────────────────────────────────
+// Token Store (also persistent + reactive)
+interface TokenState {
+    token: string | null
+    setToken: (token: string | null) => void
+    clearToken: () => void
+}
 
-    const setToken = (token: string) => {
-        storage.setItem(TOKEN_NAME_IN_STORAGE, token)
-    }
+export const useTokenStore = create<TokenState>()(
+    persist(
+        (set) => {
+            // Initial value read once at store creation
+            const storage = getStorage()
+            const initialToken = storage.getItem(TOKEN_NAME_IN_STORAGE) ?? null
+
+            return {
+                token: initialToken,
+
+                setToken: (token) => {
+                    const storage = getStorage()
+                    if (token) {
+                        storage.setItem(TOKEN_NAME_IN_STORAGE, token)
+                    } else {
+                        storage.removeItem(TOKEN_NAME_IN_STORAGE)
+                    }
+                    set({ token })
+                },
+
+                clearToken: () => {
+                    const storage = getStorage()
+                    storage.removeItem(TOKEN_NAME_IN_STORAGE)
+                    set({ token: null })
+                },
+            }
+        },
+        {
+            name: 'auth-token-storage', // unique key
+            storage: createJSONStorage(getStorage),
+        },
+    ),
+)
+
+// Convenience hook that most components will use
+export const useToken = () => useTokenStore()
+
+// Optional: combined hook if you often need both
+export const useAuth = () => {
+    const { session, user, setSessionSignedIn, setUser, resetSession } =
+        useSessionUser()
+    const { token, setToken, clearToken } = useToken()
+
+    const authenticated = Boolean(token && session.signedIn)
 
     return {
+        authenticated,
+        token,
+        user,
+        session,
         setToken,
-        token: storage.getItem(TOKEN_NAME_IN_STORAGE),
+        clearToken,
+        setSessionSignedIn,
+        setUser,
+        resetSession,
     }
 }

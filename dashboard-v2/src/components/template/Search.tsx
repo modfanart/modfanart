@@ -32,31 +32,31 @@ type SearchResult = {
 
 const recommendedSearch: SearchResult[] = [
     {
-        title: 'پیشنهادی',
+        title: 'Recommended',
         data: [
             {
                 key: 'guide.documentation',
                 path: `${GUIDE_PREFIX_PATH}/documentation/introduction`,
-                title: 'مستندات',
+                title: 'Documentation',
                 icon: 'documentation',
                 category: 'Docs',
-                categoryTitle: 'راهنما',
+                categoryTitle: 'Guide',
             },
             {
                 key: 'guide.changeLog',
                 path: `${GUIDE_PREFIX_PATH}/changelog`,
-                title: 'تغییرات',
+                title: 'Changelog',
                 icon: 'changeLog',
                 category: 'Docs',
-                categoryTitle: 'راهنما',
+                categoryTitle: 'Guide',
             },
             {
                 key: 'uiComponent.common.button',
                 path: `${UI_COMPONENTS_PREFIX_PATH}/button`,
-                title: 'دکمه',
+                title: 'Button',
                 icon: 'uiCommonButton',
                 category: 'Common',
-                categoryTitle: 'مولفه‌های رابط کاربری',
+                categoryTitle: 'UI Components',
             },
         ],
     },
@@ -71,6 +71,9 @@ const ListItem = (props: {
     onNavigate: () => void
 }) => {
     const { icon, label, url = '', keyWord, onNavigate } = props
+
+    // You may want to flip the chevron based on direction (RTL/LTR)
+    // Currently using HiChevronLeft – consider making it dynamic if needed
 
     return (
         <Link to={url} onClick={onNavigate}>
@@ -188,16 +191,16 @@ const _Search = ({ className }: { className?: string }) => {
                             <input
                                 ref={inputRef}
                                 className="ring-0 outline-none block w-full p-4 text-base bg-transparent text-gray-900 dark:text-gray-100"
-                                placeholder="جستجو..."
+                                placeholder="Search..."
                                 onChange={handleSearch}
                             />
                         </div>
                         <Button size="xs" onClick={handleSearchClose}>
-                            خروج
+                            Close
                         </Button>
                     </div>
                     <div className="py-6 px-5">
-                        <ScrollBar className=" max-h-[350px] overflow-y-auto">
+                        <ScrollBar className="max-h-[350px] overflow-y-auto">
                             {searchResult.map((result) => (
                                 <div key={result.title} className="mb-4">
                                     <h6 className="mb-3">{result.title}</h6>
@@ -217,11 +220,9 @@ const _Search = ({ className }: { className?: string }) => {
                             ))}
                             {searchResult.length === 0 && noResult && (
                                 <div className="my-10 text-center text-lg">
-                                    <span>نتیجه‌ای برای </span>
+                                    <span>No results found for </span>
                                     <span className="heading-text">
-                                        {`'`}
-                                        {inputRef.current?.value}
-                                        {`'`}
+                                        {`'${inputRef.current?.value || ''}'`}
                                     </span>
                                 </div>
                             )}

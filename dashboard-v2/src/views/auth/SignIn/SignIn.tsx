@@ -1,8 +1,6 @@
 import Logo from '@/components/template/Logo'
 import Alert from '@/components/ui/Alert'
 import SignInForm from './components/SignInForm'
-import OauthSignIn from './components/OauthSignIn'
-import ActionLink from '@/components/shared/ActionLink'
 import useTimeOutMessage from '@/utils/hooks/useTimeOutMessage'
 import { useThemeStore } from '@/store/themeStore'
 
@@ -19,17 +17,22 @@ export const SignInBase = ({
 }: SignInProps) => {
     const [message, setMessage] = useTimeOutMessage()
 
-    const mode = useThemeStore(state => state.mode)
+    const mode = useThemeStore((state) => state.mode)
 
     return (
         <div>
             <div className="mb-8">
-                <Logo type="streamline" mode={mode} imgClass="mx-auto" logoWidth={60} />
+                <Logo
+                    type="streamline"
+                    mode={mode}
+                    imgClass="mx-auto"
+                    logoWidth={60}
+                />
             </div>
             <div className="mb-10">
-                <h2 className="mb-2">خوش آمدید!</h2>
+                <h2 className="mb-2">Welcome back!</h2>
                 <p className="font-semibold heading-text">
-                    لطفاً اطلاعات کاربری خود را برای ورود وارد کنید!
+                    Please enter your credentials to sign in.
                 </p>
             </div>
             {message && (
@@ -37,46 +40,7 @@ export const SignInBase = ({
                     <span className="break-all">{message}</span>
                 </Alert>
             )}
-            <SignInForm
-                disableSubmit={disableSubmit}
-                setMessage={setMessage}
-                passwordHint={
-                    <div className="mb-7 mt-2" >
-                        <ActionLink
-                            to={forgetPasswordUrl}
-                            className="font-semibold heading-text mt-2 underline"
-                            themeColor={false}
-                        >
-                            فراموشی رمز عبور
-                        </ActionLink>
-                    </div>
-                }
-            />
-            <div className="mt-8">
-                <div className="flex items-center gap-2 mb-6">
-                    <div className="border-t border-gray-200 dark:border-gray-800 flex-1 mt-[1px]" />
-                    <p className="font-semibold heading-text">
-                        یا ادامه دهید با
-                    </p>
-                    <div className="border-t border-gray-200 dark:border-gray-800 flex-1 mt-[1px]" />
-                </div>
-                <OauthSignIn
-                    disableSubmit={disableSubmit}
-                    setMessage={setMessage}
-                />
-            </div>
-            <div>
-                <div className="mt-6 text-center">
-                    <span>{`هنوز حساب کاربری ندارید؟`} </span>
-                    <ActionLink
-                        to={signUpUrl}
-                        className="heading-text font-bold"
-                        themeColor={false}
-                    >
-                        ثبت‌نام
-                    </ActionLink>
-                </div>
-            </div>
+            <SignInForm disableSubmit={disableSubmit} setMessage={setMessage} />
         </div>
     )
 }

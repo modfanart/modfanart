@@ -51,30 +51,31 @@ function cardExpiryFormat(val: string) {
 }
 
 const validationSchema: ZodType<FormSchema> = z.object({
-    cardHolderName: z.string().min(1, { message: 'نام دارنده کارت الزامی است' }),
+    cardHolderName: z
+        .string()
+        .min(1, { message: 'Cardholder name is required' }),
     ccNumber: z
         .string()
-        .min(1, 'شماره کارت اعتباری الزامی است')
+        .min(1, 'Credit card number is required')
         .refine(
             (value) =>
                 /^(?:4[0-9]{12}(?:[0-9]{3})?|[25][1-7][0-9]{14}|6(?:011|5[0-9][0-9])[0-9]{12}|3[47][0-9]{13}|3(?:0[0-5]|[68][0-9])[0-9]{11}|(?:2131|1800|35\d{3})\d{11})$/.test(
-                    value,
+                    value.replace(/\s/g, ''),
                 ),
-            'شماره کارت نامعتبر است',
+            'Invalid credit card number',
         ),
     cardExpiry: z
         .string()
-        .min(1, { message: 'تاریخ انقضا الزامی است' })
+        .min(1, { message: 'Expiry date is required' })
         .refine(
             (value) => /^(0[1-9]|1[0-2])\/?([0-9]{4}|[0-9]{2})$/.test(value),
-            'تاریخ نامعتبر است',
+            'Invalid expiry date',
         ),
     code: z
         .string()
-        .min(1, { message: 'کد الزامی است' })
-        .refine((value) => /^[0-9]{3}$/.test(value), 'کد CVV نامعتبر است'),
+        .min(1, { message: 'CVV is required' })
+        .refine((value) => /^[0-9]{3,4}$/.test(value), 'Invalid CVV'),
 })
-
 
 const CreditCardDialog = ({
     title,
@@ -107,7 +108,7 @@ const CreditCardDialog = ({
             <h4>{title}</h4>
             <Form className="mt-6" onSubmit={handleSubmit(onSubmit)}>
                 <FormItem
-                    label="نام کاربر"
+                    label="Cardholder Name"
                     invalid={Boolean(errors.cardHolderName)}
                     errorMessage={errors.cardHolderName?.message}
                 >
@@ -118,14 +119,15 @@ const CreditCardDialog = ({
                             <Input
                                 type="text"
                                 autoComplete="off"
-                                placeholder="نام دارنده کارت"
+                                placeholder="Cardholder name"
                                 {...field}
                             />
                         )}
                     />
                 </FormItem>
+
                 <FormItem
-                    label="شماره کارت اعتباری"
+                    label="Card Number"
                     invalid={Boolean(errors.ccNumber)}
                     errorMessage={errors.ccNumber?.message}
                 >
@@ -144,9 +146,10 @@ const CreditCardDialog = ({
                         )}
                     />
                 </FormItem>
+
                 <div className="grid grid-cols-2 gap-4">
                     <FormItem
-                        label="تاریخ انقضا"
+                        label="Expiry Date"
                         invalid={Boolean(errors.cardExpiry)}
                         errorMessage={errors.cardExpiry?.message}
                     >
@@ -155,7 +158,7 @@ const CreditCardDialog = ({
                             control={control}
                             render={({ field }) => (
                                 <FormCustomFormatInput
-                                    placeholder="••/••"
+                                    placeholder="MM/YY"
                                     format={cardExpiryFormat}
                                     value={field.value}
                                     onValueChange={(e) => {
@@ -165,8 +168,9 @@ const CreditCardDialog = ({
                             )}
                         />
                     </FormItem>
+
                     <FormItem
-                        label="کد CVV"
+                        label="CVV"
                         invalid={Boolean(errors.code)}
                         errorMessage={errors.code?.message}
                     >
@@ -186,13 +190,14 @@ const CreditCardDialog = ({
                         />
                     </FormItem>
                 </div>
+
                 <Button
                     block
                     variant="solid"
                     type="submit"
                     loading={isSubmitting}
                 >
-                    بروزرسانی
+                    Update
                 </Button>
             </Form>
         </Dialog>
