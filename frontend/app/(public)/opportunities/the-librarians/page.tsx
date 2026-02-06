@@ -655,7 +655,7 @@ export default function OpportunityDetailPage() {
                   <div className="mt-8">
                     <Button asChild size="lg">
                       <a
-                        href="https://modfanart.com/pages/submission-terms-and-conditions"
+                        href="resources/terms"
                         target="_blank"
                         rel="noopener noreferrer"
                       >
