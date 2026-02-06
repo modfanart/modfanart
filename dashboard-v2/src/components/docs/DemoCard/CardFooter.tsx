@@ -67,7 +67,7 @@ const CardFooter = (props: CardFooterProps) => {
                 <div>{loadingMd && <Spinner />}</div>
                 <div>
                     <Tooltip
-                        title={copied ? 'کپی شد' : 'کپی کردن کد'}
+                        title={copied ? 'Copied' : 'Copy code'}
                         wrapperClass="mr-1"
                     >
                         <Button
@@ -84,7 +84,7 @@ const CardFooter = (props: CardFooterProps) => {
                             onClick={onCodeCopy}
                         />
                     </Tooltip>
-                    <Tooltip title={expand ? 'پنهان کردن کد' : 'نمایش کد'}>
+                    <Tooltip title={expand ? 'Hide code' : 'Show code'}>
                         <Button
                             variant="plain"
                             shape="circle"

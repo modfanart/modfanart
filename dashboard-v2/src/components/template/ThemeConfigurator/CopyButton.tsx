@@ -19,13 +19,13 @@ const CopyButton = () => {
         }
 
         navigator.clipboard.writeText(`
-            
 export const themeConfig: ThemeConfig = ${JSON.stringify(config, null, 2)}
 `)
 
         toast.push(
-            <Notification title="کپی موفق" type="success">
-                {`لطفا themeConfig را در 'src/configs/theme.config.ts' جایگزین کنید`}
+            <Notification title="Copied successfully" type="success">
+                Replace the content of <code>src/configs/theme.config.ts</code>{' '}
+                with the copied code
             </Notification>,
             {
                 placement: 'top-center',
@@ -35,7 +35,7 @@ export const themeConfig: ThemeConfig = ${JSON.stringify(config, null, 2)}
 
     return (
         <Button block variant="solid" onClick={handleCopy}>
-            کپی کردن پیکربندی
+            Copy Theme Config
         </Button>
     )
 }

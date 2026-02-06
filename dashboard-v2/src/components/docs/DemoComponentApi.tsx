@@ -20,7 +20,7 @@ const { Tr, Th, Td, THead, TBody } = Table
 const DemoComponentApi = ({
     hideApiTitle,
     api = [],
-    keyText = 'ویژگی'
+    keyText = 'Prop',
 }: DemoComponentApiProps) => {
     return (
         <div>
@@ -32,15 +32,16 @@ const DemoComponentApi = ({
                             <h6 className="mb-3">{comp.component}</h6>
                         )}
                         <Table
-                            className={`demo-api-table ${api.length > 1 ? 'mb-8' : ''
-                                }`}
+                            className={`demo-api-table ${
+                                api.length > 1 ? 'mb-8' : ''
+                            }`}
                         >
                             <THead>
                                 <Tr>
                                     <Th>{keyText}</Th>
-                                    <Th>توضیحات</Th>
-                                    <Th>نوع</Th>
-                                    <Th>پیش‌فرض</Th>
+                                    <Th>Description</Th>
+                                    <Th>Type</Th>
+                                    <Th>Default</Th>
                                 </Tr>
                             </THead>
                             <TBody>
@@ -56,7 +57,9 @@ const DemoComponentApi = ({
                                             {ReactHtmlParser(item.type || '')}
                                         </Td>
                                         <Td>
-                                            {ReactHtmlParser(item.default || '')}
+                                            {ReactHtmlParser(
+                                                item.default || '',
+                                            )}
                                         </Td>
                                     </Tr>
                                 ))}

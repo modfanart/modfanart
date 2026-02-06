@@ -14,27 +14,31 @@ const ThemeConfigurator = ({ callBackClose }: ThemeConfiguratorProps) => {
             <div className="flex flex-col gap-y-10 mb-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h6>حالت تاریک</h6>
-                        <span>تغییر تم به حالت تاریک</span>
+                        <h6>Dark Mode</h6>
+                        <span>Toggle dark theme</span>
                     </div>
                     <ModeSwitcher />
                 </div>
+
                 <div className="flex items-center justify-between">
                     <div>
-                        <h6>جهت</h6>
-                        <span>یک جهت را انتخاب کنید</span>
+                        <h6>Direction</h6>
+                        <span>Choose text direction</span>
                     </div>
                     <DirectionSwitcher callBackClose={callBackClose} />
                 </div>
+
                 <div>
-                    <h6 className="mb-3">تم</h6>
+                    <h6 className="mb-3">Theme</h6>
                     <ThemeSwitcher />
                 </div>
+
                 <div>
-                    <h6 className="mb-3">طرح بندی</h6>
+                    <h6 className="mb-3">Layout</h6>
                     <LayoutSwitcher />
                 </div>
             </div>
+
             <CopyButton />
         </div>
     )

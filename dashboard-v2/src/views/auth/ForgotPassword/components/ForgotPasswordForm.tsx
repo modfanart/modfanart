@@ -11,7 +11,7 @@ import type { CommonProps } from '@/@types/common'
 
 interface ForgotPasswordFormProps extends CommonProps {
     emailSent: boolean
-    setEmailSent?: (compplete: boolean) => void
+    setEmailSent?: (complete: boolean) => void
     setMessage?: (message: string) => void
 }
 
@@ -20,7 +20,9 @@ type ForgotPasswordFormSchema = {
 }
 
 const validationSchema: ZodType<ForgotPasswordFormSchema> = z.object({
-    email: z.string().email().min(5),
+    email: z.string().email({ message: 'Please enter a valid email' }).min(5, {
+        message: 'Email is too short',
+    }),
 })
 
 const ForgotPasswordForm = (props: ForgotPasswordFormProps) => {
@@ -39,20 +41,22 @@ const ForgotPasswordForm = (props: ForgotPasswordFormProps) => {
     const onForgotPassword = async (values: ForgotPasswordFormSchema) => {
         const { email } = values
 
+        setSubmitting(true)
+
         try {
             const resp = await apiForgotPassword<boolean>({ email })
             if (resp) {
-                setSubmitting(false)
                 setEmailSent?.(true)
             }
         } catch (errors) {
             setMessage?.(
-                typeof errors === 'string' ? errors : 'برخی از خطاها رخ داده است!',
+                typeof errors === 'string'
+                    ? errors
+                    : 'Something went wrong. Please try again.',
             )
+        } finally {
             setSubmitting(false)
         }
-
-        setSubmitting(false)
     }
 
     return (
@@ -60,7 +64,7 @@ const ForgotPasswordForm = (props: ForgotPasswordFormProps) => {
             {!emailSent ? (
                 <Form onSubmit={handleSubmit(onForgotPassword)}>
                     <FormItem
-                        label="ایمیل"
+                        label="Email"
                         invalid={Boolean(errors.email)}
                         errorMessage={errors.email?.message}
                     >
@@ -70,20 +74,21 @@ const ForgotPasswordForm = (props: ForgotPasswordFormProps) => {
                             render={({ field }) => (
                                 <Input
                                     type="email"
-                                    placeholder="ایمیل"
+                                    placeholder="Enter your email"
                                     autoComplete="off"
                                     {...field}
                                 />
                             )}
                         />
                     </FormItem>
+
                     <Button
                         block
                         loading={isSubmitting}
                         variant="solid"
                         type="submit"
                     >
-                        {isSubmitting ? 'در حال ارسال...' : 'ارسال'}
+                        {isSubmitting ? 'Sending...' : 'Send Reset Link'}
                     </Button>
                 </Form>
             ) : (

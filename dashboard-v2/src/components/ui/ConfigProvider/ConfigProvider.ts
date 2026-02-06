@@ -4,7 +4,6 @@ import type { TypeAttributes } from '../@types/common'
 
 export type Config = {
     mode: 'light' | 'dark'
-    locale: string
     controlSize: TypeAttributes.ControlSize
     direction: TypeAttributes.Direction
     ui?: {
@@ -20,7 +19,6 @@ export type Config = {
 export const defaultConfig: Config = {
     direction: 'ltr',
     mode: 'light',
-    locale: 'en',
     controlSize: SIZES.MD,
 } as const
 

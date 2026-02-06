@@ -1,163 +1,149 @@
-import { useRef, useImperativeHandle, forwardRef } from 'react'
-import AuthContext from './AuthContext'
+// src/auth/AuthProvider.tsx
+import { createContext, useContext, ReactNode } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
+import { useSelector, useDispatch } from 'react-redux'
+
+import {
+    useLoginMutation,
+    useRegisterMutation,
+    useLogoutMutation,
+} from '@/services/authApi'
+import { useGetCurrentUserQuery } from '@/services/userApi'
+import { setCredentials, logout } from '../services/features/authSlice' // adjust path if needed
+import type { RootState } from '@/store'
+
 import appConfig from '@/configs/app.config'
-import { useSessionUser, useToken } from '@/store/authStore'
-import { apiSignIn, apiSignOut, apiSignUp } from '@/services/AuthService'
 import { REDIRECT_URL_KEY } from '@/constants/app.constant'
-import { useNavigate } from 'react-router-dom'
+
 import type {
     SignInCredential,
     SignUpCredential,
     AuthResult,
     OauthSignInCallbackPayload,
     User,
-    Token,
 } from '@/@types/auth'
-import type { ReactNode } from 'react'
-import type { NavigateFunction } from 'react-router-dom'
 
-type AuthProviderProps = { children: ReactNode }
-
-export type IsolatedNavigatorRef = {
-    navigate: NavigateFunction
+interface AuthContextValue {
+    authenticated: boolean
+    user: User | null
+    isLoading: boolean
+    signIn: (values: SignInCredential) => Promise<AuthResult>
+    signUp: (values: SignUpCredential) => Promise<AuthResult>
+    signOut: () => Promise<void>
+    oAuthSignIn?: (
+        callback: (payload: OauthSignInCallbackPayload) => void,
+    ) => void
 }
 
-const IsolatedNavigator = forwardRef<IsolatedNavigatorRef>((_, ref) => {
+const AuthContext = createContext<AuthContextValue | undefined>(undefined)
+
+export function useAuth() {
+    const ctx = useContext(AuthContext)
+    if (!ctx) throw new Error('useAuth must be used within AuthProvider')
+    return ctx
+}
+
+export default function AuthProvider({ children }: { children: ReactNode }) {
+    const dispatch = useDispatch()
     const navigate = useNavigate()
+    const location = useLocation()
 
-    useImperativeHandle(
-        ref,
-        () => {
-            return {
-                navigate,
-            }
-        },
-        [navigate],
+    const { accessToken, user: storedUser } = useSelector(
+        (s: RootState) => s.auth,
     )
 
-    return <></>
-})
+    const { data: freshUser, isLoading: isUserLoading } =
+        useGetCurrentUserQuery(undefined, {
+            skip: !accessToken || !!storedUser,
+        })
 
-function AuthProvider({ children }: AuthProviderProps) {
-    const signedIn = useSessionUser((state) => state.session.signedIn)
-    const user = useSessionUser((state) => state.user)
-    const setUser = useSessionUser((state) => state.setUser)
-    const setSessionSignedIn = useSessionUser(
-        (state) => state.setSessionSignedIn,
-    )
-    const { token, setToken } = useToken()
+    const effectiveUser = freshUser || storedUser
+    const authenticated = !!accessToken && !!effectiveUser && !isUserLoading
 
-    const authenticated = Boolean(token && signedIn)
+    const [login] = useLoginMutation()
+    const [register] = useRegisterMutation()
+    const [logoutApi] = useLogoutMutation()
 
-    const navigatorRef = useRef<IsolatedNavigatorRef>(null)
+    const getRedirectTarget = () => {
+        const params = new URLSearchParams(location.search)
+        return params.get(REDIRECT_URL_KEY) || appConfig.authenticatedEntryPath
+    }
 
-    const redirect = () => {
-        const search = window.location.search
-        const params = new URLSearchParams(search)
-        const redirectUrl = params.get(REDIRECT_URL_KEY)
-
-        navigatorRef.current?.navigate(
-            redirectUrl ? redirectUrl : appConfig.authenticatedEntryPath,
+    const handleSuccessfulAuth = (accessToken: string, userData: User) => {
+        dispatch(
+            setCredentials({
+                accessToken,
+                user: userData,
+                persist: true,
+            }),
         )
+        navigate(getRedirectTarget(), { replace: true })
     }
 
-    const handleSignIn = (tokens: Token, user?: User) => {
-        setToken(tokens.accessToken)
-        setSessionSignedIn(true)
-
-        if (user) {
-            setUser(user)
-        }
-    }
-
-    const handleSignOut = () => {
-        setToken('')
-        setUser({})
-        setSessionSignedIn(false)
-    }
-
-    const signIn = async (values: SignInCredential): AuthResult => {
+    const signIn = async (values: SignInCredential): Promise<AuthResult> => {
         try {
-            const resp = await apiSignIn(values)
-            if (resp) {
-                handleSignIn({ accessToken: resp.token }, resp.user)
-                redirect()
-                return {
-                    status: 'success',
-                    message: '',
-                }
-            }
+            const res = await login({
+                email: values.email,
+                password: values.password,
+            }).unwrap()
+            handleSuccessfulAuth(res.accessToken, res.user)
+            return { status: 'success', message: '' }
+        } catch (err: any) {
             return {
                 status: 'failed',
-                message: 'Unable to sign in',
-            }
-            // eslint-disable-next-line  @typescript-eslint/no-explicit-any
-        } catch (errors: any) {
-            return {
-                status: 'failed',
-                message: errors?.response?.data?.message || errors.toString(),
+                message: err?.data?.message || 'Sign in failed',
             }
         }
     }
 
-    const signUp = async (values: SignUpCredential): AuthResult => {
+    const signUp = async (values: SignUpCredential): Promise<AuthResult> => {
         try {
-            const resp = await apiSignUp(values)
-            if (resp) {
-                handleSignIn({ accessToken: resp.token }, resp.user)
-                redirect()
-                return {
-                    status: 'success',
-                    message: '',
-                }
-            }
+            const res = await register({
+                username: values.userName || values.email.split('@')[0],
+                email: values.email,
+                password: values.password,
+            }).unwrap()
+            handleSuccessfulAuth(res.accessToken, res.user)
+            return { status: 'success', message: '' }
+        } catch (err: any) {
             return {
                 status: 'failed',
-                message: 'Unable to sign up',
-            }
-            // eslint-disable-next-line  @typescript-eslint/no-explicit-any
-        } catch (errors: any) {
-            return {
-                status: 'failed',
-                message: errors?.response?.data?.message || errors.toString(),
+                message: err?.data?.message || 'Sign up failed',
             }
         }
     }
 
     const signOut = async () => {
         try {
-            await apiSignOut()
+            await logoutApi().unwrap()
+        } catch (err) {
+            console.warn('Logout failed – clearing anyway', err)
         } finally {
-            handleSignOut()
-            navigatorRef.current?.navigate(appConfig.unAuthenticatedEntryPath)
+            dispatch(logout())
+            navigate(appConfig.unAuthenticatedEntryPath, { replace: true })
         }
     }
-    const oAuthSignIn = (
-        callback: (payload: OauthSignInCallbackPayload) => void,
-    ) => {
-        callback({
-            onSignIn: handleSignIn,
-            redirect,
+
+    const oAuthSignIn = (cb: (payload: OauthSignInCallbackPayload) => void) => {
+        cb({
+            onSignIn: (tokens, userData) => {
+                if (tokens.accessToken && userData) {
+                    handleSuccessfulAuth(tokens.accessToken, userData)
+                }
+            },
+            redirect: () => navigate(getRedirectTarget(), { replace: true }),
         })
     }
 
-    return (
-        <AuthContext.Provider
-            value={{
-                authenticated,
-                user,
-                signIn,
-                signUp,
-                signOut,
-                oAuthSignIn,
-            }}
-        >
-            {children}
-            <IsolatedNavigator ref={navigatorRef} />
-        </AuthContext.Provider>
-    )
+    const value: AuthContextValue = {
+        authenticated,
+        user: effectiveUser,
+        isLoading: isUserLoading,
+        signIn,
+        signUp,
+        signOut,
+        oAuthSignIn,
+    }
+
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
-
-IsolatedNavigator.displayName = 'IsolatedNavigator'
-
-export default AuthProvider

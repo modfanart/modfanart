@@ -25,11 +25,11 @@ type SignInFormSchema = {
 
 const validationSchema: ZodType<SignInFormSchema> = z.object({
     email: z
-        .string({ required_error: 'لطفا ایمیل خود را وارد کنید' })
-        .min(1, { message: 'لطفا ایمیل خود را وارد کنید' }),
+        .string({ required_error: 'Please enter your email' })
+        .min(1, { message: 'Please enter your email' }),
     password: z
-        .string({ required_error: 'لطفا رمز عبور خود را وارد کنید' })
-        .min(1, { message: 'لطفا رمز عبور خود را وارد کنید' }),
+        .string({ required_error: 'Please enter your password' })
+        .min(1, { message: 'Please enter your password' }),
 })
 
 const SignInForm = (props: SignInFormProps) => {
@@ -68,10 +68,10 @@ const SignInForm = (props: SignInFormProps) => {
     }
 
     return (
-        <div className={className} >
+        <div className={className}>
             <Form onSubmit={handleSubmit(onSignIn)}>
                 <FormItem
-                    label="ایمیل"
+                    label="Email"
                     invalid={Boolean(errors.email)}
                     errorMessage={errors.email?.message}
                 >
@@ -81,15 +81,16 @@ const SignInForm = (props: SignInFormProps) => {
                         render={({ field }) => (
                             <Input
                                 type="email"
-                                placeholder="ایمیل"
+                                placeholder="Email"
                                 autoComplete="off"
                                 {...field}
                             />
                         )}
                     />
                 </FormItem>
+
                 <FormItem
-                    label="رمز عبور"
+                    label="Password"
                     invalid={Boolean(errors.password)}
                     errorMessage={errors.password?.message}
                     className={classNames(
@@ -100,25 +101,25 @@ const SignInForm = (props: SignInFormProps) => {
                     <Controller
                         name="password"
                         control={control}
-                        rules={{ required: true }}
                         render={({ field }) => (
                             <PasswordInput
-                                type="text"
-                                placeholder="رمز عبور"
+                                placeholder="Password"
                                 autoComplete="off"
                                 {...field}
                             />
                         )}
                     />
                 </FormItem>
+
                 {passwordHint}
+
                 <Button
                     block
                     loading={isSubmitting}
                     variant="solid"
                     type="submit"
                 >
-                    {isSubmitting ? 'در حال ورود...' : 'ورود'}
+                    {isSubmitting ? 'Signing in...' : 'Sign In'}
                 </Button>
             </Form>
         </div>

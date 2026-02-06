@@ -10,7 +10,7 @@ const dashboardsNavigationConfig: NavigationTree[] = [
     {
         key: 'dashboard',
         path: '',
-        title: 'داشبورد',
+        title: 'Dashboard',
         translateKey: 'nav.dashboard.dashboard',
         icon: 'dashboard',
         type: NAV_ITEM_TYPE_TITLE,
@@ -24,7 +24,7 @@ const dashboardsNavigationConfig: NavigationTree[] = [
             {
                 key: 'dashboard.ecommerce',
                 path: `${DASHBOARDS_PREFIX_PATH}/ecommerce`,
-                title: 'تجارت الکترونیک',
+                title: 'E-commerce',
                 translateKey: 'nav.dashboard.ecommerce',
                 icon: 'dashboardEcommerce',
                 type: NAV_ITEM_TYPE_ITEM,
@@ -34,7 +34,7 @@ const dashboardsNavigationConfig: NavigationTree[] = [
             {
                 key: 'dashboard.project',
                 path: `${DASHBOARDS_PREFIX_PATH}/project`,
-                title: 'پروژه',
+                title: 'Project',
                 translateKey: 'nav.dashboard.project',
                 icon: 'dashboardProject',
                 type: NAV_ITEM_TYPE_ITEM,
@@ -44,7 +44,7 @@ const dashboardsNavigationConfig: NavigationTree[] = [
             {
                 key: 'dashboard.marketing',
                 path: `${DASHBOARDS_PREFIX_PATH}/marketing`,
-                title: 'بازاریابی',
+                title: 'Marketing',
                 translateKey: 'nav.dashboard.marketing',
                 icon: 'dashboardMarketing',
                 type: NAV_ITEM_TYPE_ITEM,
@@ -54,7 +54,7 @@ const dashboardsNavigationConfig: NavigationTree[] = [
             {
                 key: 'dashboard.analytic',
                 path: `${DASHBOARDS_PREFIX_PATH}/analytic`,
-                title: 'تحلیلی',
+                title: 'Analytics',
                 translateKey: 'nav.dashboard.analytic',
                 icon: 'dashboardAnalytic',
                 type: NAV_ITEM_TYPE_ITEM,
@@ -64,6 +64,5 @@ const dashboardsNavigationConfig: NavigationTree[] = [
         ],
     },
 ]
-
 
 export default dashboardsNavigationConfig

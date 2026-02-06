@@ -46,7 +46,7 @@ const MobileNav = () => {
                 <MobileNavToggle toggled={isOpen} />
             </div>
             <Drawer
-                title="ناوبری"
+                title="Navigation"
                 isOpen={isOpen}
                 bodyClass={classNames('p-0')}
                 width={330}

@@ -3,7 +3,12 @@ import Dropdown from '@/components/ui/Dropdown'
 import withHeaderItem from '@/utils/hoc/withHeaderItem'
 import { useSessionUser } from '@/store/authStore'
 import { Link } from 'react-router-dom'
-import { PiUserDuotone, PiGearDuotone, PiPulseDuotone, PiSignOutDuotone } from 'react-icons/pi'
+import {
+    PiUserDuotone,
+    PiGearDuotone,
+    PiPulseDuotone,
+    PiSignOutDuotone,
+} from 'react-icons/pi'
 import { useAuth } from '@/auth'
 
 type DropdownList = {
@@ -14,17 +19,17 @@ type DropdownList = {
 
 const dropdownItemList: DropdownList[] = [
     {
-        label: 'پروفایل',
+        label: 'Profile',
         path: '/concepts/account/settings',
         icon: <PiUserDuotone />,
     },
     {
-        label: 'تنظیمات حساب',
+        label: 'Account Settings',
         path: '/concepts/account/settings',
         icon: <PiGearDuotone />,
     },
     {
-        label: 'لاگ فعالیت',
+        label: 'Activity Log',
         path: '/concepts/account/activity-log',
         icon: <PiPulseDuotone />,
     },
@@ -91,7 +96,7 @@ const _UserDropdown = () => {
                 <span className="text-xl">
                     <PiSignOutDuotone />
                 </span>
-                <span>خروج</span>
+                <span>Sign Out</span>
             </Dropdown.Item>
         </Dropdown>
     )
