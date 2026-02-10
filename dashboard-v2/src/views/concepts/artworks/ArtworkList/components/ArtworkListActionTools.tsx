@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import useProductList from '../hooks/useProductList'
 import { CSVLink } from 'react-csv'
 
-const ProductListActionTools = () => {
+const ArtworkListActionTools = () => {
     const navigate = useNavigate()
 
     const { productList } = useProductList()
@@ -27,4 +27,4 @@ const ProductListActionTools = () => {
     )
 }
 
-export default ProductListActionTools
+export default ArtworkListActionTools

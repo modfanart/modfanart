@@ -1,10 +1,10 @@
+// src/components/auth/SignInForm.tsx
 import { useState } from 'react'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 import { FormItem, Form } from '@/components/ui/Form'
 import PasswordInput from '@/components/shared/PasswordInput'
 import classNames from '@/utils/classNames'
-import { useAuth } from '@/auth'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -12,10 +12,13 @@ import type { ZodType } from 'zod'
 import type { CommonProps } from '@/@types/common'
 import type { ReactNode } from 'react'
 
+// ─── Import RTK Query login mutation ───
+import { useLoginMutation } from '@/services/authApi'
 interface SignInFormProps extends CommonProps {
     disableSubmit?: boolean
     passwordHint?: string | ReactNode
     setMessage?: (message: string) => void
+    onSuccess?: () => void // optional: redirect, close modal, etc.
 }
 
 type SignInFormSchema = {
@@ -26,7 +29,9 @@ type SignInFormSchema = {
 const validationSchema: ZodType<SignInFormSchema> = z.object({
     email: z
         .string({ required_error: 'Please enter your email' })
-        .min(1, { message: 'Please enter your email' }),
+        .min(1, { message: 'Please enter your email' })
+        .email({ message: 'Invalid email format' }),
+
     password: z
         .string({ required_error: 'Please enter your password' })
         .min(1, { message: 'Please enter your password' }),
@@ -35,12 +40,21 @@ const validationSchema: ZodType<SignInFormSchema> = z.object({
 const SignInForm = (props: SignInFormProps) => {
     const [isSubmitting, setSubmitting] = useState<boolean>(false)
 
-    const { disableSubmit = false, className, setMessage, passwordHint } = props
+    const {
+        disableSubmit = false,
+        className,
+        setMessage,
+        passwordHint,
+        onSuccess,
+    } = props
+
+    const [login, { isLoading: isLoginLoading }] = useLoginMutation()
 
     const {
         handleSubmit,
         formState: { errors },
         control,
+        reset,
     } = useForm<SignInFormSchema>({
         defaultValues: {
             email: 'admin-01@ecme.com',
@@ -49,22 +63,41 @@ const SignInForm = (props: SignInFormProps) => {
         resolver: zodResolver(validationSchema),
     })
 
-    const { signIn } = useAuth()
-
     const onSignIn = async (values: SignInFormSchema) => {
-        const { email, password } = values
+        if (disableSubmit) return
 
-        if (!disableSubmit) {
-            setSubmitting(true)
+        setSubmitting(true)
 
-            const result = await signIn({ email, password })
+        try {
+            const response = await login({
+                email: values.email,
+                password: values.password,
+            }).unwrap()
 
-            if (result?.status === 'failed') {
-                setMessage?.(result.message)
+            // Success → RTK Query + your baseQueryWithReauth should have already:
+            // • Stored the token(s)
+            // • Updated auth slice via setCredentials (if you dispatch inside baseQuery)
+            // • Invalidated 'CurrentUser' tag
+
+            setMessage?.('Signed in successfully!')
+            reset() // optional: clear sensitive fields
+            onSuccess?.() // e.g. redirect to dashboard, close modal, etc.
+        } catch (err: any) {
+            let errorMessage = 'Login failed. Please try again.'
+
+            if (err?.data?.message) {
+                errorMessage = err.data.message
+            } else if (err?.status === 401) {
+                errorMessage = 'Invalid email or password'
+            } else if (err?.status === 403) {
+                errorMessage = 'Account not verified or suspended'
             }
-        }
 
-        setSubmitting(false)
+            setMessage?.(errorMessage)
+            console.error('[SignInForm]', err)
+        } finally {
+            setSubmitting(false)
+        }
     }
 
     return (
@@ -82,7 +115,7 @@ const SignInForm = (props: SignInFormProps) => {
                             <Input
                                 type="email"
                                 placeholder="Email"
-                                autoComplete="off"
+                                autoComplete="email"
                                 {...field}
                             />
                         )}
@@ -104,7 +137,7 @@ const SignInForm = (props: SignInFormProps) => {
                         render={({ field }) => (
                             <PasswordInput
                                 placeholder="Password"
-                                autoComplete="off"
+                                autoComplete="current-password"
                                 {...field}
                             />
                         )}
@@ -115,11 +148,13 @@ const SignInForm = (props: SignInFormProps) => {
 
                 <Button
                     block
-                    loading={isSubmitting}
+                    loading={isSubmitting || isLoginLoading}
                     variant="solid"
                     type="submit"
                 >
-                    {isSubmitting ? 'Signing in...' : 'Sign In'}
+                    {isSubmitting || isLoginLoading
+                        ? 'Signing in...'
+                        : 'Sign In'}
                 </Button>
             </Form>
         </div>

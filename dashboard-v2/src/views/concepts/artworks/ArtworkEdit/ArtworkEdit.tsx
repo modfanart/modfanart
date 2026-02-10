@@ -13,7 +13,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import useSWR from 'swr'
 import type { Product, ProductFormSchema } from '../ProductForm/types'
 
-const ProducEdit = () => {
+const ArtworkEdit = () => {
     const { id } = useParams()
 
     const navigate = useNavigate()
@@ -69,9 +69,12 @@ const ProducEdit = () => {
         setIsSubmiting(true)
         await sleep(800)
         setIsSubmiting(false)
-        toast.push(<Notification type="success">تغییرات ذخیره شد!</Notification>, {
-            placement: 'top-center',
-        })
+        toast.push(
+            <Notification type="success">تغییرات ذخیره شد!</Notification>,
+            {
+                placement: 'top-center',
+            },
+        )
         navigate('/concepts/products/product-list')
     }
 
@@ -89,10 +92,9 @@ const ProducEdit = () => {
 
     const handleConfirmDelete = () => {
         setDeleteConfirmationOpen(true)
-        toast.push(
-            <Notification type="success">محصول حذف شد!</Notification>,
-            { placement: 'top-center' },
-        )
+        toast.push(<Notification type="success">محصول حذف شد!</Notification>, {
+            placement: 'top-center',
+        })
         navigate('/concepts/products/product-list')
     }
 
@@ -155,7 +157,8 @@ const ProducEdit = () => {
                         onConfirm={handleConfirmDelete}
                     >
                         <p>
-                            آیا از حذف این محصول مطمئن هستید؟ این عمل قابل بازگشت نیست.
+                            آیا از حذف این محصول مطمئن هستید؟ این عمل قابل
+                            بازگشت نیست.
                         </p>
                     </ConfirmDialog>
                 </>
@@ -164,4 +167,4 @@ const ProducEdit = () => {
     )
 }
 
-export default ProducEdit
+export default ArtworkEdit

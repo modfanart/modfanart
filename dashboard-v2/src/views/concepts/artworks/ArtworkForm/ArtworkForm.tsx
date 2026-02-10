@@ -10,16 +10,16 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import isEmpty from 'lodash/isEmpty'
-import type { ProductFormSchema } from './types'
+import type { ArtworkFormSchema } from './types'
 import type { ZodType } from 'zod'
 import type { CommonProps } from '@/@types/common'
 
-type ProductFormProps = {
-    onFormSubmit: (values: ProductFormSchema) => void
-    defaultValues?: ProductFormSchema
+type ArtworkFormProps = {
+    onFormSubmit: (values: ArtworkFormSchema) => void
+    defaultValues?: ArtworkFormSchema
     newProduct?: boolean
 } & CommonProps
-const validationSchema: ZodType<ProductFormSchema> = z.object({
+const validationSchema: ZodType<ArtworkFormSchema> = z.object({
     name: z.string().min(1, { message: 'نام محصول الزامی است!' }),
     productCode: z.string().min(1, { message: 'کد محصول الزامی است!' }),
     description: z.string().min(1, { message: 'توضیحات محصول الزامی است!' }),
@@ -47,8 +47,7 @@ const validationSchema: ZodType<ProductFormSchema> = z.object({
     category: z.string().min(1, { message: 'دسته‌بندی محصول الزامی است!' }),
 })
 
-
-const ProductForm = (props: ProductFormProps) => {
+const ArtworkForm = (props: ArtworkFormProps) => {
     const {
         onFormSubmit,
         defaultValues = {
@@ -62,7 +61,7 @@ const ProductForm = (props: ProductFormProps) => {
         reset,
         formState: { errors },
         control,
-    } = useForm<ProductFormSchema>({
+    } = useForm<ArtworkFormSchema>({
         defaultValues: {
             ...defaultValues,
         },
@@ -76,7 +75,7 @@ const ProductForm = (props: ProductFormProps) => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [JSON.stringify(defaultValues)])
 
-    const onSubmit = (values: ProductFormSchema) => {
+    const onSubmit = (values: ArtworkFormSchema) => {
         onFormSubmit?.(values)
     }
 
@@ -103,4 +102,4 @@ const ProductForm = (props: ProductFormProps) => {
     )
 }
 
-export default ProductForm
+export default ArtworkForm

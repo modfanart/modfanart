@@ -2,9 +2,7 @@
 import { configureStore } from '@reduxjs/toolkit'
 import { setupListeners } from '@reduxjs/toolkit/query'
 
-// ────────────────────────────────────────────────
-// RTK Query API slices
-// ────────────────────────────────────────────────
+// RTK Query APIs
 import authApi from '../services/authApi'
 import userApi from '../services/userApi'
 import rolesApi from '../services/rolesApi'
@@ -19,39 +17,18 @@ import auditApi from '../services/auditApi'
 import artworkApi from '../services/artworkApi'
 import artworkTagsApi from '../services/artworkTagsApi'
 import brandApi from '../services/brands'
-
-// ────────────────────────────────────────────────
-// Reducers (slices)
-// ────────────────────────────────────────────────
+// Reducers
 import authReducer from '../services/features/authSlice'
-// import otherSliceReducer from '@/features/other/otherSlice';  // add more as needed
+// ... other reducers if any ...
 
 // ────────────────────────────────────────────────
-// Persist access token from localStorage (critical for auth surviving reload)
+// No need for manual preloadedState anymore!
+// The authSlice already loads accessToken from localStorage in initialState
 // ────────────────────────────────────────────────
-const persistedAccessToken =
-    typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null
 
-const preloadedState = persistedAccessToken
-    ? {
-          auth: {
-              accessToken: persistedAccessToken,
-              user: null, // user will be populated via getCurrentUser query after reload
-          },
-      }
-    : undefined
-
-// ────────────────────────────────────────────────
-// Create the store
-// ────────────────────────────────────────────────
 export const store = configureStore({
     reducer: {
-        // Regular slices
         auth: authReducer,
-        // Add other non-RTK reducers here when you create them
-        // example: theme: themeReducer,
-
-        // RTK Query auto-generated reducers
         [authApi.reducerPath]: authApi.reducer,
         [userApi.reducerPath]: userApi.reducer,
         [rolesApi.reducerPath]: rolesApi.reducer,
@@ -70,10 +47,8 @@ export const store = configureStore({
 
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({
-            // Disable serializable check → allows non-serializable values (File, functions, etc.)
             serializableCheck: false,
         }).concat(
-            // All RTK Query middlewares
             authApi.middleware,
             userApi.middleware,
             rolesApi.middleware,
@@ -88,26 +63,17 @@ export const store = configureStore({
             artworkApi.middleware,
             artworkTagsApi.middleware,
             brandApi.middleware,
-            // add more .middleware when you create new api slices
         ),
 
-    // Restore persisted auth state on app start
-    preloadedState,
-
-    // Enable Redux DevTools in development only
+    // No preloadedState needed anymore
     devTools: process.env.NODE_ENV !== 'production',
 })
 
-// Optional but very useful: makes refetchOnFocus, refetchOnReconnect, etc. work
 setupListeners(store.dispatch)
 
-// ────────────────────────────────────────────────
-// TypeScript types for the whole app
-// ────────────────────────────────────────────────
 export type RootState = ReturnType<typeof store.getState>
 export type AppDispatch = typeof store.dispatch
 
-// Helper type for thunks / async actions (optional but recommended)
 export type AppThunk<ReturnType = void> =
     import('@reduxjs/toolkit').ThunkAction<
         ReturnType,
