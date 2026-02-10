@@ -1,5 +1,6 @@
 "use client"
 
+import { useParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
@@ -172,6 +173,8 @@ export default function ManageSubmissionsPage() {
   const [submissions, setSubmissions] = useState<typeof fanArtSubmissions>([])
   const [isLoading, setIsLoading] = useState(true)
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const params = useParams<{ id: string }>()
+  const brandId = params.id
 
   // Simulate API call to fetch submissions
   useEffect(() => {
@@ -333,32 +336,59 @@ export default function ManageSubmissionsPage() {
                     </div>
                   </CardContent>
                   <CardFooter className="p-4 pt-0 flex justify-between">
-                    <Link href={`/submissions/${submission.id}`}>
+                    <Link href={`/brand/manage/${brandId}/details/${submission.id}`}>
                       <Button variant="outline" size="sm">
                         <Eye className="mr-1 h-4 w-4" />
                         View Details
                       </Button>
                     </Link>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Open menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem disabled={submission.status === "licensed"}>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Edit submission
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Eye className="mr-2 h-4 w-4" />
-                          View analytics
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    {submission.status !== "licensed" ? (
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreHorizontal className="h-4 w-4" />
+                                <span className="sr-only">Open menu</span>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            {submission.status === "pending" ? 
+                                <DropdownMenuItem>
+                                    <CheckCircle className="mr-2 h-4 w-4" />
+                                    Approve
+                                </DropdownMenuItem>
+                            : null }
+                            {submission.status === "pending" ? 
+                            <DropdownMenuItem>
+                                <XCircle className="mr-2 h-4 w-4" />
+                                Reject
+                            </DropdownMenuItem>
+                            : null }
+                            {submission.status === "approved" || submission.status === "rejected" ?
+                                <DropdownMenuItem>
+                                    <Clock className="mr-2 h-4 w-4" />
+                                    Mark as Pending
+                                </DropdownMenuItem>
+                            : null }
+                            {submission.status === "approved" ? (
+                                <DropdownMenuItem>
+                                    <DollarSign className="mr-2 h-4 w-4" />
+                                    Submit for Licensing
+                                </DropdownMenuItem>
+                            ) : null }
+
+                            {/* <DropdownMenuItem disabled={submission.status === "licensed"}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit submission
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                            <Eye className="mr-2 h-4 w-4" />
+                            View analytics
+                            </DropdownMenuItem> */}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    ) : null}
                   </CardFooter>
                 </Card>
               ))}
@@ -420,65 +450,60 @@ export default function ManageSubmissionsPage() {
                           </div>
                         </CardContent>
                         <CardFooter className="p-4 pt-0 flex justify-between">
-                          <Link href={`/submissions/${submission.id}`}>
+                          <Link href={`/brand/manage/${brandId}/details/${submission.id}`}>
                             <Button variant="outline" size="sm">
                               <Eye className="mr-1 h-4 w-4" />
                               View Details
                             </Button>
                           </Link>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreHorizontal className="h-4 w-4" />
-                                <span className="sr-only">Open menu</span>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              <AlertDialog
-                                open={deleteId === submission.id}
-                                onOpenChange={(open) => !open && setDeleteId(null)}
-                                >
-                                <AlertDialogTrigger asChild>
-                                    <DropdownMenuItem
-                                    className="text-red-600"
-                                    onSelect={(e) => {
-                                        e.preventDefault()
-                                        setDeleteId(submission.id)
-                                    }}
-                                    >
-                                    Edit Submission
+                          {submission.status !== "licensed" ? (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                    <span className="sr-only">Open menu</span>
+                                </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                {submission.status === "pending" ? 
+                                    <DropdownMenuItem>
+                                        <CheckCircle className="mr-2 h-4 w-4" />
+                                        Approve
                                     </DropdownMenuItem>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        This will permanently delete your submission. This action cannot be undone.
-                                    </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction
-                                        className="bg-red-600 hover:bg-red-700"
-                                        onClick={() => handleDelete(submission.id)}
-                                    >
-                                        Delete
-                                    </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                                </AlertDialog>
-                              <DropdownMenuItem disabled={submission.status === "licensed"}>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit submission
-                              </DropdownMenuItem>
-                              <DropdownMenuItem>
-                                <Eye className="mr-2 h-4 w-4" />
-                                View analytics
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                                    : null }
+                                    {submission.status === "pending" ? 
+                                    <DropdownMenuItem>
+                                        <XCircle className="mr-2 h-4 w-4" />
+                                        Reject
+                                    </DropdownMenuItem>
+                                    : null }
+                                    {submission.status === "approved" || submission.status === "rejected" ?
+                                    <DropdownMenuItem>
+                                        <Clock className="mr-2 h-4 w-4" />
+                                        Mark as Pending
+                                    </DropdownMenuItem>
+                                    :null }
+                                    {submission.status === "approved" ? (
+                                        <DropdownMenuItem>
+                                            <DollarSign className="mr-2 h-4 w-4" />
+                                            Submit for Licensing
+                                        </DropdownMenuItem>
+                                    ) : null }
+                                {/* <DropdownMenuItem disabled={submission.status === "licensed"}>
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Edit submission
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                    <Eye className="mr-2 h-4 w-4" />
+                                    View analytics
+                                </DropdownMenuItem> */}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                          ) : null }
+                            
+
                         </CardFooter>
                       </Card>
                     ))}
