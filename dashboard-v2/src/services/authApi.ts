@@ -6,7 +6,7 @@ import type {
     FetchBaseQueryError,
 } from '@reduxjs/toolkit/query'
 import { setCredentials, logout } from './features/authSlice' // ← make sure this import is correct
-import { RootState } from '@reduxjs/toolkit/query'
+import type { RootState } from '@/store' // ← your actual store file
 // ────────────────────────────────────────────────
 // Full User shape aligned with UserRow from src/db/types.js
 // ────────────────────────────────────────────────
@@ -64,8 +64,8 @@ export interface ResetPasswordRequest {
 // Base query setup
 // ────────────────────────────────────────────────
 const rawBaseQuery = fetchBaseQuery({
-    baseUrl: '/api/auth',
-    credentials: 'include',
+    baseUrl: '/api/auth', // ← use env var in production!
+    credentials: 'include', // very important for httpOnly cookies
     prepareHeaders: (headers, { getState }) => {
         const token = (getState() as RootState).auth.accessToken
         if (token) {
@@ -74,7 +74,6 @@ const rawBaseQuery = fetchBaseQuery({
         return headers
     },
 })
-
 // ────────────────────────────────────────────────
 // Improved re-auth logic – this is the important part
 // ────────────────────────────────────────────────

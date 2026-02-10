@@ -1,89 +1,455 @@
-import React from "react";
-import type { Metadata } from "next"
+import React from 'react';
+import type { Metadata } from 'next';
+
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
+import { Mail, Scale, FileText, Users, Shield, Info } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: "Support | MOD Platform",
-  description: "Get help with submissions, licensing, and other platform features",
-}
+  title: 'Submission Terms and Conditions | MOD Platform',
+  description:
+    'Read the official terms governing fan-art contests, submissions, eligibility, prizes, and licensing on the MOD platform.',
+};
 
-export default function SupportPage() {
+export default function SubmissionTermsPage() {
   return (
-    <div>
-        <div id="shopify-section-page-contact-template" className="shopify-section">
-            <div className="page-width page-content page-content--with-blocks">
-            <div className="grid">
-            <div className="grid__item medium-up--three-quarters medium-up--push-one-eighth">
-                <header className="section-header">
-                    <h1 className="section-header__title">Submission Terms and Conditions</h1>
-                </header>
-                <div className="rte text-spacing">
-                    <h2 className="rte-h2" data-end="63" data-start="45"><strong>1. Introduction</strong></h2>
-                    <p data-end="630" data-start="65">These submission terms and conditions (the <strong data-end="119" data-start="108">“Terms”</strong>) govern your participation in all fan‑art contests, challenges and calls‑for‑submissions (collectively, <strong data-end="238" data-start="224">“Contests”</strong>) operated by Merch On Demand Inc., doing business as MOD INC., and its affiliates (<strong data-end="344" data-start="322">“MOD,” “we,” “our”</strong> or <strong data-end="356" data-start="348">“us”</strong>). By submitting artwork or otherwise participating in any Contest, you agree to be bound by these Terms and any supplemental rules or announcements for the specific Contest (<strong data-end="550" data-start="531">“Contest Rules”</strong>). If you do not agree to these Terms or the Contest Rules, do not participate.</p>
-                    <p data-end="790" data-start="632">These Terms may be updated or modified from time to time without prior notice. The version posted at the time of your submission will govern that submission.</p>
-
-                    <h2 className="rte-h2" data-end="809" data-start="792"><strong>2. Eligibility</strong></h2>
-                    <p data-end="1197" data-start="814"><strong data-end="835" data-start="814">2.1 Age and Capacity.</strong> Unless otherwise stated in the Contest Rules, participation is open only to individuals who are at least 18 years of age (or the age of majority in their jurisdiction, if higher) and who have the legal capacity to enter into binding agreements. Participants under the age of majority must obtain consent from their parent or legal guardian before participating.</p>
-                    <p data-end="1893" data-start="1201"><strong data-end="1215" data-start="1201">2.2 Residency.</strong> Contests are generally open to residents of Canada (excluding Quebec), the United States (excluding Puerto Rico), and other jurisdictions worldwide where contests of this nature are not prohibited by law. <strong data-end="1444" data-start="1421">Residents of Quebec</strong> are excluded because of language and registration requirements. <strong data-end="1537" data-start="1509">Residents of Puerto Rico</strong> are excluded because of local registration requirements. Participation is <strong data-end="1637" data-start="1612">void where prohibited</strong> and subject to all applicable federal, provincial, state and local laws and regulations. If a specific Contest involves prizes above certain thresholds (see Section 5), residents of Florida, New York and/or Rhode Island may be excluded from participation.</p>
-                    <p data-end="2138" data-start="1897"><strong data-end="1931" data-start="1897">2.3 High‑Value Prize Restrictions.</strong> Some jurisdictions impose registration or bonding requirements when prize values reach certain amounts. See Section 5 for details on how prize values affect eligibility for residents of certain U.S. states.</p>
-                    <p data-end="2300" data-start="2142"><strong data-end="2168" data-start="2142">2.4 No Purchase Necessary.</strong> No purchase or payment is required to submit artwork or to participate. Making a purchase will not improve your chances of winning.</p>
-                    <p data-end="2616" data-start="2304"><strong data-end="2331" data-start="2304">2.5 Limitations on Entries.</strong> Unless specified in the Contest Rules, there is a limit of one submission per person, per Contest. Mass entries generated by a script, macro or other automated means are void. We reserve the right to disqualify any participant suspected of using automated or fraudulent entry methods.</p>
-
-                    <h2 className="rte-h2" data-end="2645" data-start="2618"><strong>3. Submission Guidelines</strong></h2>
-                    <p data-end="2984" data-start="2650"><strong data-end="2668" data-start="2650">3.1 Original Work.</strong> You represent and warrant that each artwork you submit is your original creation and does not infringe or violate the rights of any third party, including any copyright, trademark, privacy, publicity or other proprietary right. You must have obtained the consent of any individuals identifiable in your submission.</p>
-                    <p data-end="3353" data-start="2988"><strong data-end="3012" data-start="2988">3.2 Permitted Fan Works.</strong> Unless otherwise stated, you may incorporate characters or elements from the applicable intellectual property (<strong data-end="3132" data-start="3124">“IP”</strong>) for which the Contest is run, solely for purposes of the Contest. Use of any other third‑party content requires written permission from the rights holder.</p>
-                    <p data-end="3600" data-start="3357"><strong data-end="3380" data-start="3357">3.3 Prohibited Content.</strong> Submissions that are illegal, obscene, pornographic, violent, defamatory, harassing, discriminatory, offensive or otherwise inconsistent with our brand values (as determined in our sole discretion) will be disqualified.</p>
-                    <p data-end="4458" data-start="3604"><strong data-end="3640" data-start="3604">3.4 Grant of Rights for Submissions.</strong> By submitting artwork, you grant MOD and its designees a worldwide, royalty‑free, non‑exclusive license to host, store, reproduce, display, adapt and communicate your submission (in whole or in part) solely for purposes of administering the Contest, promoting the Contest and its related events, and showcasing your work. This may include featuring your submission on websites, social media, promotional emails, livestreams and recap materials. We will endeavour to credit you as the artist where feasible. You retain ownership of your submission subject to this limited license. If your submission is selected as a winning entry, you will be required to sign a separate license or assignment agreement with the relevant IP owner (the “Artist–Client Agreement”) detailing the rights transfer and royalty arrangements.</p>
-                    <p data-end="4660" data-start="4462"><strong data-end="4482" data-start="4462">3.5 Right to Remove.</strong> We reserve the right to remove submissions from our platforms for any reason, including at the request of the IP owner or due to complaints of infringement or offensive content.</p>
-
-                    <h2 className="rte-h2" data-end="4685" data-start="4662"><strong>4. Contest Mechanics</strong></h2>
-                    <p data-end="5186" data-start="4690"><strong data-end="4714" data-start="4690">4.1 Skill‑Based Judging.</strong> Each Contest is a skill‑based competition: winners are selected based on artistic merit, originality, adherence to the theme, relevance to the IP and such additional criteria as described in the Contest Rules. There is no random drawing, sweepstakes or lottery element. Removing the element of chance distinguishes a contest from a sweepstakes and generally permits the sponsor to require consideration. However, we do <strong data-end="5141" data-start="5134">not</strong> charge any entry fee or require a purchase.</p>
-                    <p data-end="5448" data-start="5190"><strong data-end="5208" data-start="5190">4.2 Judging Panel.</strong> The judging panel may include representatives of MOD, the IP owner, community members or external experts. The panel’s decisions are final and binding. We reserve the right to disqualify any submission that does not meet the Contest Rules.</p>
-                    <p data-end="5805" data-start="5452"><strong data-end="5488" data-start="5452">4.3 Skill Testing Question (Canada).</strong> For entrants who reside in Canada, we may require a correct answer to a time‑limited, mathematical skill‑testing question as a condition of winning, especially if there is any tie‑breaking or random selection involved. This helps ensure compliance with Canadian laws that require skill elements for certain contests.</p>
-                    <p data-end="6263" data-start="5809"><strong data-end="5837" data-start="5809">4.4 Announcement of Winners.</strong> Winners will be selected and announced at or near the date stated in the Contest Rules. Winners will be notified via the contact information provided in their submission. If a selected winner cannot be contacted or fails to respond within the timeframe specified in the Contest Rules (typically three (3) business days) or fails to sign required agreements, the prize may be forfeited and an alternate winner may be selected.</p>
-                    <p data-end="6818" data-start="6267"><strong data-end="6303" data-start="6267">4.5 Prizes and Royalty Compensation.</strong> Contest Rules will describe the number and approximate retail value of prizes, which may include a monetary payment, merchandise, access to exclusive experiences, and/or an offer for an ongoing royalty based on net profits from future merchandise sales incorporating the winning artwork. Royalties will be paid according to the terms in the Artist–Client Agreement and may be contingent on sales. Taxes are the responsibility of the recipient. We will issue required tax forms (e.g., U.S. Form 1099) as applicable.</p>
-                    <p data-end="7301" data-start="6822"><strong data-end="6858" data-start="6822">4.6 Licensing Agreement for Winners.</strong> If you are selected as a winner, you will be required to enter into a separate Artist–Client Agreement with the IP owner. This document governs the assignment or exclusive license of your winning artwork to the IP owner, sets the royalty rate, and may include additional terms such as moral rights waivers and publicity consents. If you do not sign the Artist–Client Agreement, you will forfeit the prize and your submission may be discarded.</p>
-                    <p data-end="7412" data-start="7305"><strong data-end="7327" data-start="7305">4.7 Number of Winners.</strong> The number of winners may vary per Contest and will be stated in the Contest Rules.</p>
-
-                    <h2 data-end="7475" data-start="7414"><strong>5. High‑Value Prize Contests &amp; Jurisdictional Restrictions</strong></h2>
-                    <p data-end="7876" data-start="7480"><strong data-end="7531" data-start="7480">5.1 Jurisdictional Exclusions Based on Prize Value.</strong> Several U.S. states require a sweepstakes or contest with prizes above certain thresholds to be registered and bonded. To avoid those administrative requirements, and unless we specifically register and bond a given Contest, participation will be restricted as follows based on the <strong data-end="7845" data-start="7814">total combined retail value</strong> of all prizes in that Contest:</p>
-                    <p><strong data-end="7920" data-start="7883">- Prizes less than US$500 (total):</strong> Residents of all states and provinces listed in Section 2 are eligible. No state‑specific exclusions apply.</p>
-                    <p><strong data-end="8100" data-start="8034">- Prizes of <strong data-end="8097" data-start="8046">US$500 or more but less than US$5,000 (total)</strong>:</strong> <strong data-end="8134" data-start="8101">All residents of Rhode Island</strong> are excluded from participation. Residents of Florida and New York remain eligible at this level.</p>
-                    <p><strong data-end="8282" data-start="8238">- Prizes of <strong data-end="8279" data-start="8250">US$5,000 or more (total)</strong>:</strong> <strong data-end="8324" data-start="8283">All residents of Florida and New York</strong> are excluded from participation. The exclusion for Rhode Island continues to apply.</p>
-                    <p data-end="8706" data-start="8413">If we elect to register a Contest in a given state or obtain any required surety bond, we may allow residents of that state to participate notwithstanding the above exclusions. Each set of Contest Rules will state the total prize value for that Contest and identify any excluded jurisdictions.</p>
-                    <p data-end="9109" data-start="8710"><strong data-end="8739" data-start="8710">5.2 Quebec &amp; Other Countries.</strong> Quebec, Puerto Rico and certain other jurisdictions require registration, translation, or payment of taxes to operate contests. Unless otherwise stated, Contests exclude residents of these jurisdictions. If we permit residents of such jurisdictions to enter a Contest, the Contest Rules will outline additional requirements (e.g., French‑language materials for Quebec).</p>
-                    <p data-end="9239" data-start="9113"><strong data-end="9137" data-start="9113">5.3 Currency &amp; Exchange.</strong> Prizes expressed in one currency may be converted to another when paid. Exchange rates may fluctuate.</p>
-
-                    <h2 className="rte-h2" data-end="9293" data-start="9241"><strong>6. Representations and Warranties of Participants</strong></h2>
-                    <p data-end="9793" data-start="9295"><strong>By submitting a work, you represent and warrant that: (a) you are the sole creator and owner of the submission; (b) you have the right to grant the license described herein and, if selected, to assign or exclusively license your work to the IP owner; (c) the submission does not infringe any third‑party rights; (d) you have obtained all permissions from any person whose likeness appears in the submission; and (e) your submission complies with these Terms and any applicable laws and regulations.</strong></p>
-
-                    <h2 className="rte-h2" data-end="9831" data-start="9795"><strong>7. Personal Information &amp; Privacy</strong></h2>
-                    <p data-end="10110" data-start="9836"><strong data-end="9856" data-start="9836">7.1 Data Collection.</strong> We will collect personal information such as your name, email address, social media handle, country of residence, and other details necessary to administer the Contest. We may also collect demographic data to ensure compliance with eligibility criteria.</p>
-                    <p data-end="10422" data-start="10114"><strong data-end="10130" data-start="10114">7.2 Use of Data.</strong> Your data will be used only to administer the Contest, communicate with you, verify eligibility, issue prizes and royalties, and to promote the Contest. We will store data in Canada and/or the United States and may transfer it across borders. By participating you consent to these transfers.</p>
-                    <p data-end="10712" data-start="10426"><strong data-end="10445" data-start="10426">7.3 Data Retention.</strong> We will retain personal data for as long as necessary to fulfil the purposes outlined above, including any legal, accounting or reporting requirements. You may request deletion of your data by contacting us; however, we may retain certain data where required by law.</p>
-                    <p data-end="10954" data-start="10716"><strong data-end="10742" data-start="10716">7.4 Third‑Party Platforms.</strong> If you choose to enter via a social media platform, your data may be subject to the platform’s own terms and privacy policy. Our Contests are not sponsored, endorsed or administered by any social media platform.</p>
-                    <h2 className="rte-h2" data-end="10980" data-start="10956"><strong>8. General Conditions</strong></h2>
-                    <p data-end="11173" data-start="10985"><strong data-end="11006" data-start="10985">8.1 Disqualification.</strong> We reserve the right to disqualify any participant or submission that violates these Terms, tampers with the entry process, or acts in a disruptive or unfair manner.</p>
-                    <p data-end="11396" data-start="11177"><strong data-end="11210" data-start="11177">8.2 Cancellation or Modification.</strong> We may cancel, suspend or modify a Contest if any factor beyond our reasonable control impairs the integrity or proper functioning of the Contest, as determined in our sole discretion.</p>
-                    <p data-end="11886" data-start="11400"><strong data-end="11428" data-start="11400">8.3 Limitation of Liability.</strong> To the fullest extent permitted by law, MOD, the IP owner, and each of their respective directors, officers, employees and agents shall not be liable for (i) lost, late, misdirected, or incomplete submissions; (ii) technical errors; (iii) unauthorized intervention or tampering; (iv) printing, typographical or other errors in Contest materials; or (v) any injury, loss or damage caused by participation in the Contest or the acceptance or use of any prize.</p>
-                    <p data-end="12231" data-start="11890"><strong data-end="11902" data-start="11890">8.4 Release.</strong> By participating, you release and hold harmless MOD, the IP owner, and their affiliates, directors, officers, employees and agents from any and all liability arising from your participation, your submission and the acceptance, possession or use of any prize. This release does not apply to claims that cannot be excluded by law.</p>
-                    <p data-end="12648" data-start="12235"><strong data-end="12253" data-start="12235">8.5 Governing Law.</strong> These Terms and any Contest shall be governed by and construed in accordance with the laws of the Province of Ontario, Canada, without regard to its conflict of law principles. You consent to exclusive jurisdiction and venue in the courts of Ontario. Nothing herein prevents you from seeking public relief under consumer protection statutes in your place of residence where such statutes apply.</p>
-                    <p data-end="12920" data-start="12652"><strong data-end="12669" data-start="12652">8.6 Severability.</strong> If any provision of these Terms is held invalid or unenforceable, the remainder of the Terms shall remain in full force and effect, and the invalid provision shall be replaced by a valid provision that most closely matches the intent of the original.</p>
-                    <p data-end="13055" data-start="12924"><strong data-end="12939" data-start="12924">8.7 Contact Us.</strong> If you have any questions or complaints about these Terms or a Contest, please contact us at <a rel="noopener" className="decorated-link cursor-pointer" data-end="13054" data-start="13033">hello@modfanart.com</a></p>
-                    <h2 className="rte-h2"><strong>9. Contest‑Specific Rules</strong></h2>
-                    <p>Each Contest will have its own Contest Rules posted on the relevant contest page. Such Contest Rules will include additional details such as:</p>
-                    <p>- The theme, submission period, and deadlines;</p>
-                    <p>- The number of winners and prizes, including the approximate retail value of each prize;</p>
-                    <p>- The specific evaluation criteria and the judging panel;</p>
-                    <p>- Any additional eligibility restrictions or jurisdictional exclusions;</p>
-                    <p>- The applicable royalty or payout amounts; and</p>
-                    <p>- Any alternative methods of entry if the Contest includes a random element or if a purchase of products is offered as an alternative way to participate.</p>
-                    <p>In the event of a conflict between these general Terms and any Contest Rules, the Contest Rules will control for that specific Contest.</p>
-                    <h3><b>Thank you for sharing your incredible talent with us. Let’s celebrate fan creativity together! ❤️</b></h3>
-                </div>
-            </div>
-            </div>
-            </div>
+    <div className="container max-w-4xl py-10 md:py-12 lg:py-16">
+      {/* Header */}
+      <div className="mb-10 space-y-4 text-center">
+        <div className="inline-flex items-center gap-3 rounded-full border bg-muted/40 px-4 py-1.5 text-sm font-medium">
+          <Scale className="h-4 w-4 text-primary" />
+          Official Legal Terms
         </div>
+        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
+          Submission Terms and Conditions
+        </h1>
+        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          These terms govern your participation in all fan-art contests, challenges, and calls for
+          submissions operated by Merch On Demand Inc. (MOD).
+        </p>
+        <p className="text-sm text-muted-foreground">Last updated: February 8, 2026</p>
+      </div>
+
+      <Card className="border-border shadow-sm">
+        <CardHeader className="pb-6 border-b">
+          <CardTitle className="text-2xl sm:text-3xl">General Submission Terms</CardTitle>
+          <CardDescription className="mt-2 text-base">
+            Please read these terms carefully before submitting any artwork.
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent className="pt-8">
+          <Accordion type="single" collapsible defaultValue="section-1" className="w-full">
+            {/* 1. Introduction */}
+            <AccordionItem value="section-1" className="border-b last:border-none">
+              <AccordionTrigger className="py-5 text-lg font-semibold hover:no-underline">
+                <div className="flex items-center gap-4">
+                  <Badge
+                    variant="outline"
+                    className="h-8 w-8 rounded-full p-0 text-base font-bold flex-shrink-0"
+                  >
+                    1
+                  </Badge>
+                  <span>Introduction</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="pb-6 pt-2 space-y-5 text-base leading-relaxed">
+                <p>
+                  These submission terms and conditions (the <strong>“Terms”</strong>) govern your
+                  participation in all fan-art contests, challenges and calls-for-submissions
+                  (collectively, <strong>“Contests”</strong>) operated by Merch On Demand Inc.,
+                  doing business as MOD INC., and its affiliates (
+                  <strong>“MOD,” “we,” “our”</strong> or <strong>“us”</strong>).
+                </p>
+                <p>
+                  By submitting artwork or otherwise participating in any Contest, you agree to be
+                  bound by these Terms and any supplemental rules or announcements for the specific
+                  Contest (<strong>“Contest Rules”</strong>). If you do not agree to these Terms or
+                  the Contest Rules, do not participate.
+                </p>
+                <p>
+                  These Terms may be updated or modified from time to time without prior notice. The
+                  version posted at the time of your submission will govern that submission.
+                </p>
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* 2. Eligibility */}
+            <AccordionItem value="section-2">
+              <AccordionTrigger className="py-5 text-lg font-semibold hover:no-underline">
+                <div className="flex items-center gap-4">
+                  <Badge
+                    variant="outline"
+                    className="h-8 w-8 rounded-full p-0 text-base font-bold flex-shrink-0"
+                  >
+                    2
+                  </Badge>
+                  <span>Eligibility</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="pb-6 pt-2 space-y-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium flex items-center gap-2">
+                    <Users className="h-5 w-5 text-muted-foreground" />
+                    2.1 Age and Capacity
+                  </h3>
+                  <p>
+                    Unless otherwise stated in the Contest Rules, participation is open only to
+                    individuals who are at least 18 years of age (or the age of majority in their
+                    jurisdiction, if higher) and who have the legal capacity to enter into binding
+                    agreements. Participants under the age of majority must obtain consent from
+                    their parent or legal guardian before participating.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium flex items-center gap-2">
+                    <Users className="h-5 w-5 text-muted-foreground" />
+                    2.2 Residency
+                  </h3>
+                  <p>
+                    Contests are generally open to residents of Canada (excluding Quebec), the
+                    United States (excluding Puerto Rico), and other jurisdictions worldwide where
+                    contests of this nature are not prohibited by law. Residents of Quebec are
+                    excluded because of language and registration requirements. Residents of Puerto
+                    Rico are excluded because of local registration requirements. Participation is
+                    void where prohibited and subject to all applicable federal, provincial, state
+                    and local laws and regulations.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium flex items-center gap-2">
+                    <Shield className="h-5 w-5 text-muted-foreground" />
+                    2.3 High-Value Prize Restrictions
+                  </h3>
+                  <p>
+                    Some jurisdictions impose registration or bonding requirements when prize values
+                    reach certain amounts. See Section 5 for details.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">2.4 No Purchase Necessary</h3>
+                  <p>
+                    No purchase or payment is required to submit artwork or to participate. Making a
+                    purchase will not improve your chances of winning.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">2.5 Limitations on Entries</h3>
+                  <p>
+                    Unless specified in the Contest Rules, there is a limit of one submission per
+                    person, per Contest. Mass entries generated by a script, macro or other
+                    automated means are void.
+                  </p>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* 3. Submission Guidelines */}
+            <AccordionItem value="section-3">
+              <AccordionTrigger className="py-5 text-lg font-semibold hover:no-underline">
+                <div className="flex items-center gap-4">
+                  <Badge
+                    variant="outline"
+                    className="h-8 w-8 rounded-full p-0 text-base font-bold flex-shrink-0"
+                  >
+                    3
+                  </Badge>
+                  <span>Submission Guidelines</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="pb-6 pt-2 space-y-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">3.1 Original Work</h3>
+                  <p>
+                    You represent and warrant that each artwork you submit is your original creation
+                    and does not infringe or violate the rights of any third party, including any
+                    copyright, trademark, privacy, publicity or other proprietary right. You must
+                    have obtained the consent of any individuals identifiable in your submission.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">3.2 Permitted Fan Works</h3>
+                  <p>
+                    Unless otherwise stated, you may incorporate characters or elements from the
+                    applicable intellectual property (“IP”) for which the Contest is run, solely for
+                    purposes of the Contest. Use of any other third-party content requires written
+                    permission from the rights holder.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">3.3 Prohibited Content</h3>
+                  <p>
+                    Submissions that are illegal, obscene, pornographic, violent, defamatory,
+                    harassing, discriminatory, offensive or otherwise inconsistent with our brand
+                    values (as determined in our sole discretion) will be disqualified.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">3.4 Grant of Rights for Submissions</h3>
+                  <p>
+                    By submitting artwork, you grant MOD and its designees a worldwide,
+                    royalty-free, non-exclusive license to host, store, reproduce, display, adapt
+                    and communicate your submission (in whole or in part) solely for purposes of
+                    administering the Contest, promoting the Contest and its related events, and
+                    showcasing your work. You retain ownership subject to this license. If selected
+                    as a winner, you will sign a separate Artist–Client Agreement.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">3.5 Right to Remove</h3>
+                  <p>
+                    We reserve the right to remove submissions for any reason, including at the
+                    request of the IP owner or due to complaints.
+                  </p>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* 4. Contest Mechanics */}
+            <AccordionItem value="section-4">
+              <AccordionTrigger className="py-5 text-lg font-semibold hover:no-underline">
+                <div className="flex items-center gap-4">
+                  <Badge
+                    variant="outline"
+                    className="h-8 w-8 rounded-full p-0 text-base font-bold flex-shrink-0"
+                  >
+                    4
+                  </Badge>
+                  <span>Contest Mechanics</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="pb-6 pt-2 space-y-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">4.1 Skill-Based Judging</h3>
+                  <p>
+                    Winners are selected based on artistic merit, originality, adherence to theme,
+                    relevance to IP, and other criteria described in the Contest Rules. There is no
+                    element of chance.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">4.2 Judging Panel</h3>
+                  <p>
+                    The panel’s decisions are final. We may disqualify any submission that does not
+                    meet the rules.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">4.3 Skill Testing Question (Canada)</h3>
+                  <p>
+                    Canadian winners may be required to correctly answer a mathematical
+                    skill-testing question.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">4.4 Announcement of Winners</h3>
+                  <p>
+                    Winners will be notified via provided contact information. Failure to respond or
+                    sign agreements may result in forfeiture.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">4.5 Prizes and Royalty Compensation</h3>
+                  <p>
+                    Prizes may include cash, merchandise, experiences, and/or royalties. Taxes are
+                    your responsibility.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">4.6 Licensing Agreement for Winners</h3>
+                  <p>Winners must enter a separate Artist–Client Agreement or forfeit the prize.</p>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* 5. High-Value Prize Contests & Jurisdictional Restrictions */}
+            <AccordionItem value="section-5">
+              <AccordionTrigger className="py-5 text-lg font-semibold hover:no-underline">
+                <div className="flex items-center gap-4">
+                  <Badge
+                    variant="outline"
+                    className="h-8 w-8 rounded-full p-0 text-base font-bold flex-shrink-0"
+                  >
+                    5
+                  </Badge>
+                  <span>High-Value Prize Contests & Jurisdictional Restrictions</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="pb-6 pt-2 space-y-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">
+                    5.1 Jurisdictional Exclusions Based on Prize Value
+                  </h3>
+                  <ul className="list-disc pl-6 space-y-2">
+                    <li>
+                      <strong>Prizes &lt; US$500 total:</strong> All eligible jurisdictions
+                    </li>
+                    <li>
+                      <strong>US$500 – US$4,999 total:</strong> Rhode Island excluded
+                    </li>
+                    <li>
+                      <strong>≥ US$5,000 total:</strong> Florida, New York, and Rhode Island
+                      excluded
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">5.2 Quebec & Other Countries</h3>
+                  <p>
+                    Quebec, Puerto Rico and certain jurisdictions are excluded unless otherwise
+                    stated.
+                  </p>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* 6–9 remaining sections – keeping concise for brevity */}
+            <AccordionItem value="section-6">
+              <AccordionTrigger className="py-5 text-lg font-semibold hover:no-underline">
+                <div className="flex items-center gap-4">
+                  <Badge
+                    variant="outline"
+                    className="h-8 w-8 rounded-full p-0 text-base font-bold flex-shrink-0"
+                  >
+                    6
+                  </Badge>
+                  <span>Representations and Warranties</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="pb-6 pt-2">
+                <p className="text-base leading-relaxed">
+                  You represent and warrant that you are the sole creator, the work does not
+                  infringe third-party rights, you can grant the required licenses, and your
+                  submission complies with all laws.
+                </p>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="section-7">
+              <AccordionTrigger className="py-5 text-lg font-semibold hover:no-underline">
+                <div className="flex items-center gap-4">
+                  <Badge
+                    variant="outline"
+                    className="h-8 w-8 rounded-full p-0 text-base font-bold flex-shrink-0"
+                  >
+                    7
+                  </Badge>
+                  <span>Personal Information & Privacy</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="pb-6 pt-2">
+                <p className="text-base leading-relaxed">
+                  We collect and use your personal information only to administer Contests, verify
+                  eligibility, issue prizes, and promote events. Data may be stored/transferred to
+                  Canada and the United States.
+                </p>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="section-8">
+              <AccordionTrigger className="py-5 text-lg font-semibold hover:no-underline">
+                <div className="flex items-center gap-4">
+                  <Badge
+                    variant="outline"
+                    className="h-8 w-8 rounded-full p-0 text-base font-bold flex-shrink-0"
+                  >
+                    8
+                  </Badge>
+                  <span>General Conditions</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="pb-6 pt-2 space-y-6">
+                <p className="text-base leading-relaxed">
+                  We may disqualify participants, cancel/modify Contests, and limit liability to the
+                  extent permitted by law. These Terms are governed by the laws of Ontario, Canada.
+                </p>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="section-9">
+              <AccordionTrigger className="py-5 text-lg font-semibold hover:no-underline">
+                <div className="flex items-center gap-4">
+                  <Badge
+                    variant="outline"
+                    className="h-8 w-8 rounded-full p-0 text-base font-bold flex-shrink-0"
+                  >
+                    9
+                  </Badge>
+                  <span>Contest-Specific Rules</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="pb-6 pt-2">
+                <p className="text-base leading-relaxed">
+                  Each Contest has its own rules posted on the contest page. In case of conflict,
+                  Contest Rules prevail over these general Terms.
+                </p>
+              </AccordionContent>
+            </AccordionItem>
+
+            {/* Contact */}
+            <AccordionItem value="contact">
+              <AccordionTrigger className="py-5 text-lg font-semibold hover:no-underline">
+                <div className="flex items-center gap-4">
+                  <Badge
+                    variant="outline"
+                    className="h-8 w-8 rounded-full p-0 text-base font-bold flex-shrink-0 bg-primary/10 text-primary border-primary/30"
+                  >
+                    Contact
+                  </Badge>
+                  <span>Questions or Concerns?</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="pb-8 pt-6">
+                <div className="rounded-xl bg-muted/50 p-8 text-center border">
+                  <Mail className="mx-auto h-12 w-12 text-primary mb-4" />
+                  <h3 className="text-xl font-semibold mb-3">Get in Touch</h3>
+                  <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                    If you have questions about these Terms, a specific Contest, or need assistance,
+                    please reach out.
+                  </p>
+                  <Button asChild size="lg" className="gap-2">
+                    <a href="mailto:hello@modfanart.com">
+                      <Mail className="h-5 w-5" />
+                      hello@modfanart.com
+                    </a>
+                  </Button>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+
+          <Separator className="my-12" />
+
+          <div className="text-center space-y-6">
+            <p className="text-2xl font-semibold text-primary">
+              Thank you for sharing your incredible talent with us.
+            </p>
+            <p className="text-xl font-medium">Let’s celebrate fan creativity together! ❤️</p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
-  )
+  );
 }

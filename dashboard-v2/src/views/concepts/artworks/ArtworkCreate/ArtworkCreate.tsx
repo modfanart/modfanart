@@ -10,7 +10,7 @@ import { TbTrash } from 'react-icons/tb'
 import { useNavigate } from 'react-router-dom'
 import type { ProductFormSchema } from '../ProductForm/types'
 
-const ProductCreate = () => {
+const ArtworkCreate = () => {
     const navigate = useNavigate()
 
     const [discardConfirmationOpen, setDiscardConfirmationOpen] =
@@ -101,12 +101,12 @@ const ProductCreate = () => {
                 onConfirm={handleConfirmDiscard}
             >
                 <p>
-                آیا مطمئنید که می خواهید این را کنار بگذارید؟ این اقدام نمی تواند
-                لغو شود.{' '}
+                    آیا مطمئنید که می خواهید این را کنار بگذارید؟ این اقدام نمی
+                    تواند لغو شود.{' '}
                 </p>
             </ConfirmDialog>
         </>
     )
 }
 
-export default ProductCreate
+export default ArtworkCreate

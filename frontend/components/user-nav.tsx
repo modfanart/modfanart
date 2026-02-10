@@ -29,15 +29,7 @@ export function UserNav() {
     isUninitialized,
   } = userApi.useGetCurrentUserQuery();
   const user = userData?.user;
-  console.log('[UserNav] Query status:', {
-    isLoading,
-    isFetching,
-    isUninitialized,
-    isError,
-    error: error ? JSON.stringify(error) : null,
-    hasUserData: !!user,
-    user: user ? user.username : 'no user',
-  });
+
   // Safety: if still loading or no user → don't render (MainNav handles fallback)
   if (isLoading || !user) return null;
 
@@ -77,7 +69,7 @@ export function UserNav() {
             <DropdownMenuItem onClick={() => router.push('/dashboard')}>Dashboard</DropdownMenuItem>
             <DropdownMenuItem onClick={() => router.push('/profile')}>Profile</DropdownMenuItem>
             <DropdownMenuItem onClick={() => router.push('/settings')}>Settings</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push('/billing')}>Billing</DropdownMenuItem>
+            {/* <DropdownMenuItem onClick={() => router.push('/billing')}>Billing</DropdownMenuItem> */}
           </DropdownMenuGroup>
 
           <DropdownMenuSeparator />

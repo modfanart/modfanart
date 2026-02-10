@@ -3,8 +3,7 @@
 @tailwind utilities;
 
 @font-face {
-	font-family: kookExtraBold;
-	src: url("../../fonts/kook/Kook-ExtraBold.woff");
+	 font-family: "Lato", sans-serif;
 	font-style: normal;
 }
 @layer base {

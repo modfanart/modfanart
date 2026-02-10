@@ -3,26 +3,39 @@ const { db, sql } = require('../config');
 const Brand = require('../models/brand.model');
 const BrandPost = require('../models/brandPost.model');
 const BrandPostComment = require('../models/brandPostComment.model');
-const BrandVerificationRequest = require('../models/brandVerificationRequest.model'); // Assume implemented
+const BrandVerificationRequest = require('../models/brandVerificationRequest.model');
+const BrandManager = require('../models/brandManager.model');
 
-// Assume these helpers/middlewares exist (from previous discussion)
+// Assume these helpers exist
 const { hasPermission } = require('../middleware/permission.middleware');
 
 // ───────────────────────────────────────────────
 // Helpers
 // ───────────────────────────────────────────────
-async function ensureBrandOwnership(brandId, userId) {
-  const brand = await Brand.findById(brandId, { onlyOwner: true, ownerId: userId });
-  if (!brand) {
-    throw Object.assign(new Error('Brand not found or you do not have permission'), { status: 403 });
+
+async function ensureBrandAccess(req, allowedManagerRoles = ['owner', 'manager', 'editor']) {
+  const brandId = req.params.brandId || req.params.id || req.params.brand_id;
+  if (!brandId) {
+    throw Object.assign(new Error('Brand ID not found in request'), { status: 400 });
   }
-  return brand;
+
+  const access = await BrandManager.hasAccess(brandId, req.user.id, allowedManagerRoles);
+
+  if (!access) {
+    throw Object.assign(new Error('You do not have permission to perform this action on this brand'), {
+      status: 403,
+    });
+  }
+}
+
+async function ensureBrandOwner(req) {
+  await ensureBrandAccess(req, ['owner']);
 }
 
 async function ensureBrandManagerOrHigher(req) {
   const allowedRoles = ['brand_manager', 'admin', 'superadmin', 'moderator'];
-  if (!allowedRoles.includes(req.user.role_name)) { // assume role_name is joined/denormalized
-    throw Object.assign(new Error('Insufficient role'), { status: 403 });
+  if (!allowedRoles.includes(req.user.role_name)) {
+    throw Object.assign(new Error('Insufficient global role'), { status: 403 });
   }
 }
 
@@ -147,7 +160,7 @@ async function getBrandBySlug(req, res) {
 }
 
 // ───────────────────────────────────────────────
-// 2. Brand Verification & Onboarding (Core for all 3 flows)
+// 2. Brand Verification & Onboarding
 // ───────────────────────────────────────────────
 
 async function submitBrandVerificationRequest(req, res) {
@@ -158,7 +171,7 @@ async function submitBrandVerificationRequest(req, res) {
       contact_email,
       contact_phone,
       description,
-      documents = [], // array of uploaded file URLs
+      documents = [],
     } = req.body;
 
     if (!company_name || !contact_email) {
@@ -166,7 +179,7 @@ async function submitBrandVerificationRequest(req, res) {
     }
 
     const requestData = {
-      user_id: req.user?.id || null, // can be guest/anonymous for contact page
+      user_id: req.user?.id || null,
       company_name,
       website: website || null,
       contact_email,
@@ -178,8 +191,6 @@ async function submitBrandVerificationRequest(req, res) {
 
     const request = await BrandVerificationRequest.create(requestData);
 
-    // Fire-and-forget notification to internal team
-    // (implement sendInternalNotification as email/slack/push)
     sendInternalNotification('new_brand_verification', {
       requestId: request.id,
       company: company_name,
@@ -198,7 +209,7 @@ async function submitBrandVerificationRequest(req, res) {
 
 async function getBrandVerificationRequests(req, res) {
   try {
-    // Admin / moderator only → should be protected by middleware in router
+    // Protected by middleware: admin/moderator only
     const { status, limit = 20, offset = 0 } = req.query;
 
     let query = db
@@ -237,12 +248,12 @@ async function approveBrandVerificationRequest(req, res) {
       password_hash: await hashPassword(temp_password || generateTempPassword()),
       role_id: await getRoleIdByName('brand_manager'),
       profile: { company_name: request.company_name },
-      status: 'pending_verification', // force reset/change password
+      status: 'pending_verification',
     });
 
-    // 2. Create the actual brand
+    // 2. Create the brand
     const brand = await Brand.create({
-      user_id: manager.id,
+      user_id: manager.id, // legacy field – keep for backward compatibility if needed
       name: request.company_name,
       slug: await generateUniqueSlug(request.company_name),
       description: request.description,
@@ -251,7 +262,14 @@ async function approveBrandVerificationRequest(req, res) {
       verification_request_id: request.id,
     });
 
-    // 3. Mark request as approved
+    // 3. Create brand manager relation (owner)
+    await BrandManager.create({
+      brand_id: brand.id,
+      user_id: manager.id,
+      role: 'owner',
+    });
+
+    // 4. Mark request approved
     await BrandVerificationRequest.update(requestId, {
       status: 'approved',
       reviewed_by: req.user.id,
@@ -259,7 +277,7 @@ async function approveBrandVerificationRequest(req, res) {
       notes: notes ? `${request.notes || ''}\n${notes}` : request.notes,
     });
 
-    // 4. Notify brand contact (email with credentials / reset link)
+    // 5. Notify
     sendBrandOnboardingEmail({
       to: request.contact_email,
       brandName: brand.name,
@@ -279,35 +297,46 @@ async function approveBrandVerificationRequest(req, res) {
   }
 }
 
-// You can add rejectBrandVerificationRequest, scheduleInterview, etc. similarly
-
 // ───────────────────────────────────────────────
-// 3. Brand Management (brand_manager + internal team)
+// 3. Brand Management
 // ───────────────────────────────────────────────
 
 async function getMyBrands(req, res) {
   try {
-    await ensureBrandManagerOrHigher(req);
+    const managed = await BrandManager.findByUser(req.user.id);
+
+    if (managed.length === 0) {
+      return res.json([]);
+    }
+
+    const brandIds = managed.map((m) => m.brand_id);
 
     const brands = await db
       .selectFrom('brands')
       .selectAll()
-      .where('user_id', '=', req.user.id)
+      .where('id', 'in', brandIds)
       .where('deleted_at', 'is', null)
       .orderBy('created_at', 'desc')
       .execute();
 
-    return res.json(brands);
+    const brandsWithRole = brands.map((brand) => {
+      const relation = managed.find((m) => m.brand_id === brand.id);
+      return {
+        ...brand,
+        my_role: relation?.role || null,
+      };
+    });
+
+    return res.json(brandsWithRole);
   } catch (err) {
-    const status = err.status || 500;
-    return res.status(status).json({ error: err.message || 'Failed to fetch your brands' });
+    console.error('getMyBrands error:', err);
+    return res.status(500).json({ error: 'Failed to fetch your brands' });
   }
 }
 
 async function updateBrand(req, res) {
   try {
-    await ensureBrandOwnership(req.params.id, req.user.id);
-    await ensureBrandManagerOrHigher(req);
+    await ensureBrandAccess(req); // owner, manager, editor
 
     const updated = await Brand.update(req.params.id, req.body, req.user.id);
     if (!updated) return res.status(404).json({ error: 'Brand not found' });
@@ -321,8 +350,7 @@ async function updateBrand(req, res) {
 
 async function deleteBrand(req, res) {
   try {
-    await ensureBrandOwnership(req.params.id, req.user.id);
-    await ensureBrandManagerOrHigher(req);
+    await ensureBrandOwner(req); // only owner can delete
 
     await Brand.softDelete(req.params.id, req.user.id);
     return res.status(204).send();
@@ -338,8 +366,7 @@ async function deleteBrand(req, res) {
 
 async function addArtworkToBrand(req, res) {
   try {
-    await ensureBrandOwnership(req.params.brandId, req.user.id);
-    await ensureBrandManagerOrHigher(req);
+    await ensureBrandAccess(req); // owner, manager, editor
 
     const { artworkId, is_featured = false, sort_order = 0 } = req.body;
 
@@ -386,8 +413,7 @@ async function getAllBrandArtworks(req, res) {
 
 async function removeArtworkFromBrand(req, res) {
   try {
-    await ensureBrandOwnership(req.params.brandId, req.user.id);
-    await ensureBrandManagerOrHigher(req);
+    await ensureBrandAccess(req); // owner, manager, editor
 
     await Brand.removeArtwork(req.params.brandId, req.params.artworkId, req.user.id);
     return res.status(204).send();
@@ -463,8 +489,7 @@ async function checkIfFollowing(req, res) {
 
 async function createBrandPost(req, res) {
   try {
-    await ensureBrandOwnership(req.params.brandId, req.user.id);
-    await ensureBrandManagerOrHigher(req);
+    await ensureBrandAccess(req, ['owner', 'manager', 'editor']);
 
     const post = await BrandPost.create(req.params.brandId, req.body, req.user.id);
     return res.status(201).json(post);
@@ -498,8 +523,7 @@ async function getBrandPost(req, res) {
 
 async function updateBrandPost(req, res) {
   try {
-    await ensureBrandOwnership(req.params.brandId, req.user.id);
-    await ensureBrandManagerOrHigher(req);
+    await ensureBrandAccess(req, ['owner', 'manager', 'editor']);
 
     const updated = await BrandPost.update(
       req.params.postId,
@@ -516,8 +540,7 @@ async function updateBrandPost(req, res) {
 
 async function deleteBrandPost(req, res) {
   try {
-    await ensureBrandOwnership(req.params.brandId, req.user.id);
-    await ensureBrandManagerOrHigher(req);
+    await ensureBrandAccess(req, ['owner', 'manager']); // editors cannot delete
 
     await BrandPost.softDelete(req.params.postId, req.params.brandId);
     return res.status(204).send();
@@ -528,8 +551,7 @@ async function deleteBrandPost(req, res) {
 
 async function togglePinBrandPost(req, res) {
   try {
-    await ensureBrandOwnership(req.params.brandId, req.user.id);
-    await ensureBrandManagerOrHigher(req);
+    await ensureBrandAccess(req, ['owner', 'manager']);
 
     await BrandPost.togglePin(
       req.params.postId,
@@ -631,34 +653,29 @@ async function incrementBrandView(req, res) {
 }
 
 // ───────────────────────────────────────────────
-// 9. Admin Direct Creation (bypass verification – rare / internal use)
+// 9. Admin Direct Creation
 // ───────────────────────────────────────────────
 
 async function adminCreateBrand(req, res) {
   try {
-    // Should be protected by router middleware: restrictTo('admin', 'superadmin')
+    // Protected by middleware: admin/superadmin only
     const { ownerUserId, ...brandData } = req.body;
 
     if (!ownerUserId) {
       return res.status(400).json({ error: 'ownerUserId (brand manager user) required' });
     }
 
-    // Optional strict check
-    const ownerRole = await db
-      .selectFrom('users')
-      .innerJoin('roles', 'roles.id', 'users.role_id')
-      .select('roles.name')
-      .where('users.id', '=', ownerUserId)
-      .executeTakeFirst();
-
-    if (ownerRole?.name !== 'brand_manager') {
-      return res.status(400).json({ error: 'Owner must have brand_manager role' });
-    }
-
     const brand = await Brand.create({
       ...brandData,
       user_id: ownerUserId,
       status: brandData.status || 'active',
+    });
+
+    // Create manager relation
+    await BrandManager.create({
+      brand_id: brand.id,
+      user_id: ownerUserId,
+      role: 'owner',
     });
 
     return res.status(201).json(brand);
@@ -672,35 +689,27 @@ async function adminCreateBrand(req, res) {
 // Exports
 // ───────────────────────────────────────────────
 module.exports = {
-  // Public / Discovery
   getAllBrands,
   getBrand,
   getBrandBySlug,
 
-  // Verification & Onboarding (main path for all 3 flows)
   submitBrandVerificationRequest,
   getBrandVerificationRequests,
   approveBrandVerificationRequest,
-  // rejectBrandVerificationRequest,  // implement as needed
-  // scheduleInterview,               // implement as needed
 
-  // Brand Management
   getMyBrands,
   updateBrand,
   deleteBrand,
 
-  // Artworks
   addArtworkToBrand,
   getAllBrandArtworks,
   removeArtworkFromBrand,
 
-  // Social / Follow
   followBrand,
   unfollowBrand,
   getBrandFollowers,
   checkIfFollowing,
 
-  // Posts
   createBrandPost,
   getBrandPosts,
   getBrandPost,
@@ -710,15 +719,17 @@ module.exports = {
   likeBrandPost,
   unlikeBrandPost,
 
-  // Comments
   createBrandPostComment,
   getBrandPostComments,
   deleteBrandPostComment,
   likeBrandPostComment,
 
-  // Views
   incrementBrandView,
-ensureBrandManagerOrHigher, ensureBrandOwnership,
-  // Admin-only direct creation
+
   adminCreateBrand,
+
+  // Helpers (useful for tests or other controllers)
+  ensureBrandAccess,
+  ensureBrandOwner,
+  ensureBrandManagerOrHigher,
 };
