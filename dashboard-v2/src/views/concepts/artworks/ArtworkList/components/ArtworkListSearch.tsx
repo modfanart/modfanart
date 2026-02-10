@@ -4,11 +4,11 @@ import { TbSearch } from 'react-icons/tb'
 import useDebounce from '@/utils/hooks/useDebounce'
 import type { ChangeEvent } from 'react'
 
-type ProductListSearchProps = {
+type ArtworkListSearchProps = {
     onInputChange: (value: string) => void
 }
 
-const ProductListSearch = forwardRef<HTMLInputElement, ProductListSearchProps>(
+const ArtworkListSearch = forwardRef<HTMLInputElement, ArtworkListSearchProps>(
     (props, ref) => {
         const { onInputChange } = props
 
@@ -33,6 +33,6 @@ const ProductListSearch = forwardRef<HTMLInputElement, ProductListSearchProps>(
     },
 )
 
-ProductListSearch.displayName = 'ProductListSearch'
+ArtworkListSearch.displayName = 'ArtworkListSearch'
 
-export default ProductListSearch
+export default ArtworkListSearch

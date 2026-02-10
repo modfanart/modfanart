@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-
+import { SearchModal } from './search-modal';
 import { Button } from '@/components/ui/button';
 import { UserNav } from '@/components/user-nav';
 
@@ -41,7 +41,7 @@ export function MainNav() {
     refetchOnFocus: true,
   });
 
-  // Quick client-side token check (very fast)
+  // Quick client-side token check
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -71,7 +71,7 @@ export function MainNav() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
-        {/* Logo – always renders immediately */}
+        {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5">
           <Image
             src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/mod-logo-dark-gTZuJePnecraDwGyMlBCHe6E6xJgsx.png"
@@ -83,89 +83,40 @@ export function MainNav() {
           />
         </Link>
 
-        {/* Desktop Navigation – renders instantly */}
+        {/* Desktop Navigation */}
         <NavigationMenu className="hidden md:flex mx-auto">
           <NavigationMenuList className="gap-1">
             <NavigationMenuItem>
-              <Link href="/" legacyBehavior passHref>
-                <NavigationMenuLink
-                  className={navigationMenuTriggerStyle()}
-                  active={pathname === '/'}
-                >
-                  Home
-                </NavigationMenuLink>
-              </Link>
+              <NavigationMenuLink
+                asChild
+                className={navigationMenuTriggerStyle()}
+                active={pathname === '/'}
+              >
+                <Link href="/">Home</Link>
+              </NavigationMenuLink>
             </NavigationMenuItem>
 
             <NavigationMenuItem>
-              <Link href="/pricing" legacyBehavior passHref>
-                <NavigationMenuLink
-                  className={navigationMenuTriggerStyle()}
-                  active={pathname === '/pricing'}
-                >
-                  Pricing
-                </NavigationMenuLink>
-              </Link>
+              <NavigationMenuLink
+                asChild
+                className={navigationMenuTriggerStyle()}
+                active={pathname === '/gallery/featured'}
+              >
+                <Link href="/gallery/featured">Gallery</Link>
+              </NavigationMenuLink>
             </NavigationMenuItem>
 
             <NavigationMenuItem>
-              <NavigationMenuTrigger>Gallery</NavigationMenuTrigger>
-              <NavigationMenuContent>
-                <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
-                  <li>
-                    <NavigationMenuLink asChild>
-                      <Link
-                        href="/gallery/featured"
-                        className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                      >
-                        <div className="text-sm font-medium leading-none">Featured Artwork</div>
-                        <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                          Browse our curated collection of licensed fan art
-                        </p>
-                      </Link>
-                    </NavigationMenuLink>
-                  </li>
-                  <li>
-                    <NavigationMenuLink asChild>
-                      <Link
-                        href="/gallery/available"
-                        className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                      >
-                        <div className="text-sm font-medium leading-none">
-                          Available for Licensing
-                        </div>
-                        <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                          Discover fan art available for commercial licensing
-                        </p>
-                      </Link>
-                    </NavigationMenuLink>
-                  </li>
-                </ul>
-              </NavigationMenuContent>
+              <NavigationMenuLink
+                asChild
+                className={navigationMenuTriggerStyle()}
+                active={pathname === '/opportunities'}
+              >
+                <Link href="/opportunities">Contests</Link>
+              </NavigationMenuLink>
             </NavigationMenuItem>
 
-            <NavigationMenuItem>
-              <Link href="/opportunities" legacyBehavior passHref>
-                <NavigationMenuLink
-                  className={navigationMenuTriggerStyle()}
-                  active={pathname === '/opportunities'}
-                >
-                  Opportunities
-                </NavigationMenuLink>
-              </Link>
-            </NavigationMenuItem>
-
-            <NavigationMenuItem>
-              <Link href="/marketplace" legacyBehavior passHref>
-                <NavigationMenuLink
-                  className={navigationMenuTriggerStyle()}
-                  active={pathname === '/marketplace'}
-                >
-                  Marketplace
-                </NavigationMenuLink>
-              </Link>
-            </NavigationMenuItem>
-
+            {/* Resources Dropdown */}
             <NavigationMenuItem>
               <NavigationMenuTrigger>Resources</NavigationMenuTrigger>
               <NavigationMenuContent>
@@ -213,6 +164,7 @@ export function MainNav() {
               </NavigationMenuContent>
             </NavigationMenuItem>
 
+            {/* About Dropdown */}
             <NavigationMenuItem>
               <NavigationMenuTrigger>About</NavigationMenuTrigger>
               <NavigationMenuContent>
@@ -262,8 +214,10 @@ export function MainNav() {
           </NavigationMenuList>
         </NavigationMenu>
 
-        {/* Right side – Auth / User */}
         <div className="flex items-center gap-4">
+          {/* Add search button here */}
+          <SearchModal />
+
           {isPending ? (
             <div className="h-9 w-32 animate-pulse rounded-md bg-muted/70" />
           ) : isAuthenticated ? (

@@ -116,12 +116,12 @@ class AuthController {
   static async login(req, res) {
     try {
       const { email, password } = req.body;
-
+console.log(req.body)
       const user = await User.findByEmail(email);
       if (!user || !user.password_hash) {
         return res.status(401).json({ error: 'Invalid credentials' });
       }
-
+console.log(user)
       if (user.status !== 'active') {
         return res.status(403).json({ error: `Account is ${user.status}` });
       }

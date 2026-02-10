@@ -425,6 +425,14 @@
  * @property {number} vote_weight         e.g., 1 for upvote
  * @property {string} created_at
  */
+/**
+ * @typedef {Object} BrandManagerRow
+ * @property {string} id                  UUID
+ * @property {string} user_id             References UserRow.id (human manager)
+ * @property {string} brand_id            References BrandRow.id (managed brand)
+ * @property {'owner' | 'manager' | 'editor'} role
+ * @property {string} created_at          timestamptz ISO string
+ */
 
 /**
  * @typedef {Object} BrandFollowerRow

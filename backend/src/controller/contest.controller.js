@@ -56,14 +56,14 @@ class ContestController {
   // POST /contests (brand creates contest)
   static async createContest(req, res) {
     try {
-      if (!req.user.permissions?.['contests.create']) {
-        return res.status(403).json({ error: 'Permission denied' });
-      }
+      // if (!req.user.permissions?.['contests.create']) {
+      //   return res.status(403).json({ error: 'Permission denied' });
+      // }
 
       // Brands typically create contests
-      if (req.user.role_id !== (await db.selectFrom('roles').select('id').where('name', '=', 'brand').executeTakeFirst())?.id) {
-        return res.status(403).json({ error: 'Only brands can create contests' });
-      }
+      // if (req.user.role_id !== (await db.selectFrom('roles').select('id').where('name', '=', 'brand').executeTakeFirst())?.id) {
+      //   return res.status(403).json({ error: 'Only brands can create contests' });
+      // }
 
       const {
         title, slug, description, rules, prizes, start_date, submission_end_date,
