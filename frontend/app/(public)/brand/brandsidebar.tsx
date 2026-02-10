@@ -30,7 +30,7 @@ export function Sidebar({ className, ...props }: SidebarProps) {
 
   const routes = [
     {
-      label: "Contest Management",
+      label: "Campaign Management",
       icon: <ImageIcon className="h-5 w-5" />,
       href: "/brand/manage",
       active: pathname.startsWith("/brand")
