@@ -241,7 +241,11 @@ const contestsApi = createApi({
 
     submitEntry: builder.mutation<
       ContestEntry,
-      { contestId: string; artworkId: string; submissionNotes?: string }
+      {
+        contestId: string;
+        artworkId: string;
+        submissionNotes?: string | null | undefined;
+      }
     >({
       query: ({ contestId, artworkId, submissionNotes }) => ({
         url: `/contest/${contestId}/entries`,

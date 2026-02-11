@@ -32,10 +32,10 @@ class ContestEntryController {
         return res.status(403).json({ error: 'Not your artwork or artwork not found' });
       }
 
-      if (artwork.status !== 'published') {
-        return res.status(403).json({ error: 'Artwork must be published to submit' });
-      }
-
+ // Temporarily relax the check
+if (artwork.status !== 'published' && artwork.status !== 'draft') {
+  return res.status(403).json({ error: 'Artwork must be published or in draft to submit' });
+}
       // Check max entries per user
       const existing = await db
         .selectFrom('contest_entries')
