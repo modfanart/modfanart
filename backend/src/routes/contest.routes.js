@@ -11,6 +11,7 @@ const { authenticateToken } = require('../middleware/auth.middleware');
 const { hasPermission } = require('../middleware/permission.middleware');
 
 const router = express.Router();
+router.use(authenticateToken); // All user routes require auth
 
 // Public
 router.get('/', ContestController.getContests);

@@ -101,10 +101,25 @@ const fileUrl = `https://amzn-artwork-images.s3.eu-north-1.amazonaws.com/${fileK
           created_at: artwork.created_at,
         },
       });
-    } catch (error) {
-      console.error('Create artwork error:', error);
-      res.status(500).json({ error: 'Failed to create artwork' });
-    }
+ } catch (error) {
+  console.error('Create artwork error:', {
+    message: error.message,
+    stack: error.stack,
+    name: error.name,
+    code: error.code,          // AWS errors have .code
+    bucket: process.env.S3_BUCKET_NAME,
+    region: process.env.AWS_REGION || 'unknown',
+    hasCredentials: !!process.env.AWS_ACCESS_KEY_ID,
+    file: req.file ? 'present' : 'missing',
+    body: req.body,
+  });
+
+  res.status(500).json({
+    error: 'Failed to create artwork',
+    message: error.message || 'Internal server error',
+    code: error.code || undefined,
+  });
+}
   }
 
   /**
