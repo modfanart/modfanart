@@ -24,7 +24,6 @@ export default function OpportunitiesPage() {
     isError,
     error,
   } = useGetContestsQuery({
-    status: 'live',
     activeOnly: true,
     limit: 20,
   });
