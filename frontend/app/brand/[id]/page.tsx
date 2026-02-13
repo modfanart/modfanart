@@ -45,9 +45,7 @@ export default function BrandStorefrontPage() {
     isLoading,
     isError,
     error,
-  } = useGetBrandQuery(paramValue!, {
-    skip: !paramValue,
-  });
+  } = useGetBrandQuery(paramValue!, { skip: !paramValue });
 
   // Alternative (uncomment if your route uses slug instead):
   // const { data: brand, isLoading, isError, error } = useGetBrandBySlugQuery(paramValue!, {

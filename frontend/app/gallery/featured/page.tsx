@@ -70,7 +70,7 @@ export default function FeaturedGalleryPage() {
 
   if (isLoading) {
     return (
-      <LayoutWrapper className="bg-gray-50 min-h-screen">
+      <LayoutWrapper>
         <div className="container py-8 lg:py-12">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Sidebar skeleton */}
@@ -101,7 +101,7 @@ export default function FeaturedGalleryPage() {
 
   if (error) {
     return (
-      <LayoutWrapper className="bg-gray-50 min-h-screen flex items-center justify-center">
+      <LayoutWrapper>
         <div className="text-center space-y-6 px-6">
           <h2 className="text-4xl font-bold text-gray-900">Failed to load gallery</h2>
           <Button variant="outline" size="lg" className="border-gray-400 text-gray-700">
@@ -121,7 +121,7 @@ export default function FeaturedGalleryPage() {
   ];
 
   return (
-    <LayoutWrapper className="bg-gray-50 min-h-screen text-gray-900">
+    <LayoutWrapper>
       <div className="container py-8 lg:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Left Sidebar with Filters */}
