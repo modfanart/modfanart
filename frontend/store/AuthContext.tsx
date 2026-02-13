@@ -1,6 +1,7 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext } from 'react';
+import { useGetCurrentUserQuery } from '@/services/api/userApi';
 
 export interface RoleRow {
   id: string;
@@ -14,7 +15,7 @@ export interface RoleRow {
 export interface AuthUser {
   id: string;
   email: string;
-  role: RoleRow;
+  role?: RoleRow;
 }
 
 interface AuthContextType {
@@ -28,31 +29,34 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchUser() {
-      try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/me`, {
-          credentials: 'include',
-        });
-
-        if (!res.ok) throw new Error('Not authenticated');
-
-        const data = await res.json();
-        setUser(data);
-      } catch (err) {
-        setUser(null);
-      } finally {
-        setLoading(false);
+  const { data, isLoading, isError } = useGetCurrentUserQuery();
+  const user: AuthUser | null = data?.user
+    ? {
+        id: data.user.id,
+        email: data.user.email,
+        ...(data.user.role && {
+          role: {
+            id: data.user.role.id,
+            name: data.user.role.name,
+            hierarchy_level: data.user.role.hierarchy_level ?? 0,
+            is_system: false,
+            permissions: {},
+            created_at: '',
+          },
+        }),
       }
-    }
+    : null;
 
-    fetchUser();
-  }, []);
-
-  return <AuthContext.Provider value={{ user, loading }}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        loading: isLoading,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export const useAuth = () => useContext(AuthContext);

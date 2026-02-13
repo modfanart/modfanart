@@ -20,7 +20,7 @@ import { useCreateContestMutation } from '@/services/api/contestsApi';
 
 // Helper: Date → YYYY-MM-DD string (now safely typed for non-null input)
 function toISODate(date: Date): string {
-  return date.toISOString().split('T')[0];
+  return date.toISOString().split('T')[0]!; // ← add !
 }
 
 export default function CreateOpportunityPage() {

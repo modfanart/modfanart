@@ -135,18 +135,6 @@ export default function NewContestSubmissionPage() {
       return;
     }
 
-    // Optional: contest-specific format check
-    if (contest?.entry_requirements?.formats) {
-      const allowedExts = (contest.entry_requirements.formats as string[]).map((ext) =>
-        ext.toLowerCase()
-      );
-      const fileExt = selected.name.split('.').pop()?.toLowerCase();
-      if (fileExt && !allowedExts.includes(fileExt)) {
-        setFileError(`This contest only accepts: ${allowedExts.join(', ').toUpperCase()}`);
-        return;
-      }
-    }
-
     setFile(selected);
     const url = URL.createObjectURL(selected);
     setPreviewUrl(url);
@@ -289,9 +277,6 @@ export default function NewContestSubmissionPage() {
           <p>Submissions close: {new Date(contest.submission_end_date).toLocaleDateString()}</p>
           {contest.max_entries_per_user > 1 && (
             <p>You may submit up to {contest.max_entries_per_user} entries in this contest</p>
-          )}
-          {contest.entry_requirements?.min_resolution && (
-            <p>Minimum resolution: {contest.entry_requirements.min_resolution}</p>
           )}
         </div>
       )}
