@@ -13,7 +13,7 @@ import { ShoppingCart, Heart, Share2, ArrowLeft, Check, Star, StarHalf } from 'l
 import { useToast } from '@/components/ui/use-toast';
 
 // → Import your RTK Query hook
-import { useGetArtworkQuery } from '@/app/api/artworkApi';
+import { useGetArtworkQuery } from '@/services/api/artworkApi';
 
 import { ProductCard } from '@/components/product-card';
 
@@ -29,7 +29,6 @@ interface RelatedProductCardProps {
   isBestseller: boolean;
   slug: string;
 }
-
 
 export default function ProductPage() {
   const params = useParams();
@@ -51,14 +50,14 @@ export default function ProductPage() {
   const [quantity, setQuantity] = useState(1);
 
   // You can derive these from artwork later (or add pricing to backend)
-  const price = 24.99;           // ← placeholder — add to Artwork model?
-  const rating = 4.6;            // ← placeholder
-  const reviewCount = 83;        // ← placeholder
+  const price = 24.99; // ← placeholder — add to Artwork model?
+  const rating = 4.6; // ← placeholder
+  const reviewCount = 83; // ← placeholder
   const inStock = true;
 
   // You can map categories or hardcode brand/artist for display
-  const brand = "Marvel";        // ← derive from categories / metadata later
-  const artist = "Official Studio"; // ← placeholder
+  const brand = 'Marvel'; // ← derive from categories / metadata later
+  const artist = 'Official Studio'; // ← placeholder
 
   if (isLoading) {
     return (
@@ -89,13 +88,13 @@ export default function ProductPage() {
 
   const handleAddToCart = () => {
     toast({
-      title: "Added to cart",
+      title: 'Added to cart',
       description: `${artwork.title} × ${quantity}`,
     });
   };
 
   const handleBuyNow = () => {
-    toast({ title: "Proceeding to checkout..." });
+    toast({ title: 'Proceeding to checkout...' });
     router.push('/marketplace/checkout');
   };
 
@@ -132,7 +131,11 @@ export default function ProductPage() {
           <div className="flex flex-col gap-4 lg:w-1/2">
             <div className="relative aspect-square overflow-hidden rounded-lg border">
               <Image
-                src={artwork.file_url || artwork.thumbnail_url || '/placeholder.svg?height=600&width=600'}
+                src={
+                  artwork.file_url ||
+                  artwork.thumbnail_url ||
+                  '/placeholder.svg?height=600&width=600'
+                }
                 alt={artwork.title}
                 fill
                 className="object-cover"
@@ -166,7 +169,7 @@ export default function ProductPage() {
                 <div className="text-2xl font-bold">${price.toFixed(2)}</div>
               </div>
 
-              <p className="mt-4">{artwork.description || "No description provided."}</p>
+              <p className="mt-4">{artwork.description || 'No description provided.'}</p>
 
               {/* Quantity + Actions */}
               <div className="mt-8 space-y-6">

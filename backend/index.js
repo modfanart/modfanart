@@ -22,6 +22,7 @@ app.use("/api/artwork", require("./src/routes/artwork.routes"))
 app.use('/api/licenses', require('./src/routes/license.routes'));
 app.use('/api/users', require('./src/routes/user.routes'));
 app.use('/api/brands', require("./src/routes/brand.routes"));
+app.use("/api/collections", require("./src/routes/collection.route"))
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', env: process.env.NODE_ENV || 'dev' });

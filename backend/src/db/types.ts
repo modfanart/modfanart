@@ -400,12 +400,30 @@ export interface BrandFollowerRow {
   user_id: string;
   followed_at: Date;
 }
+export interface Collections {
+  id: string;
+    owner_type: 'user' | 'brand';
+    owner_id: string;
+    name: string;
+    slug: string;
+    description: string | null;
+    is_public: boolean;
+    cover_image_url: string | null;
+    sort_order: number;
+    created_at: string;
+    updated_at: string;
+    deleted_at: string | null;
+}
 
-// src/db/types.ts
+export interface CollectionItem {
+    id: string;
+    collection_id: string;
+    artwork_id: string;
+    sort_order: number;
+    added_at: string;
+}
 
-// ... all your existing interface exports ...
 
-// ── Database schema for Kysely ──────────────────────────────────────────────
 
 export interface DB {
   users:                    UserRow;
@@ -416,6 +434,8 @@ export interface DB {
   brand_verification_requests: BrandVerificationRequestRow;
   categories:               CategoryRow;
   tags:                     TagRow;
+  collections: Collections,
+  collection_items: CollectionItem,
   taggings:                 TaggingRow;
   artwork:                  ArtworkRow;
   artwork_pricing_tiers:    ArtworkPricingTierRow;

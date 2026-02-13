@@ -197,6 +197,88 @@ class CategoryController {
       res.status(500).json({ error: 'Failed to deactivate category' });
     }
   }
+
+static async getCategoryBySlug(req, res) {
+  try {
+    const { slug } = req.params;
+    const { page = '1', limit = '12' } = req.query;
+
+    if (!slug || typeof slug !== 'string') {
+      return res.status(400).json({ error: 'Valid slug is required' });
+    }
+
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+
+    if (isNaN(pageNum) || pageNum < 1 || isNaN(limitNum) || limitNum < 1 || limitNum > 100) {
+      return res.status(400).json({ error: 'Invalid pagination parameters' });
+    }
+
+    const normalizedSlug = slug.trim().toLowerCase();
+
+    const category = await Category.findBySlug(normalizedSlug);
+
+    if (!category) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+
+    const offset = (pageNum - 1) * limitNum;
+
+    const artworksQuery = db
+      .selectFrom('artworks')
+      .innerJoin('artwork_categories', 'artworks.id', 'artwork_categories.artwork_id')
+      .innerJoin('categories', 'artwork_categories.category_id', 'categories.id')
+      .select([
+        'artworks.id',
+        'artworks.title',
+        'artworks.description',
+        'artworks.file_url',
+        'artworks.thumbnail_url',
+        'artworks.views_count',
+        'artworks.favorites_count',
+        'artworks.created_at',
+      ])
+      .where('categories.slug', '=', normalizedSlug)
+      .where('artworks.status', '=', 'published')
+      .where('artworks.deleted_at', 'is', null)
+      .orderBy('artworks.created_at', 'desc')
+      .limit(limitNum)
+      .offset(offset);
+
+    const artworks = await artworksQuery.execute();
+
+    // Fixed count query
+    const countResult = await db
+      .selectFrom('artworks')
+      .innerJoin('artwork_categories', 'artworks.id', 'artwork_categories.artwork_id')
+      .innerJoin('categories', 'artwork_categories.category_id', 'categories.id')
+      .select(({ fn }) => [fn.countAll().as('total')])
+      .where('categories.slug', '=', normalizedSlug)
+      .where('artworks.status', '=', 'published')
+      .where('artworks.deleted_at', 'is', null)
+      .executeTakeFirst();
+
+    const total = Number(countResult?.total ?? 0);
+    const totalPages = Math.ceil(total / limitNum);
+
+    res.json({
+      category,
+      artworks,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages,
+        hasNext: pageNum < totalPages,
+        hasPrev: pageNum > 1,
+      },
+    });
+  } catch (error) {
+    console.error('Get category by slug error:', error);
+    res.status(500).json({ error: 'Failed to fetch category data' });
+  }
+}
+
 }
 
 module.exports = CategoryController;

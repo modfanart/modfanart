@@ -18,9 +18,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Eye, EyeOff } from 'lucide-react';
-import { useLoginMutation } from '@/app/api/authApi'; // ← import from your RTK Query slice
+import { useLoginMutation } from '@/services/api/authApi'; // ← import from your RTK Query slice
 import { useAppDispatch } from '@/store/hooks'; // assuming you have typed hooks
-import { setCredentials } from '@/app/api/features/authSlice';
+import { setCredentials } from '@/services/api/features/authSlice';
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address.' }),
   password: z.string().min(8, { message: 'Password must be at least 8 characters.' }),

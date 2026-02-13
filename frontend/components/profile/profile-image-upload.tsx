@@ -8,7 +8,7 @@ import { toast } from '@/components/ui/use-toast';
 import { Loader2, Trash2 } from 'lucide-react';
 
 // ─── RTK Query imports ──────────────────────────────────────────────
-import { userApi, useUploadAvatarMutation, useRemoveAvatarMutation } from '@/app/api/userApi'; // adjust path
+import { userApi, useUploadAvatarMutation, useRemoveAvatarMutation } from '@/services/api/userApi'; // adjust path
 
 interface ProfileImageUploadProps {
   currentImage: string | null;
