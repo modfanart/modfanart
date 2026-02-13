@@ -23,10 +23,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/use-toast';
 
 // RTK Query hooks (adjust paths if needed)
-import { useRegisterMutation } from '@/app/api/authApi';
-import { useSubmitBrandVerificationRequestMutation } from '@/app/api/brands';
+import { useRegisterMutation } from '@/services/api/authApi';
+import { useSubmitBrandVerificationRequestMutation } from '@/services/api/brands';
 import { useDispatch } from 'react-redux';
-import { setCredentials } from '@/app/api/features/authSlice';
+import { setCredentials } from '@/services/api/features/authSlice';
 
 // ────────────────────────────────────────────────
 // Schemas

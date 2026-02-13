@@ -5,25 +5,25 @@ import { setupListeners } from '@reduxjs/toolkit/query';
 // ────────────────────────────────────────────────
 // RTK Query API slices
 // ────────────────────────────────────────────────
-import authApi from '@/app/api/authApi';
-import userApi from '@/app/api/userApi';
-import rolesApi from '@/app/api/rolesApi';
-import productsApi from '@/app/api/productApi';
-import ordersApi from '@/app/api/orderApi';
-import moderationApi from '@/app/api/moderationApi';
-import licensesApi from '@/app/api/licenseApi';
-import favoritesApi from '@/app/api/favoriteApi';
-import contestsApi from '@/app/api/contestsApi';
-import categoriesApi from '@/app/api/categoriesApi';
-import auditApi from '@/app/api/auditApi';
-import artworkApi from '@/app/api/artworkApi';
-import artworkTagsApi from '@/app/api/artworkTagsApi';
-import brandApi from '@/app/api/brands';
-
+import authApi from '@/services/api/authApi';
+import userApi from '@/services/api/userApi';
+import rolesApi from '@/services/api/rolesApi';
+import productsApi from '@/services/api/productApi';
+import ordersApi from '@/services/api/orderApi';
+import moderationApi from '@/services/api/moderationApi';
+import licensesApi from '@/services/api/licenseApi';
+import favoritesApi from '@/services/api/favoriteApi';
+import contestsApi from '@/services/api/contestsApi';
+import categoriesApi from '@/services/api/categoriesApi';
+import auditApi from '@/services/api/auditApi';
+import artworkApi from '@/services/api/artworkApi';
+import artworkTagsApi from '@/services/api/artworkTagsApi';
+import brandApi from '@/services/api/brands';
+import { collectionsApi } from '@/services/api/collectionApi';
 // ────────────────────────────────────────────────
 // Reducers (slices)
 // ────────────────────────────────────────────────
-import authReducer from '@/app/api/features/authSlice';
+import authReducer from '@/services/api/features/authSlice';
 // import otherSliceReducer from '@/features/other/otherSlice';  // add more as needed
 
 // ────────────────────────────────────────────────
@@ -66,6 +66,7 @@ export const store = configureStore({
     [artworkApi.reducerPath]: artworkApi.reducer,
     [artworkTagsApi.reducerPath]: artworkTagsApi.reducer,
     [brandApi.reducerPath]: brandApi.reducer,
+    [collectionsApi.reducerPath]: collectionsApi.reducer,
   },
 
   middleware: (getDefaultMiddleware) =>
@@ -87,7 +88,8 @@ export const store = configureStore({
       auditApi.middleware,
       artworkApi.middleware,
       artworkTagsApi.middleware,
-      brandApi.middleware
+      brandApi.middleware,
+      collectionsApi.middleware
       // add more .middleware when you create new api slices
     ),
 

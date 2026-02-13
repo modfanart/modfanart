@@ -26,7 +26,7 @@ import Link from 'next/link';
 import { Filter, Search } from 'lucide-react';
 
 // Import RTK Query hook
-import { useGetArtworksQuery } from '@/app/api/artworkApi'; // adjust path if needed
+import { useGetArtworksQuery } from '@/services/api/artworkApi'; // adjust path if needed
 
 // Type for the shape your UI expects
 interface GalleryArtwork {

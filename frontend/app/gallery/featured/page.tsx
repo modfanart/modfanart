@@ -8,8 +8,8 @@ import { Heart, Eye, Image as ImageIcon } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { useGetArtworksQuery } from '@/app/api/artworkApi';
-import type { ArtworkListItem } from '@/app/api/artworkApi';
+import { useGetArtworksQuery } from '@/services/api/artworkApi';
+import type { ArtworkListItem } from '@/services/api/artworkApi';
 
 export default function FeaturedGalleryPage() {
   const { data, isLoading, error } = useGetArtworksQuery({ limit: 30 });
