@@ -1,7 +1,9 @@
-// 'use client'
+'use client'
 
 import React from "react"
+import { useState } from "react"
 import BrandDashboard from "../page"
+import { Copy, Check } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { CalendarIcon, Clock, Award, Users, ArrowRight } from "lucide-react"
@@ -9,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
 const OPPORTUNITY_ROUTES: Record<string, string> = {
   "the-librarians": "/opportunities/the-librarians",
@@ -17,6 +20,11 @@ const OPPORTUNITY_ROUTES: Record<string, string> = {
 
 
 export default function ContestManagement() {
+  const [linkValue, setlinkValue] = useState("");
+  const [copied, setCopied] = useState(false)
+
+  const fullLink = `https://modfanart.vercel.app/judge/${linkValue}`
+
   // Sample data for contests live and closed
   const live = [
     {
@@ -101,6 +109,24 @@ export default function ContestManagement() {
 
   console.log("Live Opportunities:", liveOpps)
 
+  // ****Store link in backend
+  const generateString = (length = 12) => {
+  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let result = "";
+
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+
+  return result;
+};
+
+const handleCopy = async () => {
+    await navigator.clipboard.writeText(fullLink)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
   return (
     <BrandDashboard>
     <div className="container py-10">
@@ -158,9 +184,36 @@ export default function ContestManagement() {
                           <span>{item.entries} Entries</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <Badge variant="secondary" className="bg-black/70 text-white hover:bg-black/70">
-                            Generate Judging Link
-                          </Badge>
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button
+                                variant="secondary"
+                                className="bg-black/70 text-white hover:bg-black/70 h-5 px-3 text-xs"
+                                onClick={() => setlinkValue(generateString())}
+                              >
+                                Generate Judging Link
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Private Judging Link</DialogTitle>
+                                <DialogDescription>
+                                  <p className="mb-4">Copy the following one time link to share with a judge.</p>
+                                  <div className="flex items-center justify-between bg-gray-400 border border-gray-500 rounded-md px-3 py-2">
+                                    <p className="text-white text-sm break-all">
+                                      {fullLink}
+                                    </p>
+                                    <button
+                                      onClick={handleCopy}
+                                      className="ml-4 text-white hover:text-gray-800 transition-colors"
+                                    >
+                                      {copied ? <Check size={16} /> : <Copy size={16} />}
+                                    </button>
+                                  </div>
+                                </DialogDescription>
+                              </DialogHeader>
+                            </DialogContent>
+                          </Dialog>
                         </div>
                       </div>
                     </CardContent>
@@ -275,9 +328,36 @@ export default function ContestManagement() {
                       <span>{contest.entries} Entries</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Badge variant="secondary" className="bg-black/70 text-white hover:bg-black/70">
-                        Generate Judging Link
-                      </Badge>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="secondary"
+                            className="bg-black/70 text-white hover:bg-black/70 h-5 px-3 text-xs"
+                            onClick={() => setlinkValue(generateString())}
+                          >
+                            Generate Judging Link
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Private Judging Link</DialogTitle>
+                            <DialogDescription>
+                              <p className="mb-4">Copy the following one time link to share with a judge.</p>
+                              <div className="flex items-center justify-between bg-gray-400 border border-gray-500 rounded-md px-3 py-2">
+                                <p className="text-white text-sm break-all">
+                                  {fullLink}
+                                </p>
+                                <button
+                                  onClick={handleCopy}
+                                  className="ml-4 text-white hover:text-gray-800 transition-colors"
+                                >
+                                  {copied ? <Check size={16} /> : <Copy size={16} />}
+                                </button>
+                              </div>
+                            </DialogDescription>
+                          </DialogHeader>
+                        </DialogContent>
+                      </Dialog>
                     </div>
                   </div>
                 </CardContent>
