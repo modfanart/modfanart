@@ -8,7 +8,7 @@ import { Trophy, FolderHeart } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 
-import { userApi } from '@/app/api/userApi'; // adjust path
+import { userApi } from '@/services/api/userApi'; // adjust path
 
 interface ProfileViewProps {
   isPublic?: boolean;

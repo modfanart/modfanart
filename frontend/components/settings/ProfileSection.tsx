@@ -24,7 +24,7 @@ import {
   useUpdateProfileMutation,
   useUploadAvatarMutation,
   useRemoveAvatarMutation,
-} from '../../app/api/userApi';
+} from '../../services/api/userApi';
 
 // ── Better schema ────────────────────────────────────────
 const profileFormSchema = z.object({

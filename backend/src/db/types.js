@@ -433,7 +433,30 @@
  * @property {'owner' | 'manager' | 'editor'} role
  * @property {string} created_at          timestamptz ISO string
  */
+/**
+ * @typedef {Object} CollectionRow
+ * @property {string} id
+ * @property {'user'|'brand'} owner_type
+ * @property {string} owner_id
+ * @property {string} name
+ * @property {string} slug
+ * @property {string|null} description
+ * @property {boolean} is_public
+ * @property {string|null} cover_image_url
+ * @property {number} sort_order
+ * @property {string} created_at
+ * @property {string} updated_at
+ * @property {string|null} deleted_at
+ */
 
+/**
+ * @typedef {Object} CollectionItemRow
+ * @property {string} id
+ * @property {string} collection_id
+ * @property {string} artwork_id
+ * @property {number} sort_order
+ * @property {string} added_at
+ */
 /**
  * @typedef {Object} BrandFollowerRow
  * @property {string} brand_id

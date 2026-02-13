@@ -9,7 +9,7 @@ const router = express.Router();
 // Public routes (read-only)
 router.get('/', CategoryController.getAllCategories);
 router.get('/:identifier', CategoryController.getCategory);
-
+router.get('/slug/:slug', CategoryController.getCategoryBySlug);
 // Admin-only routes (create/update/delete)
 // router.use(authenticateToken);
 router.use(hasPermission('categories.manage'));

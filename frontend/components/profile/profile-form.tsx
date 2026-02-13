@@ -18,10 +18,10 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/use-toast';
 import { ProfileImageUpload } from '@/components/profile/profile-image-upload';
-import { ProfileUpdateData } from '@/app/api/userApi';
+import { ProfileUpdateData } from '@/services/api/userApi';
 // ─── Import RTK Query ────────────────────────────────────────────────
-import { userApi } from '@/app/api/userApi'; // adjust path if needed
-import { useUpdateProfileMutation } from '@/app/api/userApi'; // ← if you want to use mutation instead of server action
+import { userApi } from '@/services/api/userApi'; // adjust path if needed
+import { useUpdateProfileMutation } from '@/services/api/userApi'; // ← if you want to use mutation instead of server action
 
 // If you're still using the server action, keep this import:
 import { updateUserProfile } from '@/lib/actions/profile-actions';

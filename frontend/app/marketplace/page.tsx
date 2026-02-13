@@ -17,7 +17,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 
-import { useGetArtworksQuery } from '../api/artworkApi';
+import { useGetArtworksQuery } from '../../services/api/artworkApi';
 // ── Types ───────────────────────────────────────────────────────────────
 interface MarketplaceProduct {
   id: string;

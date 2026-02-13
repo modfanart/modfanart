@@ -5,7 +5,7 @@ import { getUserById, updateUser } from '@/lib/db/models/user';
 import { uploadFile } from '@/lib/db/storage';
 import { getSession } from '@/lib/auth';
 import { User } from '@/lib/db/models/user';
-import { ProfileUpdateData } from '@/app/api/userApi';
+import { ProfileUpdateData } from '@/services/api/userApi';
 
 // Helper to clean social links: remove empty, null, or undefined values
 function cleanSocialLinks(

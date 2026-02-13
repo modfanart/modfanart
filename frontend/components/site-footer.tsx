@@ -1,5 +1,5 @@
-import Link from "next/link"
-import Image from "next/image"
+import Link from 'next/link';
+import Image from 'next/image';
 
 export function SiteFooter() {
   return (
@@ -18,18 +18,26 @@ export function SiteFooter() {
           </p>
         </div>
         <div className="flex gap-4">
-          <Link href="/terms" className="text-sm text-muted-foreground underline underline-offset-4">
+          <Link
+            href="/legal/terms-and-service"
+            className="text-sm text-muted-foreground underline underline-offset-4"
+          >
             Terms
           </Link>
-          <Link href="/privacy" className="text-sm text-muted-foreground underline underline-offset-4">
+          <Link
+            href="/legal/privacy-policy"
+            className="text-sm text-muted-foreground underline underline-offset-4"
+          >
             Privacy
           </Link>
-          <Link href="/contact" className="text-sm text-muted-foreground underline underline-offset-4">
+          <Link
+            href="/contact"
+            className="text-sm text-muted-foreground underline underline-offset-4"
+          >
             Contact
           </Link>
         </div>
       </div>
     </footer>
-  )
+  );
 }
-
