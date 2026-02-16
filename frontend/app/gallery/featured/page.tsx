@@ -105,7 +105,7 @@ export default function FeaturedGalleryPage() {
         <div className="text-center space-y-6 px-6">
           <h2 className="text-4xl font-bold text-gray-900">Failed to load gallery</h2>
           <Button variant="outline" size="lg" className="border-gray-400 text-gray-700">
-            <Link href="/gallery">Try Again</Link>
+            <Link href="/gallery/featured">Try Again</Link>
           </Button>
         </div>
       </LayoutWrapper>
@@ -153,7 +153,7 @@ export default function FeaturedGalleryPage() {
               {getFilteredArtworks('all').map((art) => (
                 <Link
                   key={art.id}
-                  href={`/gallery/artwork/${art.id}`}
+                  href={`/artwork/${art.id}`}
                   className="group block focus:outline-none focus:ring-2 focus:ring-indigo-400 rounded-2xl overflow-hidden transition-all duration-300 hover:scale-[1.04] hover:shadow-xl hover:shadow-gray-300/50"
                 >
                   <div className="relative aspect-[2/3] rounded-2xl overflow-hidden bg-gray-100">

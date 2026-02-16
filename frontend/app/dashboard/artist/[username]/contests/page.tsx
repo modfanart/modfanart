@@ -17,8 +17,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { DashboardShell } from '@/components/dashboard-shell';
 
-// ── Import RTK Query hooks ───────────────────────────────────────
-import { useGetContestsQuery } from '../../../../services/api/contestsApi';
+import { useGetContestsQuery } from '@/services/api/contestsApi';
 // Optional: helper to map backend status → UI-friendly label & variant
 function getStatusBadge(status: string) {
   switch (status) {
