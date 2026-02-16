@@ -14,7 +14,7 @@ import { useGetArtworkTagsQuery } from '@/services/api/artworkTagsApi';
 import { useGetArtworkCategoriesQuery } from '@/services/api/artworkApi';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
-
+import { useRouter } from 'next/navigation';
 // ────────────────────────────────────────────────
 // Exact models converted to TypeScript interfaces
 // ────────────────────────────────────────────────
@@ -65,6 +65,7 @@ export interface ArtworkDetail extends ArtworkRow {
 export default function ArtworkDetailPage() {
   const params = useParams();
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   // id is now string | undefined automatically
   // Queries with skip guard to prevent invalid fetches
   const {
@@ -241,8 +242,15 @@ export default function ArtworkDetailPage() {
                               {formatPrice(tier.price_inr_cents, 'INR')}
                             </p>
                           </div>
-                          <Button variant="outline" size="sm" className="w-full sm:w-auto">
-                            Choose
+                          <Button variant="outline" size="sm" className="w-full sm:w-auto" asChild>
+                            <Link
+                              href={{
+                                pathname: `/artwork/${artwork.id}/license`,
+                                query: { tier: tier.id }, // ← pass selected tier id
+                              }}
+                            >
+                              Choose
+                            </Link>
                           </Button>
                         </div>
                       ))}
