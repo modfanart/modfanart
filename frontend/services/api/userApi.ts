@@ -156,14 +156,6 @@ export const userApi = createApi({
       const state = getState() as any;
       const tokenFromState = state?.auth?.accessToken;
 
-      console.log('userApi prepareHeaders debug:', {
-        hasAuthSlice: !!state?.auth,
-        tokenFromState: tokenFromState
-          ? 'present (starts with ' + tokenFromState.slice(0, 10) + '...'
-          : 'MISSING',
-        tokenLength: tokenFromState?.length || 0,
-      });
-
       if (tokenFromState) {
         headers.set('Authorization', `Bearer ${tokenFromState}`);
       }

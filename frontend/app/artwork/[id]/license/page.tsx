@@ -1,3 +1,14 @@
+// app/artwork/[id]/license/page.tsx
+'use client';
+
+import { useParams, useSearchParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
+
+import { useGetArtworkQuery } from '@/services/api/artworkApi';
+
 import { LayoutWrapper } from '@/components/layout-wrapper';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,311 +19,326 @@ import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Info, CheckCircle2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { ArrowLeft, Info, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
-import { Badge } from '@/components/ui/badge';
 
-type LicenseOption = {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  duration: string;
-  restrictions: string[];
+import type { Artwork, ArtworkPricingTier } from '@/services/api/artworkApi';
+
+// ────────────────────────────────────────────────
+// Form Schema – fixed (boolean + refine)
+// ────────────────────────────────────────────────
+
+const formSchema = z.object({
+  company: z.string().min(2, 'Company/organization name is required'),
+  website: z.string().url({ message: 'Please enter a valid URL' }).optional().or(z.literal('')),
+  intendedUsage: z.string().min(20, 'Please describe your intended use in more detail'),
+  distributionChannels: z.string().optional(),
+  agreeToTerms: z.boolean().refine((val) => val === true, {
+    message: 'You must agree to the licensing terms and conditions',
+  }),
+});
+
+type LicenseFormValues = z.infer<typeof formSchema>;
+
+// ────────────────────────────────────────────────
+// Helpers
+// ────────────────────────────────────────────────
+
+const formatPrice = (cents: number, currency: 'USD' | 'INR' = 'USD') => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: currency === 'INR' ? 0 : 2,
+  }).format(cents / 100);
 };
 
-type Artwork = {
-  id: string;
-  title: string;
-  artist: string;
-  imageUrl: string;
-  ipOwner: string;
-  price: string;
-  basePrice: number;
-  licenseType: string;
-  description: string;
-  tags: string[];
-  licenseOptions: LicenseOption[];
+const capitalize = (s?: string) => (s ? s[0].toUpperCase() + s.slice(1) : '');
+
+const getDefaultTier = (tiers: ArtworkPricingTier[] = []): ArtworkPricingTier | undefined => {
+  const active = tiers.filter((t) => t.is_active);
+  if (active.length === 0) return undefined;
+  return (
+    active.find((t) => t.license_type === 'commercial') ||
+    active.find((t) => t.license_type === 'personal') ||
+    active[0]
+  );
 };
 
-const allArtwork: Artwork[] = [
-  {
-    id: 'avail-1',
-    title: 'Classic Astro Boy Monochrome Portrait',
-    artist: 'Soulhouse Design',
-    imageUrl:
-      'https://m.media-amazon.com/images/I/51d-jOmMeSL.jpg_BO30,255,255,255_UF900,850_SR1910,1000,0,C_QL100_.jpg',
-    ipOwner: 'Tezuka Productions',
-    price: '$150',
-    basePrice: 150,
-    licenseType: 'Commercial',
-    description:
-      'A stunning monochrome poster-style portrait of classic Astro Boy, capturing the nostalgic essence of the original anime hero with clean lines and dramatic shading.',
-    tags: ['anime', 'monochrome', 'portrait', 'classic', 'poster'],
-    licenseOptions: [
-      {
-        id: 'personal',
-        name: 'Personal Use',
-        description: 'Use for personal, non-commercial projects',
-        price: 50,
-        duration: 'Perpetual',
-        restrictions: ['No commercial use', 'No modifications', 'Attribution required'],
-      },
-      {
-        id: 'commercial-basic',
-        name: 'Basic Commercial',
-        description: 'Use for commercial projects with limited distribution',
-        price: 150,
-        duration: '1 year',
-        restrictions: [
-          'Limited to 1,000 units',
-          'No resale of the license',
-          'Attribution required',
-        ],
-      },
-      {
-        id: 'commercial-extended',
-        name: 'Extended Commercial',
-        description: 'Use for commercial projects with wider distribution',
-        price: 300,
-        duration: '2 years',
-        restrictions: [
-          'Limited to 10,000 units',
-          'No resale of the license',
-          'Attribution required',
-        ],
-      },
-      {
-        id: 'commercial-unlimited',
-        name: 'Unlimited Commercial',
-        description: 'Unlimited commercial use with exclusive rights',
-        price: 750,
-        duration: 'Perpetual',
-        restrictions: ['No resale of the license', 'Attribution required'],
-      },
-    ],
-  },
-  {
-    id: 'avail-2',
-    title: 'Astro Boy Flying Action Silhouette',
-    artist: 'Decal Masters',
-    imageUrl:
-      'https://www.shutterstock.com/image-vector/cartoon-silhouette-superhero-flying-600w-414271210.jpg',
-    ipOwner: 'Tezuka Productions',
-    price: '$180',
-    basePrice: 180,
-    licenseType: 'Commercial',
-    description:
-      'Dynamic flying action pose of Astro Boy in bold silhouette style, ideal for stickers, decals, apparel, and merchandise designs.',
-    tags: ['anime', 'silhouette', 'flying', 'action', 'decal'],
-    licenseOptions: [
-      {
-        id: 'personal',
-        name: 'Personal Use',
-        description: 'Personal non-commercial use only',
-        price: 60,
-        duration: 'Perpetual',
-        restrictions: ['No commercial use', 'Attribution required'],
-      },
-      {
-        id: 'commercial-basic',
-        name: 'Basic Commercial',
-        description: 'Limited commercial distribution',
-        price: 180,
-        duration: '1 year',
-        restrictions: ['Limited to 2,000 units', 'Attribution required'],
-      },
-      {
-        id: 'commercial-extended',
-        name: 'Extended Commercial',
-        description: 'Broader commercial use',
-        price: 350,
-        duration: '2 years',
-        restrictions: ['Limited to 15,000 units'],
-      },
-      {
-        id: 'commercial-unlimited',
-        name: 'Unlimited Commercial',
-        description: 'Full unlimited commercial rights',
-        price: 800,
-        duration: 'Perpetual',
-        restrictions: ['Full rights included'],
-      },
-    ],
-  },
-  {
-    id: 'avail-3',
-    title: 'Modern Stylized Astro Boy Fan Art',
-    artist: 'Contemporary Anime Collective',
-    imageUrl: 'https://tokyo-in-pics.com/wp-content/uploads/2024/06/Astro-Boy.webp',
-    ipOwner: 'Tezuka Productions',
-    price: '$200',
-    basePrice: 200,
-    licenseType: 'Commercial',
-    description:
-      'A fresh modern fan art redraw of Astro Boy with updated styling, dynamic pose, and detailed shading while staying true to the original character design.',
-    tags: ['anime', 'modern', 'fan art', 'stylized', 'dynamic'],
-    licenseOptions: [
-      {
-        id: 'personal',
-        name: 'Personal Use',
-        description: 'For personal projects only',
-        price: 70,
-        duration: 'Perpetual',
-        restrictions: ['No commercial use'],
-      },
-      {
-        id: 'commercial-basic',
-        name: 'Basic Commercial',
-        description: 'Standard commercial license',
-        price: 200,
-        duration: '1 year',
-        restrictions: ['Limited distribution'],
-      },
-      {
-        id: 'commercial-extended',
-        name: 'Extended Commercial',
-        description: 'Extended rights for merchandise',
-        price: 400,
-        duration: 'Perpetual',
-        restrictions: ['Merchandise permitted'],
-      },
-      {
-        id: 'commercial-unlimited',
-        name: 'Unlimited Commercial',
-        description: 'Complete commercial freedom',
-        price: 900,
-        duration: 'Perpetual',
-        restrictions: ['Exclusive rights available'],
-      },
-    ],
-  },
-];
+export default function LicenseArtworkPage() {
+  const params = useParams();
+  const searchParams = useSearchParams();
 
-const getArtworkData = (id: string): Artwork | undefined => {
-  return allArtwork.find((art) => art.id === id);
-};
+  const artworkId = params.id as string;
+  const preselectedTierId = searchParams.get('tier');
 
-export default async function LicenseCheckoutPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const artwork = getArtworkData(id);
+  const {
+    data: artwork,
+    isLoading,
+    isError,
+    error,
+  } = useGetArtworkQuery(artworkId, {
+    skip: !artworkId,
+  });
 
-  if (!artwork) {
-    notFound();
+  const [selectedTierId, setSelectedTierId] = useState<string | null>(null);
+
+  const form = useForm<LicenseFormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      company: '',
+      website: '',
+      intendedUsage: '',
+      distributionChannels: '',
+      agreeToTerms: false,
+    },
+  });
+
+  // Sync selected tier from URL or fallback
+  useEffect(() => {
+    if (!artwork?.pricing_tiers?.length) return;
+
+    const activeTiers = artwork.pricing_tiers.filter((t) => t.is_active);
+
+    let tier = activeTiers.find((t) => t.id === preselectedTierId);
+    if (!tier) {
+      tier = getDefaultTier(activeTiers);
+    }
+
+    if (tier) {
+      setSelectedTierId(tier.id);
+    }
+  }, [artwork, preselectedTierId]);
+
+  if (isLoading) {
+    return (
+      <LayoutWrapper>
+        <div className="container max-w-7xl py-10 px-4 sm:px-6 lg:px-8">
+          <div className="space-y-8">
+            <Skeleton className="h-10 w-64" />
+            <div className="grid lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2 space-y-8">
+                <Skeleton className="h-80 w-full rounded-xl" />
+                <Skeleton className="h-96 w-full rounded-xl" />
+              </div>
+              <Skeleton className="h-[600px] w-full rounded-xl" />
+            </div>
+          </div>
+        </div>
+      </LayoutWrapper>
+    );
   }
 
-  // Safely select default option - always exists since every artwork has at least 4 options
-  const defaultOption = artwork.licenseOptions.find((opt) => opt.id === 'commercial-basic')!;
+  if (isError || !artwork) {
+    return (
+      <LayoutWrapper>
+        <div className="container max-w-7xl py-20 px-4 text-center">
+          <Alert variant="destructive" className="max-w-2xl mx-auto">
+            <AlertTriangle className="h-5 w-5" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>
+              {(error as any)?.data?.message || 'Could not load artwork details.'}
+            </AlertDescription>
+          </Alert>
+          <Button asChild variant="outline" className="mt-6">
+            <Link href="/gallery/featured">Back to Gallery</Link>
+          </Button>
+        </div>
+      </LayoutWrapper>
+    );
+  }
+
+  if (artwork.status !== 'published') {
+    return (
+      <LayoutWrapper>
+        <div className="container max-w-7xl py-20 px-4 text-center">
+          <Alert>
+            <Info className="h-5 w-5" />
+            <AlertTitle>Not Available</AlertTitle>
+            <AlertDescription>
+              This artwork is not currently available for licensing ({artwork.status}).
+            </AlertDescription>
+          </Alert>
+          <Button asChild className="mt-6">
+            <Link href={`/gallery/artwork/${artworkId}`}>Back to Artwork</Link>
+          </Button>
+        </div>
+      </LayoutWrapper>
+    );
+  }
+
+  const activeTiers = artwork.pricing_tiers?.filter((t) => t.is_active) ?? [];
+  if (activeTiers.length === 0) {
+    return (
+      <LayoutWrapper>
+        <div className="container max-w-7xl py-20 px-4 text-center">
+          <h2 className="text-2xl font-bold mb-4">No Licensing Options</h2>
+          <p className="text-muted-foreground mb-8">
+            This artwork does not have any active pricing tiers at the moment.
+          </p>
+          <Button asChild>
+            <Link href={`/gallery/artwork/${artworkId}`}>Back to Artwork</Link>
+          </Button>
+        </div>
+      </LayoutWrapper>
+    );
+  }
+
+  const selectedTier = activeTiers.find((t) => t.id === selectedTierId) ?? activeTiers[0];
+
+  if (!selectedTier) {
+    return (
+      <LayoutWrapper>
+        <div className="container max-w-7xl py-20 px-4 text-center">
+          <h2 className="text-2xl font-bold mb-4">No valid license tier available</h2>
+          <Button asChild>
+            <Link href={`/gallery/artwork/${artworkId}`}>Back to Artwork</Link>
+          </Button>
+        </div>
+      </LayoutWrapper>
+    );
+  }
+
+  const handleTierChange = (tierId: string) => {
+    setSelectedTierId(tierId);
+    const url = new URL(window.location.href);
+    url.searchParams.set('tier', tierId);
+    window.history.replaceState(null, '', url);
+  };
+
+  const onSubmit = (values: LicenseFormValues) => {
+    console.log('License request submitted:', {
+      artworkId,
+      tierId: selectedTier.id,
+      ...values,
+    });
+    // → replace with real API call / payment flow
+    alert('License request submitted! (demo mode)');
+  };
 
   return (
     <LayoutWrapper>
-      <div className="container py-10 max-w-7xl">
-        <div className="mb-6">
+      <div className="container max-w-7xl py-10 px-4 sm:px-6 lg:px-8">
+        <div className="mb-8">
           <Link
-            href={`/gallery/artwork/${id}`}
-            className="flex items-center text-muted-foreground hover:text-foreground transition-colors"
+            href={`/gallery/artwork/${artworkId}`}
+            className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Artwork
           </Link>
         </div>
 
-        <h1 className="text-3xl font-bold mb-2">License Artwork</h1>
-        <p className="text-muted-foreground mb-8">
-          Complete your licensing agreement for this artwork
+        <h1 className="text-3xl sm:text-4xl font-bold mb-2">License Artwork</h1>
+        <p className="text-lg text-muted-foreground mb-10">
+          Select your preferred license and provide usage details
         </p>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left column */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Artwork Details Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Artwork Details</CardTitle>
-                <CardDescription>Review the artwork you're licensing</CardDescription>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
+          {/* LEFT – Content */}
+          <div className="lg:col-span-2 space-y-10">
+            {/* Artwork card */}
+            <Card className="border shadow-sm">
+              <CardHeader className="pb-4">
+                <CardTitle>Artwork Information</CardTitle>
+                <CardDescription>Review before proceeding</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-col md:flex-row gap-8">
-                  <div className="w-full md:w-1/3 bg-muted/30 rounded-xl overflow-hidden border">
-                    <div className="aspect-square relative">
-                      <Image
-                        src={artwork.imageUrl}
-                        alt={artwork.title}
-                        fill
-                        className="object-contain p-6"
-                        priority
-                        unoptimized
-                      />
-                    </div>
+                <div className="flex flex-col md:flex-row gap-6">
+                  <div className="w-full md:w-72 lg:w-80 flex-shrink-0 bg-muted/40 rounded-xl overflow-hidden border aspect-square relative">
+                    <Image
+                      src={artwork.thumbnail_url || artwork.file_url || '/placeholder-artwork.svg'}
+                      alt={artwork.title}
+                      fill
+                      className="object-contain p-6"
+                      priority
+                    />
                   </div>
-                  <div className="flex-1">
-                    <h2 className="text-2xl font-bold mb-2">{artwork.title}</h2>
-                    <p className="text-lg text-muted-foreground mb-4">by {artwork.artist}</p>
-                    <p className="mb-6 leading-relaxed">{artwork.description}</p>
 
-                    <div className="space-y-4">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">IP Owner</span>
-                        <span className="font-medium">{artwork.ipOwner}</span>
-                      </div>
-                      <Separator />
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Base License Type</span>
-                        <span className="font-medium">{artwork.licenseType}</span>
-                      </div>
-                      <Separator />
-                      <div className="flex justify-between items-start">
-                        <span className="text-muted-foreground">Tags</span>
-                        <div className="flex flex-wrap gap-2 justify-end">
-                          {artwork.tags.map((tag) => (
-                            <Badge key={tag} variant="secondary" className="text-xs">
-                              {tag}
+                  <div className="flex-1 space-y-4">
+                    <div>
+                      <h2 className="text-2xl font-bold">{artwork.title}</h2>
+                      <p className="text-muted-foreground mt-1.5">
+                        by Creator • {artwork.creator_id.substring(0, 8)}…
+                      </p>
+                    </div>
+
+                    {artwork.description && (
+                      <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
+                        {artwork.description}
+                      </p>
+                    )}
+
+                    {artwork.categories?.length ? (
+                      <div>
+                        <h4 className="text-sm font-medium text-muted-foreground mb-2">
+                          Categories
+                        </h4>
+                        <div className="flex flex-wrap gap-2">
+                          {artwork.categories.map((cat) => (
+                            <Badge key={cat.id} variant="secondary">
+                              {cat.name}
                             </Badge>
                           ))}
                         </div>
                       </div>
-                    </div>
+                    ) : null}
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* License Options Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle>License Options</CardTitle>
-                <CardDescription>Select the license that best fits your needs</CardDescription>
+            {/* License options */}
+            <Card className="border shadow-sm">
+              <CardHeader className="pb-4">
+                <CardTitle>Choose License Type</CardTitle>
+                <CardDescription>Select the license that best matches your needs</CardDescription>
               </CardHeader>
               <CardContent>
-                <RadioGroup defaultValue={defaultOption.id} className="space-y-5">
-                  {artwork.licenseOptions.map((option) => (
+                <RadioGroup
+                  value={selectedTierId ?? null}
+                  onValueChange={handleTierChange}
+                  className="space-y-5"
+                >
+                  {activeTiers.map((tier) => (
                     <div
-                      key={option.id}
-                      className="flex items-start space-x-4 rounded-lg border p-4 hover:bg-accent/50 transition-colors"
+                      key={tier.id}
+                      className={`rounded-lg border p-5 transition-colors ${
+                        selectedTierId === tier.id
+                          ? 'border-primary bg-primary/5'
+                          : 'hover:bg-accent/60'
+                      }`}
                     >
-                      <RadioGroupItem value={option.id} id={option.id} className="mt-1" />
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label
-                            htmlFor={option.id}
-                            className="text-lg font-semibold cursor-pointer"
-                          >
-                            {option.name}
-                          </Label>
-                          <span className="text-2xl font-bold">${option.price}</span>
-                        </div>
-                        <p className="text-sm text-muted-foreground">{option.description}</p>
-                        <div className="flex flex-wrap gap-2">
-                          <Badge variant="secondary" className="text-xs">
-                            Duration: {option.duration}
-                          </Badge>
-                          {option.restrictions.map((restriction, idx) => (
-                            <Badge key={idx} variant="outline" className="text-xs">
-                              {restriction}
-                            </Badge>
-                          ))}
+                      <div className="flex items-start gap-4">
+                        <RadioGroupItem value={tier.id} id={`tier-${tier.id}`} className="mt-1.5" />
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between gap-4">
+                            <Label
+                              htmlFor={`tier-${tier.id}`}
+                              className="text-lg font-semibold cursor-pointer"
+                            >
+                              {capitalize(tier.license_type)}
+                            </Label>
+                            <div className="text-right">
+                              <div className="text-2xl font-bold">
+                                {formatPrice(tier.price_usd_cents)}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                ≈ {formatPrice(tier.price_inr_cents, 'INR')}
+                              </div>
+                            </div>
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-2">
+                            {tier.license_type === 'exclusive'
+                              ? 'Exclusive perpetual rights'
+                              : tier.license_type === 'commercial'
+                                ? 'Commercial usage rights'
+                                : 'Personal non-commercial use'}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -321,109 +347,168 @@ export default async function LicenseCheckoutPage({ params }: { params: Promise<
               </CardContent>
             </Card>
 
-            {/* Licensing Information Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Licensing Information</CardTitle>
-                <CardDescription>Provide details about your intended use</CardDescription>
+            {/* Form – intended use */}
+            <Card className="border shadow-sm">
+              <CardHeader className="pb-4">
+                <CardTitle>Intended Use</CardTitle>
+                <CardDescription>Please provide details about your project</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <CardContent>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="company">Company / Organization *</Label>
+                      <Input id="company" placeholder="Acme Corp" {...form.register('company')} />
+                      {form.formState.errors.company && (
+                        <p className="text-sm text-destructive">
+                          {form.formState.errors.company.message}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="website">Website / Portfolio</Label>
+                      <Input
+                        id="website"
+                        placeholder="https://your-site.com"
+                        {...form.register('website')}
+                      />
+                      {form.formState.errors.website && (
+                        <p className="text-sm text-destructive">
+                          {form.formState.errors.website.message}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
                   <div className="space-y-2">
-                    <Label htmlFor="company">Company / Organization *</Label>
-                    <Input id="company" placeholder="Acme Corp" />
+                    <Label htmlFor="intendedUsage">Intended Usage *</Label>
+                    <Textarea
+                      id="intendedUsage"
+                      placeholder="e.g., Print on 500 t-shirts, use as website hero banner..."
+                      className="min-h-[120px]"
+                      {...form.register('intendedUsage')}
+                    />
+                    {form.formState.errors.intendedUsage && (
+                      <p className="text-sm text-destructive">
+                        {form.formState.errors.intendedUsage.message}
+                      </p>
+                    )}
                   </div>
+
                   <div className="space-y-2">
-                    <Label htmlFor="website">Website</Label>
-                    <Input id="website" placeholder="https://example.com" />
+                    <Label htmlFor="distributionChannels">Distribution Channels</Label>
+                    <Textarea
+                      id="distributionChannels"
+                      placeholder="e.g., Online store, Instagram, TikTok ads..."
+                      className="min-h-[100px]"
+                      {...form.register('distributionChannels')}
+                    />
                   </div>
-                </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="usage">Intended Usage *</Label>
-                  <Textarea
-                    id="usage"
-                    placeholder="Describe how you'll use this artwork (e.g., t-shirts, website banners, app icons)"
-                    className="min-h-[120px]"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="distribution">Distribution Channels</Label>
-                  <Textarea
-                    id="distribution"
-                    placeholder="e.g., online store, physical retail, social media"
-                    className="min-h-[100px]"
-                  />
-                </div>
-
-                <div className="flex items-start space-x-3 pt-4">
-                  <Checkbox id="terms" />
-                  <div className="space-y-1 leading-none">
-                    <Label htmlFor="terms" className="text-sm font-medium">
-                      I agree to the licensing terms and conditions *
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      By checking this, you agree to comply with all restrictions of the selected
-                      license.
-                    </p>
+                  <div className="flex items-start space-x-3 pt-4">
+                    <Checkbox
+                      id="agreeToTerms"
+                      checked={form.watch('agreeToTerms')}
+                      onCheckedChange={(checked) => form.setValue('agreeToTerms', !!checked)}
+                    />
+                    <div className="grid gap-1 leading-none">
+                      <Label
+                        htmlFor="agreeToTerms"
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        I agree to the licensing terms & restrictions *
+                      </Label>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        By proceeding, you agree to comply with all terms of the selected license.
+                      </p>
+                      {form.formState.errors.agreeToTerms && (
+                        <p className="text-sm text-destructive">
+                          {form.formState.errors.agreeToTerms.message}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
+
+                  <div className="pt-6 lg:hidden">
+                    <Button
+                      type="submit"
+                      size="lg"
+                      className="w-full"
+                      disabled={form.formState.isSubmitting}
+                    >
+                      {form.formState.isSubmitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        'Proceed to Payment'
+                      )}
+                    </Button>
+                  </div>
+                </form>
               </CardContent>
             </Card>
           </div>
 
-          {/* Right column - Summary & Payment */}
+          {/* RIGHT – Summary & Payment */}
           <div className="space-y-8">
-            <div className="lg:sticky lg:top-20">
-              <Card>
+            <div className="lg:sticky lg:top-24 space-y-8">
+              <Card className="border shadow-sm">
                 <CardHeader>
                   <CardTitle>Order Summary</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex justify-between text-lg">
-                    <span>License Fee ({defaultOption.name})</span>
-                    <span className="font-semibold">${defaultOption.price}.00</span>
+                <CardContent className="space-y-5">
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg">{capitalize(selectedTier.license_type)} License</span>
+                    <span className="text-xl font-bold">
+                      {formatPrice(selectedTier.price_usd_cents)}
+                    </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Platform Service Fee</span>
+
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Service Fee</span>
                     <span>$15.00</span>
                   </div>
+
                   <Separator />
+
                   <div className="flex justify-between text-xl font-bold">
                     <span>Total</span>
-                    <span>${defaultOption.price + 15}.00</span>
+                    <span>{formatPrice(selectedTier.price_usd_cents + 1500)}</span>
                   </div>
-                  <p className="text-sm text-muted-foreground pt-2">
-                    Taxes may apply based on your location.
+
+                  <p className="text-sm text-muted-foreground">
+                    Taxes may apply depending on your location • Prices shown in USD
                   </p>
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="border shadow-sm">
                 <CardHeader>
                   <CardTitle>Payment Method</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Tabs defaultValue="credit-card" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
+                  <Tabs defaultValue="credit-card">
+                    <TabsList className="grid w-full grid-cols-2 mb-6">
                       <TabsTrigger value="credit-card">Credit Card</TabsTrigger>
                       <TabsTrigger value="invoice">Invoice</TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="credit-card" className="space-y-4 pt-6">
+                    <TabsContent value="credit-card" className="space-y-5">
                       <div className="space-y-2">
                         <Label htmlFor="card-number">Card Number</Label>
-                        <Input id="card-number" placeholder="1234 5678 9012 3456" />
+                        <Input id="card-number" placeholder="4242 4242 4242 4242" />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label htmlFor="expiry">Expiry Date</Label>
+                          <Label htmlFor="expiry">Expiry</Label>
                           <Input id="expiry" placeholder="MM/YY" />
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="cvc">CVC</Label>
-                          <Input id="cvc" placeholder="123" />
+                          <Input id="cvc" placeholder="123" maxLength={4} />
                         </div>
                       </div>
                       <div className="space-y-2">
@@ -432,51 +517,66 @@ export default async function LicenseCheckoutPage({ params }: { params: Promise<
                       </div>
                     </TabsContent>
 
-                    <TabsContent value="invoice" className="space-y-4 pt-6">
+                    <TabsContent value="invoice" className="space-y-5">
                       <div className="space-y-2">
                         <Label htmlFor="billing-email">Billing Email *</Label>
-                        <Input id="billing-email" type="email" placeholder="billing@company.com" />
+                        <Input
+                          id="billing-email"
+                          type="email"
+                          placeholder="billing@yourcompany.com"
+                        />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="po-number">Purchase Order Number</Label>
-                        <Input id="po-number" placeholder="PO-123456" />
+                        <Label htmlFor="po-number">Purchase Order Number (optional)</Label>
+                        <Input id="po-number" placeholder="PO-2025-789" />
                       </div>
-                      <div className="rounded-lg bg-blue-50 p-4">
-                        <div className="flex gap-3">
-                          <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                          <div>
-                            <p className="text-sm font-medium text-blue-900">Invoice Payment</p>
-                            <p className="text-sm text-blue-700 mt-1">
-                              Invoices are sent within 1 business day with Net-30 terms. Your
-                              license activates upon payment receipt.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
+                      <Alert>
+                        <Info className="h-4 w-4" />
+                        <AlertDescription>
+                          Net-30 invoice will be sent within 24 hours. License activates upon
+                          payment.
+                        </AlertDescription>
+                      </Alert>
                     </TabsContent>
                   </Tabs>
                 </CardContent>
               </Card>
 
-              <Button size="lg" className="w-full text-lg py-6">
-                Complete Purchase
+              {/* Submit button – outside form → manual trigger */}
+              <Button
+                type="button"
+                size="lg"
+                className="w-full py-7 text-lg"
+                disabled={form.formState.isSubmitting || !selectedTierId}
+                onClick={() => form.handleSubmit(onSubmit)()}
+              >
+                {form.formState.isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  'Proceed to Payment'
+                )}
               </Button>
 
-              <p className="text-center text-sm text-muted-foreground mt-4">
-                Need assistance?{' '}
-                <Link href="/support" className="text-primary hover:underline">
-                  Contact support
-                </Link>
-              </p>
+              <div className="text-center space-y-3 text-sm">
+                <p className="text-muted-foreground">
+                  Need help?{' '}
+                  <Link href="/support" className="text-primary hover:underline">
+                    Contact support
+                  </Link>
+                </p>
 
-              <div className="mt-6 rounded-lg bg-green-50 p-4 border border-green-200">
-                <div className="flex gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium text-green-900">Secure & Protected</p>
-                    <p className="text-sm text-green-700 mt-1">
-                      All transactions are encrypted and processed securely. Your data is protected.
-                    </p>
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium text-green-900">Secure Payment</p>
+                      <p className="text-green-800 text-sm mt-1">
+                        All transactions are encrypted and processed securely.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
