@@ -65,4 +65,3 @@ Our workspace settings will automatically format code on save and run ESLint fix
 ## Continuous Integration
 
 These checks are also run in our CI pipeline to ensure code quality is maintained across all contributions.
-

@@ -1,11 +1,11 @@
-"use client"
+'use client';
 
-import { DynamicImport } from "./dynamic-import"
+import { DynamicImport } from './dynamic-import';
 
 export function FileUploadWrapper(props: any) {
   return (
     <DynamicImport
-      component={() => import("./file-upload").then((mod) => ({ default: mod.FileUpload }))}
+      component={() => import('./file-upload').then((mod) => ({ default: mod.FileUpload }))}
       props={props}
       fallback={
         <div className="border-2 border-dashed border-muted-foreground/20 rounded-md p-8 text-center">
@@ -13,6 +13,5 @@ export function FileUploadWrapper(props: any) {
         </div>
       }
     />
-  )
+  );
 }
-

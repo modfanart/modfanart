@@ -1,9 +1,9 @@
-import { getComplianceRules, getAISettings } from "@/lib/db/config-service"
-import { logger } from "@/lib/logger"
-import type { AIAnalysis } from "@/lib/db/models/submission"
+import { getComplianceRules, getAISettings } from '@/lib/db/config-service';
+import { logger } from '@/lib/logger';
+import type { AIAnalysis } from '@/lib/db/models/submission';
 
 // Maximum number of retries for API calls
-const MAX_RETRIES = 3
+const MAX_RETRIES = 3;
 
 /**
  * Retry a function with exponential backoff
@@ -12,24 +12,24 @@ export async function withRetry<T>(
   fn: () => Promise<T>,
   retries = MAX_RETRIES,
   delay = 500,
-  context = "API Call",
+  context = 'API Call'
 ): Promise<T> {
   try {
-    return await fn()
+    return await fn();
   } catch (error) {
     if (retries <= 0) {
-      logger.error(`${context} failed after maximum retries`, error, { context })
-      throw error
+      logger.error(`${context} failed after maximum retries`, error, { context });
+      throw error;
     }
 
-    const nextDelay = delay * 2
+    const nextDelay = delay * 2;
     logger.warn(`${context} failed, retrying in ${delay}ms (${retries} retries left)`, {
       context,
       data: { error: error instanceof Error ? error.message : String(error), retries, delay },
-    })
+    });
 
-    await new Promise((resolve) => setTimeout(resolve, delay))
-    return withRetry(fn, retries - 1, nextDelay, context)
+    await new Promise((resolve) => setTimeout(resolve, delay));
+    return withRetry(fn, retries - 1, nextDelay, context);
   }
 }
 
@@ -39,40 +39,42 @@ export async function withRetry<T>(
 export async function detectAIGeneration(imageUrl: string, apiKey: string): Promise<any> {
   return withRetry(
     async () => {
-      const startTime = Date.now()
-      const response = await fetch("https://api.aiornot.com/v1/analyze", {
-        method: "POST",
+      const startTime = Date.now();
+      const response = await fetch('https://api.aiornot.com/v1/analyze', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({ image_url: imageUrl }),
-      })
+      });
 
       if (!response.ok) {
-        const errorText = await response.text().catch(() => "Unknown error")
-        throw new Error(`AIORNOT API error: ${response.status} ${response.statusText} - ${errorText}`)
+        const errorText = await response.text().catch(() => 'Unknown error');
+        throw new Error(
+          `AIORNOT API error: ${response.status} ${response.statusText} - ${errorText}`
+        );
       }
 
-      const data = await response.json()
-      const duration = Date.now() - startTime
+      const data = await response.json();
+      const duration = Date.now() - startTime;
 
       logger.info(`AIORNOT API call successful`, {
-        context: "ai-detection",
+        context: 'ai-detection',
         data: {
           duration,
           aiScore: data.ai_score,
           confidence: data.confidence,
           humanVerified: data.human_verified || false,
         },
-      })
+      });
 
-      return data
+      return data;
     },
     MAX_RETRIES,
     500,
-    "AIORNOT API",
-  )
+    'AIORNOT API'
+  );
 }
 
 /**
@@ -85,9 +87,9 @@ export async function analyzeContent(
   originalIp: string,
   tags: string[] | string,
   imageUrl: string,
-  apiKey: string,
+  apiKey: string
 ): Promise<any> {
-  const aiSettings = await getAISettings()
+  const aiSettings = await getAISettings();
 
   const prompt = `
     Analyze this fan art submission for IP compliance, content safety, and brand guidelines adherence:
@@ -96,7 +98,7 @@ export async function analyzeContent(
     Description: ${description}
     Category: ${category}
     Original IP: ${originalIp}
-    Tags: ${Array.isArray(tags) ? tags.join(", ") : tags}
+    Tags: ${Array.isArray(tags) ? tags.join(', ') : tags}
     
     Image URL: ${imageUrl}
     
@@ -109,51 +111,53 @@ export async function analyzeContent(
     6. Reasoning Summary: Brief explanation of the recommendation
     
     Return the analysis in JSON format.
-  `
+  `;
 
   return withRetry(
     async () => {
-      const startTime = Date.now()
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
+      const startTime = Date.now();
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
           model: aiSettings.models.compliance,
           messages: [
-            { role: "system", content: aiSettings.promptTemplates.compliance },
-            { role: "user", content: prompt },
+            { role: 'system', content: aiSettings.promptTemplates.compliance },
+            { role: 'user', content: prompt },
           ],
           temperature: 0.3,
         }),
-      })
+      });
 
       if (!response.ok) {
-        const errorText = await response.text().catch(() => "Unknown error")
-        throw new Error(`OpenAI API error: ${response.status} ${response.statusText} - ${errorText}`)
+        const errorText = await response.text().catch(() => 'Unknown error');
+        throw new Error(
+          `OpenAI API error: ${response.status} ${response.statusText} - ${errorText}`
+        );
       }
 
-      const data = await response.json()
-      const duration = Date.now() - startTime
+      const data = await response.json();
+      const duration = Date.now() - startTime;
 
       logger.info(`OpenAI API call successful`, {
-        context: "content-analysis",
+        context: 'content-analysis',
         data: {
           duration,
           model: aiSettings.models.compliance,
           promptTokens: data.usage?.prompt_tokens,
           completionTokens: data.usage?.completion_tokens,
         },
-      })
+      });
 
-      return data
+      return data;
     },
     MAX_RETRIES,
     500,
-    "OpenAI API",
-  )
+    'OpenAI API'
+  );
 }
 
 /**
@@ -162,29 +166,29 @@ export async function analyzeContent(
 export function parseOpenAIResponse(content: string): any {
   try {
     // Try to extract JSON from markdown code block
-    const jsonMatch = content.match(/```json\n([\s\S]*)\n```/) || content.match(/\{[\s\S]*\}/)
-    const jsonString = jsonMatch ? jsonMatch[1] || jsonMatch[0] : content
-    return JSON.parse(jsonString.replace(/^```json|```$/g, "").trim())
+    const jsonMatch = content.match(/```json\n([\s\S]*)\n```/) || content.match(/\{[\s\S]*\}/);
+    const jsonString = jsonMatch ? jsonMatch[1] || jsonMatch[0] : content;
+    return JSON.parse(jsonString.replace(/^```json|```$/g, '').trim());
   } catch (error) {
-    logger.error("Error parsing OpenAI response", error, {
-      context: "content-analysis",
-      data: { content: content.substring(0, 200) + "..." },
-    })
+    logger.error('Error parsing OpenAI response', error, {
+      context: 'content-analysis',
+      data: { content: content.substring(0, 200) + '...' },
+    });
 
     // Return fallback analysis
     return {
-      ipCompliance: { score: 5, issues: ["Unable to parse AI response"], riskLevel: "medium" },
-      contentSafety: { score: 5, issues: ["Unable to parse AI response"], riskLevel: "medium" },
+      ipCompliance: { score: 5, issues: ['Unable to parse AI response'], riskLevel: 'medium' },
+      contentSafety: { score: 5, issues: ['Unable to parse AI response'], riskLevel: 'medium' },
       brandGuidelines: {
-        adherence: "medium",
-        issues: ["Unable to parse AI response"],
-        notes: "Analysis failed, manual review required",
+        adherence: 'medium',
+        issues: ['Unable to parse AI response'],
+        notes: 'Analysis failed, manual review required',
       },
       overallRiskScore: 5,
-      recommendation: "review",
-      reasoningSummary: "Analysis failed, manual review required",
+      recommendation: 'review',
+      reasoningSummary: 'Analysis failed, manual review required',
       isFallback: true,
-    }
+    };
   }
 }
 
@@ -197,7 +201,7 @@ export function getFallbackAIDetection() {
     confidence: 0.5,
     human_verified: false,
     isFallback: true,
-  }
+  };
 }
 
 /**
@@ -205,25 +209,28 @@ export function getFallbackAIDetection() {
  */
 export function getFallbackContentAnalysis() {
   return {
-    ipCompliance: { score: 5, issues: ["AI service unavailable"], riskLevel: "medium" },
-    contentSafety: { score: 5, issues: ["AI service unavailable"], riskLevel: "medium" },
+    ipCompliance: { score: 5, issues: ['AI service unavailable'], riskLevel: 'medium' },
+    contentSafety: { score: 5, issues: ['AI service unavailable'], riskLevel: 'medium' },
     brandGuidelines: {
-      adherence: "medium",
-      issues: ["AI service unavailable"],
-      notes: "AI service unavailable, manual review required",
+      adherence: 'medium',
+      issues: ['AI service unavailable'],
+      notes: 'AI service unavailable, manual review required',
     },
     overallRiskScore: 5,
-    recommendation: "review",
-    reasoningSummary: "AI service unavailable, manual review required",
+    recommendation: 'review',
+    reasoningSummary: 'AI service unavailable, manual review required',
     isFallback: true,
-  }
+  };
 }
 
 /**
  * Combine AI detection and content analysis results
  */
-export async function combineAnalysisResults(aiDetectionResult: any, contentAnalysisResult: any): Promise<AIAnalysis> {
-  const complianceRules = await getComplianceRules()
+export async function combineAnalysisResults(
+  aiDetectionResult: any,
+  contentAnalysisResult: any
+): Promise<AIAnalysis> {
+  const complianceRules = await getComplianceRules();
 
   const combinedAnalysis: AIAnalysis = {
     aiDetection: {
@@ -233,26 +240,26 @@ export async function combineAnalysisResults(aiDetectionResult: any, contentAnal
       humanVerified: aiDetectionResult.human_verified || false,
     },
     contentAnalysis: contentAnalysisResult,
-    finalRecommendation: "review", // Default to review
+    finalRecommendation: 'review', // Default to review
     needsHumanReview: true, // Default to requiring human review
-  }
+  };
 
   // Only make automated decisions if we didn't use fallbacks
   if (!aiDetectionResult.isFallback && !contentAnalysisResult.isFallback) {
     combinedAnalysis.finalRecommendation =
       aiDetectionResult.ai_score > complianceRules.autoRejectThreshold &&
-      contentAnalysisResult.recommendation === "reject"
-        ? "reject"
-        : contentAnalysisResult.recommendation
+      contentAnalysisResult.recommendation === 'reject'
+        ? 'reject'
+        : contentAnalysisResult.recommendation;
 
     combinedAnalysis.needsHumanReview =
       (aiDetectionResult.ai_score > complianceRules.aiDetectionThreshold &&
         aiDetectionResult.ai_score < complianceRules.autoRejectThreshold) ||
-      contentAnalysisResult.recommendation === "review" ||
-      contentAnalysisResult.overallRiskScore > complianceRules.ipComplianceThreshold * 10
+      contentAnalysisResult.recommendation === 'review' ||
+      contentAnalysisResult.overallRiskScore > complianceRules.ipComplianceThreshold * 10;
   }
 
-  return combinedAnalysis
+  return combinedAnalysis;
 }
 
 /**
@@ -264,29 +271,29 @@ export async function analyzeSubmission(
   category: string,
   originalIp: string,
   tags: string[] | string,
-  imageUrl: string,
+  imageUrl: string
 ): Promise<AIAnalysis> {
-  const requestId = crypto.randomUUID()
+  const requestId = crypto.randomUUID();
   logger.info(`Starting submission analysis`, {
-    context: "submission-analysis",
+    context: 'submission-analysis',
     data: { requestId, title, originalIp, category },
-  })
+  });
 
   // Step 1: Call AIORNOT API for AI detection
-  let aiOrNotData
+  let aiOrNotData;
   try {
-    aiOrNotData = await detectAIGeneration(imageUrl, process.env.AIORNOT_API_KEY || "")
+    aiOrNotData = await detectAIGeneration(imageUrl, process.env.AIORNOT_API_KEY || '');
   } catch (error) {
-    logger.error("AIORNOT API failed after retries", error, {
-      context: "submission-analysis",
+    logger.error('AIORNOT API failed after retries', error, {
+      context: 'submission-analysis',
       data: { requestId },
-    })
+    });
     // Use fallback AI detection
-    aiOrNotData = getFallbackAIDetection()
+    aiOrNotData = getFallbackAIDetection();
   }
 
   // Step 2: Call OpenAI for content analysis
-  let analysisResult
+  let analysisResult;
   try {
     const openAiResult = await analyzeContent(
       title,
@@ -295,24 +302,24 @@ export async function analyzeSubmission(
       originalIp,
       tags,
       imageUrl,
-      process.env.OPENAI_API_KEY || "",
-    )
-    const openAiAnalysis = openAiResult.choices[0].message.content
-    analysisResult = parseOpenAIResponse(openAiAnalysis)
+      process.env.OPENAI_API_KEY || ''
+    );
+    const openAiAnalysis = openAiResult.choices[0].message.content;
+    analysisResult = parseOpenAIResponse(openAiAnalysis);
   } catch (error) {
-    logger.error("OpenAI API failed after retries", error, {
-      context: "submission-analysis",
+    logger.error('OpenAI API failed after retries', error, {
+      context: 'submission-analysis',
       data: { requestId },
-    })
+    });
     // Use fallback content analysis
-    analysisResult = getFallbackContentAnalysis()
+    analysisResult = getFallbackContentAnalysis();
   }
 
   // Step 3: Combine results
-  const combinedAnalysis = await combineAnalysisResults(aiOrNotData, analysisResult)
+  const combinedAnalysis = await combineAnalysisResults(aiOrNotData, analysisResult);
 
   logger.info(`Submission analysis completed`, {
-    context: "submission-analysis",
+    context: 'submission-analysis',
     data: {
       requestId,
       aiScore: aiOrNotData.ai_score,
@@ -320,8 +327,7 @@ export async function analyzeSubmission(
       needsHumanReview: combinedAnalysis.needsHumanReview,
       usedFallback: aiOrNotData.isFallback || analysisResult.isFallback,
     },
-  })
+  });
 
-  return combinedAnalysis
+  return combinedAnalysis;
 }
-

@@ -1,5 +1,5 @@
-import { DashboardShell } from "@/components/dashboard-shell"
-import { Skeleton } from "@/components/ui/skeleton"
+import { DashboardShell } from '@/components/dashboard-shell';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function SettingsLoading() {
   return (
@@ -23,6 +23,5 @@ export default function SettingsLoading() {
         </div>
       </div>
     </DashboardShell>
-  )
+  );
 }
-

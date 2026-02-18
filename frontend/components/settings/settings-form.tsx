@@ -2,15 +2,16 @@
 
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useCallback, useMemo } from 'react';
+
 import { cn } from '@/lib/utils';
 
 // Import sections
-import ProfileSection from './ProfileSection';
 import AccountSection from './AccountSection';
-import NotificationsSection from './NotificationsSection';
-import SecuritySection from './SecuritySection';
-import BillingSection from './BillingsSection';
 import ApiSection from './ApiSection';
+import BillingSection from './BillingsSection';
+import NotificationsSection from './NotificationsSection';
+import ProfileSection from './ProfileSection';
+import SecuritySection from './SecuritySection';
 
 const MENU_ITEMS = [
   { id: 'profile', label: 'Profile' },

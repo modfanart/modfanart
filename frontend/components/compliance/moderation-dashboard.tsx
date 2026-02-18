@@ -1,74 +1,82 @@
-"use client"
+'use client';
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
-import { AlertCircle, CheckCircle, XCircle, Clock, BarChart, RefreshCw } from "lucide-react"
+import { AlertCircle, CheckCircle, XCircle, Clock, BarChart, RefreshCw } from 'lucide-react';
+import { useState, useEffect } from 'react';
+
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface ModerationMetrics {
   submissionCounts: {
-    pending: number
-    review: number
-    approved: number
-    rejected: number
-    licensed: number
-    total: number
-  }
+    pending: number;
+    review: number;
+    approved: number;
+    rejected: number;
+    licensed: number;
+    total: number;
+  };
   aiDetection: {
-    threshold: number
-    autoRejectThreshold: number
-    autoApproveThreshold: number
-  }
+    threshold: number;
+    autoRejectThreshold: number;
+    autoApproveThreshold: number;
+  };
   complianceSettings: {
-    requireHumanReview: boolean
-    contentSafetyThreshold: number
-    ipComplianceThreshold: number
-  }
-  timestamp: string
+    requireHumanReview: boolean;
+    contentSafetyThreshold: number;
+    ipComplianceThreshold: number;
+  };
+  timestamp: string;
 }
 
 export function ModerationDashboard() {
-  const [metrics, setMetrics] = useState<ModerationMetrics | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [metrics, setMetrics] = useState<ModerationMetrics | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const fetchMetrics = async () => {
     try {
-      setLoading(true)
-      setError(null)
+      setLoading(true);
+      setError(null);
 
-      const response = await fetch("/api/moderation/metrics", {
+      const response = await fetch('/api/moderation/metrics', {
         headers: {
-          Authorization: `Bearer ${process.env.BYPASS_AUTH ? "bypass" : "admin-token"}`,
+          Authorization: `Bearer ${process.env.BYPASS_AUTH ? 'bypass' : 'admin-token'}`,
         },
-      })
+      });
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch metrics: ${response.status} ${response.statusText}`)
+        throw new Error(`Failed to fetch metrics: ${response.status} ${response.statusText}`);
       }
 
-      const data = await response.json()
-      setMetrics(data.metrics)
-      setLastUpdated(new Date())
+      const data = await response.json();
+      setMetrics(data.metrics);
+      setLastUpdated(new Date());
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch metrics")
-      console.error("Error fetching moderation metrics:", err)
+      setError(err instanceof Error ? err.message : 'Failed to fetch metrics');
+      console.error('Error fetching moderation metrics:', err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    fetchMetrics()
+    fetchMetrics();
 
     // Refresh metrics every 5 minutes
-    const interval = setInterval(fetchMetrics, 5 * 60 * 1000)
-    return () => clearInterval(interval)
-  }, [])
+    const interval = setInterval(fetchMetrics, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   if (loading && !metrics) {
     return (
@@ -78,7 +86,7 @@ export function ModerationDashboard() {
           <p className="text-sm text-muted-foreground">Loading moderation metrics...</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (error && !metrics) {
@@ -95,27 +103,36 @@ export function ModerationDashboard() {
           </div>
         </AlertDescription>
       </Alert>
-    )
+    );
   }
 
   if (!metrics) {
-    return null
+    return null;
   }
 
-  const { submissionCounts, aiDetection, complianceSettings } = metrics
-  const totalSubmissions = submissionCounts.total || 1 // Avoid division by zero
+  const { submissionCounts, aiDetection, complianceSettings } = metrics;
+  const totalSubmissions = submissionCounts.total || 1; // Avoid division by zero
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold tracking-tight">Moderation Dashboard</h2>
-        <Button variant="outline" size="sm" onClick={fetchMetrics} className="flex items-center gap-1">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={fetchMetrics}
+          className="flex items-center gap-1"
+        >
           <RefreshCw className="h-4 w-4 mr-1" />
           Refresh
         </Button>
       </div>
 
-      {lastUpdated && <p className="text-sm text-muted-foreground">Last updated: {lastUpdated.toLocaleTimeString()}</p>}
+      {lastUpdated && (
+        <p className="text-sm text-muted-foreground">
+          Last updated: {lastUpdated.toLocaleTimeString()}
+        </p>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -189,7 +206,10 @@ export function ModerationDashboard() {
                   </div>
                   <span>{submissionCounts.pending}</span>
                 </div>
-                <Progress value={(submissionCounts.pending / totalSubmissions) * 100} className="bg-muted h-2" />
+                <Progress
+                  value={(submissionCounts.pending / totalSubmissions) * 100}
+                  className="bg-muted h-2"
+                />
               </div>
 
               <div className="space-y-2">
@@ -200,7 +220,10 @@ export function ModerationDashboard() {
                   </div>
                   <span>{submissionCounts.review}</span>
                 </div>
-                <Progress value={(submissionCounts.review / totalSubmissions) * 100} className="bg-muted h-2" />
+                <Progress
+                  value={(submissionCounts.review / totalSubmissions) * 100}
+                  className="bg-muted h-2"
+                />
               </div>
 
               <div className="space-y-2">
@@ -211,7 +234,10 @@ export function ModerationDashboard() {
                   </div>
                   <span>{submissionCounts.approved}</span>
                 </div>
-                <Progress value={(submissionCounts.approved / totalSubmissions) * 100} className="bg-muted h-2" />
+                <Progress
+                  value={(submissionCounts.approved / totalSubmissions) * 100}
+                  className="bg-muted h-2"
+                />
               </div>
 
               <div className="space-y-2">
@@ -222,7 +248,10 @@ export function ModerationDashboard() {
                   </div>
                   <span>{submissionCounts.rejected}</span>
                 </div>
-                <Progress value={(submissionCounts.rejected / totalSubmissions) * 100} className="bg-muted h-2" />
+                <Progress
+                  value={(submissionCounts.rejected / totalSubmissions) * 100}
+                  className="bg-muted h-2"
+                />
               </div>
 
               <div className="space-y-2">
@@ -233,7 +262,10 @@ export function ModerationDashboard() {
                   </div>
                   <span>{submissionCounts.licensed}</span>
                 </div>
-                <Progress value={(submissionCounts.licensed / totalSubmissions) * 100} className="bg-muted h-2" />
+                <Progress
+                  value={(submissionCounts.licensed / totalSubmissions) * 100}
+                  className="bg-muted h-2"
+                />
               </div>
             </CardContent>
           </Card>
@@ -271,9 +303,14 @@ export function ModerationDashboard() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Content Safety Threshold</span>
-                  <span className="text-sm">{complianceSettings.contentSafetyThreshold * 100}%</span>
+                  <span className="text-sm">
+                    {complianceSettings.contentSafetyThreshold * 100}%
+                  </span>
                 </div>
-                <Progress value={complianceSettings.contentSafetyThreshold * 100} className="bg-muted h-2" />
+                <Progress
+                  value={complianceSettings.contentSafetyThreshold * 100}
+                  className="bg-muted h-2"
+                />
               </div>
 
               <div className="space-y-2">
@@ -281,19 +318,21 @@ export function ModerationDashboard() {
                   <span className="text-sm font-medium">IP Compliance Threshold</span>
                   <span className="text-sm">{complianceSettings.ipComplianceThreshold * 100}%</span>
                 </div>
-                <Progress value={complianceSettings.ipComplianceThreshold * 100} className="bg-muted h-2" />
+                <Progress
+                  value={complianceSettings.ipComplianceThreshold * 100}
+                  className="bg-muted h-2"
+                />
               </div>
             </CardContent>
             <CardFooter>
               <p className="text-sm text-muted-foreground">
-                Human review is {complianceSettings.requireHumanReview ? "required" : "optional"} for flagged
-                submissions
+                Human review is {complianceSettings.requireHumanReview ? 'required' : 'optional'}{' '}
+                for flagged submissions
               </p>
             </CardFooter>
           </Card>
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }
-

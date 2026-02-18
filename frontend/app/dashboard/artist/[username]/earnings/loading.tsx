@@ -1,6 +1,6 @@
-import { DashboardShell } from "@/components/dashboard-shell"
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
+import { DashboardShell } from '@/components/dashboard-shell';
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function EarningsLoading() {
   return (
@@ -76,6 +76,5 @@ export default function EarningsLoading() {
         </Card>
       </div>
     </DashboardShell>
-  )
+  );
 }
-

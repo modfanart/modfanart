@@ -1,10 +1,5 @@
 'use client';
 
-import type { HTMLAttributes } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils';
 import {
   ImageIcon,
   FileCheck,
@@ -18,7 +13,14 @@ import {
   LayoutDashboard,
   Trophy,
 } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+
+import type { HTMLAttributes } from 'react';
 
 interface SidebarProps extends HTMLAttributes<HTMLDivElement> {}
 

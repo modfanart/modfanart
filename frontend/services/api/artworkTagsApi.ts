@@ -77,7 +77,7 @@ const artworkTagsApi = createApi({
       query: (artworkId) => `/artworks/${artworkId}/tags`,
       providesTags: (result, error, artworkId) => [
         { type: 'ArtworkTags', id: artworkId },
-        ...(result ? result.map(({ id }) => ({ type: 'ArtworkTags', id } as const)) : []),
+        ...(result ? result.map(({ id }) => ({ type: 'ArtworkTags', id }) as const) : []),
       ],
     }),
 

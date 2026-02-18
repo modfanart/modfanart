@@ -1,25 +1,25 @@
-"use client"
+'use client';
 
-import { useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { AlertCircle } from "lucide-react"
-import Link from "next/link"
+import { useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { AlertCircle } from 'lucide-react';
+import Link from 'next/link';
 
 export default function ManageSubmissionsError({
   error,
   reset,
 }: {
-  error: Error & { digest?: string }
-  reset: () => void
+  error: Error & { digest?: string };
+  reset: () => void;
 }) {
   useEffect(() => {
     // Log the error to an error reporting service
     console.error(
-      "Manage submissions error:",
-      error.message || "Unknown error",
-      error.digest ? `Digest: ${error.digest}` : "",
-    )
-  }, [error])
+      'Manage submissions error:',
+      error.message || 'Unknown error',
+      error.digest ? `Digest: ${error.digest}` : ''
+    );
+  }, [error]);
 
   return (
     <div className="flex flex-col items-center justify-center h-full p-6">
@@ -30,7 +30,9 @@ export default function ManageSubmissionsError({
       <p className="text-muted-foreground mb-2 text-center max-w-md">
         There was an error loading your submissions. This has been logged for investigation.
       </p>
-      {error.digest && <p className="text-xs text-muted-foreground mb-6">Error ID: {error.digest}</p>}
+      {error.digest && (
+        <p className="text-xs text-muted-foreground mb-6">Error ID: {error.digest}</p>
+      )}
       <div className="flex gap-4">
         <Button onClick={reset} className="mt-2">
           Try again
@@ -42,6 +44,5 @@ export default function ManageSubmissionsError({
         </Link>
       </div>
     </div>
-  )
+  );
 }
-

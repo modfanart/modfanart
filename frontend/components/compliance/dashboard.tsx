@@ -1,12 +1,20 @@
-"use client"
+'use client';
 
-import Link from "next/link"
-import { Shield, FileText, Bot, Settings, AlertTriangle, CheckCircle, Clock } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { Badge } from "@/components/ui/badge"
-import { DashboardShell } from "@/components/dashboard-shell"
+import { Shield, FileText, Bot, Settings, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import Link from 'next/link';
+
+import { DashboardShell } from '@/components/dashboard-shell';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 
 export function ComplianceDashboard() {
   // Sample data for compliance stats
@@ -17,47 +25,47 @@ export function ComplianceDashboard() {
     pending: 8,
     aiDetected: 12,
     complianceScore: 92,
-  }
+  };
 
   // Sample data for recent compliance checks
   const recentChecks = [
     {
-      id: "check-1",
-      title: "Anime Character Redesign",
-      artist: "Sarah Johnson",
-      status: "approved",
-      date: "2023-06-12",
+      id: 'check-1',
+      title: 'Anime Character Redesign',
+      artist: 'Sarah Johnson',
+      status: 'approved',
+      date: '2023-06-12',
       aiScore: 0.02,
       complianceIssues: 0,
     },
     {
-      id: "check-2",
-      title: "Superhero Fan Art",
-      artist: "Michael Chen",
-      status: "rejected",
-      date: "2023-06-10",
+      id: 'check-2',
+      title: 'Superhero Fan Art',
+      artist: 'Michael Chen',
+      status: 'rejected',
+      date: '2023-06-10',
       aiScore: 0.97,
       complianceIssues: 1,
     },
     {
-      id: "check-3",
-      title: "Fantasy Character Concept",
-      artist: "Emma Wilson",
-      status: "pending",
-      date: "2023-06-14",
+      id: 'check-3',
+      title: 'Fantasy Character Concept',
+      artist: 'Emma Wilson',
+      status: 'pending',
+      date: '2023-06-14',
       aiScore: 0.15,
       complianceIssues: 0,
     },
     {
-      id: "check-4",
-      title: "Game Character Illustration",
-      artist: "David Rodriguez",
-      status: "rejected",
-      date: "2023-06-09",
+      id: 'check-4',
+      title: 'Game Character Illustration',
+      artist: 'David Rodriguez',
+      status: 'rejected',
+      date: '2023-06-09',
       aiScore: 0.12,
       complianceIssues: 3,
     },
-  ]
+  ];
 
   return (
     <DashboardShell>
@@ -132,7 +140,9 @@ export function ComplianceDashboard() {
         <Card className="md:col-span-2">
           <CardHeader>
             <CardTitle>Recent Compliance Checks</CardTitle>
-            <CardDescription>Latest submissions that have gone through compliance screening</CardDescription>
+            <CardDescription>
+              Latest submissions that have gone through compliance screening
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -145,23 +155,23 @@ export function ComplianceDashboard() {
                   <div className="flex flex-col items-end gap-1">
                     <Badge
                       variant={
-                        check.status === "approved"
-                          ? "outline"
-                          : check.status === "rejected"
-                            ? "destructive"
-                            : "secondary"
+                        check.status === 'approved'
+                          ? 'outline'
+                          : check.status === 'rejected'
+                            ? 'destructive'
+                            : 'secondary'
                       }
                       className={
-                        check.status === "approved"
-                          ? "bg-green-50 text-green-700"
-                          : check.status === "rejected"
-                            ? ""
-                            : "bg-yellow-50 text-yellow-700"
+                        check.status === 'approved'
+                          ? 'bg-green-50 text-green-700'
+                          : check.status === 'rejected'
+                            ? ''
+                            : 'bg-yellow-50 text-yellow-700'
                       }
                     >
-                      {check.status === "approved" && <CheckCircle className="mr-1 h-3 w-3" />}
-                      {check.status === "rejected" && <AlertTriangle className="mr-1 h-3 w-3" />}
-                      {check.status === "pending" && <Clock className="mr-1 h-3 w-3" />}
+                      {check.status === 'approved' && <CheckCircle className="mr-1 h-3 w-3" />}
+                      {check.status === 'rejected' && <AlertTriangle className="mr-1 h-3 w-3" />}
+                      {check.status === 'pending' && <Clock className="mr-1 h-3 w-3" />}
                       {check.status.charAt(0).toUpperCase() + check.status.slice(1)}
                     </Badge>
                     <div className="flex gap-2 text-xs text-muted-foreground">
@@ -217,6 +227,5 @@ export function ComplianceDashboard() {
         </Card>
       </div>
     </DashboardShell>
-  )
+  );
 }
-

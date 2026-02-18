@@ -1,5 +1,5 @@
-import { DashboardShell } from "@/components/dashboard-shell"
-import { Skeleton } from "@/components/ui/skeleton"
+import { DashboardShell } from '@/components/dashboard-shell';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function AnalyticsLoading() {
   return (
@@ -68,6 +68,5 @@ export default function AnalyticsLoading() {
         </div>
       </div>
     </DashboardShell>
-  )
+  );
 }
-

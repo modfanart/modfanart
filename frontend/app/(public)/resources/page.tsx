@@ -1,19 +1,21 @@
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { FileText, Video, Users, BookOpen, Download, ExternalLink } from "lucide-react"
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { FileText, Video, Users, BookOpen, Download, ExternalLink } from 'lucide-react';
 
 export const metadata = {
-  title: "Resources | MOD Platform",
-  description: "Resources and guides for the MOD Platform",
-}
+  title: 'Resources | MOD Platform',
+  description: 'Resources and guides for the MOD Platform',
+};
 
 export default function ResourcesPage() {
   return (
     <div className="container py-12 md:py-16 lg:py-24">
       <div className="mx-auto max-w-4xl text-center mb-16">
         <h1 className="text-4xl font-bold tracking-tight sm:text-5xl mb-4">Resources</h1>
-        <p className="text-xl text-muted-foreground">Helpful guides and resources for artists, brands, and creators</p>
+        <p className="text-xl text-muted-foreground">
+          Helpful guides and resources for artists, brands, and creators
+        </p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -23,12 +25,14 @@ export default function ResourcesPage() {
               <FileText className="h-5 w-5 mr-2 text-primary" />
               Brand Guidelines
             </CardTitle>
-            <CardDescription>Guidelines for creating fan art that complies with IP requirements</CardDescription>
+            <CardDescription>
+              Guidelines for creating fan art that complies with IP requirements
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <p className="mb-4 text-sm text-muted-foreground">
-              Learn how to create fan art that respects intellectual property rights and has the best chance of being
-              approved.
+              Learn how to create fan art that respects intellectual property rights and has the
+              best chance of being approved.
             </p>
             <Button className="w-full" asChild>
               <Link href="/resources/guidelines">View Guidelines</Link>
@@ -46,7 +50,8 @@ export default function ResourcesPage() {
           </CardHeader>
           <CardContent>
             <p className="mb-4 text-sm text-muted-foreground">
-              Watch tutorials on submitting fan art, understanding licensing options, and maximizing your success.
+              Watch tutorials on submitting fan art, understanding licensing options, and maximizing
+              your success.
             </p>
             <Button className="w-full" variant="outline" asChild>
               <Link href="/resources/tutorials">Watch Tutorials</Link>
@@ -118,7 +123,8 @@ export default function ResourcesPage() {
           </CardHeader>
           <CardContent>
             <p className="mb-4 text-sm text-muted-foreground">
-              Links to official IP holder guidelines, legal resources, and other helpful external content.
+              Links to official IP holder guidelines, legal resources, and other helpful external
+              content.
             </p>
             <Button className="w-full" variant="outline" asChild>
               <Link href="/resources/external">View Links</Link>
@@ -127,6 +133,5 @@ export default function ResourcesPage() {
         </Card>
       </div>
     </div>
-  )
+  );
 }
-

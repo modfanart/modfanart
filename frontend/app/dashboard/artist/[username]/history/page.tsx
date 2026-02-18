@@ -104,26 +104,29 @@ const groupActivitiesByDate = (activities: Activity[]): Record<string, Activity[
   const thisWeekStart = new Date(today);
   thisWeekStart.setDate(thisWeekStart.getDate() - thisWeekStart.getDay());
 
-  return activities.reduce((groups, activity) => {
-    const activityDate = new Date(activity.timestamp);
-    activityDate.setHours(0, 0, 0, 0);
+  return activities.reduce(
+    (groups, activity) => {
+      const activityDate = new Date(activity.timestamp);
+      activityDate.setHours(0, 0, 0, 0);
 
-    let group: string;
-    if (activityDate.getTime() === today.getTime()) {
-      group = 'Today';
-    } else if (activityDate.getTime() === yesterday.getTime()) {
-      group = 'Yesterday';
-    } else if (activityDate > thisWeekStart) {
-      group = 'This Week';
-    } else {
-      group = 'Earlier';
-    }
+      let group: string;
+      if (activityDate.getTime() === today.getTime()) {
+        group = 'Today';
+      } else if (activityDate.getTime() === yesterday.getTime()) {
+        group = 'Yesterday';
+      } else if (activityDate > thisWeekStart) {
+        group = 'This Week';
+      } else {
+        group = 'Earlier';
+      }
 
-    // ← This single line fixes the error
-    (groups[group] ??= []).push(activity);
+      // ← This single line fixes the error
+      (groups[group] ??= []).push(activity);
 
-    return groups;
-  }, {} as Record<string, Activity[]>);
+      return groups;
+    },
+    {} as Record<string, Activity[]>
+  );
 };
 
 // Status badge component

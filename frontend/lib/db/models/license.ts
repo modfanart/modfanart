@@ -215,6 +215,6 @@ function mapRowToLicense(row: any): License {
     metadata:
       row.metadata && typeof row.metadata === 'string'
         ? JSON.parse(row.metadata)
-        : row.metadata ?? undefined,
+        : (row.metadata ?? undefined),
   };
 }

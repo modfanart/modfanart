@@ -1,11 +1,12 @@
 'use client';
 
+import { Loader2, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { FileUpload } from '@/components/ui/file-upload'; // assuming this is your custom component
 import { toast } from '@/components/ui/use-toast';
-import { Loader2, Trash2 } from 'lucide-react';
 
 // ─── RTK Query imports ──────────────────────────────────────────────
 import { userApi, useUploadAvatarMutation, useRemoveAvatarMutation } from '@/services/api/userApi'; // adjust path

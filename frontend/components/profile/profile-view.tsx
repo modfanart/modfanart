@@ -1,13 +1,12 @@
 'use client';
 
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Globe, Instagram, Twitter, ExternalLink, Heart } from 'lucide-react';
-import { Trophy, FolderHeart } from 'lucide-react';
-import Link from 'next/link';
+import { Globe, Instagram, Twitter, ExternalLink, Heart, Trophy, FolderHeart } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Card, CardContent } from '@/components/ui/card';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { userApi } from '@/services/api/userApi'; // adjust path
 
 interface ProfileViewProps {

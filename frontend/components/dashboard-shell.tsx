@@ -1,8 +1,9 @@
-import type React from "react"
-import { Sidebar } from "@/components/sidebar"
+import { Sidebar } from '@/components/sidebar';
+
+import type React from 'react';
 
 interface DashboardShellProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 export function DashboardShell({ children }: DashboardShellProps) {
@@ -13,6 +14,5 @@ export function DashboardShell({ children }: DashboardShellProps) {
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
     </div>
-  )
+  );
 }
-

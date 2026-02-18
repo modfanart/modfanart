@@ -1,11 +1,6 @@
-import type React from "react"
-import { DashboardShell } from "@/components/dashboard-shell"
+import type React from 'react';
+import { DashboardShell } from '@/components/dashboard-shell';
 
-export default function LicenseRequestsLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  return <DashboardShell>{children}</DashboardShell>
+export default function LicenseRequestsLayout({ children }: { children: React.ReactNode }) {
+  return <DashboardShell>{children}</DashboardShell>;
 }
-

@@ -1,10 +1,11 @@
 'use client';
 
-import type React from 'react';
-
 import { usePathname } from 'next/navigation';
+
 import { MainNav } from '@/components/main-nav';
 import { SiteFooter } from '@/components/site-footer';
+
+import type React from 'react';
 
 interface LayoutWrapperProps {
   children: React.ReactNode;

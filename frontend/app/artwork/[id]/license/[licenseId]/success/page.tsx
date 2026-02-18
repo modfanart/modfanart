@@ -1,8 +1,8 @@
-import { LayoutWrapper } from "@/components/layout-wrapper"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { CheckCircle } from "lucide-react"
-import Link from "next/link"
+import { LayoutWrapper } from '@/components/layout-wrapper';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { CheckCircle } from 'lucide-react';
+import Link from 'next/link';
 
 export default function LicenseSuccessPage() {
   return (
@@ -74,7 +74,9 @@ export default function LicenseSuccessPage() {
                 </div>
                 <div>
                   <h3 className="font-medium">Download Your Assets</h3>
-                  <p className="text-muted-foreground">Access high-resolution files of your licensed artwork</p>
+                  <p className="text-muted-foreground">
+                    Access high-resolution files of your licensed artwork
+                  </p>
                   <Button variant="outline" className="mt-2">
                     Download Files
                   </Button>
@@ -87,7 +89,9 @@ export default function LicenseSuccessPage() {
                 </div>
                 <div>
                   <h3 className="font-medium">Review License Agreement</h3>
-                  <p className="text-muted-foreground">Read the full terms of your license agreement</p>
+                  <p className="text-muted-foreground">
+                    Read the full terms of your license agreement
+                  </p>
                   <Button variant="outline" className="mt-2">
                     View Agreement
                   </Button>
@@ -100,7 +104,9 @@ export default function LicenseSuccessPage() {
                 </div>
                 <div>
                   <h3 className="font-medium">Manage Your Licenses</h3>
-                  <p className="text-muted-foreground">View and manage all your licensed artwork in one place</p>
+                  <p className="text-muted-foreground">
+                    View and manage all your licensed artwork in one place
+                  </p>
                   <Button variant="outline" className="mt-2">
                     Go to My Licenses
                   </Button>
@@ -111,7 +117,9 @@ export default function LicenseSuccessPage() {
         </Card>
 
         <div className="text-center space-y-4">
-          <p className="text-muted-foreground">A confirmation email has been sent to your registered email address.</p>
+          <p className="text-muted-foreground">
+            A confirmation email has been sent to your registered email address.
+          </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button asChild variant="outline">
               <Link href="/gallery/available">Browse More Artwork</Link>
@@ -123,6 +131,5 @@ export default function LicenseSuccessPage() {
         </div>
       </div>
     </LayoutWrapper>
-  )
+  );
 }
-

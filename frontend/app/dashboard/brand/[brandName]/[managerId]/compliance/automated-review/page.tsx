@@ -104,10 +104,10 @@ export default function AutomatedReviewPage() {
                   {settings.strictness < 50
                     ? 'Lenient'
                     : settings.strictness < 75
-                    ? 'Moderate'
-                    : settings.strictness < 90
-                    ? 'Strict'
-                    : 'Very Strict'}
+                      ? 'Moderate'
+                      : settings.strictness < 90
+                        ? 'Strict'
+                        : 'Very Strict'}
                 </span>
               </div>
               <Slider

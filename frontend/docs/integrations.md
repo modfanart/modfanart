@@ -16,14 +16,14 @@ This document provides an overview of the integrations implemented in the MOD Pl
 
 The following environment variables are required for the integrations:
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `BLOB_STORAGE_KEY` | API key for Vercel Blob Store | None (Required) |
-| `GROK_API_KEY` | API key for GrokAi | None (Required) |
+| Variable                   | Description                      | Default         |
+| -------------------------- | -------------------------------- | --------------- |
+| `BLOB_STORAGE_KEY`         | API key for Vercel Blob Store    | None (Required) |
+| `GROK_API_KEY`             | API key for GrokAi               | None (Required) |
 | `DUCKDB_CONNECTION_STRING` | Connection string for MotherDuck | None (Required) |
-| `EDGE_CONFIG_KEY` | API key for Vercel Edge Config | None (Required) |
-| `DEBUG` | Debug logging configuration | `mod:*` |
-| `NEXT_PUBLIC_DEBUG` | Enable client-side debugging | `false` |
+| `EDGE_CONFIG_KEY`          | API key for Vercel Edge Config   | None (Required) |
+| `DEBUG`                    | Debug logging configuration      | `mod:*`         |
+| `NEXT_PUBLIC_DEBUG`        | Enable client-side debugging     | `false`         |
 
 ## Blob Store Integration
 
@@ -54,4 +54,4 @@ await deleteFile(result.pathname);
 
 // List files in a folder
 const files = await listFiles('submissions');
-
+```
