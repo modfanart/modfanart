@@ -1,40 +1,10 @@
-// src/features/search/searchApi.ts
+// src/api/searchApi.ts
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import type { GlobalSearchResponse, GlobalSearchParams } from './types'; // ← define these yourself
-
+import type { GlobalSearchResponse, GlobalSearchParams } from './features/searchTypes'; // ← define these yourself
 /**
  * Type for the search response from your backend
  * Adjust fields according to what your globalSearch actually returns
  */
-export interface GlobalSearchResponse {
-  results: Array<{
-    type: 'artwork' | 'user' | 'brand' | 'contest' | 'category' | 'tag';
-    id: string;
-    title?: string;
-    username?: string;
-    name?: string;
-    slug?: string;
-    description?: string | null;
-    image?: string | null; // thumbnail_url / avatar_url / logo_url
-    status?: string;
-    created_at: string;
-    // ... other fields you return (categories, prizes, followers_count etc.)
-    [key: string]: any;
-  }>;
-  total: number;
-  limit: number;
-  offset: number;
-}
-
-/**
- * Type for search query parameters
- */
-export interface GlobalSearchParams {
-  q: string;
-  limit?: number;
-  offset?: number;
-  type?: string; // comma-separated: "artwork,user,brand,contest"
-}
 
 /**
  * RTK Query API slice for search

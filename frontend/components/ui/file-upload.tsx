@@ -1,8 +1,9 @@
 'use client';
 
-import { useRef, type ChangeEvent, type ReactNode } from 'react';
-import { Button } from '@/components/ui/button';
 import { Upload } from 'lucide-react';
+import { useRef, type ChangeEvent, type ReactNode } from 'react';
+
+import { Button } from '@/components/ui/button';
 
 interface FileUploadProps {
   accept?: string;

@@ -1,80 +1,90 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { ArrowLeft, Save, Plus, Trash2, Info } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { DashboardShell } from "@/components/dashboard-shell"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft, Save, Plus, Trash2, Info } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DashboardShell } from '@/components/dashboard-shell';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function BrandGuidelinesPage() {
-  const router = useRouter()
+  const router = useRouter();
   const [guidelines, setGuidelines] = useState({
-    brandName: "Marvel Entertainment",
-    allowedCharacters: ["Iron Man", "Captain America", "Thor", "Black Widow", "Hulk"],
-    prohibitedContent: ["Excessive violence", "Sexual content", "Political statements", "Religious imagery"],
+    brandName: 'Marvel Entertainment',
+    allowedCharacters: ['Iron Man', 'Captain America', 'Thor', 'Black Widow', 'Hulk'],
+    prohibitedContent: [
+      'Excessive violence',
+      'Sexual content',
+      'Political statements',
+      'Religious imagery',
+    ],
     styleGuidelines:
-      "Characters should be portrayed in a heroic manner consistent with their established personalities. Use the official color palette for costumes and branding elements.",
+      'Characters should be portrayed in a heroic manner consistent with their established personalities. Use the official color palette for costumes and branding elements.',
     logoUsage:
       "The Marvel logo may be included but must not be modified or distorted. Maintain clear space around the logo equal to the height of the 'M'.",
     additionalNotes:
-      "Fan art should be clearly labeled as unofficial fan creations. Submissions should not imply official endorsement by Marvel Entertainment.",
-  })
+      'Fan art should be clearly labeled as unofficial fan creations. Submissions should not imply official endorsement by Marvel Entertainment.',
+  });
 
-  const [newCharacter, setNewCharacter] = useState("")
-  const [newProhibited, setNewProhibited] = useState("")
+  const [newCharacter, setNewCharacter] = useState('');
+  const [newProhibited, setNewProhibited] = useState('');
 
   const handleAddCharacter = () => {
     if (newCharacter.trim()) {
       setGuidelines({
         ...guidelines,
         allowedCharacters: [...guidelines.allowedCharacters, newCharacter.trim()],
-      })
-      setNewCharacter("")
+      });
+      setNewCharacter('');
     }
-  }
+  };
 
   const handleRemoveCharacter = (index: number) => {
-    const updatedCharacters = [...guidelines.allowedCharacters]
-    updatedCharacters.splice(index, 1)
+    const updatedCharacters = [...guidelines.allowedCharacters];
+    updatedCharacters.splice(index, 1);
     setGuidelines({
       ...guidelines,
       allowedCharacters: updatedCharacters,
-    })
-  }
+    });
+  };
 
   const handleAddProhibited = () => {
     if (newProhibited.trim()) {
       setGuidelines({
         ...guidelines,
         prohibitedContent: [...guidelines.prohibitedContent, newProhibited.trim()],
-      })
-      setNewProhibited("")
+      });
+      setNewProhibited('');
     }
-  }
+  };
 
   const handleRemoveProhibited = (index: number) => {
-    const updatedProhibited = [...guidelines.prohibitedContent]
-    updatedProhibited.splice(index, 1)
+    const updatedProhibited = [...guidelines.prohibitedContent];
+    updatedProhibited.splice(index, 1);
     setGuidelines({
       ...guidelines,
       prohibitedContent: updatedProhibited,
-    })
-  }
+    });
+  };
 
   const handleSave = () => {
     // In a real app, this would save to a database
-    console.log("Saving guidelines:", guidelines)
+    console.log('Saving guidelines:', guidelines);
     // Show success message and redirect
-    router.push("/dashboard/compliance")
-  }
+    router.push('/dashboard/compliance');
+  };
 
   return (
     <DashboardShell>
@@ -86,7 +96,9 @@ export default function BrandGuidelinesPage() {
         </Link>
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Brand Guidelines</h1>
-          <p className="text-muted-foreground">Define the rules and requirements for fan art submissions</p>
+          <p className="text-muted-foreground">
+            Define the rules and requirements for fan art submissions
+          </p>
         </div>
       </div>
 
@@ -94,8 +106,8 @@ export default function BrandGuidelinesPage() {
         <Info className="h-4 w-4" />
         <AlertTitle>Important</AlertTitle>
         <AlertDescription>
-          These guidelines will be used by our AI to automatically screen submissions for compliance. Be specific and
-          clear to ensure accurate screening results.
+          These guidelines will be used by our AI to automatically screen submissions for
+          compliance. Be specific and clear to ensure accurate screening results.
         </AlertDescription>
       </Alert>
 
@@ -138,7 +150,10 @@ export default function BrandGuidelinesPage() {
                   </div>
                   <div className="mt-2 space-y-2">
                     {guidelines.allowedCharacters.map((character, index) => (
-                      <div key={index} className="flex items-center justify-between rounded-md border px-3 py-2">
+                      <div
+                        key={index}
+                        className="flex items-center justify-between rounded-md border px-3 py-2"
+                      >
                         <span>{character}</span>
                         <Button
                           variant="ghost"
@@ -171,7 +186,9 @@ export default function BrandGuidelinesPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Content Rules</CardTitle>
-                <CardDescription>Define what content is prohibited in fan art submissions</CardDescription>
+                <CardDescription>
+                  Define what content is prohibited in fan art submissions
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -188,7 +205,10 @@ export default function BrandGuidelinesPage() {
                   </div>
                   <div className="mt-2 space-y-2">
                     {guidelines.prohibitedContent.map((item, index) => (
-                      <div key={index} className="flex items-center justify-between rounded-md border px-3 py-2">
+                      <div
+                        key={index}
+                        className="flex items-center justify-between rounded-md border px-3 py-2"
+                      >
                         <span>{item}</span>
                         <Button
                           variant="ghost"
@@ -208,7 +228,9 @@ export default function BrandGuidelinesPage() {
                   <Textarea
                     id="additionalNotes"
                     value={guidelines.additionalNotes}
-                    onChange={(e) => setGuidelines({ ...guidelines, additionalNotes: e.target.value })}
+                    onChange={(e) =>
+                      setGuidelines({ ...guidelines, additionalNotes: e.target.value })
+                    }
                     placeholder="Any additional content guidelines or requirements"
                     className="min-h-[100px]"
                   />
@@ -221,7 +243,9 @@ export default function BrandGuidelinesPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Style Guidelines</CardTitle>
-                <CardDescription>Define the artistic style requirements for fan art</CardDescription>
+                <CardDescription>
+                  Define the artistic style requirements for fan art
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -229,7 +253,9 @@ export default function BrandGuidelinesPage() {
                   <Textarea
                     id="styleGuidelines"
                     value={guidelines.styleGuidelines}
-                    onChange={(e) => setGuidelines({ ...guidelines, styleGuidelines: e.target.value })}
+                    onChange={(e) =>
+                      setGuidelines({ ...guidelines, styleGuidelines: e.target.value })
+                    }
                     placeholder="Describe the artistic style requirements"
                     className="min-h-[200px]"
                   />
@@ -297,6 +323,5 @@ export default function BrandGuidelinesPage() {
         </Button>
       </div>
     </DashboardShell>
-  )
+  );
 }
-

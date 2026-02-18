@@ -1,23 +1,25 @@
-import type React from "react"
-import Image from "next/image"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { PlusCircle } from "lucide-react"
+import { PlusCircle } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+
+import { Button } from '@/components/ui/button';
+
+import type React from 'react';
 
 interface EmptyStateProps {
-  title: string
-  description: string
-  actionLabel?: string
-  actionLink?: string
-  icon?: React.ReactNode
-  showImage?: boolean
+  title: string;
+  description: string;
+  actionLabel?: string;
+  actionLink?: string;
+  icon?: React.ReactNode;
+  showImage?: boolean;
 }
 
 export function EmptyState({
   title,
   description,
-  actionLabel = "Create New",
-  actionLink = "/submissions/new",
+  actionLabel = 'Create New',
+  actionLink = '/submissions/new',
   icon,
   showImage = true,
 }: EmptyStateProps) {
@@ -48,6 +50,5 @@ export function EmptyState({
         </Link>
       )}
     </div>
-  )
+  );
 }
-

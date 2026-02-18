@@ -1,10 +1,13 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
 import { Search, X } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { GlobalSearchResponse } from '@/services/api/features/searchTypes';
 import { useLazyGlobalSearchQuery } from '@/services/api/searchApi';
+
 // How many recent searches to keep
 const MAX_RECENT_SEARCHES = 8;
 const STORAGE_KEY = 'recent_searches';
@@ -38,7 +41,7 @@ export function SearchModal() {
     setRecentSearches(getRecentSearches());
   }, []);
 
-  // CMD/CTRL + K to open/close
+  // CMD/CTRL + K to open/close + ESC to close
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
@@ -54,20 +57,20 @@ export function SearchModal() {
     return () => document.removeEventListener('keydown', down);
   }, []);
 
-  // When user presses Enter → add to recent & trigger search
   const handleSearchSubmit = useCallback(() => {
     if (!query.trim()) return;
 
     // Add to recent searches (dedupe + newest first + limit)
     setRecentSearches((prev) => {
-      const filtered = prev.filter((item) => item.toLowerCase() !== query.trim().toLowerCase());
-      const updated = [query.trim(), ...filtered].slice(0, MAX_RECENT_SEARCHES);
+      const trimmed = query.trim();
+      const filtered = prev.filter((item) => item.toLowerCase() !== trimmed.toLowerCase());
+      const updated = [trimmed, ...filtered].slice(0, MAX_RECENT_SEARCHES);
       saveRecentSearches(updated);
       return updated;
     });
 
-    // Here you can also navigate or do something else
-    // e.g. router.push(`/search?q=${encodeURIComponent(query)}`)
+    // Optional: navigate or trigger full-page search
+    // router.push(`/search?q=${encodeURIComponent(query.trim())}`);
   }, [query]);
 
   const handleClearHistory = () => {
@@ -88,9 +91,9 @@ export function SearchModal() {
           q: query.trim(),
           limit: 12,
           offset: 0,
-          // type: 'content,movies,shows' // ← you can make this dynamic later with tabs
+          // type: 'artwork,user,brand' // can be made dynamic later
         },
-        true // prefer cache if available
+        true // preferCacheValue
       );
     }, 400);
 
@@ -99,12 +102,13 @@ export function SearchModal() {
 
   return (
     <>
-      {/* Trigger button in header */}
+      {/* Trigger button – usually placed in header */}
       <Button
         variant="ghost"
         size="icon"
         onClick={() => setOpen(true)}
         className="text-gray-600 hover:text-gray-900"
+        aria-label="Open search"
       >
         <Search className="h-5 w-5" />
       </Button>
@@ -115,7 +119,7 @@ export function SearchModal() {
           <button
             onClick={() => setOpen(false)}
             className="absolute top-6 right-8 text-gray-600 hover:text-gray-900 transition-colors"
-            aria-label="Close search"
+            aria-label="Close search modal"
           >
             <X size={28} />
           </button>
@@ -139,7 +143,7 @@ export function SearchModal() {
               />
             </div>
 
-            {/* Tabs */}
+            {/* Tabs (currently static – can be made functional later) */}
             <div className="flex gap-6 sm:gap-10 mt-8 border-b border-gray-200 text-sm font-medium">
               <button className="pb-3 border-b-2 border-purple-600 text-purple-700">All</button>
               <button className="pb-3 text-gray-600 hover:text-gray-900 transition">Movies</button>
@@ -148,9 +152,9 @@ export function SearchModal() {
               <button className="pb-3 text-gray-600 hover:text-gray-900 transition">Users</button>
             </div>
 
-            {/* Content area */}
+            {/* Main content area */}
             <div className="mt-8 min-h-[40vh]">
-              {/* Recent Searches – shown when no query */}
+              {/* Recent Searches – shown when query is empty */}
               {!query.trim() && (
                 <div>
                   <div className="flex justify-between items-center mb-5">
@@ -185,20 +189,20 @@ export function SearchModal() {
                 </div>
               )}
 
-              {/* Search in progress or results */}
+              {/* Search results / loading state */}
               {query.trim() && (
                 <div>
                   {isLoading || isFetching ? (
                     <div className="text-center py-12 text-gray-500">
                       Searching for "{query}"...
                     </div>
-                  ) : data?.results?.length ? (
+                  ) : data && data.results.length > 0 ? (
                     <div className="space-y-6">
                       <p className="text-sm text-gray-600">
                         Found {data.total} results for "{query}"
                       </p>
 
-                      {/* Simple grid/list of results */}
+                      {/* Results grid */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {data.results.slice(0, 9).map((item) => (
                           <div
@@ -209,12 +213,13 @@ export function SearchModal() {
                               {item.image && (
                                 <img
                                   src={item.image}
-                                  alt={item.title || item.name || ''}
+                                  alt={item.title || item.name || item.username || ''}
                                   className="w-16 h-16 object-cover rounded"
+                                  loading="lazy"
                                 />
                               )}
-                              <div>
-                                <p className="font-medium">
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium truncate">
                                   {item.title || item.name || item.username || '—'}
                                 </p>
                                 <p className="text-sm text-gray-500 capitalize">{item.type}</p>
@@ -229,9 +234,9 @@ export function SearchModal() {
                         ))}
                       </div>
 
-                      {data.total > data.results.length && (
+                      {data.total > 9 && (
                         <p className="text-center text-sm text-gray-500 mt-6">
-                          Showing {data.results.length} of {data.total} results
+                          Showing 9 of {data.total} results
                         </p>
                       )}
                     </div>

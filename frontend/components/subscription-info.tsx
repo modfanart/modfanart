@@ -1,8 +1,9 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { CreditCard, ArrowUpCircle } from 'lucide-react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 interface SubscriptionInfoProps {
   tier: 'free' | 'premium_artist' | 'creator' | 'enterprise';

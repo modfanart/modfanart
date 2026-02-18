@@ -207,7 +207,7 @@ function mapRowToAuditLog(row: any): AuditLog {
     action: row.action as AuditAction,
     entityType: row.entity_type as EntityType,
     entityId: row.entity_id ?? undefined,
-    details: typeof row.details === 'string' ? JSON.parse(row.details) : row.details ?? {},
+    details: typeof row.details === 'string' ? JSON.parse(row.details) : (row.details ?? {}),
     ipAddress: row.ip_address ?? undefined,
     userAgent: row.user_agent ?? undefined,
     createdAt: new Date(row.created_at),

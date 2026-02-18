@@ -1,6 +1,6 @@
-import { Skeleton } from "@/components/ui/skeleton"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList } from "@/components/ui/tabs"
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList } from '@/components/ui/tabs';
 
 export function OpportunityPageSkeleton() {
   return (
@@ -83,6 +83,5 @@ export function OpportunityPageSkeleton() {
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }
-

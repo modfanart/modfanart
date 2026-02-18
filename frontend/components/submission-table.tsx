@@ -1,6 +1,5 @@
 'use client';
 
-import * as React from 'react';
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -14,6 +13,9 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { ArrowUpDown, ChevronDown, MoreHorizontal } from 'lucide-react';
+import * as React from 'react';
+
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -33,7 +35,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 type Submission = {
   id: string;
@@ -170,12 +171,18 @@ export const columns: ColumnDef<Submission>[] = [
           variant: 'secondary' as const,
           className: 'bg-blue-100 text-blue-800',
         },
-        rejected: { label: 'Rejected', variant: 'destructive' as const, className: '' },
-      }[status];
+        rejected: {
+          label: 'Rejected',
+          variant: 'destructive' as const,
+          className: '',
+        },
+      } as const;
+
+      const info = config[status];
 
       return (
-        <Badge variant={config.variant} className={cn(config.className)}>
-          {config.label}
+        <Badge variant={info.variant} className={cn(info.className)}>
+          {info.label}
         </Badge>
       );
     },

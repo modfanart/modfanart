@@ -1,13 +1,10 @@
 'use client';
 
-import type React from 'react';
-
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/components/ui/use-toaster';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Star, ThumbsUp, Flag } from 'lucide-react';
+import { useState } from 'react';
+
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
@@ -15,6 +12,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/components/ui/use-toaster';
+
+import type React from 'react';
 interface Review {
   id: string;
   user: {
@@ -223,8 +224,8 @@ export function ProductReviews({ productId, rating, reviewCount }: ProductReview
                     i < Math.floor(rating)
                       ? 'fill-yellow-400 text-yellow-400'
                       : i < rating
-                      ? 'fill-yellow-400 text-yellow-400'
-                      : 'text-gray-300'
+                        ? 'fill-yellow-400 text-yellow-400'
+                        : 'text-gray-300'
                   }`}
                 />
               ))}

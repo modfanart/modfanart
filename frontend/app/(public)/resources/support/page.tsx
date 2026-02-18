@@ -1,15 +1,36 @@
-import Link from "next/link"
-import type { Metadata } from "next"
-import { Mail, MessageSquare, Phone, FileQuestion, Clock, Users, CreditCard, PenTool } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import Link from 'next/link';
+import type { Metadata } from 'next';
+import {
+  Mail,
+  MessageSquare,
+  Phone,
+  FileQuestion,
+  Clock,
+  Users,
+  CreditCard,
+  PenTool,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export const metadata: Metadata = {
-  title: "Support | MOD Platform",
-  description: "Get help with submissions, licensing, and other platform features",
-}
+  title: 'Support | MOD Platform',
+  description: 'Get help with submissions, licensing, and other platform features',
+};
 
 export default function SupportPage() {
   return (
@@ -108,7 +129,9 @@ export default function SupportPage() {
               <CardDescription className="text-center">Response within 24 hours</CardDescription>
             </CardHeader>
             <CardContent className="text-center">
-              <p className="mb-4">Send us a detailed message and we'll get back to you as soon as possible.</p>
+              <p className="mb-4">
+                Send us a detailed message and we'll get back to you as soon as possible.
+              </p>
               <Button className="w-full" asChild>
                 <Link href="mailto:support@modplatform.com">Email Us</Link>
               </Button>
@@ -124,7 +147,9 @@ export default function SupportPage() {
               <CardDescription className="text-center">Available 9am-5pm EST</CardDescription>
             </CardHeader>
             <CardContent className="text-center">
-              <p className="mb-4">Chat with our support team in real-time for immediate assistance.</p>
+              <p className="mb-4">
+                Chat with our support team in real-time for immediate assistance.
+              </p>
               <Button className="w-full">Start Chat</Button>
             </CardContent>
           </Card>
@@ -203,36 +228,40 @@ export default function SupportPage() {
               <AccordionItem value="item-1">
                 <AccordionTrigger>How do I submit my fan art for licensing?</AccordionTrigger>
                 <AccordionContent>
-                  Log in to your MOD Platform account, navigate to the Dashboard, and click on "New Submission." Fill
-                  out the submission form with details about your artwork, upload high-quality images, and specify which
-                  IP your fan art is based on. Our AI system will pre-screen your submission, and you'll receive updates
-                  on its status via email and in your dashboard.
+                  Log in to your MOD Platform account, navigate to the Dashboard, and click on "New
+                  Submission." Fill out the submission form with details about your artwork, upload
+                  high-quality images, and specify which IP your fan art is based on. Our AI system
+                  will pre-screen your submission, and you'll receive updates on its status via
+                  email and in your dashboard.
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="item-2">
                 <AccordionTrigger>What file formats are accepted for submissions?</AccordionTrigger>
                 <AccordionContent>
-                  We accept JPG, PNG, and TIFF files for 2D artwork with a minimum resolution of 300 DPI. For 3D models,
-                  we accept OBJ, STL, and GLB formats. Maximum file size is 50MB per file. For best results, ensure your
-                  images are well-lit, clearly show the artwork, and include multiple angles if relevant.
+                  We accept JPG, PNG, and TIFF files for 2D artwork with a minimum resolution of 300
+                  DPI. For 3D models, we accept OBJ, STL, and GLB formats. Maximum file size is 50MB
+                  per file. For best results, ensure your images are well-lit, clearly show the
+                  artwork, and include multiple angles if relevant.
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="item-3">
                 <AccordionTrigger>How long does the review process take?</AccordionTrigger>
                 <AccordionContent>
-                  Initial AI screening happens immediately upon submission. For submissions that pass AI screening,
-                  human review typically takes 3-5 business days for Basic accounts and 1-2 business days for Premium
-                  accounts. Enterprise and Professional accounts receive priority review within 24 hours. Complex
-                  submissions or those requiring IP holder input may take longer.
+                  Initial AI screening happens immediately upon submission. For submissions that
+                  pass AI screening, human review typically takes 3-5 business days for Basic
+                  accounts and 1-2 business days for Premium accounts. Enterprise and Professional
+                  accounts receive priority review within 24 hours. Complex submissions or those
+                  requiring IP holder input may take longer.
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="item-4">
                 <AccordionTrigger>Why was my submission rejected?</AccordionTrigger>
                 <AccordionContent>
-                  Submissions may be rejected for several reasons, including: not meeting IP holder guidelines, poor
-                  image quality, suspected AI-generated content without disclosure, copyright concerns, or inappropriate
-                  content. You'll receive specific feedback on why your submission was rejected and, in many cases,
-                  guidance on how to revise and resubmit your work.
+                  Submissions may be rejected for several reasons, including: not meeting IP holder
+                  guidelines, poor image quality, suspected AI-generated content without disclosure,
+                  copyright concerns, or inappropriate content. You'll receive specific feedback on
+                  why your submission was rejected and, in many cases, guidance on how to revise and
+                  resubmit your work.
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
@@ -243,36 +272,41 @@ export default function SupportPage() {
               <AccordionItem value="item-1">
                 <AccordionTrigger>What types of licenses are available?</AccordionTrigger>
                 <AccordionContent>
-                  We offer several license types: Digital (for online use), Print (for physical products), Commercial
-                  (for merchandise), and Extended (for large-scale commercial use). Each license type has different
-                  terms, pricing, and revenue sharing arrangements. You can view detailed license terms on each
-                  artwork's licensing page.
+                  We offer several license types: Digital (for online use), Print (for physical
+                  products), Commercial (for merchandise), and Extended (for large-scale commercial
+                  use). Each license type has different terms, pricing, and revenue sharing
+                  arrangements. You can view detailed license terms on each artwork's licensing
+                  page.
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="item-2">
-                <AccordionTrigger>How are licensing fees and royalties calculated?</AccordionTrigger>
+                <AccordionTrigger>
+                  How are licensing fees and royalties calculated?
+                </AccordionTrigger>
                 <AccordionContent>
-                  Licensing fees are based on the license type, usage scope, and the IP's popularity. Revenue sharing is
-                  typically 70/30 (artist/platform) for Basic accounts, 80/20 for Premium accounts, and 85/15 for
-                  Professional accounts. IP holders receive a portion of the platform's share. Detailed breakdowns are
+                  Licensing fees are based on the license type, usage scope, and the IP's
+                  popularity. Revenue sharing is typically 70/30 (artist/platform) for Basic
+                  accounts, 80/20 for Premium accounts, and 85/15 for Professional accounts. IP
+                  holders receive a portion of the platform's share. Detailed breakdowns are
                   provided before you finalize any licensing agreement.
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="item-3">
                 <AccordionTrigger>Can I set my own pricing for licenses?</AccordionTrigger>
                 <AccordionContent>
-                  Premium and Professional account holders can set suggested pricing for their artwork, which will be
-                  considered during the final pricing determination. Basic accounts use standard platform pricing. All
-                  final prices must comply with IP holder requirements and platform guidelines.
+                  Premium and Professional account holders can set suggested pricing for their
+                  artwork, which will be considered during the final pricing determination. Basic
+                  accounts use standard platform pricing. All final prices must comply with IP
+                  holder requirements and platform guidelines.
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="item-4">
                 <AccordionTrigger>What happens after someone licenses my artwork?</AccordionTrigger>
                 <AccordionContent>
-                  You'll receive an immediate notification when your artwork is licensed. Payment processing takes 3-5
-                  business days, after which your share will be available in your account balance. You can track all
-                  licenses, usage, and earnings in your dashboard. Monthly reports provide detailed analytics on your
-                  licensed works.
+                  You'll receive an immediate notification when your artwork is licensed. Payment
+                  processing takes 3-5 business days, after which your share will be available in
+                  your account balance. You can track all licenses, usage, and earnings in your
+                  dashboard. Monthly reports provide detailed analytics on your licensed works.
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
@@ -283,35 +317,41 @@ export default function SupportPage() {
               <AccordionItem value="item-1">
                 <AccordionTrigger>How do I upgrade or downgrade my subscription?</AccordionTrigger>
                 <AccordionContent>
-                  Log in to your account, go to Settings {"->"} Subscription, and select "Change Plan." You can upgrade
-                  immediately, with prorated charges for the remainder of your billing cycle. Downgrades take effect at
-                  the end of your current billing period. There are no penalties for changing plans, but some features
-                  may be limited if you downgrade.
+                  Log in to your account, go to Settings {'->'} Subscription, and select "Change
+                  Plan." You can upgrade immediately, with prorated charges for the remainder of
+                  your billing cycle. Downgrades take effect at the end of your current billing
+                  period. There are no penalties for changing plans, but some features may be
+                  limited if you downgrade.
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="item-2">
-                <AccordionTrigger>When and how do I get paid for licensed artwork?</AccordionTrigger>
+                <AccordionTrigger>
+                  When and how do I get paid for licensed artwork?
+                </AccordionTrigger>
                 <AccordionContent>
-                  Payments are processed monthly for all earnings over $25. You can choose to receive payments via
-                  direct deposit, PayPal, or Stripe. Processing typically takes 3-5 business days after the monthly
-                  payment cycle closes. You can view pending and processed payments in your dashboard under Earnings.
+                  Payments are processed monthly for all earnings over $25. You can choose to
+                  receive payments via direct deposit, PayPal, or Stripe. Processing typically takes
+                  3-5 business days after the monthly payment cycle closes. You can view pending and
+                  processed payments in your dashboard under Earnings.
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="item-3">
                 <AccordionTrigger>Are there any hidden fees?</AccordionTrigger>
                 <AccordionContent>
-                  There are no hidden fees on the MOD Platform. Subscription costs are clearly displayed on our pricing
-                  page. Revenue sharing percentages are transparent and consistent. Payment processing fees (typically
-                  2.9% + $0.30) may be deducted from earnings by payment processors, but we do not add additional fees
-                  beyond the stated revenue share.
+                  There are no hidden fees on the MOD Platform. Subscription costs are clearly
+                  displayed on our pricing page. Revenue sharing percentages are transparent and
+                  consistent. Payment processing fees (typically 2.9% + $0.30) may be deducted from
+                  earnings by payment processors, but we do not add additional fees beyond the
+                  stated revenue share.
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="item-4">
                 <AccordionTrigger>What payment methods do you accept?</AccordionTrigger>
                 <AccordionContent>
-                  We accept all major credit cards (Visa, Mastercard, American Express, Discover), PayPal, and Apple
-                  Pay. For Enterprise accounts, we also offer invoice payment options with net-30 terms. All payments
-                  are processed securely through Stripe, our payment processor.
+                  We accept all major credit cards (Visa, Mastercard, American Express, Discover),
+                  PayPal, and Apple Pay. For Enterprise accounts, we also offer invoice payment
+                  options with net-30 terms. All payments are processed securely through Stripe, our
+                  payment processor.
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
@@ -322,35 +362,41 @@ export default function SupportPage() {
               <AccordionItem value="item-1">
                 <AccordionTrigger>How do I reset my password?</AccordionTrigger>
                 <AccordionContent>
-                  Click on "Forgot Password" on the login page, enter your email address, and follow the instructions
-                  sent to your email. Password reset links expire after 24 hours for security. If you don't receive the
-                  email, check your spam folder or contact support for assistance.
+                  Click on "Forgot Password" on the login page, enter your email address, and follow
+                  the instructions sent to your email. Password reset links expire after 24 hours
+                  for security. If you don't receive the email, check your spam folder or contact
+                  support for assistance.
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="item-2">
-                <AccordionTrigger>Can I have multiple user accounts under one subscription?</AccordionTrigger>
+                <AccordionTrigger>
+                  Can I have multiple user accounts under one subscription?
+                </AccordionTrigger>
                 <AccordionContent>
-                  Premium accounts include 1 additional user account, Professional accounts include up to 3 additional
-                  users, and Enterprise accounts have customizable user limits. Additional users can be added in your
-                  account settings under Team Members. Each user has their own login credentials but shares the
-                  subscription features and billing.
+                  Premium accounts include 1 additional user account, Professional accounts include
+                  up to 3 additional users, and Enterprise accounts have customizable user limits.
+                  Additional users can be added in your account settings under Team Members. Each
+                  user has their own login credentials but shares the subscription features and
+                  billing.
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="item-3">
                 <AccordionTrigger>How do I update my profile and portfolio?</AccordionTrigger>
                 <AccordionContent>
-                  Go to Settings {"->"} Profile to update your personal information, bio, and social media links. Your
-                  portfolio is automatically populated with your approved submissions, but you can customize which works
-                  are featured and in what order by going to Portfolio {"->"} Manage in your dashboard.
+                  Go to Settings {'->'} Profile to update your personal information, bio, and social
+                  media links. Your portfolio is automatically populated with your approved
+                  submissions, but you can customize which works are featured and in what order by
+                  going to Portfolio {'->'} Manage in your dashboard.
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="item-4">
                 <AccordionTrigger>How do I delete my account?</AccordionTrigger>
                 <AccordionContent>
-                  Account deletion can be initiated in Settings {"->"} Account {"->"} Delete Account. This process
-                  requires verification and has a 30-day cooling-off period during which you can reactivate your
-                  account. After 30 days, your personal data will be deleted, but records of licensed artwork and
-                  transactions will be maintained for legal and accounting purposes.
+                  Account deletion can be initiated in Settings {'->'} Account {'->'} Delete
+                  Account. This process requires verification and has a 30-day cooling-off period
+                  during which you can reactivate your account. After 30 days, your personal data
+                  will be deleted, but records of licensed artwork and transactions will be
+                  maintained for legal and accounting purposes.
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
@@ -369,8 +415,8 @@ export default function SupportPage() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground mb-4">
-                Watch our comprehensive video tutorials covering everything from account setup to advanced licensing
-                strategies.
+                Watch our comprehensive video tutorials covering everything from account setup to
+                advanced licensing strategies.
               </p>
             </CardContent>
             <CardFooter>
@@ -387,7 +433,8 @@ export default function SupportPage() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground mb-4">
-                Browse our extensive knowledge base with searchable articles, guides, and troubleshooting tips.
+                Browse our extensive knowledge base with searchable articles, guides, and
+                troubleshooting tips.
               </p>
             </CardContent>
             <CardFooter>
@@ -404,7 +451,8 @@ export default function SupportPage() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground mb-4">
-                Join discussions, share experiences, and get advice from other artists, brands, and creators.
+                Join discussions, share experiences, and get advice from other artists, brands, and
+                creators.
               </p>
             </CardContent>
             <CardFooter>
@@ -416,6 +464,5 @@ export default function SupportPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
-

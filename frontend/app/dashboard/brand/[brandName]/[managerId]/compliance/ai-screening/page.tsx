@@ -110,10 +110,10 @@ export default function AIScreeningPage() {
                   {settings.confidenceThreshold < 50
                     ? 'Lenient'
                     : settings.confidenceThreshold < 75
-                    ? 'Moderate'
-                    : settings.confidenceThreshold < 90
-                    ? 'Strict'
-                    : 'Very Strict'}
+                      ? 'Moderate'
+                      : settings.confidenceThreshold < 90
+                        ? 'Strict'
+                        : 'Very Strict'}
                 </span>
               </div>
               <Slider

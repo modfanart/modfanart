@@ -1,63 +1,63 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 
 const submissions = [
   {
-    id: "1",
-    title: "Squid Game Player 456",
+    id: '1',
+    title: 'Squid Game Player 456',
     artist: {
-      name: "Min-Ji Park",
-      image: "/placeholder.svg?text=MP",
-      initials: "MP",
+      name: 'Min-Ji Park',
+      image: '/placeholder.svg?text=MP',
+      initials: 'MP',
     },
-    date: "2 hours ago",
-    status: "pending",
+    date: '2 hours ago',
+    status: 'pending',
   },
   {
-    id: "2",
-    title: "Batman Dark Knight",
+    id: '2',
+    title: 'Batman Dark Knight',
     artist: {
-      name: "Michael Brown",
-      image: "/placeholder.svg?text=MB",
-      initials: "MB",
+      name: 'Michael Brown',
+      image: '/placeholder.svg?text=MB',
+      initials: 'MB',
     },
-    date: "5 hours ago",
-    status: "pending",
+    date: '5 hours ago',
+    status: 'pending',
   },
   {
-    id: "3",
-    title: "Jujutsu Kaisen Character",
+    id: '3',
+    title: 'Jujutsu Kaisen Character',
     artist: {
-      name: "Kenji Yamamoto",
-      image: "/placeholder.svg?text=KY",
-      initials: "KY",
+      name: 'Kenji Yamamoto',
+      image: '/placeholder.svg?text=KY',
+      initials: 'KY',
     },
-    date: "1 day ago",
-    status: "pending",
+    date: '1 day ago',
+    status: 'pending',
   },
   {
-    id: "4",
-    title: "Street Fighter Chun-Li",
+    id: '4',
+    title: 'Street Fighter Chun-Li',
     artist: {
-      name: "Carlos Mendez",
-      image: "/placeholder.svg?text=CM",
-      initials: "CM",
+      name: 'Carlos Mendez',
+      image: '/placeholder.svg?text=CM',
+      initials: 'CM',
     },
-    date: "2 days ago",
-    status: "pending",
+    date: '2 days ago',
+    status: 'pending',
   },
   {
-    id: "5",
-    title: "Ahsoka Tano Portrait",
+    id: '5',
+    title: 'Ahsoka Tano Portrait',
     artist: {
-      name: "Alex Rodriguez",
-      image: "/placeholder.svg?text=AR",
-      initials: "AR",
+      name: 'Alex Rodriguez',
+      image: '/placeholder.svg?text=AR',
+      initials: 'AR',
     },
-    date: "3 days ago",
-    status: "pending",
+    date: '3 days ago',
+    status: 'pending',
   },
-]
+];
 
 export function RecentSubmissions() {
   return (
@@ -71,7 +71,9 @@ export function RecentSubmissions() {
                 <AvatarFallback>{submission.artist.initials}</AvatarFallback>
               </Avatar>
               <div className="ml-3 overflow-hidden">
-                <p className="text-sm font-medium leading-none truncate max-w-[150px]">{submission.title}</p>
+                <p className="text-sm font-medium leading-none truncate max-w-[150px]">
+                  {submission.title}
+                </p>
                 <p className="text-xs text-muted-foreground mt-1">
                   By {submission.artist.name} • {submission.date}
                 </p>
@@ -89,6 +91,5 @@ export function RecentSubmissions() {
         ))}
       </div>
     </div>
-  )
+  );
 }
-

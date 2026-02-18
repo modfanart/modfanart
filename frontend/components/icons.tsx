@@ -53,7 +53,7 @@ import {
   XCircle,
   Zap,
   Building2,
-} from "lucide-react"
+} from 'lucide-react';
 
 export const Icons = {
   ArrowLeft,
@@ -110,5 +110,4 @@ export const Icons = {
   XCircle,
   Zap,
   Building2,
-}
-
+};

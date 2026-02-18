@@ -1,5 +1,5 @@
-import { Skeleton } from "@/components/ui/skeleton"
-import { Card, CardContent } from "@/components/ui/card"
+import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent } from '@/components/ui/card';
 
 export default function OpportunityDetailLoading() {
   return (
@@ -81,6 +81,5 @@ export default function OpportunityDetailLoading() {
         </div>
       </div>
     </div>
-  )
+  );
 }
-

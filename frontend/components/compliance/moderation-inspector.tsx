@@ -1,137 +1,144 @@
-"use client"
+'use client';
 
-import type React from "react"
+import { Loader2, AlertTriangle, CheckCircle2, Info } from 'lucide-react';
+import { useState } from 'react';
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Loader2, AlertTriangle, CheckCircle2, Info } from "lucide-react"
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+
+import type React from 'react';
 
 // Sample categories and IPs for the form
-const SAMPLE_CATEGORIES = ["Fan Art", "Digital Art", "Illustration", "Comic", "Animation", "Other"]
-const SAMPLE_IPS = ["Marvel", "Star Wars", "Disney", "DC Comics", "Nintendo", "Other"]
+const SAMPLE_CATEGORIES = ['Fan Art', 'Digital Art', 'Illustration', 'Comic', 'Animation', 'Other'];
+const SAMPLE_IPS = ['Marvel', 'Star Wars', 'Disney', 'DC Comics', 'Nintendo', 'Other'];
 
 export default function ModerationInspector() {
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [result, setResult] = useState<any>(null)
-  const [submissionId, setSubmissionId] = useState("")
-  const [activeTab, setActiveTab] = useState("test")
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<any>(null);
+  const [submissionId, setSubmissionId] = useState('');
+  const [activeTab, setActiveTab] = useState('test');
 
   // Form state for the test tab
   const [formState, setFormState] = useState({
-    title: "",
-    description: "",
-    category: "Fan Art",
-    originalIp: "Marvel",
-    tags: "",
-    imageUrl: "",
-    licenseType: "commercial",
-  })
+    title: '',
+    description: '',
+    category: 'Fan Art',
+    originalIp: 'Marvel',
+    tags: '',
+    imageUrl: '',
+    licenseType: 'commercial',
+  });
 
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setFormState((prev) => ({ ...prev, [name]: value }))
-  }
+    const { name, value } = e.target;
+    setFormState((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleSelectChange = (name: string, value: string) => {
-    setFormState((prev) => ({ ...prev, [name]: value }))
-  }
+    setFormState((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleTestSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError(null)
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
     try {
-      const response = await fetch("/api/moderation", {
-        method: "POST",
+      const response = await fetch('/api/moderation', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           ...formState,
           testMode: true, // Flag to indicate this is just a test, don't create a real submission
         }),
-      })
+      });
 
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`)
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
 
-      const data = await response.json()
-      setResult(data)
+      const data = await response.json();
+      setResult(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An unknown error occurred")
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleLookupSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (!submissionId.trim()) {
-      setError("Please enter a submission ID")
-      return
+      setError('Please enter a submission ID');
+      return;
     }
 
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
     try {
-      const response = await fetch(`/api/submissions/${submissionId}/analysis`)
+      const response = await fetch(`/api/submissions/${submissionId}/analysis`);
 
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`)
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
 
-      const data = await response.json()
-      setResult(data)
+      const data = await response.json();
+      setResult(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An unknown error occurred")
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   // Helper to render JSON data with proper formatting and styling
   const renderJsonView = (data: any) => {
-    if (!data) return <div className="text-muted-foreground">No data available</div>
+    if (!data) return <div className="text-muted-foreground">No data available</div>;
 
     return (
       <div className="bg-secondary/50 p-4 rounded-md overflow-auto max-h-[70vh]">
         <pre className="text-sm">{JSON.stringify(data, null, 2)}</pre>
       </div>
-    )
-  }
+    );
+  };
 
   // Helper to render a summary card with key findings
   const renderAnalysisSummary = () => {
-    if (!result || !result.analysis) return null
+    if (!result || !result.analysis) return null;
 
-    const { aiDetection, contentAnalysis, finalRecommendation, needsHumanReview } = result.analysis
+    const { aiDetection, contentAnalysis, finalRecommendation, needsHumanReview } = result.analysis;
 
     // Determine status color and icon
-    let statusColor = "bg-gray-100"
-    let StatusIcon = Info
-    let statusText = "Unknown"
+    let statusColor = 'bg-gray-100';
+    let StatusIcon = Info;
+    let statusText = 'Unknown';
 
-    if (finalRecommendation === "approve") {
-      statusColor = "bg-green-100 text-green-800"
-      StatusIcon = CheckCircle2
-      statusText = "Approved"
-    } else if (finalRecommendation === "reject") {
-      statusColor = "bg-red-100 text-red-800"
-      StatusIcon = AlertTriangle
-      statusText = "Rejected"
-    } else if (finalRecommendation === "review") {
-      statusColor = "bg-yellow-100 text-yellow-800"
-      StatusIcon = AlertTriangle
-      statusText = "Needs Review"
+    if (finalRecommendation === 'approve') {
+      statusColor = 'bg-green-100 text-green-800';
+      StatusIcon = CheckCircle2;
+      statusText = 'Approved';
+    } else if (finalRecommendation === 'reject') {
+      statusColor = 'bg-red-100 text-red-800';
+      StatusIcon = AlertTriangle;
+      statusText = 'Rejected';
+    } else if (finalRecommendation === 'review') {
+      statusColor = 'bg-yellow-100 text-yellow-800';
+      StatusIcon = AlertTriangle;
+      statusText = 'Needs Review';
     }
 
     return (
@@ -145,21 +152,21 @@ export default function ModerationInspector() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">AI Generated</span>
-                <span className={aiDetection.isAiGenerated ? "text-red-600" : "text-green-600"}>
-                  {aiDetection.isAiGenerated ? "Yes" : "No"}
+                <span className={aiDetection.isAiGenerated ? 'text-red-600' : 'text-green-600'}>
+                  {aiDetection.isAiGenerated ? 'Yes' : 'No'}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">IP Compliance Score</span>
-                <span className="font-medium">{contentAnalysis.ipCompliance?.score || "N/A"}</span>
+                <span className="font-medium">{contentAnalysis.ipCompliance?.score || 'N/A'}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Content Safety Score</span>
-                <span className="font-medium">{contentAnalysis.contentSafety?.score || "N/A"}</span>
+                <span className="font-medium">{contentAnalysis.contentSafety?.score || 'N/A'}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Overall Risk</span>
-                <span className="font-medium">{contentAnalysis.overallRiskScore || "N/A"}</span>
+                <span className="font-medium">{contentAnalysis.overallRiskScore || 'N/A'}</span>
               </div>
             </div>
           </CardContent>
@@ -184,7 +191,9 @@ export default function ModerationInspector() {
                     <Alert>
                       <AlertTriangle className="h-4 w-4" />
                       <AlertTitle>Human Review Required</AlertTitle>
-                      <AlertDescription>This submission needs manual review before final approval</AlertDescription>
+                      <AlertDescription>
+                        This submission needs manual review before final approval
+                      </AlertDescription>
                     </Alert>
                   ) : (
                     <div className="py-2">Automated decision based on combined analysis</div>
@@ -195,8 +204,8 @@ export default function ModerationInspector() {
           </CardContent>
         </Card>
       </div>
-    )
-  }
+    );
+  };
 
   return (
     <div>
@@ -250,7 +259,10 @@ export default function ModerationInspector() {
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="category">Category</Label>
-                <Select value={formState.category} onValueChange={(value) => handleSelectChange("category", value)}>
+                <Select
+                  value={formState.category}
+                  onValueChange={(value) => handleSelectChange('category', value)}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
@@ -266,7 +278,10 @@ export default function ModerationInspector() {
 
               <div className="space-y-2">
                 <Label htmlFor="originalIp">Original IP</Label>
-                <Select value={formState.originalIp} onValueChange={(value) => handleSelectChange("originalIp", value)}>
+                <Select
+                  value={formState.originalIp}
+                  onValueChange={(value) => handleSelectChange('originalIp', value)}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select original IP" />
                   </SelectTrigger>
@@ -294,7 +309,10 @@ export default function ModerationInspector() {
 
             <div className="space-y-2">
               <Label htmlFor="licenseType">License Type</Label>
-              <Select value={formState.licenseType} onValueChange={(value) => handleSelectChange("licenseType", value)}>
+              <Select
+                value={formState.licenseType}
+                onValueChange={(value) => handleSelectChange('licenseType', value)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select license type" />
                 </SelectTrigger>
@@ -321,7 +339,7 @@ export default function ModerationInspector() {
                   Analyzing...
                 </>
               ) : (
-                "Test Moderation"
+                'Test Moderation'
               )}
             </Button>
           </form>
@@ -355,7 +373,7 @@ export default function ModerationInspector() {
                   Loading...
                 </>
               ) : (
-                "Lookup Submission"
+                'Lookup Submission'
               )}
             </Button>
           </form>
@@ -397,6 +415,5 @@ export default function ModerationInspector() {
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }
-

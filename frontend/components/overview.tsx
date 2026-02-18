@@ -1,42 +1,43 @@
-"use client"
+'use client';
 
-import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
-import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart"
+import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+
+import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 
 const data = [
   {
-    name: "Oct",
+    name: 'Oct',
     total: 500,
   },
   {
-    name: "Nov",
+    name: 'Nov',
     total: 900,
   },
   {
-    name: "Dec",
+    name: 'Dec',
     total: 700,
   },
   {
-    name: "Jan",
+    name: 'Jan',
     total: 800,
   },
   {
-    name: "Feb",
+    name: 'Feb',
     total: 1100,
   },
   {
-    name: "Mar",
+    name: 'Mar',
     total: 950,
   },
-]
+];
 
 export function Overview() {
   return (
     <ChartContainer
       config={{
         total: {
-          label: "Earnings",
-          color: "#9747ff",
+          label: 'Earnings',
+          color: '#9747ff',
         },
       }}
       className="h-[250px]"
@@ -66,15 +67,14 @@ export function Overview() {
             strokeWidth={2}
             activeDot={{
               r: 6,
-              style: { fill: "#9747ff" },
+              style: { fill: '#9747ff' },
             }}
             style={{
-              stroke: "var(--color-total)",
+              stroke: 'var(--color-total)',
             }}
           />
         </LineChart>
       </ResponsiveContainer>
     </ChartContainer>
-  )
+  );
 }
-

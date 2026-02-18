@@ -1,8 +1,9 @@
-"use client"
+'use client';
 
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { PlusCircle } from "lucide-react"
+import { PlusCircle } from 'lucide-react';
+import Link from 'next/link';
+
+import { Button } from '@/components/ui/button';
 
 export function NewSubmissionLink() {
   return (
@@ -14,6 +15,5 @@ export function NewSubmissionLink() {
         </a>
       </Button>
     </Link>
-  )
+  );
 }
-

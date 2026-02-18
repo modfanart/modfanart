@@ -1,6 +1,6 @@
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { ImageIcon } from "lucide-react"
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { ImageIcon } from 'lucide-react';
 
 export default function SubmissionsNotFound() {
   return (
@@ -23,6 +23,5 @@ export default function SubmissionsNotFound() {
         </div>
       </div>
     </div>
-  )
+  );
 }
-

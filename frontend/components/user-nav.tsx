@@ -2,8 +2,6 @@
 
 import { useRouter } from 'next/navigation';
 
-import { userApi } from '@/services/api/userApi'; // ← adjust path
-
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useDeleteBrandMutation } from '@/services/api/brands';
+import { userApi } from '@/services/api/userApi'; // ← adjust path
 
 export function UserNav() {
   const router = useRouter();

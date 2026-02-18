@@ -1,72 +1,71 @@
-"use client"
+'use client';
 
-import * as React from "react"
+import * as React from 'react';
 
 type ToastProps = {
-  id: string
-  title?: React.ReactNode
-  description?: React.ReactNode
-}
+  id: string;
+  title?: React.ReactNode;
+  description?: React.ReactNode;
+};
 
-type Toast = Omit<ToastProps, "id">
+type Toast = Omit<ToastProps, 'id'>;
 
 interface State {
-  toasts: ToastProps[]
+  toasts: ToastProps[];
 }
 
-const listeners: Array<(state: State) => void> = []
+const listeners: Array<(state: State) => void> = [];
 
-let memoryState: State = { toasts: [] }
+let memoryState: State = { toasts: [] };
 
 function dispatch(action: any) {
-  memoryState = reducer(memoryState, action)
+  memoryState = reducer(memoryState, action);
   listeners.forEach((listener) => {
-    listener(memoryState)
-  })
+    listener(memoryState);
+  });
 }
 
 function reducer(state: State, action: any): State {
   switch (action.type) {
-    case "ADD_TOAST":
+    case 'ADD_TOAST':
       return {
         ...state,
         toasts: [action.toast, ...state.toasts],
-      }
+      };
     default:
-      return state
+      return state;
   }
 }
 
 function useToast() {
-  const [state, setState] = React.useState<State>(memoryState)
+  const [state, setState] = React.useState<State>(memoryState);
 
   React.useEffect(() => {
-    listeners.push(setState)
+    listeners.push(setState);
     return () => {
-      const index = listeners.indexOf(setState)
+      const index = listeners.indexOf(setState);
       if (index > -1) {
-        listeners.splice(index, 1)
+        listeners.splice(index, 1);
       }
-    }
-  }, [state])
+    };
+  }, [state]);
 
   const toast = ({ ...props }: Toast) => {
-    const id = Math.random().toString(36).substring(2)
+    const id = Math.random().toString(36).substring(2);
 
     dispatch({
-      type: "ADD_TOAST",
+      type: 'ADD_TOAST',
       toast: {
         ...props,
         id,
       },
-    })
-  }
+    });
+  };
 
   return {
     ...state,
     toast,
-  }
+  };
 }
 
-export { useToast }
-
+export { useToast };

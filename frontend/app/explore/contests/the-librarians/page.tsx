@@ -654,11 +654,7 @@ export default function OpportunityDetailPage() {
 
                   <div className="mt-8">
                     <Button asChild size="lg">
-                      <a
-                        href="resources/terms"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
+                      <a href="resources/terms" target="_blank" rel="noopener noreferrer">
                         Legal Terms and Conditions
                       </a>
                     </Button>

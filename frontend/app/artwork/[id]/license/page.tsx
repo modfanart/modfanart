@@ -57,8 +57,7 @@ const formatPrice = (cents: number, currency: 'USD' | 'INR' = 'USD') => {
   }).format(cents / 100);
 };
 
-const capitalize = (s?: string) => (s ? s[0].toUpperCase() + s.slice(1) : '');
-
+const capitalize = (s?: string): string => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '');
 const getDefaultTier = (tiers: ArtworkPricingTier[] = []): ArtworkPricingTier | undefined => {
   const active = tiers.filter((t) => t.is_active);
   if (active.length === 0) return undefined;
@@ -70,10 +69,10 @@ const getDefaultTier = (tiers: ArtworkPricingTier[] = []): ArtworkPricingTier | 
 };
 
 export default function LicenseArtworkPage() {
-  const params = useParams();
   const searchParams = useSearchParams();
 
-  const artworkId = params.id as string;
+  const params = useParams<{ id: string }>(); // ← this is perfect
+  const artworkId = params.id;
   const preselectedTierId = searchParams.get('tier');
 
   const {

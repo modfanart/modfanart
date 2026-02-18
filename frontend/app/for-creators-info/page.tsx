@@ -1,7 +1,7 @@
-import Link from "next/link"
-import Image from "next/image"
-import { Button } from "@/components/ui/button"
-import { LayoutWrapper } from "@/components/layout-wrapper"
+import Link from 'next/link';
+import Image from 'next/image';
+import { Button } from '@/components/ui/button';
+import { LayoutWrapper } from '@/components/layout-wrapper';
 
 export default function ForCreatorsPage() {
   return (
@@ -57,7 +57,8 @@ export default function ForCreatorsPage() {
                   Why Creators Choose MOD Platform
                 </h2>
                 <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Our platform helps you engage with your fans and monetize fan art in a way that respects your IP
+                  Our platform helps you engage with your fans and monetize fan art in a way that
+                  respects your IP
                 </p>
               </div>
             </div>
@@ -82,7 +83,8 @@ export default function ForCreatorsPage() {
                 </div>
                 <h3 className="text-xl font-bold">New Revenue Streams</h3>
                 <p className="text-muted-foreground">
-                  Earn royalties from officially licensed fan art merchandise without the hassle of managing it yourself
+                  Earn royalties from officially licensed fan art merchandise without the hassle of
+                  managing it yourself
                 </p>
               </div>
               <div className="flex flex-col space-y-4 rounded-lg border bg-card p-6">
@@ -107,7 +109,8 @@ export default function ForCreatorsPage() {
                 </div>
                 <h3 className="text-xl font-bold">Fan Engagement</h3>
                 <p className="text-muted-foreground">
-                  Build stronger connections with your community by supporting their creative expressions
+                  Build stronger connections with your community by supporting their creative
+                  expressions
                 </p>
               </div>
               <div className="flex flex-col space-y-4 rounded-lg border bg-card p-6">
@@ -129,7 +132,8 @@ export default function ForCreatorsPage() {
                 </div>
                 <h3 className="text-xl font-bold">IP Protection</h3>
                 <p className="text-muted-foreground">
-                  Maintain control of your IP while allowing fans to express their creativity within your guidelines
+                  Maintain control of your IP while allowing fans to express their creativity within
+                  your guidelines
                 </p>
               </div>
             </div>
@@ -172,7 +176,8 @@ export default function ForCreatorsPage() {
                   Powerful Features for Content Creators
                 </h2>
                 <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Our platform provides everything you need to manage fan art licensing and engagement
+                  Our platform provides everything you need to manage fan art licensing and
+                  engagement
                 </p>
               </div>
             </div>
@@ -210,10 +215,12 @@ export default function ForCreatorsPage() {
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight">Ready to Engage Your Fans?</h2>
+                <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight">
+                  Ready to Engage Your Fans?
+                </h2>
                 <p className="max-w-[600px] text-white/80 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Join MOD Platform today and discover how we can help you engage with fans and create new revenue
-                  streams
+                  Join MOD Platform today and discover how we can help you engage with fans and
+                  create new revenue streams
                 </p>
               </div>
               <div className="flex flex-col gap-2 min-[400px]:flex-row">
@@ -223,7 +230,11 @@ export default function ForCreatorsPage() {
                   </Button>
                 </Link>
                 <Link href="/contact-sales">
-                  <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="border-white text-white hover:bg-white/10"
+                  >
                     Schedule a Demo
                   </Button>
                 </Link>
@@ -233,52 +244,51 @@ export default function ForCreatorsPage() {
         </section>
       </div>
     </LayoutWrapper>
-  )
+  );
 }
 
 const steps = [
   {
-    title: "Register Your Content",
-    description: "Create an account and register your content for fan art licensing",
+    title: 'Register Your Content',
+    description: 'Create an account and register your content for fan art licensing',
   },
   {
-    title: "Set Guidelines",
-    description: "Define how your content can be used in fan art and set licensing terms",
+    title: 'Set Guidelines',
+    description: 'Define how your content can be used in fan art and set licensing terms',
   },
   {
-    title: "Review Submissions",
-    description: "Our AI pre-screens submissions, then you approve or reject with a single click",
+    title: 'Review Submissions',
+    description: 'Our AI pre-screens submissions, then you approve or reject with a single click',
   },
   {
-    title: "Earn Royalties",
-    description: "Receive royalties when fans license their artwork featuring your content",
+    title: 'Earn Royalties',
+    description: 'Receive royalties when fans license their artwork featuring your content',
   },
-]
+];
 
 const features = [
   {
-    title: "Customizable Guidelines",
-    description: "Set detailed guidelines for how your content can be used in fan art",
+    title: 'Customizable Guidelines',
+    description: 'Set detailed guidelines for how your content can be used in fan art',
   },
   {
-    title: "AI-Powered Screening",
-    description: "Automated screening of submissions to ensure they meet your guidelines",
+    title: 'AI-Powered Screening',
+    description: 'Automated screening of submissions to ensure they meet your guidelines',
   },
   {
-    title: "Analytics Dashboard",
-    description: "Track fan engagement, submission trends, and royalty earnings",
+    title: 'Analytics Dashboard',
+    description: 'Track fan engagement, submission trends, and royalty earnings',
   },
   {
-    title: "Community Management",
-    description: "Tools to engage with your fan community and foster positive relationships",
+    title: 'Community Management',
+    description: 'Tools to engage with your fan community and foster positive relationships',
   },
   {
-    title: "Flexible Licensing Options",
-    description: "Create custom licensing terms for different types of fan art and merchandise",
+    title: 'Flexible Licensing Options',
+    description: 'Create custom licensing terms for different types of fan art and merchandise',
   },
   {
-    title: "Automated Royalty Tracking",
-    description: "Track all licensed merchandise sales and royalty payments in real-time",
+    title: 'Automated Royalty Tracking',
+    description: 'Track all licensed merchandise sales and royalty payments in real-time',
   },
-]
-
+];

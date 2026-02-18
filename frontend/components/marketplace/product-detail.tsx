@@ -1,18 +1,19 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
+import { ArrowLeft, Check, Heart, Minus, Plus, Share2, ShoppingCart, Star } from 'lucide-react';
 import Image from 'next/image';
-import { useToast } from '@/components/ui/use-toaster';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
+import Link from 'next/link';
+import { useState } from 'react';
+
 import { ProductReviews } from '@/components/marketplace/product-reviews';
 import { ProductCard } from '@/components/product-card';
-import { ArrowLeft, Check, Heart, Minus, Plus, Share2, ShoppingCart, Star } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useToast } from '@/components/ui/use-toaster';
 
 interface ProductDetailProps {
   product: any;
@@ -153,8 +154,8 @@ export default function ProductDetail({ product, relatedProducts }: ProductDetai
                         i < Math.floor(product.rating)
                           ? 'fill-yellow-400 text-yellow-400'
                           : i < product.rating
-                          ? 'fill-yellow-400 text-yellow-400'
-                          : 'text-gray-300'
+                            ? 'fill-yellow-400 text-yellow-400'
+                            : 'text-gray-300'
                       }`}
                     />
                   ))}

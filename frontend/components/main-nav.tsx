@@ -1,13 +1,11 @@
 'use client';
 
-import Link from 'next/link';
 import Image from 'next/image';
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { SearchModal } from './search-modal';
-import { Button } from '@/components/ui/button';
-import { UserNav } from '@/components/user-nav';
 
+import { Button } from '@/components/ui/button';
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -17,8 +15,10 @@ import {
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from '@/components/ui/navigation-menu';
-
+import { UserNav } from '@/components/user-nav';
 import { userApi } from '@/services/api/userApi';
+
+import { SearchModal } from './search-modal';
 
 export function MainNav() {
   const pathname = usePathname();

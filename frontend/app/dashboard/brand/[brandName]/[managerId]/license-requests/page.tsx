@@ -1,11 +1,18 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useState } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,7 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from '@/components/ui/alert-dialog';
 import {
   Dialog,
   DialogContent,
@@ -24,220 +31,238 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Separator } from "@/components/ui/separator"
-import { CheckCircle, XCircle, Clock, MessageCircle, FileText, ExternalLink, Search, Shield, Info } from "lucide-react"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import Image from "next/image"
+} from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
+import {
+  CheckCircle,
+  XCircle,
+  Clock,
+  MessageCircle,
+  FileText,
+  ExternalLink,
+  Search,
+  Shield,
+  Info,
+} from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import Image from 'next/image';
 
 export default function LicenseRequestsPage() {
-  const [selectedRequest, setSelectedRequest] = useState<any>(null)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [selectedRequest, setSelectedRequest] = useState<any>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // Sample data for license requests
   const licenseRequests = [
     {
-      id: "req-001",
-      artworkId: "art-001",
-      artworkTitle: "Squid Game Player 456",
+      id: 'req-001',
+      artworkId: 'art-001',
+      artworkTitle: 'Squid Game Player 456',
       artworkImage:
-        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/squid-game-456-ORXbXQQXXnHPuxVKnJVlvwQhh1RvTt.jpg",
+        'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/squid-game-456-ORXbXQQXXnHPuxVKnJVlvwQhh1RvTt.jpg',
       requester: {
-        name: "Netflix Productions",
-        avatar: "/placeholder.svg?height=40&width=40",
-        company: "Netflix Inc.",
+        name: 'Netflix Productions',
+        avatar: '/placeholder.svg?height=40&width=40',
+        company: 'Netflix Inc.',
         verified: true,
       },
-      licenseType: "Commercial",
-      usage: "Marketing materials for Squid Game Season 2",
-      duration: "1 year",
-      payment: "$1,200",
-      status: "pending",
-      requestDate: "2023-11-15",
+      licenseType: 'Commercial',
+      usage: 'Marketing materials for Squid Game Season 2',
+      duration: '1 year',
+      payment: '$1,200',
+      status: 'pending',
+      requestDate: '2023-11-15',
       aiVerification: {
-        status: "verified",
+        status: 'verified',
         score: 0.98,
         humanVerified: true,
       },
       ipCompliance: {
-        status: "compliant",
+        status: 'compliant',
         score: 0.95,
-        notes: "Artwork is based on official Squid Game IP with appropriate transformative elements",
+        notes:
+          'Artwork is based on official Squid Game IP with appropriate transformative elements',
       },
-      additionalNotes: "Request includes usage in digital and print marketing materials for the upcoming season",
+      additionalNotes:
+        'Request includes usage in digital and print marketing materials for the upcoming season',
     },
     {
-      id: "req-002",
-      artworkId: "art-002",
-      artworkTitle: "Ahsoka Tano Portrait",
+      id: 'req-002',
+      artworkId: 'art-002',
+      artworkTitle: 'Ahsoka Tano Portrait',
       artworkImage:
-        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/ahsoka-tano-star-wars-Ue0ySJJXXnHPuxVKnJVlvwQhh1RvTt.jpg",
+        'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/ahsoka-tano-star-wars-Ue0ySJJXXnHPuxVKnJVlvwQhh1RvTt.jpg',
       requester: {
-        name: "Disney Publishing",
-        avatar: "/placeholder.svg?height=40&width=40",
-        company: "Disney",
+        name: 'Disney Publishing',
+        avatar: '/placeholder.svg?height=40&width=40',
+        company: 'Disney',
         verified: true,
       },
-      licenseType: "Commercial",
-      usage: "Star Wars novel cover artwork",
-      duration: "2 years",
-      payment: "$2,500",
-      status: "approved",
-      requestDate: "2023-11-10",
-      approvedDate: "2023-11-12",
+      licenseType: 'Commercial',
+      usage: 'Star Wars novel cover artwork',
+      duration: '2 years',
+      payment: '$2,500',
+      status: 'approved',
+      requestDate: '2023-11-10',
+      approvedDate: '2023-11-12',
       aiVerification: {
-        status: "verified",
+        status: 'verified',
         score: 0.99,
         humanVerified: true,
       },
       ipCompliance: {
-        status: "compliant",
+        status: 'compliant',
         score: 0.97,
-        notes: "Artwork adheres to Star Wars style guide and official character representation",
+        notes: 'Artwork adheres to Star Wars style guide and official character representation',
       },
-      additionalNotes: "Approved for use in both digital and print editions of the novel",
+      additionalNotes: 'Approved for use in both digital and print editions of the novel',
     },
     {
-      id: "req-003",
-      artworkId: "art-003",
-      artworkTitle: "Samurai Watercolor",
+      id: 'req-003',
+      artworkId: 'art-003',
+      artworkTitle: 'Samurai Watercolor',
       artworkImage:
-        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/samurai-watercolor-ORXbXQQXXnHPuxVKnJVlvwQhh1RvTt.jpg",
+        'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/samurai-watercolor-ORXbXQQXXnHPuxVKnJVlvwQhh1RvTt.jpg',
       requester: {
-        name: "Indie Game Studio",
-        avatar: "/placeholder.svg?height=40&width=40",
-        company: "Samurai Games LLC",
+        name: 'Indie Game Studio',
+        avatar: '/placeholder.svg?height=40&width=40',
+        company: 'Samurai Games LLC',
         verified: false,
       },
-      licenseType: "Personal",
-      usage: "Reference material for character design",
-      duration: "6 months",
-      payment: "$350",
-      status: "rejected",
-      requestDate: "2023-11-05",
-      rejectedDate: "2023-11-07",
-      rejectionReason: "Usage terms too vague",
+      licenseType: 'Personal',
+      usage: 'Reference material for character design',
+      duration: '6 months',
+      payment: '$350',
+      status: 'rejected',
+      requestDate: '2023-11-05',
+      rejectedDate: '2023-11-07',
+      rejectionReason: 'Usage terms too vague',
       aiVerification: {
-        status: "verified",
+        status: 'verified',
         score: 0.92,
         humanVerified: true,
       },
       ipCompliance: {
-        status: "uncertain",
+        status: 'uncertain',
         score: 0.65,
-        notes: "Artwork contains elements that may be derived from protected samurai-themed IPs",
+        notes: 'Artwork contains elements that may be derived from protected samurai-themed IPs',
       },
-      additionalNotes: "Rejected due to vague usage terms and potential IP conflicts",
+      additionalNotes: 'Rejected due to vague usage terms and potential IP conflicts',
     },
     {
-      id: "req-004",
-      artworkId: "art-004",
-      artworkTitle: "Cytus II Cherry",
+      id: 'req-004',
+      artworkId: 'art-004',
+      artworkTitle: 'Cytus II Cherry',
       artworkImage:
-        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/cytus-ii-cherry-ORXbXQQXXnHPuxVKnJVlvwQhh1RvTt.jpg",
+        'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/cytus-ii-cherry-ORXbXQQXXnHPuxVKnJVlvwQhh1RvTt.jpg',
       requester: {
-        name: "Rayark Games",
-        avatar: "/placeholder.svg?height=40&width=40",
-        company: "Rayark Inc.",
+        name: 'Rayark Games',
+        avatar: '/placeholder.svg?height=40&width=40',
+        company: 'Rayark Inc.',
         verified: true,
       },
-      licenseType: "Commercial",
-      usage: "Promotional materials for Cytus II update",
-      duration: "1 year",
-      payment: "$800",
-      status: "pending",
-      requestDate: "2023-11-14",
+      licenseType: 'Commercial',
+      usage: 'Promotional materials for Cytus II update',
+      duration: '1 year',
+      payment: '$800',
+      status: 'pending',
+      requestDate: '2023-11-14',
       aiVerification: {
-        status: "verified",
+        status: 'verified',
         score: 0.96,
         humanVerified: true,
       },
       ipCompliance: {
-        status: "compliant",
+        status: 'compliant',
         score: 0.9,
-        notes: "Artwork is consistent with Cytus II visual style and character design",
+        notes: 'Artwork is consistent with Cytus II visual style and character design',
       },
-      additionalNotes: "Request includes usage in social media and in-game promotional banners",
+      additionalNotes: 'Request includes usage in social media and in-game promotional banners',
     },
     {
-      id: "req-005",
-      artworkId: "art-005",
-      artworkTitle: "Jujutsu Kaisen Character",
+      id: 'req-005',
+      artworkId: 'art-005',
+      artworkTitle: 'Jujutsu Kaisen Character',
       artworkImage:
-        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/jujutsu-kaisen-ORXbXQQXXnHPuxVKnJVlvwQhh1RvTt.jpg",
+        'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/jujutsu-kaisen-ORXbXQQXXnHPuxVKnJVlvwQhh1RvTt.jpg',
       requester: {
-        name: "Crunchyroll",
-        avatar: "/placeholder.svg?height=40&width=40",
-        company: "Crunchyroll LLC",
+        name: 'Crunchyroll',
+        avatar: '/placeholder.svg?height=40&width=40',
+        company: 'Crunchyroll LLC',
         verified: true,
       },
-      licenseType: "Commercial",
-      usage: "Fan merchandise (t-shirts, posters)",
-      duration: "2 years",
-      payment: "$1,800",
-      status: "approved",
-      requestDate: "2023-11-08",
-      approvedDate: "2023-11-11",
+      licenseType: 'Commercial',
+      usage: 'Fan merchandise (t-shirts, posters)',
+      duration: '2 years',
+      payment: '$1,800',
+      status: 'approved',
+      requestDate: '2023-11-08',
+      approvedDate: '2023-11-11',
       aiVerification: {
-        status: "verified",
+        status: 'verified',
         score: 0.97,
         humanVerified: true,
       },
       ipCompliance: {
-        status: "compliant",
+        status: 'compliant',
         score: 0.93,
-        notes: "Artwork follows Jujutsu Kaisen style guide and official character representation",
+        notes: 'Artwork follows Jujutsu Kaisen style guide and official character representation',
       },
-      additionalNotes: "Approved for merchandise production with royalty reporting requirements",
+      additionalNotes: 'Approved for merchandise production with royalty reporting requirements',
     },
     {
-      id: "req-006",
-      artworkId: "art-006",
-      artworkTitle: "Street Fighter Chun-Li",
+      id: 'req-006',
+      artworkId: 'art-006',
+      artworkTitle: 'Street Fighter Chun-Li',
       artworkImage:
-        "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/street-fighter-chun-li-ORXbXQQXXnHPuxVKnJVlvwQhh1RvTt.jpg",
+        'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/street-fighter-chun-li-ORXbXQQXXnHPuxVKnJVlvwQhh1RvTt.jpg',
       requester: {
-        name: "Capcom Events",
-        avatar: "/placeholder.svg?height=40&width=40",
-        company: "Capcom Co., Ltd.",
+        name: 'Capcom Events',
+        avatar: '/placeholder.svg?height=40&width=40',
+        company: 'Capcom Co., Ltd.',
         verified: true,
       },
-      licenseType: "Commercial",
-      usage: "Tournament promotional materials",
-      duration: "3 months",
-      payment: "$650",
-      status: "pending",
-      requestDate: "2023-11-16",
+      licenseType: 'Commercial',
+      usage: 'Tournament promotional materials',
+      duration: '3 months',
+      payment: '$650',
+      status: 'pending',
+      requestDate: '2023-11-16',
       aiVerification: {
-        status: "verified",
+        status: 'verified',
         score: 0.95,
         humanVerified: true,
       },
       ipCompliance: {
-        status: "compliant",
+        status: 'compliant',
         score: 0.91,
-        notes: "Artwork adheres to Street Fighter character guidelines and official representation",
+        notes: 'Artwork adheres to Street Fighter character guidelines and official representation',
       },
-      additionalNotes: "Request is for limited-time usage during the upcoming tournament season",
+      additionalNotes: 'Request is for limited-time usage during the upcoming tournament season',
     },
-  ]
+  ];
 
   // Filter requests by status
-  const pendingRequests = licenseRequests.filter((req) => req.status === "pending")
-  const approvedRequests = licenseRequests.filter((req) => req.status === "approved")
-  const rejectedRequests = licenseRequests.filter((req) => req.status === "rejected")
+  const pendingRequests = licenseRequests.filter((req) => req.status === 'pending');
+  const approvedRequests = licenseRequests.filter((req) => req.status === 'approved');
+  const rejectedRequests = licenseRequests.filter((req) => req.status === 'rejected');
 
   // Handle opening the dialog with the selected request
   const handleOpenDetails = (request: any) => {
-    setSelectedRequest(request)
-    setIsDialogOpen(true)
-  }
+    setSelectedRequest(request);
+    setIsDialogOpen(true);
+  };
 
   // Render status badge with appropriate color and icon
   const renderStatusBadge = (status: string) => {
     switch (status) {
-      case "pending":
+      case 'pending':
         return (
           <Badge
             variant="outline"
@@ -245,8 +270,8 @@ export default function LicenseRequestsPage() {
           >
             <Clock className="h-3 w-3" /> Pending
           </Badge>
-        )
-      case "approved":
+        );
+      case 'approved':
         return (
           <Badge
             variant="outline"
@@ -254,25 +279,28 @@ export default function LicenseRequestsPage() {
           >
             <CheckCircle className="h-3 w-3" /> Approved
           </Badge>
-        )
-      case "rejected":
+        );
+      case 'rejected':
         return (
-          <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 flex items-center gap-1 px-2 py-1">
+          <Badge
+            variant="outline"
+            className="bg-red-50 text-red-700 border-red-200 flex items-center gap-1 px-2 py-1"
+          >
             <XCircle className="h-3 w-3" /> Rejected
           </Badge>
-        )
+        );
       default:
         return (
           <Badge variant="outline" className="px-2 py-1">
             {status}
           </Badge>
-        )
+        );
     }
-  }
+  };
 
   // Render AI verification badge
   const renderAIVerificationBadge = (verification: any) => {
-    if (verification.status === "verified") {
+    if (verification.status === 'verified') {
       return (
         <Badge
           variant="outline"
@@ -280,7 +308,7 @@ export default function LicenseRequestsPage() {
         >
           <Shield className="h-3 w-3" /> Human Verified
         </Badge>
-      )
+      );
     } else {
       return (
         <Badge
@@ -289,14 +317,14 @@ export default function LicenseRequestsPage() {
         >
           <Shield className="h-3 w-3" /> AI Detected
         </Badge>
-      )
+      );
     }
-  }
+  };
 
   // Render IP compliance badge
   const renderIPComplianceBadge = (compliance: any) => {
     switch (compliance.status) {
-      case "compliant":
+      case 'compliant':
         return (
           <Badge
             variant="outline"
@@ -304,8 +332,8 @@ export default function LicenseRequestsPage() {
           >
             <CheckCircle className="h-3 w-3" /> IP Compliant
           </Badge>
-        )
-      case "uncertain":
+        );
+      case 'uncertain':
         return (
           <Badge
             variant="outline"
@@ -313,15 +341,18 @@ export default function LicenseRequestsPage() {
           >
             <Info className="h-3 w-3" /> IP Review Needed
           </Badge>
-        )
+        );
       default:
         return (
-          <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 flex items-center gap-1 px-2 py-1">
+          <Badge
+            variant="outline"
+            className="bg-red-50 text-red-700 border-red-200 flex items-center gap-1 px-2 py-1"
+          >
             <XCircle className="h-3 w-3" /> IP Issues
           </Badge>
-        )
+        );
     }
-  }
+  };
 
   // Render request card
   const renderRequestCard = (request: any) => (
@@ -341,12 +372,17 @@ export default function LicenseRequestsPage() {
               <div className="flex items-center gap-1.5 flex-wrap">
                 <CardTitle className="text-sm font-medium">{request.requester.name}</CardTitle>
                 {request.requester.verified && (
-                  <Badge variant="outline" className="h-5 bg-blue-50 text-blue-700 border-blue-200 text-[10px] px-1.5">
+                  <Badge
+                    variant="outline"
+                    className="h-5 bg-blue-50 text-blue-700 border-blue-200 text-[10px] px-1.5"
+                  >
                     Verified
                   </Badge>
                 )}
               </div>
-              <CardDescription className="text-xs mt-0.5">{request.requester.company}</CardDescription>
+              <CardDescription className="text-xs mt-0.5">
+                {request.requester.company}
+              </CardDescription>
             </div>
           </div>
           {renderStatusBadge(request.status)}
@@ -356,7 +392,7 @@ export default function LicenseRequestsPage() {
         <div className="flex gap-4">
           <div className="relative h-24 w-24 rounded-md overflow-hidden flex-shrink-0 border">
             <Image
-              src={request.artworkImage || "/placeholder.svg"}
+              src={request.artworkImage || '/placeholder.svg'}
               alt={request.artworkTitle}
               fill
               className="object-cover"
@@ -378,18 +414,28 @@ export default function LicenseRequestsPage() {
         </div>
       </CardContent>
       <CardFooter className="pt-3 border-t">
-        {request.status === "pending" ? (
+        {request.status === 'pending' ? (
           <div className="flex gap-3 w-full">
-            <Button variant="outline" size="sm" className="flex-1" onClick={(e) => e.stopPropagation()}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1"
+              onClick={(e) => e.stopPropagation()}
+            >
               <XCircle className="h-4 w-4 mr-1.5" /> Reject
             </Button>
             <Button size="sm" className="flex-1" onClick={(e) => e.stopPropagation()}>
               <CheckCircle className="h-4 w-4 mr-1.5" /> Approve
             </Button>
           </div>
-        ) : request.status === "approved" ? (
+        ) : request.status === 'approved' ? (
           <div className="flex gap-3 w-full">
-            <Button variant="outline" size="sm" className="flex-1" onClick={(e) => e.stopPropagation()}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1"
+              onClick={(e) => e.stopPropagation()}
+            >
               <FileText className="h-4 w-4 mr-1.5" /> View License
             </Button>
             <Button size="sm" className="flex-1" onClick={(e) => e.stopPropagation()}>
@@ -398,21 +444,31 @@ export default function LicenseRequestsPage() {
           </div>
         ) : (
           <div className="flex gap-3 w-full">
-            <Button variant="outline" size="sm" className="flex-1" onClick={(e) => e.stopPropagation()}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1"
+              onClick={(e) => e.stopPropagation()}
+            >
               <MessageCircle className="h-4 w-4 mr-1.5" /> Message
             </Button>
-            <Button variant="outline" size="sm" className="flex-1" onClick={(e) => e.stopPropagation()}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1"
+              onClick={(e) => e.stopPropagation()}
+            >
               <ExternalLink className="h-4 w-4 mr-1.5" /> View Details
             </Button>
           </div>
         )}
       </CardFooter>
     </Card>
-  )
+  );
 
   // Render detailed request dialog
   const renderRequestDialog = () => {
-    if (!selectedRequest) return null
+    if (!selectedRequest) return null;
 
     return (
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -432,7 +488,7 @@ export default function LicenseRequestsPage() {
             <div className="space-y-4">
               <div className="relative aspect-square w-full rounded-lg overflow-hidden border shadow-sm">
                 <Image
-                  src={selectedRequest.artworkImage || "/placeholder.svg"}
+                  src={selectedRequest.artworkImage || '/placeholder.svg'}
                   alt={selectedRequest.artworkTitle}
                   fill
                   className="object-cover"
@@ -440,7 +496,9 @@ export default function LicenseRequestsPage() {
               </div>
               <div className="px-1">
                 <h3 className="font-medium text-lg mb-1">{selectedRequest.artworkTitle}</h3>
-                <p className="text-sm text-muted-foreground">Artwork ID: {selectedRequest.artworkId}</p>
+                <p className="text-sm text-muted-foreground">
+                  Artwork ID: {selectedRequest.artworkId}
+                </p>
               </div>
             </div>
 
@@ -448,10 +506,15 @@ export default function LicenseRequestsPage() {
             <div className="space-y-6">
               {/* Requester Information */}
               <div className="space-y-3">
-                <h3 className="font-medium text-xs uppercase tracking-wider text-muted-foreground mb-3">Requester</h3>
+                <h3 className="font-medium text-xs uppercase tracking-wider text-muted-foreground mb-3">
+                  Requester
+                </h3>
                 <div className="flex items-center gap-3">
                   <Avatar className="h-10 w-10 border">
-                    <AvatarImage src={selectedRequest.requester.avatar} alt={selectedRequest.requester.name} />
+                    <AvatarImage
+                      src={selectedRequest.requester.avatar}
+                      alt={selectedRequest.requester.name}
+                    />
                     <AvatarFallback>{selectedRequest.requester.name.charAt(0)}</AvatarFallback>
                   </Avatar>
                   <div>
@@ -466,7 +529,9 @@ export default function LicenseRequestsPage() {
                         </Badge>
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground">{selectedRequest.requester.company}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedRequest.requester.company}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -529,7 +594,12 @@ export default function LicenseRequestsPage() {
 
           <DialogFooter className="flex-col sm:flex-row gap-3 sm:justify-between pt-6 mt-2">
             <div className="flex gap-3">
-              <Button variant="outline" size="sm" className="h-9" onClick={() => setIsDialogOpen(false)}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9"
+                onClick={() => setIsDialogOpen(false)}
+              >
                 Close
               </Button>
               <Button variant="outline" size="sm" className="h-9">
@@ -537,7 +607,7 @@ export default function LicenseRequestsPage() {
               </Button>
             </div>
 
-            {selectedRequest.status === "pending" ? (
+            {selectedRequest.status === 'pending' ? (
               <div className="flex gap-3">
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
@@ -549,13 +619,15 @@ export default function LicenseRequestsPage() {
                     <AlertDialogHeader>
                       <AlertDialogTitle>Reject License Request</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Are you sure you want to reject this license request from {selectedRequest.requester.name}? This
-                        action cannot be undone.
+                        Are you sure you want to reject this license request from{' '}
+                        {selectedRequest.requester.name}? This action cannot be undone.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction className="bg-red-600 hover:bg-red-700">Reject Request</AlertDialogAction>
+                      <AlertDialogAction className="bg-red-600 hover:bg-red-700">
+                        Reject Request
+                      </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
@@ -569,9 +641,9 @@ export default function LicenseRequestsPage() {
                     <AlertDialogHeader>
                       <AlertDialogTitle>Approve License Request</AlertDialogTitle>
                       <AlertDialogDescription>
-                        You are about to approve a license request from {selectedRequest.requester.name} for{" "}
-                        {selectedRequest.payment}. The license will be valid for {selectedRequest.duration} for{" "}
-                        {selectedRequest.usage}.
+                        You are about to approve a license request from{' '}
+                        {selectedRequest.requester.name} for {selectedRequest.payment}. The license
+                        will be valid for {selectedRequest.duration} for {selectedRequest.usage}.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -581,7 +653,7 @@ export default function LicenseRequestsPage() {
                   </AlertDialogContent>
                 </AlertDialog>
               </div>
-            ) : selectedRequest.status === "approved" ? (
+            ) : selectedRequest.status === 'approved' ? (
               <Button size="sm" className="h-9">
                 <FileText className="h-4 w-4 mr-1.5" /> View License Agreement
               </Button>
@@ -594,8 +666,8 @@ export default function LicenseRequestsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    )
-  }
+    );
+  };
 
   return (
     <div className="container mx-auto py-8 px-4 sm:px-6 max-w-7xl">
@@ -607,7 +679,11 @@ export default function LicenseRequestsPage() {
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
           <div className="relative flex-grow sm:flex-grow-0">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input type="search" placeholder="Search requests..." className="pl-9 w-full sm:w-[250px]" />
+            <Input
+              type="search"
+              placeholder="Search requests..."
+              className="pl-9 w-full sm:w-[250px]"
+            />
           </div>
           <Select defaultValue="newest">
             <SelectTrigger className="w-full sm:w-[180px]">
@@ -629,25 +705,29 @@ export default function LicenseRequestsPage() {
             value="all"
             className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary py-3 px-4"
           >
-            All Requests <Badge className="ml-2 bg-gray-100 text-gray-900">{licenseRequests.length}</Badge>
+            All Requests{' '}
+            <Badge className="ml-2 bg-gray-100 text-gray-900">{licenseRequests.length}</Badge>
           </TabsTrigger>
           <TabsTrigger
             value="pending"
             className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary py-3 px-4"
           >
-            Pending <Badge className="ml-2 bg-yellow-100 text-yellow-900">{pendingRequests.length}</Badge>
+            Pending{' '}
+            <Badge className="ml-2 bg-yellow-100 text-yellow-900">{pendingRequests.length}</Badge>
           </TabsTrigger>
           <TabsTrigger
             value="approved"
             className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary py-3 px-4"
           >
-            Approved <Badge className="ml-2 bg-green-100 text-green-900">{approvedRequests.length}</Badge>
+            Approved{' '}
+            <Badge className="ml-2 bg-green-100 text-green-900">{approvedRequests.length}</Badge>
           </TabsTrigger>
           <TabsTrigger
             value="rejected"
             className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary py-3 px-4"
           >
-            Rejected <Badge className="ml-2 bg-red-100 text-red-900">{rejectedRequests.length}</Badge>
+            Rejected{' '}
+            <Badge className="ml-2 bg-red-100 text-red-900">{rejectedRequests.length}</Badge>
           </TabsTrigger>
         </TabsList>
 
@@ -667,8 +747,8 @@ export default function LicenseRequestsPage() {
               <Clock className="h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium">No Pending Requests</h3>
               <p className="text-muted-foreground max-w-md mt-2">
-                You don't have any pending license requests at the moment. When someone requests to license your
-                artwork, it will appear here.
+                You don't have any pending license requests at the moment. When someone requests to
+                license your artwork, it will appear here.
               </p>
             </div>
           )}
@@ -684,7 +764,8 @@ export default function LicenseRequestsPage() {
               <CheckCircle className="h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium">No Approved Requests</h3>
               <p className="text-muted-foreground max-w-md mt-2">
-                You haven't approved any license requests yet. When you approve a request, it will appear here.
+                You haven't approved any license requests yet. When you approve a request, it will
+                appear here.
               </p>
             </div>
           )}
@@ -700,7 +781,8 @@ export default function LicenseRequestsPage() {
               <XCircle className="h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium">No Rejected Requests</h3>
               <p className="text-muted-foreground max-w-md mt-2">
-                You haven't rejected any license requests yet. When you reject a request, it will appear here.
+                You haven't rejected any license requests yet. When you reject a request, it will
+                appear here.
               </p>
             </div>
           )}
@@ -710,6 +792,5 @@ export default function LicenseRequestsPage() {
       {/* Render the detailed request dialog */}
       {renderRequestDialog()}
     </div>
-  )
+  );
 }
-
