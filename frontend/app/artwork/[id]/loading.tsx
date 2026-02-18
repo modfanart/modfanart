@@ -1,5 +1,5 @@
-import { LayoutWrapper } from "@/components/layout-wrapper"
-import { Skeleton } from "@/components/ui/skeleton"
+import { LayoutWrapper } from '@/components/layout-wrapper';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ArtworkLoading() {
   return (
@@ -72,6 +72,5 @@ export default function ArtworkLoading() {
         </div>
       </div>
     </LayoutWrapper>
-  )
+  );
 }
-

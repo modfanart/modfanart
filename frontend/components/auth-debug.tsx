@@ -1,8 +1,8 @@
 'use client';
-import { useSession } from 'next-auth/react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useSession, signIn, signOut } from 'next-auth/react';
+
 import { Button } from '@/components/ui/button';
-import { signIn, signOut } from 'next-auth/react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export function AuthDebug() {
   // Only render in development environment

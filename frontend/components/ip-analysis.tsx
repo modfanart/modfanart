@@ -1,18 +1,19 @@
-import { Progress } from "@/components/ui/progress"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Separator } from "@/components/ui/separator"
-import { AlertCircle, CheckCircle } from "lucide-react"
+import { AlertCircle, CheckCircle } from 'lucide-react';
+
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Progress } from '@/components/ui/progress';
+import { Separator } from '@/components/ui/separator';
 
 interface IpAnalysisProps {
   analysis: {
-    score: number
-    recommendations: string[]
+    score: number;
+    recommendations: string[];
     detectedElements: {
-      name: string
-      confidence: number
-      ipOwner: string
-    }[]
-  }
+      name: string;
+      confidence: number;
+      ipOwner: string;
+    }[];
+  };
 }
 
 export function IpAnalysis({ analysis }: IpAnalysisProps) {
@@ -25,20 +26,20 @@ export function IpAnalysis({ analysis }: IpAnalysisProps) {
         </div>
         <Progress value={analysis.score} className="mt-2" />
         <Alert
-          className={`mt-4 ${analysis.score >= 70 ? "bg-green-50 border-green-200" : "bg-yellow-50 border-yellow-200"}`}
+          className={`mt-4 ${analysis.score >= 70 ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}
         >
           {analysis.score >= 70 ? (
             <CheckCircle className="h-4 w-4 text-green-600" />
           ) : (
             <AlertCircle className="h-4 w-4 text-yellow-600" />
           )}
-          <AlertTitle className={analysis.score >= 70 ? "text-green-800" : "text-yellow-800"}>
-            {analysis.score >= 70 ? "Likely Compliant" : "Requires Review"}
+          <AlertTitle className={analysis.score >= 70 ? 'text-green-800' : 'text-yellow-800'}>
+            {analysis.score >= 70 ? 'Likely Compliant' : 'Requires Review'}
           </AlertTitle>
-          <AlertDescription className={analysis.score >= 70 ? "text-green-700" : "text-yellow-700"}>
+          <AlertDescription className={analysis.score >= 70 ? 'text-green-700' : 'text-yellow-700'}>
             {analysis.score >= 70
-              ? "This submission appears to comply with IP guidelines."
-              : "This submission requires manual review for IP compliance."}
+              ? 'This submission appears to comply with IP guidelines.'
+              : 'This submission requires manual review for IP compliance.'}
           </AlertDescription>
         </Alert>
       </div>
@@ -78,6 +79,5 @@ export function IpAnalysis({ analysis }: IpAnalysisProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }
-

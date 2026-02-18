@@ -1,9 +1,9 @@
 ## Debug Configuration
 
-| Variable | Description | Required | Default |
-|----------|-------------|----------|---------|
-| `DEBUG` | Enable debug logging with namespace patterns | No | - |
-| `NEXT_PUBLIC_DEBUG` | Enable client-side debug logging | No | false |
+| Variable            | Description                                  | Required | Default |
+| ------------------- | -------------------------------------------- | -------- | ------- |
+| `DEBUG`             | Enable debug logging with namespace patterns | No       | -       |
+| `NEXT_PUBLIC_DEBUG` | Enable client-side debug logging             | No       | false   |
 
 ### Debug Configuration Examples
 
@@ -19,3 +19,4 @@ DEBUG=mod:api,mod:db
 # Client-side debugging (use with caution in production)
 NEXT_PUBLIC_DEBUG=true
 
+```

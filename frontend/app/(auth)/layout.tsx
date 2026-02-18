@@ -1,11 +1,7 @@
-import type { ReactNode } from "react"
-import Image from "next/image"
+import type { ReactNode } from 'react';
+import Image from 'next/image';
 
-export default function AuthLayout({
-  children,
-}: {
-  children: ReactNode
-}) {
+export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen">
       {/* Left side - Gradient background with logo */}
@@ -39,6 +35,5 @@ export default function AuthLayout({
         </div>
       </div>
     </div>
-  )
+  );
 }
-

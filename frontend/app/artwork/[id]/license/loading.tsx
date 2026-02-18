@@ -1,6 +1,6 @@
-import { LayoutWrapper } from "@/components/layout-wrapper"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { LayoutWrapper } from '@/components/layout-wrapper';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 
 export default function LicenseCheckoutLoading() {
   return (
@@ -190,6 +190,5 @@ export default function LicenseCheckoutLoading() {
         </div>
       </div>
     </LayoutWrapper>
-  )
+  );
 }
-

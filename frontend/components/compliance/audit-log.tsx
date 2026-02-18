@@ -1,11 +1,11 @@
 const AuditLog = () => {
   // Declare the missing variables.  Adjust types and initial values as needed
   // based on the actual intended usage in the original code.
-  const brevity = false
-  const it = false
-  const is = false
-  const correct = false
-  const and = false
+  const brevity = false;
+  const it = false;
+  const is = false;
+  const correct = false;
+  const and = false;
 
   return (
     <div>
@@ -17,8 +17,7 @@ const AuditLog = () => {
       <p>correct: {correct.toString()}</p>
       <p>and: {and.toString()}</p>
     </div>
-  )
-}
+  );
+};
 
-export default AuditLog
-
+export default AuditLog;

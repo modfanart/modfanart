@@ -1,6 +1,6 @@
-import { DashboardShell } from "@/components/dashboard-shell"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
+import { DashboardShell } from '@/components/dashboard-shell';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function NewSubmissionLoading() {
   return (
@@ -30,6 +30,5 @@ export default function NewSubmissionLoading() {
         </Card>
       </div>
     </DashboardShell>
-  )
+  );
 }
-

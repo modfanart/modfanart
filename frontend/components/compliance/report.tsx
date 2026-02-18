@@ -8,11 +8,11 @@
 
 const ComplianceReport = () => {
   // Declare the missing variables.  Initialize them to reasonable default values.
-  const brevity = null
-  const it = null
-  const is = null
-  const correct = null
-  const and = null
+  const brevity = null;
+  const it = null;
+  const is = null;
+  const correct = null;
+  const and = null;
 
   // Rest of the component logic would go here, presumably using the declared variables.
   // Example:
@@ -25,8 +25,7 @@ const ComplianceReport = () => {
       {/* Compliance report content */}
       <p>Compliance Report Placeholder</p>
     </div>
-  )
-}
+  );
+};
 
-export default ComplianceReport
-
+export default ComplianceReport;

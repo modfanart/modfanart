@@ -1,6 +1,6 @@
-import { DashboardShell } from "@/components/dashboard-shell"
-import { Card } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
+import { DashboardShell } from '@/components/dashboard-shell';
+import { Card } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ComplianceLoading() {
   return (
@@ -48,6 +48,5 @@ export default function ComplianceLoading() {
         </Card>
       </div>
     </DashboardShell>
-  )
+  );
 }
-

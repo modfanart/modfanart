@@ -1,90 +1,92 @@
-"use client"
+'use client';
 
-import { useState, useEffect } from "react"
-import Image from "next/image"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import { Trash2, Minus, Plus, ArrowRight, ShoppingCart } from "lucide-react"
-import { useToast } from "@/components/ui/use-toaster"
+import { useState, useEffect } from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { Trash2, Minus, Plus, ArrowRight, ShoppingCart } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toaster';
 
 // Sample cart data
 const initialCartItems = [
   {
-    id: "cart-item-1",
-    productId: "prod-1",
-    title: "Hulk Nature T-Shirt",
+    id: 'cart-item-1',
+    productId: 'prod-1',
+    title: 'Hulk Nature T-Shirt',
     price: 29.99,
     imageUrl:
-      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/hulk%20nature-2.jpg-ivaqVZqmxWtiQzqj7KrfCIH3S8XKHP.jpeg",
+      'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/hulk%20nature-2.jpg-ivaqVZqmxWtiQzqj7KrfCIH3S8XKHP.jpeg',
     quantity: 1,
-    size: "L",
-    color: "Black",
-    slug: "hulk-nature-tshirt",
+    size: 'L',
+    color: 'Black',
+    slug: 'hulk-nature-tshirt',
   },
   {
-    id: "cart-item-2",
-    productId: "prod-2",
-    title: "Ahsoka Tano Poster",
+    id: 'cart-item-2',
+    productId: 'prod-2',
+    title: 'Ahsoka Tano Poster',
     price: 19.99,
     imageUrl:
-      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/ahsoka-FINAL-01%20%282%29-PO2rMTckglJ6t9uWAalnbK7kR10iY9.png",
+      'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/ahsoka-FINAL-01%20%282%29-PO2rMTckglJ6t9uWAalnbK7kR10iY9.png',
     quantity: 2,
-    size: "18x24",
-    color: "",
-    slug: "ahsoka-tano-poster",
+    size: '18x24',
+    color: '',
+    slug: 'ahsoka-tano-poster',
   },
-]
+];
 
 export default function CartPage() {
-  const [cartItems, setCartItems] = useState<typeof initialCartItems>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const { toast } = useToast()
+  const [cartItems, setCartItems] = useState<typeof initialCartItems>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     // Simulate loading cart data
     const timer = setTimeout(() => {
-      setCartItems(initialCartItems)
-      setIsLoading(false)
-    }, 500)
+      setCartItems(initialCartItems);
+      setIsLoading(false);
+    }, 500);
 
-    return () => clearTimeout(timer)
-  }, [])
+    return () => clearTimeout(timer);
+  }, []);
 
   const updateQuantity = (itemId: string, newQuantity: number) => {
-    if (newQuantity < 1) return
+    if (newQuantity < 1) return;
 
-    setCartItems(cartItems.map((item) => (item.id === itemId ? { ...item, quantity: newQuantity } : item)))
-  }
+    setCartItems(
+      cartItems.map((item) => (item.id === itemId ? { ...item, quantity: newQuantity } : item))
+    );
+  };
 
   const removeItem = (itemId: string) => {
-    setCartItems(cartItems.filter((item) => item.id !== itemId))
+    setCartItems(cartItems.filter((item) => item.id !== itemId));
     toast({
-      title: "Item removed",
-      description: "The item has been removed from your cart.",
-    })
-  }
+      title: 'Item removed',
+      description: 'The item has been removed from your cart.',
+    });
+  };
 
   const calculateSubtotal = () => {
-    return cartItems.reduce((total, item) => total + item.price * item.quantity, 0)
-  }
+    return cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
+  };
 
   const calculateShipping = () => {
-    const subtotal = calculateSubtotal()
-    return subtotal >= 50 ? 0 : 4.99
-  }
+    const subtotal = calculateSubtotal();
+    return subtotal >= 50 ? 0 : 4.99;
+  };
 
   const calculateTotal = () => {
-    return calculateSubtotal() + calculateShipping()
-  }
+    return calculateSubtotal() + calculateShipping();
+  };
 
   const handleCheckout = () => {
     toast({
-      title: "Proceeding to checkout",
-      description: "Redirecting to secure payment page...",
-    })
+      title: 'Proceeding to checkout',
+      description: 'Redirecting to secure payment page...',
+    });
     // In a real app, this would redirect to the checkout page
-  }
+  };
 
   if (isLoading) {
     return (
@@ -93,7 +95,7 @@ export default function CartPage() {
           <p className="text-muted-foreground">Loading your cart...</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (cartItems.length === 0) {
@@ -103,13 +105,15 @@ export default function CartPage() {
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-12 text-center">
           <ShoppingCart className="mb-4 h-12 w-12 text-muted-foreground" />
           <h2 className="mb-2 text-xl font-semibold">Your cart is empty</h2>
-          <p className="mb-6 text-muted-foreground">Looks like you haven't added any items to your cart yet.</p>
+          <p className="mb-6 text-muted-foreground">
+            Looks like you haven't added any items to your cart yet.
+          </p>
           <Button asChild>
             <Link href="/marketplace">Continue Shopping</Link>
           </Button>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -126,12 +130,20 @@ export default function CartPage() {
                 {cartItems.map((item) => (
                   <div key={item.id} className="flex flex-col gap-4 sm:flex-row">
                     <div className="relative h-24 w-24 overflow-hidden rounded-md border">
-                      <Image src={item.imageUrl || "/placeholder.svg"} alt={item.title} fill className="object-cover" />
+                      <Image
+                        src={item.imageUrl || '/placeholder.svg'}
+                        alt={item.title}
+                        fill
+                        className="object-cover"
+                      />
                     </div>
                     <div className="flex flex-1 flex-col justify-between">
                       <div className="flex flex-col sm:flex-row sm:justify-between">
                         <div>
-                          <Link href={`/marketplace/product/${item.slug}`} className="font-medium hover:underline">
+                          <Link
+                            href={`/marketplace/product/${item.slug}`}
+                            className="font-medium hover:underline"
+                          >
                             {item.title}
                           </Link>
                           <p className="mt-1 text-sm text-muted-foreground">
@@ -139,7 +151,9 @@ export default function CartPage() {
                             {item.color && `, ${item.color}`}
                           </p>
                         </div>
-                        <div className="mt-2 font-semibold sm:mt-0">${(item.price * item.quantity).toFixed(2)}</div>
+                        <div className="mt-2 font-semibold sm:mt-0">
+                          ${(item.price * item.quantity).toFixed(2)}
+                        </div>
                       </div>
                       <div className="mt-2 flex items-center justify-between">
                         <div className="flex items-center">
@@ -205,7 +219,9 @@ export default function CartPage() {
                 </div>
                 <div className="flex justify-between">
                   <span>Shipping</span>
-                  <span>{calculateShipping() === 0 ? "Free" : `$${calculateShipping().toFixed(2)}`}</span>
+                  <span>
+                    {calculateShipping() === 0 ? 'Free' : `$${calculateShipping().toFixed(2)}`}
+                  </span>
                 </div>
                 <Separator />
                 <div className="flex justify-between font-semibold">
@@ -226,6 +242,5 @@ export default function CartPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
-

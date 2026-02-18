@@ -1,6 +1,6 @@
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { FileQuestion, PlusCircle } from "lucide-react"
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { FileQuestion, PlusCircle } from 'lucide-react';
 
 export default function SubmissionNotFound() {
   return (
@@ -24,6 +24,5 @@ export default function SubmissionNotFound() {
         </Link>
       </div>
     </div>
-  )
+  );
 }
-

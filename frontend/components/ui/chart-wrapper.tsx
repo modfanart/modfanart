@@ -1,9 +1,10 @@
 'use client';
 
-import type React from 'react';
-import { DynamicImport } from './dynamic-import';
-import type { ChartConfig } from './chart';
 import { ChartContainer } from './chart';
+import { DynamicImport } from './dynamic-import';
+
+import type { ChartConfig } from './chart';
+import type React from 'react';
 
 interface ChartContainerProps {
   config: ChartConfig;

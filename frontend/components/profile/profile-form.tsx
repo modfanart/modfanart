@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
+
+import { ProfileImageUpload } from '@/components/profile/profile-image-upload';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -17,14 +19,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/use-toast';
-import { ProfileImageUpload } from '@/components/profile/profile-image-upload';
+import { updateUserProfile } from '@/lib/actions/profile-actions';
 import { ProfileUpdateData } from '@/services/api/userApi';
 // ─── Import RTK Query ────────────────────────────────────────────────
 import { userApi } from '@/services/api/userApi'; // adjust path if needed
 import { useUpdateProfileMutation } from '@/services/api/userApi'; // ← if you want to use mutation instead of server action
 
 // If you're still using the server action, keep this import:
-import { updateUserProfile } from '@/lib/actions/profile-actions';
 
 // Reuse the same schema (adjusted field names to match UserProfile)
 const profileFormSchema = z.object({

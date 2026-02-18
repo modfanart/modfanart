@@ -1,26 +1,27 @@
-"use client"
+'use client';
 
-import type React from "react"
+import { SearchIcon } from 'lucide-react';
+import { useState } from 'react';
 
-import { useState } from "react"
-import { SearchIcon } from "lucide-react"
-import { Input } from "@/components/ui/input"
+import { Input } from '@/components/ui/input';
+
+import type React from 'react';
 
 interface SearchProps {
-  onSearch?: (query: string) => void
+  onSearch?: (query: string) => void;
 }
 
 export function Search({ onSearch }: SearchProps = {}) {
-  const [value, setValue] = useState("")
+  const [value, setValue] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value
-    setValue(newValue)
+    const newValue = e.target.value;
+    setValue(newValue);
 
     if (onSearch) {
-      onSearch(newValue)
+      onSearch(newValue);
     }
-  }
+  };
 
   return (
     <div className="relative max-w-md">
@@ -33,6 +34,5 @@ export function Search({ onSearch }: SearchProps = {}) {
         onChange={handleChange}
       />
     </div>
-  )
+  );
 }
-

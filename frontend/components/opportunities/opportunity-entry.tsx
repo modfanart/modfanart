@@ -1,11 +1,10 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { Eye, MoreHorizontal, Check, X, Trash2 } from "lucide-react"
+import { Eye, MoreHorizontal, Check, X, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -13,44 +12,50 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
+} from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface OpportunityEntryProps {
   entry: {
-    id: string
-    title: string
-    artist: string
-    status: string
-    submittedAt: string
-    imageUrl: string
-  }
-  onUpdateStatus: (id: string, status: string) => void
-  onDelete: (id: string) => void
+    id: string;
+    title: string;
+    artist: string;
+    status: string;
+    submittedAt: string;
+    imageUrl: string;
+  };
+  onUpdateStatus: (id: string, status: string) => void;
+  onDelete: (id: string) => void;
 }
 
 export function OpportunityEntry({ entry, onUpdateStatus, onDelete }: OpportunityEntryProps) {
-  const [viewDialogOpen, setViewDialogOpen] = useState(false)
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "approved":
-        return <Badge className="bg-green-500">Approved</Badge>
-      case "rejected":
-        return <Badge variant="destructive">Rejected</Badge>
-      case "pending":
-        return <Badge variant="outline">Pending</Badge>
+      case 'approved':
+        return <Badge className="bg-green-500">Approved</Badge>;
+      case 'rejected':
+        return <Badge variant="destructive">Rejected</Badge>;
+      case 'pending':
+        return <Badge variant="outline">Pending</Badge>;
       default:
-        return <Badge variant="secondary">{status}</Badge>
+        return <Badge variant="secondary">{status}</Badge>;
     }
-  }
+  };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    })
-  }
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
 
   return (
     <>
@@ -71,11 +76,11 @@ export function OpportunityEntry({ entry, onUpdateStatus, onDelete }: Opportunit
                 <Eye className="mr-2 h-4 w-4" />
                 View
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onUpdateStatus(entry.id, "approved")}>
+              <DropdownMenuItem onClick={() => onUpdateStatus(entry.id, 'approved')}>
                 <Check className="mr-2 h-4 w-4 text-green-500" />
                 Approve
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onUpdateStatus(entry.id, "rejected")}>
+              <DropdownMenuItem onClick={() => onUpdateStatus(entry.id, 'rejected')}>
                 <X className="mr-2 h-4 w-4 text-red-500" />
                 Reject
               </DropdownMenuItem>
@@ -101,7 +106,7 @@ export function OpportunityEntry({ entry, onUpdateStatus, onDelete }: Opportunit
           <div className="grid gap-4 py-4">
             <div className="flex justify-center">
               <img
-                src={entry.imageUrl || "/placeholder.svg"}
+                src={entry.imageUrl || '/placeholder.svg'}
                 alt={entry.title}
                 className="max-h-[300px] object-contain rounded-md"
               />
@@ -115,10 +120,10 @@ export function OpportunityEntry({ entry, onUpdateStatus, onDelete }: Opportunit
 
           <DialogFooter className="flex flex-col sm:flex-row sm:justify-between sm:space-x-2">
             <div className="flex space-x-2 mb-3 sm:mb-0">
-              <Button variant="outline" onClick={() => onUpdateStatus(entry.id, "approved")}>
+              <Button variant="outline" onClick={() => onUpdateStatus(entry.id, 'approved')}>
                 Approve
               </Button>
-              <Button variant="outline" onClick={() => onUpdateStatus(entry.id, "rejected")}>
+              <Button variant="outline" onClick={() => onUpdateStatus(entry.id, 'rejected')}>
                 Reject
               </Button>
             </div>
@@ -129,6 +134,5 @@ export function OpportunityEntry({ entry, onUpdateStatus, onDelete }: Opportunit
         </DialogContent>
       </Dialog>
     </>
-  )
+  );
 }
-

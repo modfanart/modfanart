@@ -1,6 +1,5 @@
-import { redirect } from "next/navigation"
+import { redirect } from 'next/navigation';
 
 export default function GalleryPage() {
-  redirect("/gallery/featured")
+  redirect('/gallery/featured');
 }
-

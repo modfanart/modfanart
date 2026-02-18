@@ -1,63 +1,63 @@
-import { describe, expect, it, jest, beforeEach } from "@jest/globals"
-import { resetMocks } from "../../../../utils/test-utils"
-import { mockDbFunctions } from "../../../../mocks/db-mocks"
-import { createMockRequest } from "../../../../utils/test-utils"
+import { describe, expect, it, jest, beforeEach } from '@jest/globals';
+import { resetMocks } from '../../../../utils/test-utils';
+import { mockDbFunctions } from '../../../../mocks/db-mocks';
+import { createMockRequest } from '../../../../utils/test-utils';
 
 // Mock the database functions
-jest.mock("@/lib/db/config-service", () => ({
+jest.mock('@/lib/db/config-service', () => ({
   getComplianceRules: mockDbFunctions.getComplianceRules,
-}))
+}));
 
-jest.mock("@/lib/db/models/submission", () => ({
+jest.mock('@/lib/db/models/submission', () => ({
   getSubmissionsByStatus: mockDbFunctions.getSubmissionsByStatus,
-}))
+}));
 
 // Import the API handler after mocking dependencies
-import { GET } from "@/app/api/moderation/metrics/route"
+import { GET } from '@/app/api/moderation/metrics/route';
 
-describe("Moderation Metrics API Route", () => {
+describe('Moderation Metrics API Route', () => {
   beforeEach(() => {
-    resetMocks()
-    jest.clearAllMocks()
-  })
+    resetMocks();
+    jest.clearAllMocks();
+  });
 
-  it("should require authorization", async () => {
+  it('should require authorization', async () => {
     // Save original BYPASS_AUTH value
-    const originalBypassAuth = process.env.BYPASS_AUTH
+    const originalBypassAuth = process.env.BYPASS_AUTH;
     // Disable bypass for this test
-    process.env.BYPASS_AUTH = "false"
+    process.env.BYPASS_AUTH = 'false';
 
     const request = createMockRequest({
-      method: "GET",
+      method: 'GET',
       // No authorization header
-    })
+    });
 
-    const response = await GET(request)
-    const data = await response.json()
+    const response = await GET(request);
+    const data = await response.json();
 
-    expect(response.status).toBe(401)
+    expect(response.status).toBe(401);
     expect(data).toEqual(
       expect.objectContaining({
-        error: "Unauthorized",
-      }),
-    )
+        error: 'Unauthorized',
+      })
+    );
 
     // Restore original value
-    process.env.BYPASS_AUTH = originalBypassAuth
-  })
+    process.env.BYPASS_AUTH = originalBypassAuth;
+  });
 
-  it("should return metrics data for authorized requests", async () => {
+  it('should return metrics data for authorized requests', async () => {
     const request = createMockRequest({
-      method: "GET",
+      method: 'GET',
       headers: {
-        authorization: "Bearer admin-token",
+        authorization: 'Bearer admin-token',
       },
-    })
+    });
 
-    const response = await GET(request)
-    const data = await response.json()
+    const response = await GET(request);
+    const data = await response.json();
 
-    expect(response.status).toBe(200)
+    expect(response.status).toBe(200);
     expect(data).toEqual(
       expect.objectContaining({
         success: true,
@@ -80,40 +80,39 @@ describe("Moderation Metrics API Route", () => {
           }),
           timestamp: expect.any(String),
         }),
-      }),
-    )
+      })
+    );
 
     // Verify database functions were called
-    expect(mockDbFunctions.getComplianceRules).toHaveBeenCalled()
-    expect(mockDbFunctions.getSubmissionsByStatus).toHaveBeenCalledWith("pending")
-    expect(mockDbFunctions.getSubmissionsByStatus).toHaveBeenCalledWith("review")
-    expect(mockDbFunctions.getSubmissionsByStatus).toHaveBeenCalledWith("approved")
-    expect(mockDbFunctions.getSubmissionsByStatus).toHaveBeenCalledWith("rejected")
-    expect(mockDbFunctions.getSubmissionsByStatus).toHaveBeenCalledWith("licensed")
-  })
+    expect(mockDbFunctions.getComplianceRules).toHaveBeenCalled();
+    expect(mockDbFunctions.getSubmissionsByStatus).toHaveBeenCalledWith('pending');
+    expect(mockDbFunctions.getSubmissionsByStatus).toHaveBeenCalledWith('review');
+    expect(mockDbFunctions.getSubmissionsByStatus).toHaveBeenCalledWith('approved');
+    expect(mockDbFunctions.getSubmissionsByStatus).toHaveBeenCalledWith('rejected');
+    expect(mockDbFunctions.getSubmissionsByStatus).toHaveBeenCalledWith('licensed');
+  });
 
-  it("should handle database errors gracefully", async () => {
+  it('should handle database errors gracefully', async () => {
     // Make the database function throw an error for this test
-    mockDbFunctions.getComplianceRules.mockRejectedValueOnce(new Error("Database failure"))
+    mockDbFunctions.getComplianceRules.mockRejectedValueOnce(new Error('Database failure'));
 
     const request = createMockRequest({
-      method: "GET",
+      method: 'GET',
       headers: {
-        authorization: "Bearer admin-token",
+        authorization: 'Bearer admin-token',
       },
-    })
+    });
 
-    const response = await GET(request)
-    const data = await response.json()
+    const response = await GET(request);
+    const data = await response.json();
 
-    expect(response.status).toBe(500)
+    expect(response.status).toBe(500);
     expect(data).toEqual(
       expect.objectContaining({
         success: false,
-        error: "Failed to fetch moderation metrics",
-        details: "Database failure",
-      }),
-    )
-  })
-})
-
+        error: 'Failed to fetch moderation metrics',
+        details: 'Database failure',
+      })
+    );
+  });
+});

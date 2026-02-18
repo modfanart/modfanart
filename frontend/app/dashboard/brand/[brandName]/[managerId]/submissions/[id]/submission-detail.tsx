@@ -1,9 +1,9 @@
-"use client"
+'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface SubmissionDetailProps {
-  submission: any // Replace 'any' with a more specific type if available
+  submission: any; // Replace 'any' with a more specific type if available
 }
 
 const SubmissionDetail = ({ submission }: SubmissionDetailProps) => {
@@ -14,7 +14,7 @@ const SubmissionDetail = ({ submission }: SubmissionDetailProps) => {
           <p>Submission not found.</p>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -30,8 +30,7 @@ const SubmissionDetail = ({ submission }: SubmissionDetailProps) => {
         {/* Add more details as needed */}
       </CardContent>
     </Card>
-  )
-}
+  );
+};
 
-export default SubmissionDetail
-
+export default SubmissionDetail;

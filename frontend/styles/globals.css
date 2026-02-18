@@ -13,7 +13,7 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 270 100% 64%;           /* your purple */
+    --primary: 270 100% 64%; /* your purple */
     --primary-foreground: 0 0% 98%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -26,7 +26,7 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 270 100% 64%;
-    --radius: 0.75rem;                 /* slightly larger radius for premium feel */
+    --radius: 0.75rem; /* slightly larger radius for premium feel */
   }
 
   .dark {
@@ -59,7 +59,12 @@
     @apply bg-background text-foreground antialiased;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply tracking-tight;
   }
 }
@@ -69,9 +74,10 @@
 ───────────────────────────────────────────────── */
 @layer utilities {
   .hero-gradient {
-    background: radial-gradient(ellipse at top left, rgba(167, 139, 255, 0.18) 0%, transparent 50%),
-                radial-gradient(ellipse at bottom right, rgba(139, 92, 246, 0.15) 0%, transparent 60%),
-                hsl(var(--background));
+    background:
+      radial-gradient(ellipse at top left, rgba(167, 139, 255, 0.18) 0%, transparent 50%),
+      radial-gradient(ellipse at bottom right, rgba(139, 92, 246, 0.15) 0%, transparent 60%),
+      hsl(var(--background));
   }
 
   .highlight-glow {
@@ -95,7 +101,7 @@
 .swiper-button-next,
 .swiper-button-prev {
   color: white !important;
-  background: rgba(0,0,0,0.4) !important;
+  background: rgba(0, 0, 0, 0.4) !important;
   width: 48px !important;
   height: 48px !important;
   border-radius: 9999px !important;
@@ -111,11 +117,11 @@
   @apply rounded-full px-6 py-2.5 text-sm font-medium transition-all duration-200;
 }
 
-.tab-pill[data-active="true"] {
+.tab-pill[data-active='true'] {
   @apply bg-primary text-primary-foreground shadow-md scale-105;
 }
 
-.tab-pill:hover:not([data-active="true"]) {
+.tab-pill:hover:not([data-active='true']) {
   @apply bg-muted/80 text-foreground;
 }
 

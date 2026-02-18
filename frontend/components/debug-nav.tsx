@@ -1,23 +1,24 @@
-"use client"
+'use client';
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { cn } from "@/lib/utils"
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+
+import { cn } from '@/lib/utils';
 
 // Debug navigation links
 const debugLinks = [
-  { href: "/debug/auth", label: "Auth Debug" },
-  { href: "/debug/ai", label: "AI Services" },
-  { href: "/debug/forms", label: "Form Tests" },
-  { href: "/debug/stripe", label: "Stripe Tests" },
-]
+  { href: '/debug/auth', label: 'Auth Debug' },
+  { href: '/debug/ai', label: 'AI Services' },
+  { href: '/debug/forms', label: 'Form Tests' },
+  { href: '/debug/stripe', label: 'Stripe Tests' },
+];
 
 export function DebugNav() {
-  const pathname = usePathname()
+  const pathname = usePathname();
 
   // Only render in development environment
-  if (process.env.NODE_ENV !== "development" && !process.env.NEXT_PUBLIC_DEBUG) {
-    return null
+  if (process.env.NODE_ENV !== 'development' && !process.env.NEXT_PUBLIC_DEBUG) {
+    return null;
   }
 
   return (
@@ -32,8 +33,8 @@ export function DebugNav() {
                   key={link.href}
                   href={link.href}
                   className={cn(
-                    "text-sm font-medium transition-colors hover:text-yellow-900",
-                    pathname === link.href ? "text-yellow-900 underline" : "text-yellow-700",
+                    'text-sm font-medium transition-colors hover:text-yellow-900',
+                    pathname === link.href ? 'text-yellow-900 underline' : 'text-yellow-700'
                   )}
                 >
                   {link.label}
@@ -44,6 +45,5 @@ export function DebugNav() {
         </div>
       </div>
     </div>
-  )
+  );
 }
-

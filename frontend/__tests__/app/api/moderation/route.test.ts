@@ -1,18 +1,18 @@
-import { describe, expect, it, jest, beforeEach } from "@jest/globals"
-import { resetMocks } from "../../../utils/test-utils"
-import { mockDbFunctions } from "../../../mocks/db-mocks"
-import { createMockRequest } from "../../../utils/test-utils"
+import { describe, expect, it, jest, beforeEach } from '@jest/globals';
+import { resetMocks } from '../../../utils/test-utils';
+import { mockDbFunctions } from '../../../mocks/db-mocks';
+import { createMockRequest } from '../../../utils/test-utils';
 
 // Mock the database functions
-jest.mock("@/lib/db/models/user", () => ({
+jest.mock('@/lib/db/models/user', () => ({
   getUserById: mockDbFunctions.getUserById,
-}))
+}));
 
-jest.mock("@/lib/db/models/submission", () => ({
+jest.mock('@/lib/db/models/submission', () => ({
   createSubmission: mockDbFunctions.createSubmission,
-}))
+}));
 
-jest.mock("@/lib/services/moderation-service", () => ({
+jest.mock('@/lib/services/moderation-service', () => ({
   analyzeSubmission: jest.fn().mockImplementation(async () => ({
     aiDetection: {
       score: 0.2,
@@ -21,114 +21,114 @@ jest.mock("@/lib/services/moderation-service", () => ({
       humanVerified: false,
     },
     contentAnalysis: {
-      ipCompliance: { score: 3, issues: [], riskLevel: "low" },
-      contentSafety: { score: 2, issues: [], riskLevel: "low" },
-      brandGuidelines: { adherence: "high", issues: [], notes: "" },
+      ipCompliance: { score: 3, issues: [], riskLevel: 'low' },
+      contentSafety: { score: 2, issues: [], riskLevel: 'low' },
+      brandGuidelines: { adherence: 'high', issues: [], notes: '' },
       overallRiskScore: 2,
-      recommendation: "approve",
-      reasoningSummary: "Content appears to be original and safe",
+      recommendation: 'approve',
+      reasoningSummary: 'Content appears to be original and safe',
     },
-    finalRecommendation: "approve",
+    finalRecommendation: 'approve',
     needsHumanReview: false,
   })),
-}))
+}));
 
 // Import the API handler after mocking dependencies
-import { POST } from "@/app/api/moderation/route"
-import { analyzeSubmission } from "@/lib/services/moderation-service"
+import { POST } from '@/app/api/moderation/route';
+import { analyzeSubmission } from '@/lib/services/moderation-service';
 
-describe("Moderation API Route", () => {
+describe('Moderation API Route', () => {
   beforeEach(() => {
-    resetMocks()
-    jest.clearAllMocks()
-  })
+    resetMocks();
+    jest.clearAllMocks();
+  });
 
-  it("should validate request body and return 400 for invalid requests", async () => {
+  it('should validate request body and return 400 for invalid requests', async () => {
     const request = createMockRequest({
-      method: "POST",
+      method: 'POST',
       body: {
         // Missing required fields
-        title: "Test Submission",
+        title: 'Test Submission',
       },
-    })
+    });
 
-    const response = await POST(request)
-    const data = await response.json()
+    const response = await POST(request);
+    const data = await response.json();
 
-    expect(response.status).toBe(400)
+    expect(response.status).toBe(400);
     expect(data).toEqual(
       expect.objectContaining({
         success: false,
         errors: expect.any(Array),
-      }),
-    )
-  })
+      })
+    );
+  });
 
-  it("should return 404 if user is not found", async () => {
+  it('should return 404 if user is not found', async () => {
     // Override the mock to return null for this test
-    mockDbFunctions.getUserById.mockResolvedValueOnce(null)
+    mockDbFunctions.getUserById.mockResolvedValueOnce(null);
 
     const request = createMockRequest({
-      method: "POST",
+      method: 'POST',
       body: {
-        title: "Test Submission",
-        description: "Test Description",
-        category: "fan art",
-        originalIp: "Test IP",
-        tags: ["test", "fan art"],
-        imageUrl: "https://example.com/test.jpg",
-        licenseType: "standard",
-        userId: "non-existent-user",
+        title: 'Test Submission',
+        description: 'Test Description',
+        category: 'fan art',
+        originalIp: 'Test IP',
+        tags: ['test', 'fan art'],
+        imageUrl: 'https://example.com/test.jpg',
+        licenseType: 'standard',
+        userId: 'non-existent-user',
       },
-    })
+    });
 
-    const response = await POST(request)
-    const data = await response.json()
+    const response = await POST(request);
+    const data = await response.json();
 
-    expect(response.status).toBe(404)
+    expect(response.status).toBe(404);
     expect(data).toEqual(
       expect.objectContaining({
-        error: "User not found",
-      }),
-    )
-  })
+        error: 'User not found',
+      })
+    );
+  });
 
-  it("should process a valid submission and return analysis results", async () => {
+  it('should process a valid submission and return analysis results', async () => {
     const submissionData = {
-      title: "Test Submission",
-      description: "Test Description",
-      category: "fan art",
-      originalIp: "Test IP",
-      tags: ["test", "fan art"],
-      imageUrl: "https://example.com/test.jpg",
-      licenseType: "standard",
-      userId: "user-123",
-    }
+      title: 'Test Submission',
+      description: 'Test Description',
+      category: 'fan art',
+      originalIp: 'Test IP',
+      tags: ['test', 'fan art'],
+      imageUrl: 'https://example.com/test.jpg',
+      licenseType: 'standard',
+      userId: 'user-123',
+    };
 
     const request = createMockRequest({
-      method: "POST",
+      method: 'POST',
       body: submissionData,
-    })
+    });
 
-    const response = await POST(request)
-    const data = await response.json()
+    const response = await POST(request);
+    const data = await response.json();
 
-    expect(response.status).toBe(200)
+    expect(response.status).toBe(200);
     expect(data).toEqual(
       expect.objectContaining({
         success: true,
         analysis: expect.objectContaining({
           aiDetection: expect.any(Object),
           contentAnalysis: expect.any(Object),
-          finalRecommendation: "approve",
+          finalRecommendation: 'approve',
         }),
         submission: expect.objectContaining({
-          title: "Test Submission",
-          status: "pending", // Approved submissions start as pending
+          title: 'Test Submission',
+          status: 'pending', // Approved submissions start as pending
         }),
         requestId: expect.any(String),
-      }),
-    )
+      })
+    );
 
     // Verify service was called with correct parameters
     expect(analyzeSubmission).toHaveBeenCalledWith(
@@ -137,48 +137,47 @@ describe("Moderation API Route", () => {
       submissionData.category,
       submissionData.originalIp,
       submissionData.tags,
-      submissionData.imageUrl,
-    )
+      submissionData.imageUrl
+    );
 
     // Verify submission was created with correct data
     expect(mockDbFunctions.createSubmission).toHaveBeenCalledWith(
       expect.objectContaining({
         title: submissionData.title,
-        status: "pending",
+        status: 'pending',
         userId: submissionData.userId,
-      }),
-    )
-  })
+      })
+    );
+  });
 
-  it("should handle service errors gracefully", async () => {
+  it('should handle service errors gracefully', async () => {
     // Make the service throw an error for this test
-    ;(analyzeSubmission as jest.Mock).mockRejectedValueOnce(new Error("Service failure"))
+    (analyzeSubmission as jest.Mock).mockRejectedValueOnce(new Error('Service failure'));
 
     const request = createMockRequest({
-      method: "POST",
+      method: 'POST',
       body: {
-        title: "Test Submission",
-        description: "Test Description",
-        category: "fan art",
-        originalIp: "Test IP",
-        tags: ["test", "fan art"],
-        imageUrl: "https://example.com/test.jpg",
-        licenseType: "standard",
-        userId: "user-123",
+        title: 'Test Submission',
+        description: 'Test Description',
+        category: 'fan art',
+        originalIp: 'Test IP',
+        tags: ['test', 'fan art'],
+        imageUrl: 'https://example.com/test.jpg',
+        licenseType: 'standard',
+        userId: 'user-123',
       },
-    })
+    });
 
-    const response = await POST(request)
-    const data = await response.json()
+    const response = await POST(request);
+    const data = await response.json();
 
-    expect(response.status).toBe(500)
+    expect(response.status).toBe(500);
     expect(data).toEqual(
       expect.objectContaining({
         success: false,
-        error: "Failed to process submission",
-        details: "Service failure",
-      }),
-    )
-  })
-})
-
+        error: 'Failed to process submission',
+        details: 'Service failure',
+      })
+    );
+  });
+});

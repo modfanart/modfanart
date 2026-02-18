@@ -1,45 +1,45 @@
-import Link from "next/link"
-import Image from "next/image"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { CheckCircle2, Shield, Zap, ArrowRight, DollarSign } from "lucide-react"
-import { LayoutWrapper } from "@/components/layout-wrapper"
+import Link from 'next/link';
+import Image from 'next/image';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { CheckCircle2, Shield, Zap, ArrowRight, DollarSign } from 'lucide-react';
+import { LayoutWrapper } from '@/components/layout-wrapper';
 
 // Featured artwork data (subset of the full gallery)
 const featuredArtwork = [
   {
-    id: "art-4",
-    title: "Nature Hulk",
-    artist: "Sarah Johnson",
+    id: 'art-4',
+    title: 'Nature Hulk',
+    artist: 'Sarah Johnson',
     imageUrl:
-      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/hulk%20nature-2.jpg-ivaqVZqmxWtiQzqj7KrfCIH3S8XKHP.jpeg",
-    ipOwner: "Marvel Comics",
+      'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/hulk%20nature-2.jpg-ivaqVZqmxWtiQzqj7KrfCIH3S8XKHP.jpeg',
+    ipOwner: 'Marvel Comics',
   },
   {
-    id: "art-8",
-    title: "Ahsoka Tano",
-    artist: "Alex Rivera",
+    id: 'art-8',
+    title: 'Ahsoka Tano',
+    artist: 'Alex Rivera',
     imageUrl:
-      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/ahsoka-FINAL-01%20%282%29-PO2rMTckglJ6t9uWAalnbK7kR10iY9.png",
-    ipOwner: "Lucasfilm",
+      'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/ahsoka-FINAL-01%20%282%29-PO2rMTckglJ6t9uWAalnbK7kR10iY9.png',
+    ipOwner: 'Lucasfilm',
   },
   {
-    id: "art-11",
-    title: "Dark Knight",
-    artist: "Thomas Wayne",
+    id: 'art-11',
+    title: 'Dark Knight',
+    artist: 'Thomas Wayne',
     imageUrl:
-      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Absolute_Batman_low.jpg-jbjBkbHD8un1TKig37wzR4G3RvZFbk.jpeg",
-    ipOwner: "DC Comics",
+      'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Absolute_Batman_low.jpg-jbjBkbHD8un1TKig37wzR4G3RvZFbk.jpeg',
+    ipOwner: 'DC Comics',
   },
   {
-    id: "art-10",
-    title: "Cherry - Cytus II",
-    artist: "Wei Chen",
+    id: 'art-10',
+    title: 'Cherry - Cytus II',
+    artist: 'Wei Chen',
     imageUrl:
-      "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/CHERRY-CYTUS-II.jpg-KZxxwPf0sVDgP8RhQq8p5D6Rm4r1cv.jpeg",
-    ipOwner: "Rayark Inc.",
+      'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/CHERRY-CYTUS-II.jpg-KZxxwPf0sVDgP8RhQq8p5D6Rm4r1cv.jpeg',
+    ipOwner: 'Rayark Inc.',
   },
-]
+];
 
 export default function Home() {
   return (
@@ -55,8 +55,8 @@ export default function Home() {
                     AI-Powered Fan Art Licensing
                   </h1>
                   <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                    Connecting brands, creators, and artists through an automated platform for fan art submission,
-                    licensing, and compliance.
+                    Connecting brands, creators, and artists through an automated platform for fan
+                    art submission, licensing, and compliance.
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
@@ -79,7 +79,10 @@ export default function Home() {
           <div className="container px-4 md:px-6">
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-2xl font-bold tracking-tight">Featured Artwork</h2>
-              <Link href="/gallery/featured" className="flex items-center text-primary hover:underline">
+              <Link
+                href="/gallery/featured"
+                className="flex items-center text-primary hover:underline"
+              >
                 View All <ArrowRight className="ml-1 h-4 w-4" />
               </Link>
             </div>
@@ -89,7 +92,7 @@ export default function Home() {
                   <Card className="overflow-hidden hover:shadow-lg transition-shadow">
                     <div className="aspect-square relative">
                       <Image
-                        src={artwork.imageUrl || "/placeholder.svg"}
+                        src={artwork.imageUrl || '/placeholder.svg'}
                         alt={artwork.title}
                         fill
                         className="object-cover"
@@ -119,7 +122,8 @@ export default function Home() {
                   Powerful Features for All Users
                 </h2>
                 <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Our platform streamlines the fan art submission, review, and licensing process with AI-powered tools.
+                  Our platform streamlines the fan art submission, review, and licensing process
+                  with AI-powered tools.
                 </p>
               </div>
             </div>
@@ -130,12 +134,14 @@ export default function Home() {
                     <Zap className="h-5 w-5" />
                   </div>
                   <CardTitle>AI-Powered Review</CardTitle>
-                  <CardDescription>Automated content moderation and IP violation detection</CardDescription>
+                  <CardDescription>
+                    Automated content moderation and IP violation detection
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <p>
-                    Our AI systems analyze submissions for compliance with brand guidelines, saving time and ensuring
-                    consistency.
+                    Our AI systems analyze submissions for compliance with brand guidelines, saving
+                    time and ensuring consistency.
                   </p>
                 </CardContent>
               </Card>
@@ -149,8 +155,8 @@ export default function Home() {
                 </CardHeader>
                 <CardContent>
                   <p>
-                    Protect intellectual property through official licensing channels while giving fans direct access to
-                    commercial opportunities.
+                    Protect intellectual property through official licensing channels while giving
+                    fans direct access to commercial opportunities.
                   </p>
                 </CardContent>
               </Card>
@@ -164,8 +170,8 @@ export default function Home() {
                 </CardHeader>
                 <CardContent>
                   <p>
-                    Create new revenue streams through licensed fan art while building stronger connections between
-                    creators and their audience.
+                    Create new revenue streams through licensed fan art while building stronger
+                    connections between creators and their audience.
                   </p>
                 </CardContent>
               </Card>
@@ -178,7 +184,9 @@ export default function Home() {
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight">Who Uses Our Platform</h2>
+                <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight">
+                  Who Uses Our Platform
+                </h2>
                 <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
                   Our platform caters to multiple user roles, each with specialized features.
                 </p>
@@ -191,8 +199,8 @@ export default function Home() {
                 </div>
                 <h3 className="text-xl font-bold">Brands & IP Holders</h3>
                 <p className="text-center text-muted-foreground">
-                  Review and approve fan art, manage licenses, and protect IP assets through our comprehensive
-                  dashboard.
+                  Review and approve fan art, manage licenses, and protect IP assets through our
+                  comprehensive dashboard.
                 </p>
                 <Link href="/for-brands">
                   <Button>Learn More</Button>
@@ -204,8 +212,8 @@ export default function Home() {
                 </div>
                 <h3 className="text-xl font-bold">Content Creators</h3>
                 <p className="text-center text-muted-foreground">
-                  Manage fan art related to your content, create monetization opportunities, and engage with your
-                  community.
+                  Manage fan art related to your content, create monetization opportunities, and
+                  engage with your community.
                 </p>
                 <Link href="/for-creators-info">
                   <Button>Learn More</Button>
@@ -217,8 +225,8 @@ export default function Home() {
                 </div>
                 <h3 className="text-xl font-bold">Artists</h3>
                 <p className="text-center text-muted-foreground">
-                  Submit your fan art for official approval, gain exposure, and receive licensing opportunities from
-                  brands.
+                  Submit your fan art for official approval, gain exposure, and receive licensing
+                  opportunities from brands.
                 </p>
                 <Link href="/for-artists">
                   <Button>Learn More</Button>
@@ -233,7 +241,9 @@ export default function Home() {
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight">Ready to Get Started?</h2>
+                <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight">
+                  Ready to Get Started?
+                </h2>
                 <p className="max-w-[600px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
                   Join our platform today and revolutionize the way you manage fan art licensing.
                 </p>
@@ -253,6 +263,5 @@ export default function Home() {
         </section>
       </div>
     </LayoutWrapper>
-  )
+  );
 }
-

@@ -1,42 +1,49 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import Link from "next/link"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
-import { Button } from "@/components/ui/button"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { ArrowLeft } from "lucide-react"
+import { useState } from 'react';
+import Link from 'next/link';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { Button } from '@/components/ui/button';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { ArrowLeft } from 'lucide-react';
 
 const formSchema = z.object({
   email: z.string().email({
-    message: "Please enter a valid email address.",
+    message: 'Please enter a valid email address.',
   }),
-})
+});
 
 export default function ForgotPasswordPage() {
-  const [isLoading, setIsLoading] = useState(false)
-  const [isSubmitted, setIsSubmitted] = useState(false)
-  const [userEmail, setUserEmail] = useState("")
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: "",
+      email: '',
     },
-  })
+  });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsLoading(true)
-    setUserEmail(values.email)
+    setIsLoading(true);
+    setUserEmail(values.email);
 
     // Simulate API call
     setTimeout(() => {
-      setIsLoading(false)
-      setIsSubmitted(true)
-    }, 1500)
+      setIsLoading(false);
+      setIsSubmitted(true);
+    }, 1500);
   }
 
   return (
@@ -51,9 +58,13 @@ export default function ForgotPasswordPage() {
           <p className="text-gray-600 mb-6">
             We've sent a password reset link to <span className="font-medium">{userEmail}</span>
           </p>
-          <p className="mb-8">Please check your email and follow the instructions to reset your password.</p>
+          <p className="mb-8">
+            Please check your email and follow the instructions to reset your password.
+          </p>
           <Link href="/login">
-            <Button className="w-full h-12 bg-black hover:bg-gray-800 text-white">Back to Sign in</Button>
+            <Button className="w-full h-12 bg-black hover:bg-gray-800 text-white">
+              Back to Sign in
+            </Button>
           </Link>
         </div>
       ) : (
@@ -70,21 +81,29 @@ export default function ForgotPasswordPage() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input placeholder="Your email address" type="email" {...field} className="h-12" />
+                      <Input
+                        placeholder="Your email address"
+                        type="email"
+                        {...field}
+                        className="h-12"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              <Button type="submit" className="w-full h-12 bg-black hover:bg-gray-800 text-white" disabled={isLoading}>
-                {isLoading ? "Sending..." : "Reset password"}
+              <Button
+                type="submit"
+                className="w-full h-12 bg-black hover:bg-gray-800 text-white"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Sending...' : 'Reset password'}
               </Button>
             </form>
           </Form>
         </div>
       )}
     </>
-  )
+  );
 }
-
