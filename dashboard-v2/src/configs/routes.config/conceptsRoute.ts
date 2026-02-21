@@ -4,12 +4,11 @@ import { ADMIN, USER } from '@/constants/roles.constant'
 import type { Routes } from '@/@types/routes'
 
 const conceptsRoute: Routes = [
-
     {
         key: 'concepts.customers.customerList',
         path: `${CONCEPTS_PREFIX_PATH}/customers/customer-list`,
         component: lazy(
-            () => import('@/views/concepts/customers/CustomerList'),
+            () => import('@/views/concepts/collections/CollectionList'),
         ),
         authority: [ADMIN, USER],
     },
@@ -17,7 +16,7 @@ const conceptsRoute: Routes = [
         key: 'concepts.customers.customerEdit',
         path: `${CONCEPTS_PREFIX_PATH}/customers/customer-edit/:id`,
         component: lazy(
-            () => import('@/views/concepts/customers/CustomerEdit'),
+            () => import('@/views/concepts/collections/CustomerEdit'),
         ),
         authority: [ADMIN, USER],
         meta: {
@@ -34,7 +33,7 @@ const conceptsRoute: Routes = [
         key: 'concepts.customers.customerCreate',
         path: `${CONCEPTS_PREFIX_PATH}/customers/customer-create`,
         component: lazy(
-            () => import('@/views/concepts/customers/CustomerCreate'),
+            () => import('@/views/concepts/collections/CollectionCreate'),
         ),
         authority: [ADMIN, USER],
         meta: {
@@ -51,7 +50,7 @@ const conceptsRoute: Routes = [
         key: 'concepts.customers.customerDetails',
         path: `${CONCEPTS_PREFIX_PATH}/customers/customer-details/:id`,
         component: lazy(
-            () => import('@/views/concepts/customers/CustomerDetails'),
+            () => import('@/views/concepts/collections/CustomerDetails'),
         ),
         authority: [ADMIN, USER],
         meta: {
@@ -169,7 +168,7 @@ const conceptsRoute: Routes = [
             },
             pageContainerType: 'contained',
         },
-    }
+    },
 ]
 
 export default conceptsRoute

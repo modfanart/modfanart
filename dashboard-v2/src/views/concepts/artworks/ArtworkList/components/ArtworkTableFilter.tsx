@@ -1,214 +1,219 @@
+// src/features/artworks/components/ArtworkTableFilter.tsx
 import { useState } from 'react'
 import Button from '@/components/ui/Button'
 import Drawer from '@/components/ui/Drawer'
 import Checkbox from '@/components/ui/Checkbox'
 import Badge from '@/components/ui/Badge'
-import Select, { Option as DefaultOption } from '@/components/ui/Select'
-import { components } from 'react-select'
+import Select, { components } from '@/components/ui/Select'
 import { Form, FormItem } from '@/components/ui/Form'
-import NumericInput from '@/components/shared/NumericInput'
-import useProductList from '../hooks/useProductList'
 import { TbFilter, TbMinus } from 'react-icons/tb'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import type { ZodType } from 'zod'
-import type { ControlProps, OptionProps } from 'react-select'
 import classNames from '@/utils/classNames'
 
+import { useGetAllCategoriesQuery } from '@/services/artworkApi'
+
+const { Control, Option: DefaultOption } = components
+
 type FormSchema = {
-    minAmount: number | string
-    maxAmount: number | string
-    productStatus: string
-    productType: Array<string>
+    status: string // '' = all
+    categories: string[] // selected category slugs or ids
+    // Optional later: minViews?: number, maxViews?: number
 }
 
-type Option = {
+type StatusOption = {
     value: string
     label: string
-    className: string
+    colorClass: string
 }
 
-const { Control } = components
-
-const productStatusOption: Option[] = [
-{ value: 'published', label: 'منتشر شده', className: 'bg-emerald-500' },
-{ value: 'inactive', label: 'غیرفعال', className: 'bg-red-500' },
-{ value: 'scheduled', label: 'برنامه‌ریزی شده', className: 'bg-amber-500' },
-{ value: 'draft', label: 'پیش‌نویس', className: 'bg-gray-400' },
+const statusOptions: StatusOption[] = [
+    { value: '', label: 'All statuses', colorClass: 'bg-gray-400' },
+    { value: 'published', label: 'Published', colorClass: 'bg-emerald-500' },
+    { value: 'draft', label: 'Draft', colorClass: 'bg-amber-500' },
+    {
+        value: 'moderation_pending',
+        label: 'Under Review',
+        colorClass: 'bg-blue-500',
+    },
+    { value: 'rejected', label: 'Rejected', colorClass: 'bg-red-500' },
+    { value: 'archived', label: 'Archived', colorClass: 'bg-gray-600' },
 ]
-const productTypeList = ['کیف‌ها', 'پوشاک', 'دستگاه‌ها', 'کفش‌ها', 'ساعت‌ها']
 
+const CustomOption = (props: any) => (
+    <DefaultOption {...props}>
+        <span className="flex items-center gap-2">
+            <Badge className={props.data.colorClass} />
+            <span>{props.label}</span>
+        </span>
+    </DefaultOption>
+)
 
-const CustomSelectOption = (props: OptionProps<Option>) => {
-    return (
-        <DefaultOption<Option>
-            {...props}
-            customLabel={(data, label) => (
-                <span className="flex items-center gap-2">
-                    <Badge className={data.className} />
-                    <span className="ml-2 rtl:mr-2">{label}</span>
-                </span>
-            )}
-        />
-    )
-}
-
-const CustomControl = ({ children, ...props }: ControlProps<Option>) => {
+const CustomControl = ({ children, ...props }: any) => {
     const selected = props.getValue()[0]
     return (
         <Control {...props}>
             {selected && (
-                <Badge className={classNames('mr-4', selected.className)} />
+                <Badge className={classNames('mr-3', selected.colorClass)} />
             )}
             {children}
         </Control>
     )
 }
 
-const validationSchema: ZodType<FormSchema> = z.object({
-    minAmount: z.union([z.string(), z.number()]),
-    maxAmount: z.union([z.string(), z.number()]),
-    productStatus: z.string(),
-    productType: z.array(z.string()),
+const validationSchema = z.object({
+    status: z.string(),
+    categories: z.array(z.string()),
+    // minViews: z.number().optional(),
+    // maxViews: z.number().optional(),
 })
 
-const ProductTableFilter = () => {
-    const [filterIsOpen, setFilterIsOpen] = useState(false)
+type ArtworkTableFilterProps = {
+    onApplyFilters?: (values: FormSchema) => void
+}
 
-    const { filterData, setFilterData } = useProductList()
+const ArtworkTableFilter = ({ onApplyFilters }: ArtworkTableFilterProps) => {
+    const [isOpen, setIsOpen] = useState(false)
 
-    const { handleSubmit, control, getValues } = useForm<FormSchema>({
-        defaultValues: filterData,
+    const { data: categories = [] } = useGetAllCategoriesQuery(
+        { activeOnly: true },
+        { skip: !isOpen },
+    )
+
+    const categoryOptions = categories.map((cat) => ({
+        value: cat.slug || cat.id,
+        label: cat.name,
+    }))
+
+    const form = useForm<FormSchema>({
         resolver: zodResolver(validationSchema),
+        defaultValues: {
+            status: '',
+            categories: [],
+        },
     })
 
+    const { handleSubmit, control, reset } = form
+
     const onSubmit = (values: FormSchema) => {
-        setFilterData(values)
-        setFilterIsOpen(false)
+        const cleanValues = {
+            ...values,
+            status: values.status || undefined,
+        }
+        onApplyFilters?.(cleanValues)
+        setIsOpen(false)
+    }
+
+    const handleReset = () => {
+        reset({ status: '', categories: [] })
+        onApplyFilters?.({ status: undefined, categories: [] })
+        setIsOpen(false)
     }
 
     return (
         <>
-        <Button icon={<TbFilter />} onClick={() => setFilterIsOpen(true)}>
-            فیلتر
-        </Button>
-        <Drawer
-            title="فیلتر"
-            isOpen={filterIsOpen}
-            onClose={() => setFilterIsOpen(false)}
-            onRequestClose={() => setFilterIsOpen(false)}
-        >
-            <Form
-                className="h-full"
-                containerClassName="flex flex-col justify-between h-full"
-                onSubmit={handleSubmit(onSubmit)}
+            <Button
+                icon={<TbFilter className="text-lg" />}
+                variant="default"
+                onClick={() => setIsOpen(true)}
             >
-                <div>
-                    <FormItem label="قیمت محصول">
-                        <div className="flex items-center gap-2">
+                Filter Artworks
+            </Button>
+
+            <Drawer
+                title="Filter Artworks"
+                isOpen={isOpen}
+                onClose={() => setIsOpen(false)}
+                footer={
+                    <div className="flex gap-2 w-full">
+                        <Button
+                            variant="solid"
+                            type="submit"
+                            form="filter-form"
+                            block
+                        >
+                            Apply Filters
+                        </Button>
+                        <Button variant="outline" onClick={handleReset} block>
+                            Clear
+                        </Button>
+                    </div>
+                }
+            >
+                <Form
+                    id="filter-form"
+                    className="h-full flex flex-col"
+                    onSubmit={handleSubmit(onSubmit)}
+                >
+                    <div className="flex-1 space-y-6">
+                        {/* Status */}
+                        <FormItem label="Artwork Status">
                             <Controller
-                                name="minAmount"
+                                name="status"
                                 control={control}
                                 render={({ field }) => (
-                                    <NumericInput
-                                        thousandSeparator
-                                        type="text"
-                                        inputPrefix="$"
-                                        autoComplete="off"
-                                        placeholder="0.00"
-                                        value={field.value}
-                                        max={getValues('maxAmount')}
-                                        isAllowed={(values) => {
-                                            const { floatValue } = values
-                                            return (
-                                                (floatValue || 0) <=
-                                                (getValues('maxAmount') as number)
-                                            )
+                                    <Select
+                                        options={statusOptions}
+                                        value={
+                                            statusOptions.find(
+                                                (opt) =>
+                                                    opt.value === field.value,
+                                            ) || null
+                                        }
+                                        components={{
+                                            Option: CustomOption,
+                                            Control: CustomControl,
                                         }}
-                                        onChange={(e) =>
-                                            field.onChange(e.target.value)
+                                        placeholder="Select status..."
+                                        isClearable
+                                        onChange={(opt) =>
+                                            field.onChange(opt ? opt.value : '')
                                         }
                                     />
                                 )}
                             />
-                            <span>
-                                <TbMinus />
-                            </span>
+                        </FormItem>
+
+                        {/* Categories */}
+                        <FormItem label="Categories">
                             <Controller
-                                name="maxAmount"
-                                control={control}
-                                render={({ field }) => (
-                                    <NumericInput
-                                        thousandSeparator
-                                        type="text"
-                                        inputPrefix="$"
-                                        autoComplete="off"
-                                        placeholder="0.00"
-                                        value={field.value}
-                                        onChange={field.onChange}
-                                    />
-                                )}
-                            />
-                        </div>
-                    </FormItem>
-                    <FormItem label="وضعیت محصول">
-                        <Controller
-                            name="productStatus"
-                            control={control}
-                            render={({ field }) => (
-                                <Select<Option>
-                                    options={productStatusOption}
-                                    {...field}
-                                    value={productStatusOption.filter(
-                                        (option) => option.value === field.value
-                                    )}
-                                    components={{
-                                        Option: CustomSelectOption,
-                                        Control: CustomControl,
-                                    }}
-                                    onChange={(option) =>
-                                        field.onChange(option?.value)
-                                    }
-                                />
-                            )}
-                        />
-                    </FormItem>
-                    <FormItem label="نوع محصول">
-                        <div className="mt-4">
-                            <Controller
-                                name="productType"
+                                name="categories"
                                 control={control}
                                 render={({ field }) => (
                                     <Checkbox.Group
                                         vertical
-                                        className="flex"
+                                        className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2"
                                         {...field}
                                     >
-                                        {productTypeList.map((type, index) => (
+                                        {categoryOptions.map((cat) => (
                                             <Checkbox
-                                                key={type + index}
-                                                name={field.name}
-                                                value={type}
-                                                className="justify-between flex-row-reverse heading-text"
+                                                key={cat.value}
+                                                value={cat.value}
+                                                className="justify-between flex-row-reverse"
                                             >
-                                                {type}
+                                                {cat.label}
                                             </Checkbox>
                                         ))}
                                     </Checkbox.Group>
                                 )}
                             />
-                        </div>
-                    </FormItem>
-                </div>
-                <Button variant="solid" type="submit">
-                    جستجو
-                </Button>
-            </Form>
-        </Drawer>
-    </>
-    
+                        </FormItem>
+
+                        {/* Uncomment if you later add views range filter
+            <FormItem label="Views Range">
+              <div className="flex items-center gap-3">
+                <Controller name="minViews" ... />
+                <TbMinus />
+                <Controller name="maxViews" ... />
+              </div>
+            </FormItem>
+            */}
+                    </div>
+                </Form>
+            </Drawer>
+        </>
     )
 }
 
-export default ProductTableFilter
+export default ArtworkTableFilter

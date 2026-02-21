@@ -1,10 +1,9 @@
+// src/features/users/components/UserListTableFilter.tsx
 import { useState } from 'react'
 import Button from '@/components/ui/Button'
 import Dialog from '@/components/ui/Dialog'
 import Checkbox from '@/components/ui/Checkbox'
-import Input from '@/components/ui/Input'
 import { Form, FormItem } from '@/components/ui/Form'
-import useCustomerList from '../hooks/useCustomerList'
 import { TbFilter } from 'react-icons/tb'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -12,102 +11,149 @@ import { z } from 'zod'
 import type { ZodType } from 'zod'
 
 type FormSchema = {
-    purchasedProducts: string
-    purchaseChannel: Array<string>
+    status: string // '' = all
+    roles: string[] // selected role names / ids
 }
 
-const channelList = [
-    "خرده فروشی ها",
-    "خرده فروشان آنلاین",
-    'فروشندگان',
-    "برنامه های موبایل",
-    "فروش مستقیم",
+const statusOptions = [
+    { value: '', label: 'All Statuses' },
+    { value: 'active', label: 'Active' },
+    { value: 'suspended', label: 'Suspended' },
+    { value: 'pending_verification', label: 'Pending Verification' },
+    { value: 'deactivated', label: 'Deactivated' },
+]
+
+const roleOptions = [
+    'admin',
+    'moderator',
+    'user',
+    'guest',
+    // Add more roles based on your actual system
 ]
 
 const validationSchema: ZodType<FormSchema> = z.object({
-    purchasedProducts: z.string(),
-    purchaseChannel: z.array(z.string()),
+    status: z.string(),
+    roles: z.array(z.string()),
 })
 
-const CustomerListTableFilter = () => {
-    const [dialogIsOpen, setIsOpen] = useState(false)
+type UserListTableFilterProps = {
+    // Recommended: controlled from parent
+    onApply?: (filters: FormSchema) => void
+}
 
-    const { filterData, setFilterData } = useCustomerList()
+const UserListTableFilter = ({ onApply }: UserListTableFilterProps) => {
+    const [isOpen, setIsOpen] = useState(false)
 
-    const openDialog = () => {
-        setIsOpen(true)
-    }
+    const form = useForm<FormSchema>({
+        resolver: zodResolver(validationSchema),
+        defaultValues: {
+            status: '',
+            roles: [],
+        },
+    })
 
-    const onDialogClose = () => {
+    const { handleSubmit, control, reset } = form
+
+    const onSubmit = (values: FormSchema) => {
+        // Normalize empty status to undefined (API-friendly)
+        const clean = {
+            ...values,
+            status: values.status || undefined,
+        }
+        onApply?.(clean)
         setIsOpen(false)
     }
 
-    const { handleSubmit, reset, control } = useForm<FormSchema>({
-        defaultValues: filterData,
-        resolver: zodResolver(validationSchema),
-    })
-
-    const onSubmit = (values: FormSchema) => {
-        setFilterData(values)
+    const handleReset = () => {
+        reset({ status: '', roles: [] })
+        onApply?.({ status: undefined, roles: [] })
         setIsOpen(false)
     }
 
     return (
         <>
-            <Button icon={<TbFilter />} onClick={() => openDialog()}>
-                فیلتر کنید
-            </Button>
-            <Dialog
-                isOpen={dialogIsOpen}
-                onClose={onDialogClose}
-                onRequestClose={onDialogClose}
+            <Button
+                icon={<TbFilter className="text-lg" />}
+                variant="default"
+                onClick={() => setIsOpen(true)}
             >
-                <h4 className="mb-4">فیلتر کنید</h4>
+                Filter Users
+            </Button>
+
+            <Dialog
+                isOpen={isOpen}
+                onClose={() => setIsOpen(false)}
+                onRequestClose={() => setIsOpen(false)}
+                width="md"
+            >
+                <h4 className="mb-5">Filter Users</h4>
+
                 <Form onSubmit={handleSubmit(onSubmit)}>
-                    <FormItem label="محصولات">
+                    <FormItem label="Account Status">
                         <Controller
-                            name="purchasedProducts"
+                            name="status"
                             control={control}
                             render={({ field }) => (
-                                <Input
-                                    type="text"
-                                    autoComplete="off"
-                                    placeholder="جستجو بر اساس محصول خریداری شده"
-                                    {...field}
-                                />
+                                <div className="flex flex-wrap gap-3 mt-2">
+                                    {statusOptions.map((opt) => (
+                                        <Checkbox
+                                            key={opt.value}
+                                            checked={field.value === opt.value}
+                                            onChange={() =>
+                                                field.onChange(opt.value)
+                                            }
+                                            className="flex items-center gap-2"
+                                        >
+                                            {opt.label}
+                                        </Checkbox>
+                                    ))}
+                                </div>
                             )}
                         />
                     </FormItem>
-                    <FormItem label="کانال خرید">
+
+                    <FormItem label="Roles" className="mt-6">
                         <Controller
-                            name="purchaseChannel"
+                            name="roles"
                             control={control}
                             render={({ field }) => (
                                 <Checkbox.Group
                                     vertical
-                                    className="flex mt-4"
+                                    className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2"
                                     {...field}
                                 >
-                                    {channelList.map((source, index) => (
+                                    {roleOptions.map((role) => (
                                         <Checkbox
-                                            key={source + index}
-                                            name={field.name}
-                                            value={source}
+                                            key={role}
+                                            value={role}
                                             className="justify-between flex-row-reverse heading-text"
                                         >
-                                            {source}
+                                            {role === 'admin'
+                                                ? 'Admin'
+                                                : role === 'moderator'
+                                                  ? 'Moderator'
+                                                  : role === 'user'
+                                                    ? 'Regular User'
+                                                    : role === 'guest'
+                                                      ? 'Guest'
+                                                      : role}
                                         </Checkbox>
                                     ))}
                                 </Checkbox.Group>
                             )}
                         />
                     </FormItem>
-                    <div className="flex justify-end items-center gap-2 mt-4">
-                        <Button type="button" onClick={() => reset()}>
-                            بازنشانی کنید
+
+                    <div className="flex justify-end gap-3 mt-8">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleReset}
+                        >
+                            Reset
                         </Button>
                         <Button type="submit" variant="solid">
-                            درخواست کنید
+                            Apply Filters
                         </Button>
                     </div>
                 </Form>
@@ -116,4 +162,4 @@ const CustomerListTableFilter = () => {
     )
 }
 
-export default CustomerListTableFilter
+export default UserListTableFilter
