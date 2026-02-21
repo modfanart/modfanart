@@ -1,184 +1,106 @@
 import { useMemo } from 'react'
 import Card from '@/components/ui/Card'
 import Input from '@/components/ui/Input'
-import Select, { Option as DefaultOption } from '@/components/ui/Select'
-import Avatar from '@/components/ui/Avatar'
+import Textarea from '@/components/ui/Textarea'
 import { FormItem } from '@/components/ui/Form'
-import NumericInput from '@/components/shared/NumericInput'
-import { countryList } from '@/constants/countries.constant'
 import { Controller } from 'react-hook-form'
-import { components } from 'react-select'
 import type { FormSectionBaseProps } from './types'
-import type { ControlProps, OptionProps } from 'react-select'
 
-type OverviewSectionProps = FormSectionBaseProps
-
-type CountryOption = {
-    label: string
-    dialCode: string
-    value: string
-}
-
-const { Control } = components
-
-const CustomSelectOption = (props: OptionProps<CountryOption>) => {
-    return (
-        <DefaultOption<CountryOption>
-            {...props}
-            customLabel={(data) => (
-                <span className="flex items-center gap-2">
-                    <Avatar
-                        shape="circle"
-                        size={20}
-                        src={`/img/countries/${data.value}.png`}
-                    />
-                    <span>{data.dialCode}</span>
-                </span>
-            )}
-        />
-    )
-}
-
-const CustomControl = ({ children, ...props }: ControlProps<CountryOption>) => {
-    const selected = props.getValue()[0]
-    return (
-        <Control {...props}>
-            {selected && (
-                <Avatar
-                    className="ltr:ml-4 rtl:mr-4"
-                    shape="circle"
-                    size={20}
-                    src={`/img/countries/${selected.value}.png`}
-                />
-            )}
-            {children}
-        </Control>
-    )
-}
-
-const OverviewSection = ({ control, errors }: OverviewSectionProps) => {
-    const dialCodeList = useMemo(() => {
-        const newCountryList: Array<CountryOption> = JSON.parse(
-            JSON.stringify(countryList),
-        )
-
-        return newCountryList.map((country) => {
-            country.label = country.dialCode
-            return country
-        })
-    }, [])
+const OverviewSection = ({ control, errors }: FormSectionBaseProps) => {
+    // Optional: auto-slug generation can be added here later
+    // e.g. watch("name") → generate slug → setValue("slug", ...)
 
     return (
         <Card>
-            <h4 className="mb-6">نمای کلی</h4>
-            <div className="grid md:grid-cols-2 gap-4">
+            <h4 className="mb-6">Brand Overview</h4>
+
+            <div className="grid md:grid-cols-2 gap-5">
+                {/* Brand Name */}
                 <FormItem
-                    label="نام"
-                    invalid={Boolean(errors.firstName)}
-                    errorMessage={errors.firstName?.message}
+                    label="Brand Name"
+                    invalid={Boolean(errors.name)}
+                    errorMessage={errors.name?.message}
+                    asterisk
                 >
                     <Controller
-                        name="firstName"
+                        name="name"
                         control={control}
                         render={({ field }) => (
                             <Input
                                 type="text"
                                 autoComplete="off"
-                                placeholder="نام"
+                                placeholder="e.g. Nike Iran, Adidas Original, ..."
                                 {...field}
                             />
                         )}
                     />
                 </FormItem>
+
+                {/* Slug */}
                 <FormItem
-                    label="نام کاربری"
-                    invalid={Boolean(errors.lastName)}
-                    errorMessage={errors.lastName?.message}
+                    label="Slug (URL Identifier)"
+                    invalid={Boolean(errors.slug)}
+                    errorMessage={errors.slug?.message}
+                    asterisk
+                    extraHelp="Used in the brand's page URL (lowercase letters, numbers, hyphens only)"
                 >
                     <Controller
-                        name="lastName"
+                        name="slug"
                         control={control}
                         render={({ field }) => (
                             <Input
                                 type="text"
                                 autoComplete="off"
-                                placeholder="نام خانوادگی"
+                                placeholder="e.g. nike-iran, adidas-original"
+                                dir="ltr"
+                                className="font-mono"
                                 {...field}
                             />
                         )}
                     />
                 </FormItem>
             </div>
+
+            {/* Official Website */}
             <FormItem
-                label="ایمیل"
-                invalid={Boolean(errors.email)}
-                errorMessage={errors.email?.message}
+                label="Official Website"
+                invalid={Boolean(errors.website)}
+                errorMessage={errors.website?.message}
             >
                 <Controller
-                    name="email"
+                    name="website"
                     control={control}
                     render={({ field }) => (
                         <Input
-                            type="email"
+                            type="url"
                             autoComplete="off"
-                            placeholder="ایمیل"
+                            placeholder="https://www.example.com"
+                            dir="ltr"
                             {...field}
                         />
                     )}
                 />
             </FormItem>
-            <div className="flex items-end gap-4 w-full">
-                <FormItem
-                    invalid={
-                        Boolean(errors.phoneNumber) || Boolean(errors.dialCode)
-                    }
-                >
-                    <label className="form-label mb-2">شماره تلفن</label>
-                    <Controller
-                        name="dialCode"
-                        control={control}
-                        render={({ field }) => (
-                            <Select<CountryOption>
-                                options={dialCodeList}
-                                {...field}
-                                className="w-[150px]"
-                                components={{
-                                    Option: CustomSelectOption,
-                                    Control: CustomControl,
-                                }}
-                                placeholder=""
-                                value={dialCodeList.filter(
-                                    (option) => option.dialCode === field.value,
-                                )}
-                                onChange={(option) =>
-                                    field.onChange(option?.dialCode)
-                                }
-                            />
-                        )}
-                    />
-                </FormItem>
-                <FormItem
-                    className="w-full"
-                    invalid={
-                        Boolean(errors.phoneNumber) || Boolean(errors.dialCode)
-                    }
-                    errorMessage={errors.phoneNumber?.message}
-                >
-                    <Controller
-                        name="phoneNumber"
-                        control={control}
-                        render={({ field }) => (
-                            <NumericInput
-                                autoComplete="off"
-                                placeholder="شماره تلفن"
-                                value={field.value}
-                                onChange={field.onChange}
-                                onBlur={field.onBlur}
-                            />
-                        )}
-                    />
-                </FormItem>
-            </div>
+
+            {/* Short Description / Tagline */}
+            <FormItem
+                label="Brand Description"
+                invalid={Boolean(errors.description)}
+                errorMessage={errors.description?.message}
+                extraHelp="Keep it short – 2–3 sentences max. Shown on the main brand page."
+            >
+                <Controller
+                    name="description"
+                    control={control}
+                    render={({ field }) => (
+                        <Textarea
+                            placeholder="Specialized sportswear brand focused on quality and modern design..."
+                            rows={3}
+                            {...field}
+                        />
+                    )}
+                />
+            </FormItem>
         </Card>
     )
 }

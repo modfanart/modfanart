@@ -1,30 +1,45 @@
-import useCustomerList from '../hooks/useCustomerList'
-import CustomerListSearch from './CustomerListSearch'
-import CustomerTableFilter from './CustomerListTableFilter'
-import cloneDeep from 'lodash/cloneDeep'
+// src/features/users/components/UserListTableTools.tsx
+import { useState, useEffect } from 'react'
+import UserListSearch from './UserListSearch'
+import UserListTableFilter from './UserListTableFilter'
+import useDebounce from '@/utils/hooks/useDebounce'
 
-const CustomersListTableTools = () => {
-    const { tableData, setTableData } = useCustomerList()
+type UserListTableToolsProps = {
+    onSearchChange: (search: string) => void
+    onFiltersChange: (filters: { status?: string; roles?: string[] }) => void
+}
 
-    const handleInputChange = (val: string) => {
-        const newTableData = cloneDeep(tableData)
-        newTableData.query = val
-        newTableData.pageIndex = 1
-        if (typeof val === 'string' && val.length > 1) {
-            setTableData(newTableData)
-        }
+const UserListTableTools = ({
+    onSearchChange,
+    onFiltersChange,
+}: UserListTableToolsProps) => {
+    // Local controlled search value
+    const [searchValue, setSearchValue] = useState('')
 
-        if (typeof val === 'string' && val.length === 0) {
-            setTableData(newTableData)
-        }
-    }
+    // Debounce before notifying parent (prevents query spam)
+    const debouncedSearch = useDebounce(searchValue.trim(), 500)
+
+    // Notify parent when debounced value changes
+    useEffect(() => {
+        onSearchChange(debouncedSearch)
+    }, [debouncedSearch, onSearchChange])
+
+    // Optional: reset page to 1 when search changes (common UX)
+    // → usually handled in parent component when debouncedSearch changes
 
     return (
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-            <CustomerListSearch onInputChange={handleInputChange} />
-            <CustomerTableFilter />
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 md:gap-4">
+            {/* Search */}
+            <UserListSearch
+                onSearch={setSearchValue}
+                initialValue={searchValue}
+                placeholder="Search by username, email or role..."
+            />
+
+            {/* Filters */}
+            <UserListTableFilter onApply={onFiltersChange} />
         </div>
     )
 }
 
-export default CustomersListTableTools
+export default UserListTableTools

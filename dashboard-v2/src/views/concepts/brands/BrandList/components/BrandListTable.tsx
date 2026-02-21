@@ -1,28 +1,38 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import Avatar from '@/components/ui/Avatar'
 import Tag from '@/components/ui/Tag'
 import Tooltip from '@/components/ui/Tooltip'
 import DataTable from '@/components/shared/DataTable'
-import useCustomerList from '../hooks/useCustomerList'
 import { Link, useNavigate } from 'react-router-dom'
-import cloneDeep from 'lodash/cloneDeep'
 import { TbPencil, TbEye } from 'react-icons/tb'
-import type { OnSortParam, ColumnDef, Row } from '@/components/shared/DataTable'
-import type { Customer } from '../types'
+import type { ColumnDef } from '@/components/shared/DataTable'
+import type { OnSortParam, Row } from '@/components/shared/DataTable'
 import type { TableQueries } from '@/@types/common'
 
-const statusColor: Record<string, string> = {
-    فعال: 'bg-emerald-200 dark:bg-emerald-200 text-gray-900 dark:text-gray-900',
-    'مسدود شده': 'bg-red-200 dark:bg-red-200 text-gray-900 dark:text-gray-900',
+// ─── RTK Query ────────────────────────────────────────────────────────
+import { useGetMyBrandsQuery } from '@/services/brands'
+import type { Brand } from '@/services/brands'
+
+// Status color mapping (aligned with your Brand type)
+const statusColor: Record<Brand['status'], string> = {
+    active: 'bg-emerald-200 dark:bg-emerald-600 text-gray-900 dark:text-white',
+    suspended: 'bg-rose-200 dark:bg-rose-600 text-gray-900 dark:text-white',
+    pending: 'bg-amber-200 dark:bg-amber-600 text-gray-900 dark:text-white',
+    deactivated: 'bg-gray-200 dark:bg-gray-600 text-gray-900 dark:text-white',
 }
 
-const NameColumn = ({ row }: { row: Customer }) => {
+const NameColumn = ({ row }: { row: Brand }) => {
     return (
-        <div className="flex items-center">
-            <Avatar size={40} shape="circle" src={row.img} />
+        <div className="flex items-center gap-3">
+            <Avatar
+                size={40}
+                shape="circle"
+                src={row.logo_url || undefined}
+                fallback={row.name?.[0]?.toUpperCase() || '?'}
+            />
             <Link
-                className={`hover:text-primary ml-2 rtl:mr-2 font-semibold text-gray-900 dark:text-gray-100`}
-                to={`/concepts/customers/customer-details/${row.id}`}
+                className="hover:text-primary font-semibold text-gray-900 dark:text-gray-100"
+                to={`/concepts/brands/brand-details/${row.id}`} // ← update path as needed
             >
                 {row.name}
             </Link>
@@ -38,24 +48,24 @@ const ActionColumn = ({
     onViewDetail: () => void
 }) => {
     return (
-        <div className="flex items-center gap-3">
-            <Tooltip title="ویرایش کنید">
-                <div
-                    className={`text-xl cursor-pointer select-none font-semibold`}
-                    role="button"
+        <div className="flex items-center gap-4">
+            <Tooltip title="Edit Brand">
+                <button
+                    type="button"
+                    className="text-xl text-primary hover:text-primary-600 transition-colors"
                     onClick={onEdit}
                 >
                     <TbPencil />
-                </div>
+                </button>
             </Tooltip>
-            <Tooltip title="مشاهده کنید">
-                <div
-                    className={`text-xl cursor-pointer select-none font-semibold`}
-                    role="button"
+            <Tooltip title="View Details">
+                <button
+                    type="button"
+                    className="text-xl text-gray-600 hover:text-gray-900 dark:hover:text-gray-300 transition-colors"
                     onClick={onViewDetail}
                 >
                     <TbEye />
-                </div>
+                </button>
             </Tooltip>
         </div>
     )
@@ -64,142 +74,116 @@ const ActionColumn = ({
 const BrandListTable = () => {
     const navigate = useNavigate()
 
-    const {
-        customerList,
-        customerListTotal,
-        tableData,
-        isLoading,
-        setTableData,
-        setSelectAllCustomer,
-        setSelectedCustomer,
-        selectedCustomer,
-    } = useCustomerList()
+    // Local selection state (can be lifted to parent or context later)
+    const [rowSelection, setRowSelection] = useState<Record<string, boolean>>(
+        {},
+    )
 
-    const handleEdit = (customer: Customer) => {
-        navigate(`/concepts/customers/customer-edit/${customer.id}`)
+    // Table query state (pagination, sort, etc.)
+    const [tableQueries, setTableQueries] = useState<TableQueries>({
+        pageIndex: 1,
+        pageSize: 10,
+        sort: { id: 'created_at', desc: true },
+        search: '',
+    })
+
+    const { data, isLoading, isFetching } = useGetMyBrandsQuery({
+        limit: tableQueries.pageSize,
+        offset: (tableQueries.pageIndex - 1) * tableQueries.pageSize!,
+        sortBy: tableQueries.sort?.id,
+        sortOrder: tableQueries.sort?.desc ? 'desc' : 'asc',
+        search: tableQueries.search,
+    })
+
+    const brands = data?.brands ?? []
+    const total = data?.pagination.total ?? 0
+
+    const handleEdit = (brand: Brand) => {
+        navigate(`/concepts/brands/brand-edit/${brand.id}`)
     }
 
-    const handleViewDetails = (customer: Customer) => {
-        navigate(`/concepts/customers/customer-details/${customer.id}`)
+    const handleViewDetails = (brand: Brand) => {
+        navigate(`/concepts/brands/brand-details/${brand.id}`)
     }
 
-    const columns: ColumnDef<Customer>[] = useMemo(
+    const columns = useMemo<ColumnDef<Brand>[]>(
         () => [
             {
-                header: 'نام',
+                header: 'Brand Name',
                 accessorKey: 'name',
-                cell: (props) => {
-                    const row = props.row.original
-                    return <NameColumn row={row} />
-                },
+                cell: ({ row }) => <NameColumn row={row.original} />,
             },
             {
-                header: 'ایمیل',
-                accessorKey: 'email',
+                header: 'Slug',
+                accessorKey: 'slug',
             },
             {
-                header: 'مکان',
-                accessorKey: 'personalInfo.location',
+                header: 'Website',
+                accessorKey: 'website',
+                cell: ({ getValue }) => getValue() || '—',
             },
             {
-                header: 'وضعیت',
+                header: 'Status',
                 accessorKey: 'status',
-                cell: (props) => {
-                    const row = props.row.original
+                cell: ({ row }) => {
+                    const status = row.original.status
                     return (
-                        <div className="flex items-center">
-                            <Tag className={statusColor[row.status]}>
-                                <span className="capitalize">{row.status}</span>
-                            </Tag>
-                        </div>
+                        <Tag className={statusColor[status]}>
+                            <span className="capitalize">{status}</span>
+                        </Tag>
                     )
                 },
             },
             {
-                header: 'صرف کرد',
-                accessorKey: 'totalSpending',
-                cell: (props) => {
-                    return <span>${props.row.original.totalSpending}</span>
-                },
+                header: 'Followers',
+                accessorKey: 'followers_count',
+                cell: ({ getValue }) => getValue() || 0,
+            },
+            {
+                header: 'Views',
+                accessorKey: 'views_count',
+                cell: ({ getValue }) => getValue() || 0,
             },
             {
                 header: '',
-                id: 'action',
-                cell: (props) => (
+                id: 'actions',
+                enableSorting: false,
+                cell: ({ row }) => (
                     <ActionColumn
-                        onEdit={() => handleEdit(props.row.original)}
-                        onViewDetail={() =>
-                            handleViewDetails(props.row.original)
-                        }
+                        onEdit={() => handleEdit(row.original)}
+                        onViewDetail={() => handleViewDetails(row.original)}
                     />
                 ),
             },
         ],
-        // eslint-disable-next-line react-hooks/exhaustive-deps
         [],
     )
 
-    const handleSetTableData = (data: TableQueries) => {
-        setTableData(data)
-        if (selectedCustomer.length > 0) {
-            setSelectAllCustomer([])
-        }
-    }
-
-    const handlePaginationChange = (page: number) => {
-        const newTableData = cloneDeep(tableData)
-        newTableData.pageIndex = page
-        handleSetTableData(newTableData)
-    }
-
-    const handleSelectChange = (value: number) => {
-        const newTableData = cloneDeep(tableData)
-        newTableData.pageSize = Number(value)
-        newTableData.pageIndex = 1
-        handleSetTableData(newTableData)
-    }
-
-    const handleSort = (sort: OnSortParam) => {
-        const newTableData = cloneDeep(tableData)
-        newTableData.sort = sort
-        handleSetTableData(newTableData)
-    }
-
-    const handleRowSelect = (checked: boolean, row: Customer) => {
-        setSelectedCustomer(checked, row)
-    }
-
-    const handleAllRowSelect = (checked: boolean, rows: Row<Customer>[]) => {
-        if (checked) {
-            const originalRows = rows.map((row) => row.original)
-            setSelectAllCustomer(originalRows)
-        } else {
-            setSelectAllCustomer([])
-        }
-    }
-
     return (
-        <DataTable
+        <DataTable<Brand>
             selectable
             columns={columns}
-            data={customerList}
-            noData={!isLoading && customerList.length === 0}
+            data={brands}
+            loading={isLoading || isFetching}
+            noData={!isLoading && !isFetching && brands.length === 0}
             skeletonAvatarColumns={[0]}
-            skeletonAvatarProps={{ width: 28, height: 28 }}
-            loading={isLoading}
+            skeletonAvatarProps={{ width: 40, height: 40 }}
             pagingData={{
-                total: customerListTotal,
-                pageIndex: tableData.pageIndex as number,
-                pageSize: tableData.pageSize as number,
+                total,
+                pageIndex: tableQueries.pageIndex,
+                pageSize: tableQueries.pageSize,
             }}
-            checkboxChecked={(row) =>
-                selectedCustomer.some((selected) => selected.id === row.id)
+            state={{ rowSelection }}
+            onRowSelectionChange={setRowSelection}
+            onPaginationChange={(pageIndex) =>
+                setTableQueries((prev) => ({ ...prev, pageIndex }))
             }
-            onPaginationChange={handlePaginationChange}
-            onSelectChange={handleSelectChange}
-            onSort={handleSort}
-            onCheckBoxChange={handleRowSelect}
-            onIndeterminateCheckBoxChange={handleAllRowSelect}
+            onSelectChange={(pageSize) =>
+                setTableQueries((prev) => ({ ...prev, pageSize, pageIndex: 1 }))
+            }
+            onSort={(sort) => setTableQueries((prev) => ({ ...prev, sort }))}
+            // If you have BrandListSearch component:
+            // onSearch={(value) => setTableQueries((prev) => ({ ...prev, search: value, pageIndex: 1 }))}
         />
     )
 }

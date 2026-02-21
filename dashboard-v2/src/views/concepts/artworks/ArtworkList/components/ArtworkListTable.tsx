@@ -1,280 +1,248 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Avatar from '@/components/ui/Avatar'
-import Progress from '@/components/ui/Progress'
-import Tooltip from '@/components/ui/Tooltip'
 import DataTable from '@/components/shared/DataTable'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
-import useProductList from '../hooks/useProductList'
+import Tooltip from '@/components/ui/Tooltip'
 import classNames from '@/utils/classNames'
-import cloneDeep from 'lodash/cloneDeep'
-import { useNavigate } from 'react-router-dom'
 import { TbPencil, TbTrash } from 'react-icons/tb'
-import { FiPackage } from 'react-icons/fi'
-import { NumericFormat } from 'react-number-format'
-import type { OnSortParam, ColumnDef, Row } from '@/components/shared/DataTable'
-import type { Product } from '../types'
+import { FiImage } from 'react-icons/fi'
+
+import {
+    useGetMyArtworksQuery,
+    useDeleteArtworkMutation,
+} from '@/services/artworkApi'
+
+import type { ColumnDef } from '@/components/shared/DataTable'
+import type { ArtworkListItem } from '@/services/artworkApi'
 import type { TableQueries } from '@/@types/common'
 
-const ProductColumn = ({ row }: { row: Product }) => {
+const ArtworkColumn = ({ row }: { row: ArtworkListItem }) => {
     return (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
             <Avatar
-                shape="round"
-                size={60}
-                {...(row.img ? { src: row.img } : { icon: <FiPackage /> })}
+                shape="rounded"
+                size={64}
+                src={row.thumbnail_url || undefined}
+                icon={
+                    !row.thumbnail_url ? (
+                        <FiImage className="text-2xl" />
+                    ) : undefined
+                }
             />
             <div>
-                <div className="font-bold heading-text mb-1">{row.name}</div>
-                <span>کد محصول: {row.productCode}</span>
+                <div className="font-semibold heading-text mb-0.5 line-clamp-1">
+                    {row.title}
+                </div>
+                {row.description && (
+                    <div className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">
+                        {row.description}
+                    </div>
+                )}
+                <div className="text-xs text-gray-400 mt-0.5">
+                    ID: {row.id.slice(0, 8)}...
+                </div>
             </div>
         </div>
     )
 }
+
 const ActionColumn = ({
     onEdit,
     onDelete,
 }: {
     onEdit: () => void
     onDelete: () => void
-}) => {
-    return (
-        <div className="flex items-center justify-end gap-3">
-            <Tooltip title="ویرایش">
-                <div
-                    className={`text-xl cursor-pointer select-none font-semibold`}
-                    role="button"
-                    onClick={onEdit}
-                >
-                    <TbPencil />
-                </div>
-            </Tooltip>
-            <Tooltip title="حذف">
-                <div
-                    className={`text-xl cursor-pointer select-none font-semibold`}
-                    role="button"
-                    onClick={onDelete}
-                >
-                    <TbTrash />
-                </div>
-            </Tooltip>
-        </div>
-    )
-}
+}) => (
+    <div className="flex items-center justify-end gap-4">
+        <Tooltip title="Edit artwork">
+            <button
+                className="text-xl text-primary hover:text-primary-emphasis transition-colors"
+                onClick={onEdit}
+            >
+                <TbPencil />
+            </button>
+        </Tooltip>
+        <Tooltip title="Delete artwork">
+            <button
+                className="text-xl text-error hover:text-red-600 transition-colors"
+                onClick={onDelete}
+            >
+                <TbTrash />
+            </button>
+        </Tooltip>
+    </div>
+)
 
-const ProductListTable = () => {
+const ArtworkListTable = () => {
     const navigate = useNavigate()
 
-    const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false)
-    const [toDeleteId, setToDeleteId] = useState('')
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+    const [toDeleteId, setToDeleteId] = useState<string | null>(null)
 
-    const handleCancel = () => {
-        setDeleteConfirmationOpen(false)
-    }
+    const [deleteArtwork, { isLoading: isDeleting }] =
+        useDeleteArtworkMutation()
 
-    const handleDelete = (product: Product) => {
-        setDeleteConfirmationOpen(true)
-        setToDeleteId(product.id)
-    }
+    const [tableQueries, setTableQueries] = useState<TableQueries>({
+        pageIndex: 1,
+        pageSize: 10,
+        sort: undefined,
+    })
 
-    const handleEdit = (product: Product) => {
-        navigate(`/concepts/products/product-edit/${product.id}`)
-    }
+    const { data, isLoading, isFetching } = useGetMyArtworksQuery({
+        page: tableQueries.pageIndex,
+        limit: tableQueries.pageSize,
+    })
 
-    const handleConfirmDelete = () => {
-        const newProductList = productList.filter((product) => {
-            return !(toDeleteId === product.id)
-        })
-        setSelectAllProduct([])
-        mutate(
-            {
-                list: newProductList,
-                total: productListTotal - selectedProduct.length,
-            },
-            false,
-        )
-        setDeleteConfirmationOpen(false)
-        setToDeleteId('')
-    }
+    const artworks = data?.artworks ?? []
+    const total = data?.pagination.total ?? 0
 
-    const {
-        productList,
-        productListTotal,
-        tableData,
-        isLoading,
-        setTableData,
-        setSelectAllProduct,
-        setSelectedProduct,
-        selectedProduct,
-        mutate,
-    } = useProductList()
-
-    const columns: ColumnDef<Product>[] = useMemo(
+    const columns = useMemo<ColumnDef<ArtworkListItem>[]>(
         () => [
             {
-                header: 'محصول',
-                accessorKey: 'name',
-                cell: (props) => {
-                    const row = props.row.original
-                    return <ProductColumn row={row} />
-                },
+                header: 'Artwork',
+                accessorKey: 'title',
+                cell: ({ row }) => <ArtworkColumn row={row.original} />,
+                size: 300,
             },
             {
-                header: 'قیمت',
-                accessorKey: 'price',
-                cell: (props) => {
-                    const { price } = props.row.original
-                    return (
-                        <span className="font-bold heading-text">
-                            <NumericFormat
-                                fixedDecimalScale
-                                prefix="$"
-                                displayType="text"
-                                value={price}
-                                decimalScale={2}
-                                thousandSeparator={true}
-                            />
-                        </span>
-                    )
-                },
-            },
-            {
-                header: 'مقدار',
-                accessorKey: 'stock',
-                cell: (props) => {
-                    const row = props.row.original
-                    return (
-                        <span className="font-bold heading-text">
-                            {row.stock}
-                        </span>
-                    )
-                },
-            },
-            {
-                header: 'فروش',
+                header: 'Status',
                 accessorKey: 'status',
-                cell: (props) => {
-                    const { salesPercentage, sales } = props.row.original
+                cell: ({ row }) => {
+                    const status = row.original.status
+                    const colors = {
+                        published: 'bg-success/10 text-success',
+                        draft: 'bg-warning/10 text-warning',
+                        moderation_pending: 'bg-info/10 text-info',
+                        rejected: 'bg-error/10 text-error',
+                        archived: 'bg-gray-100 text-gray-600 dark:bg-gray-700',
+                    }
+                    const statusText = {
+                        published: 'Published',
+                        draft: 'Draft',
+                        moderation_pending: 'Under Review',
+                        rejected: 'Rejected',
+                        archived: 'Archived',
+                    }
+
                     return (
-                        <div className="flex flex-col gap-1">
-                            <span className="flex gap-1">
-                                <span className="font-semibold">
-                                    <NumericFormat
-                                        displayType="text"
-                                        value={sales}
-                                        thousandSeparator={true}
-                                    />
-                                </span>
-                                <span>فروش</span>
-                            </span>
-                            <Progress
-                                percent={salesPercentage}
-                                showInfo={false}
-                                customColorClass={classNames(
-                                    'bg-error',
-                                    salesPercentage > 40 && 'bg-warning',
-                                    salesPercentage > 70 && 'bg-success',
-                                )}
-                            />
-                        </div>
+                        <span
+                            className={classNames(
+                                'px-2.5 py-1 rounded-full text-xs font-medium',
+                                colors[status] || 'bg-gray-100 text-gray-600',
+                            )}
+                        >
+                            {statusText[status] || status}
+                        </span>
                     )
                 },
             },
             {
-                header: '',
-                id: 'action',
-                cell: (props) => (
-                    <ActionColumn
-                        onEdit={() => handleEdit(props.row.original)}
-                        onDelete={() => handleDelete(props.row.original)}
-                    />
+                header: 'Views',
+                accessorKey: 'views_count',
+                cell: ({ getValue }) => (
+                    <span className="font-medium">{getValue() as number}</span>
                 ),
             },
+            {
+                header: 'Favorites',
+                accessorKey: 'favorites_count',
+                cell: ({ getValue }) => (
+                    <span className="font-medium">{getValue() as number}</span>
+                ),
+            },
+            {
+                header: 'Created At',
+                accessorKey: 'created_at',
+                cell: ({ getValue }) => {
+                    const date = new Date(getValue() as string)
+                    return date.toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                    })
+                },
+            },
+            {
+                id: 'actions',
+                header: '',
+                cell: ({ row }) => (
+                    <ActionColumn
+                        onEdit={() =>
+                            navigate(`/artworks/edit/${row.original.id}`)
+                        }
+                        onDelete={() => {
+                            setToDeleteId(row.original.id)
+                            setDeleteDialogOpen(true)
+                        }}
+                    />
+                ),
+                size: 120,
+            },
         ],
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        [],
+        [navigate],
     )
 
-    const handleSetTableData = (data: TableQueries) => {
-        setTableData(data)
-        if (selectedProduct.length > 0) {
-            setSelectAllProduct([])
-        }
+    const handleTableChange = (newQueries: TableQueries) => {
+        setTableQueries(newQueries)
     }
 
-    const handlePaginationChange = (page: number) => {
-        const newTableData = cloneDeep(tableData)
-        newTableData.pageIndex = page
-        handleSetTableData(newTableData)
-    }
+    const handleConfirmDelete = async () => {
+        if (!toDeleteId) return
 
-    const handleSelectChange = (value: number) => {
-        const newTableData = cloneDeep(tableData)
-        newTableData.pageSize = Number(value)
-        newTableData.pageIndex = 1
-        handleSetTableData(newTableData)
-    }
-
-    const handleSort = (sort: OnSortParam) => {
-        const newTableData = cloneDeep(tableData)
-        newTableData.sort = sort
-        handleSetTableData(newTableData)
-    }
-
-    const handleRowSelect = (checked: boolean, row: Product) => {
-        setSelectedProduct(checked, row)
-    }
-
-    const handleAllRowSelect = (checked: boolean, rows: Row<Product>[]) => {
-        if (checked) {
-            const originalRows = rows.map((row) => row.original)
-            setSelectAllProduct(originalRows)
-        } else {
-            setSelectAllProduct([])
+        try {
+            await deleteArtwork(toDeleteId).unwrap()
+        } catch (err) {
+            console.error('Delete failed:', err)
+            // You can add toast.error('Failed to delete artwork') here
+        } finally {
+            setDeleteDialogOpen(false)
+            setToDeleteId(null)
         }
     }
 
     return (
         <>
             <DataTable
-                selectable
                 columns={columns}
-                data={productList}
-                noData={!isLoading && productList.length === 0}
-                skeletonAvatarColumns={[0]}
-                skeletonAvatarProps={{ width: 28, height: 28 }}
-                loading={isLoading}
+                data={artworks}
+                loading={isLoading || isFetching}
+                noData={!isLoading && artworks.length === 0}
                 pagingData={{
-                    total: productListTotal,
-                    pageIndex: tableData.pageIndex as number,
-                    pageSize: tableData.pageSize as number,
+                    total,
+                    pageIndex: tableQueries.pageIndex,
+                    pageSize: tableQueries.pageSize,
                 }}
-                checkboxChecked={(row) =>
-                    selectedProduct.some((selected) => selected.id === row.id)
+                onPaginationChange={(page) =>
+                    handleTableChange({ ...tableQueries, pageIndex: page })
                 }
-                onPaginationChange={handlePaginationChange}
-                onSelectChange={handleSelectChange}
-                onSort={handleSort}
-                onCheckBoxChange={handleRowSelect}
-                onIndeterminateCheckBoxChange={handleAllRowSelect}
+                onSelectChange={(size) =>
+                    handleTableChange({
+                        ...tableQueries,
+                        pageSize: Number(size),
+                        pageIndex: 1,
+                    })
+                }
+                onSort={(sort) => handleTableChange({ ...tableQueries, sort })}
             />
+
             <ConfirmDialog
-                isOpen={deleteConfirmationOpen}
+                isOpen={deleteDialogOpen}
                 type="danger"
-                title="حذف محصولات"
-                onClose={handleCancel}
-                onRequestClose={handleCancel}
-                onCancel={handleCancel}
+                title="Delete Artwork"
+                onClose={() => setDeleteDialogOpen(false)}
+                onCancel={() => setDeleteDialogOpen(false)}
                 onConfirm={handleConfirmDelete}
+                confirmButtonText="Delete"
+                isLoading={isDeleting}
             >
                 <p>
-                    {' '}
-                    آیا مطمئن هستید که می خواهید این محصول را حذف کنید؟ این
-                    اقدام قابل بازگشت نیست.{' '}
+                    Are you sure you want to delete this artwork? This action
+                    cannot be undone.
                 </p>
             </ConfirmDialog>
         </>
     )
 }
 
-
-export default ProductListTable
+export default ArtworkListTable
