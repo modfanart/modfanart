@@ -1,30 +1,38 @@
-import ProductListSearch from './ProductListSearch'
-import ProductTableFilter from './ProductTableFilter'
-import useProducList from '../hooks/useProductList'
-import cloneDeep from 'lodash/cloneDeep'
+// src/features/artworks/components/ArtworkListTableTools.tsx
+import { useState } from 'react'
+import ArtworkListSearch from './ArtworkListSearch'
+import ArtworkTableFilter from './ArtworkTableFilter'
+import useDebounce from '@/utils/hooks/useDebounce'
 
-const ProducListTableTools = () => {
-    const { tableData, setTableData } = useProducList()
+const ArtworkListTableTools = () => {
+    const [searchValue, setSearchValue] = useState('')
 
-    const handleInputChange = (val: string) => {
-        const newTableData = cloneDeep(tableData)
-        newTableData.query = val
-        newTableData.pageIndex = 1
-        if (typeof val === 'string' && val.length > 1) {
-            setTableData(newTableData)
-        }
+    const debouncedSearch = useDebounce(searchValue, 500)
 
-        if (typeof val === 'string' && val.length === 0) {
-            setTableData(newTableData)
-        }
+    const handleSearch = (value: string) => {
+        setSearchValue(value)
+        // → Parent component should react to debouncedSearch changes
+        //   (either via props callback or shared state / context / URL params)
     }
 
     return (
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-            <ProductListSearch onInputChange={handleInputChange} />
-            <ProductTableFilter />
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
+            <ArtworkListSearch
+                onSearch={handleSearch}
+                placeholder="Search by title, description or artwork ID..."
+                debounceMs={500}
+                // initialValue=""           // optional
+            />
+
+            <ArtworkTableFilter />
+            {/* 
+                Suggested additions (uncomment/implement as needed):
+                - Status filter dropdown (Published / Draft / Under Review / Rejected)
+                - Category / tag multi-select
+                - Sort dropdown (Newest first / Most viewed / Most favorited / Oldest)
+            */}
         </div>
     )
 }
 
-export default ProducListTableTools
+export default ArtworkListTableTools

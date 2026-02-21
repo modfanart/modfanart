@@ -1,180 +1,216 @@
-import { useMemo } from 'react'
+// src/features/users/components/UserListTable.tsx
+import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Avatar from '@/components/ui/Avatar'
 import Tag from '@/components/ui/Tag'
 import Tooltip from '@/components/ui/Tooltip'
 import DataTable from '@/components/shared/DataTable'
-import useCustomerList from '../hooks/useCustomerList'
-import { Link, useNavigate } from 'react-router-dom'
-import cloneDeep from 'lodash/cloneDeep'
 import { TbPencil, TbEye } from 'react-icons/tb'
-import type { OnSortParam, ColumnDef, Row } from '@/components/shared/DataTable'
-import type { Customer } from '../types'
-import type { TableQueries } from '@/@types/common'
+import { Link } from 'react-router-dom'
 
-const statusColor: Record<string, string> = {
-    'فعال': 'bg-emerald-200 dark:bg-emerald-200 text-gray-900 dark:text-gray-900',
-    'مسدود شده': 'bg-red-200 dark:bg-red-200 text-gray-900 dark:text-gray-900',
+import { useGetAllUsersQuery } from '@/services/userApi'
+
+import type { ColumnDef } from '@/components/shared/DataTable'
+import type { UserProfile } from '@/services/userApi'
+import type { TableQueries, OnSortParam } from '@/@types/common'
+
+const statusColorMap: Record<string, string> = {
+    active: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-700/20 dark:text-emerald-400',
+    suspended: 'bg-red-100 text-red-700 dark:bg-red-700/20 dark:text-red-400',
+    pending_verification:
+        'bg-amber-100 text-amber-700 dark:bg-amber-700/20 dark:text-amber-400',
+    deactivated:
+        'bg-gray-100 text-gray-700 dark:bg-gray-700/20 dark:text-gray-400',
 }
 
-const NameColumn = ({ row }: { row: Customer }) => {
+const NameColumn = ({ user }: { user: UserProfile }) => {
     return (
-        <div className="flex items-center">
-            <Avatar size={40} shape="circle" src={row.img} />
+        <div className="flex items-center gap-3">
+            <Avatar
+                size={42}
+                shape="circle"
+                src={user.avatar_url || undefined}
+                fallback={
+                    user.username?.[0]?.toUpperCase() ||
+                    user.email?.[0]?.toUpperCase() ||
+                    '?'
+                }
+            />
             <Link
-                className={`hover:text-primary ml-2 rtl:mr-2 font-semibold text-gray-900 dark:text-gray-100`}
-                to={`/concepts/customers/customer-details/${row.id}`}
+                to={`/users/${user.id}`}
+                className="font-medium text-gray-900 dark:text-gray-100 hover:text-primary transition-colors"
             >
-                {row.name}
+                {user.username || user.email.split('@')[0]}
             </Link>
         </div>
     )
 }
 
-const ActionColumn = ({
-    onEdit,
-    onViewDetail,
-}: {
-    onEdit: () => void
-    onViewDetail: () => void
-}) => {
+const StatusTag = ({ status }: { status: UserProfile['status'] }) => {
+    const label =
+        status === 'active'
+            ? 'Active'
+            : status === 'suspended'
+              ? 'Suspended'
+              : status === 'pending_verification'
+                ? 'Pending Verification'
+                : status === 'deactivated'
+                  ? 'Deactivated'
+                  : status
+
     return (
-        <div className="flex items-center gap-3">
-            <Tooltip title="ویرایش کنید">
-                <div
-                    className={`text-xl cursor-pointer select-none font-semibold`}
-                    role="button"
-                    onClick={onEdit}
-                >
-                    <TbPencil />
-                </div>
-            </Tooltip>
-            <Tooltip title="مشاهده کنید">
-                <div
-                    className={`text-xl cursor-pointer select-none font-semibold`}
-                    role="button"
-                    onClick={onViewDetail}
-                >
-                    <TbEye />
-                </div>
-            </Tooltip>
-        </div>
+        <Tag className={statusColorMap[status] || 'bg-gray-100 text-gray-700'}>
+            {label}
+        </Tag>
     )
 }
 
-const CustomerListTable = () => {
+type UserListTableProps = {
+    selectedUsers: UserProfile[]
+    onSelectionChange: (selected: UserProfile[]) => void
+    // Optional: add search/filters from parent later
+}
+
+const UserListTable = ({
+    selectedUsers,
+    onSelectionChange,
+}: UserListTableProps) => {
     const navigate = useNavigate()
 
-    const {
-        customerList,
-        customerListTotal,
-        tableData,
-        isLoading,
-        setTableData,
-        setSelectAllCustomer,
-        setSelectedCustomer,
-        selectedCustomer,
-    } = useCustomerList()
+    const [tableQueries, setTableQueries] = useState<TableQueries>({
+        pageIndex: 1,
+        pageSize: 10,
+        sort: undefined,
+        // query: '' // add when you connect search
+    })
 
-    const handleEdit = (customer: Customer) => {
-        navigate(`/concepts/customers/customer-edit/${customer.id}`)
-    }
+    const { data, isLoading, isFetching } = useGetAllUsersQuery({
+        page: tableQueries.pageIndex,
+        limit: tableQueries.pageSize,
+        sort: tableQueries.sort
+            ? `${tableQueries.sort.id}:${tableQueries.sort.desc ? 'desc' : 'asc'}`
+            : undefined,
+        // search: tableQueries.query,   // uncomment when search is connected
+        // status: filters?.status,
+    })
 
-    const handleViewDetails = (customer: Customer) => {
-        navigate(`/concepts/customers/customer-details/${customer.id}`)
-    }
+    const users = data?.users ?? []
+    const total = data?.pagination.total ?? 0
 
-    const columns: ColumnDef<Customer>[] = useMemo(
+    const columns = useMemo<ColumnDef<UserProfile>[]>(
         () => [
             {
-                header: 'نام',
-                accessorKey: 'name',
-                cell: (props) => {
-                    const row = props.row.original
-                    return <NameColumn row={row} />
-                },
+                header: 'Username / Email',
+                accessorKey: 'username',
+                cell: ({ row }) => <NameColumn user={row.original} />,
+                size: 280,
             },
             {
-                header: 'ایمیل',
+                header: 'Email',
                 accessorKey: 'email',
             },
             {
-                header: 'مکان',
-                accessorKey: 'personalInfo.location',
-            },
-            {
-                header: 'وضعیت',
-                accessorKey: 'status',
-                cell: (props) => {
-                    const row = props.row.original
-                    return (
-                        <div className="flex items-center">
-                            <Tag className={statusColor[row.status]}>
-                                <span className="capitalize">{row.status}</span>
-                            </Tag>
-                        </div>
-                    )
-                },
-            },
-            {
-                header: 'صرف کرد',
-                accessorKey: 'totalSpending',
-                cell: (props) => {
-                    return <span>${props.row.original.totalSpending}</span>
-                },
-            },
-            {
-                header: '',
-                id: 'action',
-                cell: (props) => (
-                    <ActionColumn
-                        onEdit={() => handleEdit(props.row.original)}
-                        onViewDetail={() =>
-                            handleViewDetails(props.row.original)
-                        }
-                    />
+                header: 'Role',
+                accessorKey: 'role.name',
+                cell: ({ row }) => (
+                    <span className="font-medium">
+                        {row.original.role?.name || '—'}
+                    </span>
                 ),
             },
+            {
+                header: 'Status',
+                accessorKey: 'status',
+                cell: ({ row }) => <StatusTag status={row.original.status} />,
+            },
+            {
+                header: 'Created At',
+                accessorKey: 'created_at',
+                cell: ({ getValue }) => {
+                    const date = new Date(getValue() as string)
+                    return date.toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                    })
+                },
+            },
+            {
+                header: 'Last Login',
+                accessorKey: 'last_login_at',
+                cell: ({ getValue }) => {
+                    const val = getValue() as string | null
+                    return val
+                        ? new Date(val).toLocaleString('en-US', {
+                              dateStyle: 'medium',
+                              timeStyle: 'short',
+                          })
+                        : '—'
+                },
+            },
+            {
+                id: 'actions',
+                header: '',
+                cell: ({ row }) => (
+                    <div className="flex items-center justify-end gap-4">
+                        <Tooltip title="View Details">
+                            <button
+                                className="text-xl text-gray-600 hover:text-primary transition-colors"
+                                onClick={() =>
+                                    navigate(`/users/${row.original.id}`)
+                                }
+                            >
+                                <TbEye />
+                            </button>
+                        </Tooltip>
+                        <Tooltip title="Edit">
+                            <button
+                                className="text-xl text-primary hover:text-primary-emphasis transition-colors"
+                                onClick={() =>
+                                    navigate(`/users/edit/${row.original.id}`)
+                                }
+                            >
+                                <TbPencil />
+                            </button>
+                        </Tooltip>
+                    </div>
+                ),
+                size: 140,
+            },
         ],
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        [],
+        [navigate],
     )
 
-    const handleSetTableData = (data: TableQueries) => {
-        setTableData(data)
-        if (selectedCustomer.length > 0) {
-            setSelectAllCustomer([])
+    const handleTableChange = (newQueries: TableQueries) => {
+        setTableQueries(newQueries)
+    }
+
+    const handleRowSelect = (checked: boolean, row: UserProfile) => {
+        if (checked) {
+            onSelectionChange([...selectedUsers, row])
+        } else {
+            onSelectionChange(selectedUsers.filter((u) => u.id !== row.id))
         }
     }
 
-    const handlePaginationChange = (page: number) => {
-        const newTableData = cloneDeep(tableData)
-        newTableData.pageIndex = page
-        handleSetTableData(newTableData)
-    }
-
-    const handleSelectChange = (value: number) => {
-        const newTableData = cloneDeep(tableData)
-        newTableData.pageSize = Number(value)
-        newTableData.pageIndex = 1
-        handleSetTableData(newTableData)
-    }
-
-    const handleSort = (sort: OnSortParam) => {
-        const newTableData = cloneDeep(tableData)
-        newTableData.sort = sort
-        handleSetTableData(newTableData)
-    }
-
-    const handleRowSelect = (checked: boolean, row: Customer) => {
-        setSelectedCustomer(checked, row)
-    }
-
-    const handleAllRowSelect = (checked: boolean, rows: Row<Customer>[]) => {
+    const handleAllSelect = (
+        checked: boolean,
+        visibleRows: Row<UserProfile>[],
+    ) => {
         if (checked) {
-            const originalRows = rows.map((row) => row.original)
-            setSelectAllCustomer(originalRows)
+            const newSelected = [
+                ...selectedUsers,
+                ...visibleRows
+                    .map((r) => r.original)
+                    .filter((r) => !selectedUsers.some((s) => s.id === r.id)),
+            ]
+            onSelectionChange(newSelected)
         } else {
-            setSelectAllCustomer([])
+            onSelectionChange(
+                selectedUsers.filter(
+                    (s) => !visibleRows.some((r) => r.original.id === s.id),
+                ),
+            )
         }
     }
 
@@ -182,26 +218,36 @@ const CustomerListTable = () => {
         <DataTable
             selectable
             columns={columns}
-            data={customerList}
-            noData={!isLoading && customerList.length === 0}
+            data={users}
+            loading={isLoading || isFetching}
+            noData={!isLoading && users.length === 0}
             skeletonAvatarColumns={[0]}
-            skeletonAvatarProps={{ width: 28, height: 28 }}
-            loading={isLoading}
+            skeletonAvatarProps={{ width: 42, height: 42 }}
             pagingData={{
-                total: customerListTotal,
-                pageIndex: tableData.pageIndex as number,
-                pageSize: tableData.pageSize as number,
+                total,
+                pageIndex: tableQueries.pageIndex,
+                pageSize: tableQueries.pageSize,
             }}
             checkboxChecked={(row) =>
-                selectedCustomer.some((selected) => selected.id === row.id)
+                selectedUsers.some((sel) => sel.id === row.id)
             }
-            onPaginationChange={handlePaginationChange}
-            onSelectChange={handleSelectChange}
-            onSort={handleSort}
+            onPaginationChange={(page) =>
+                handleTableChange({ ...tableQueries, pageIndex: page })
+            }
+            onSelectChange={(size) =>
+                handleTableChange({
+                    ...tableQueries,
+                    pageSize: Number(size),
+                    pageIndex: 1,
+                })
+            }
+            onSort={(sort: OnSortParam) =>
+                handleTableChange({ ...tableQueries, sort })
+            }
             onCheckBoxChange={handleRowSelect}
-            onIndeterminateCheckBoxChange={handleAllRowSelect}
+            onIndeterminateCheckBoxChange={handleAllSelect}
         />
     )
 }
 
-export default CustomerListTable
+export default UserListTable
