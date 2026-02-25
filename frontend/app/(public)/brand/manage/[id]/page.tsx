@@ -253,7 +253,7 @@ export default function ManageSubmissionsPage() {
             <Link href={`/brand/manage`} className="w-full">
                 <CircleArrowLeft className="inline mr-2 h-8 w-8" />
             </Link>
-            My Submissions</h1>
+            Fan Submissions</h1>
         <div className="flex items-center gap-2">
         </div>
       </div>

@@ -110,6 +110,7 @@ export default function ContestManagement() {
   console.log("Live Opportunities:", liveOpps)
 
   // ****Store link in backend
+  // send link and contest id
   const generateString = (length = 12) => {
   const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   let result = "";
