@@ -206,6 +206,140 @@ if (artwork.status !== 'published' && artwork.status !== 'draft') {
       res.status(500).json({ error: 'Failed to update entry status' });
     }
   }
+    /**
+   * DELETE /contests/:contestId/entries/:entryId
+   * Withdraw / delete own contest entry (creator only)
+   * Only allowed while the contest is in 'live' state and before submission deadline
+   */
+  static async deleteEntry(req, res) {
+    try {
+      const { contestId, entryId } = req.params;
+
+      // 1. Find the entry
+      const entry = await db
+        .selectFrom('contest_entries')
+        .select(['id', 'contest_id', 'creator_id', 'artwork_id'])
+        .where('id', '=', entryId)
+        .where('contest_id', '=', contestId)
+        .executeTakeFirst();
+
+      if (!entry) {
+        return res.status(404).json({ error: 'Contest entry not found' });
+      }
+
+      // 2. Authorization – must be the creator
+      if (entry.creator_id !== req.user.id) {
+        return res.status(403).json({ error: 'You can only delete your own entries' });
+      }
+
+      // 3. Check contest state
+      const contest = await Contest.findById(contestId);
+      if (!contest) {
+        return res.status(404).json({ error: 'Contest not found' });
+      }
+
+      const now = new Date();
+      if (contest.status !== 'live' || new Date(contest.submission_end_date) < now) {
+        return res.status(403).json({
+          error: 'Cannot delete entries after submission period has ended or contest is no longer live',
+        });
+      }
+
+      // 4. (Optional) You could add business rule: cannot delete if already approved / has votes / etc.
+      // if (['approved', 'winner'].includes(entry.status)) {
+      //   return res.status(403).json({ error: 'Cannot delete approved or winning entries' });
+      // }
+
+      // 5. Delete
+      await db
+        .deleteFrom('contest_entries')
+        .where('id', '=', entryId)
+        .execute();
+
+      // Optional: soft-delete variant if you prefer
+      // await db
+      //   .updateTable('contest_entries')
+      //   .set({ deleted_at: sql`NOW()` })
+      //   .where('id', '=', entryId)
+      //   .execute();
+
+      // Optional: notify brand / moderators
+      // await Notification.create(contest.brand_id, 'entry_withdrawn', { ... });
+
+      res.json({
+        message: 'Entry successfully withdrawn',
+        entryId,
+      });
+    } catch (err) {
+      console.error('Delete contest entry error:', err);
+      res.status(500).json({ error: 'Failed to delete entry' });
+    }
+  }
+
+  /**
+   * GET /me/contest-entries    or    /users/me/contest-entries
+   * Get ALL contest entries made by the current user across all contests
+   * Useful for "My Submissions → In Contests" tab
+   */
+  static async getAllMyEntries(req, res) {
+    try {
+      const { status, limit = 20, offset = 0 } = req.query;
+
+      let query = db
+        .selectFrom('contest_entries')
+        .innerJoin('contests', 'contests.id', 'contest_entries.contest_id')
+        .innerJoin('artworks', 'artworks.id', 'contest_entries.artwork_id')
+        .leftJoin('users as brand', 'brand.id', 'contests.brand_id') // optional brand info
+        .select([
+          'contest_entries.id as entry_id',
+          'contest_entries.status as entry_status',
+          'contest_entries.rank',
+          'contest_entries.score_public',
+          'contest_entries.score_judge',
+          'contest_entries.submission_notes',
+          'contest_entries.created_at as submitted_at',
+          'contest_entries.moderation_status',
+          'contest_entries.moderated_at',
+
+          'contests.id as contest_id',
+          'contests.title as contest_title',
+          'contests.slug as contest_slug',
+          'contests.status as contest_status',
+          'contests.submission_end_date',
+
+          'artworks.id as artwork_id',
+          'artworks.title as artwork_title',
+          'artworks.description as artwork_description',
+          'artworks.thumbnail_url',
+          'artworks.file_url',
+          'artworks.status as artwork_status',
+          'artworks.views_count',
+          'artworks.created_at as artwork_created_at',
+        ])
+        .where('contest_entries.creator_id', '=', req.user.id)
+        .orderBy('contest_entries.created_at', 'desc');
+
+      // Optional status filter (entry status)
+      if (status) {
+        query = query.where('contest_entries.status', '=', status);
+      }
+
+      // Pagination
+      query = query.limit(Number(limit)).offset(Number(offset));
+
+      const entries = await query.execute();
+
+      // Optional: enrich with more brand info or entry count per contest, etc.
+      res.json({
+        entries,
+        total: entries.length, // real total would require a COUNT query
+        // page, limit, total — if you implement full pagination
+      });
+    } catch (err) {
+      console.error('Get my contest entries error:', err);
+      res.status(500).json({ error: 'Failed to fetch your contest entries' });
+    }
+  }
 }
 
 module.exports = ContestEntryController;

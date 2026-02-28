@@ -1,3 +1,2 @@
-import ProductCreate from './ProductCreate'
-
-export default ProductCreate
+import ArtworkCreate from './ArtworkCreate'
+export default ArtworkCreate

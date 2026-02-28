@@ -11,7 +11,7 @@ const router = express.Router();
 
 // You can later tighten this with proper admin role check
 // For now we assume anyone with "roles.manage" can do everything
-router.use(hasPermission('roles.manage'));
+//router.use(hasPermission('roles.manage'));
 
 router.get('/', RoleController.getAllRoles);
 router.post('/', RoleController.createRole);

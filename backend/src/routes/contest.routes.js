@@ -35,7 +35,17 @@ router.get('/:contestId/categories', ContestCategoryController.getCategories);
 router.post('/:contestId/entries', ContestEntryController.submitEntry);
 router.get('/:contestId/entries', ContestEntryController.getEntries);
 router.patch('/:contestId/entries/:entryId/status',  ContestEntryController.updateEntryStatus);
+router.delete(
+  '/contests/:contestId/entries/:entryId',
 
+  ContestEntryController.deleteEntry
+);
+
+router.get(
+  '/me/contest-entries',
+
+  ContestEntryController.getAllMyEntries
+);
 // Judges
 router.post('/:contestId/judges', ContestJudgeController.inviteJudge);
 router.patch('/:contestId/judges/:judgeId/accept', ContestJudgeController.acceptInvitation);

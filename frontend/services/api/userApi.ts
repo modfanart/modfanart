@@ -111,7 +111,10 @@ export interface UserViolationsResponse {
   violations: UserViolationResponse[];
   total: number;
 }
-
+export interface PublicUserResponse {
+  success: boolean;
+  user: UserProfile; // same shape, but some fields may be missing/omitted
+}
 export interface AllViolationsResponse {
   violations: Array<{
     id: string;
@@ -164,8 +167,7 @@ export const userApi = createApi({
     },
   }),
 
-  tagTypes: ['CurrentUser', 'UserList', 'UserViolations'],
-
+  tagTypes: ['CurrentUser', 'UserList', 'UserViolations', 'PublicProfile'],
   endpoints: (builder) => ({
     // GET /users/me
     getCurrentUser: builder.query<CurrentUserResponse, void>({
@@ -182,7 +184,14 @@ export const userApi = createApi({
       }),
       invalidatesTags: ['CurrentUser'],
     }),
-
+    getUserByUsername: builder.query<PublicUserResponse, string>({
+      query: (username) => `/by-username/${username}`,
+      providesTags: (result, error, username) => [
+        { type: 'PublicProfile', id: username.toLowerCase() },
+      ],
+      // Optional: you can add transformResponse if backend returns slightly different shape
+      // transformResponse: (response: PublicUserResponse) => response,
+    }),
     // PATCH /users/me/password
     changePassword: builder.mutation<{ message: string }, ChangePasswordRequest>({
       query: (body) => ({
@@ -288,7 +297,7 @@ export const {
   useChangePasswordMutation,
   useUploadAvatarMutation,
   useRemoveAvatarMutation,
-
+  useGetUserByUsernameQuery,
   // Admin endpoints
   useGetAllUsersQuery,
   useGetUserByIdQuery,

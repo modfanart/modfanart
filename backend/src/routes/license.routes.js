@@ -5,10 +5,10 @@ const router = express.Router();
 const LicenseController = require('../controller/license.controller'); // ← plural "controllers"
 const { authenticateToken } = require('../middleware/auth.middleware');
 const { hasPermission } = require('../middleware/permission.middleware');
-
+const LicensePurchaseController = require("../controller/licensePurchase.controller");
 // All license routes require authentication
 // router.use(authenticateToken);
-
+router.post("/checkout", LicensePurchaseController.createCheckoutSession);
 // ────────────────────────────────────────────────
 // User (buyer) routes
 // ────────────────────────────────────────────────

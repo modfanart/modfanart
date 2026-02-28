@@ -1,20 +1,36 @@
 // src/store/features/authSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
-import type { UserProfile as User } from '../userApi' // or wherever your User type lives
+// adjust import
+import type { User } from '../authApi'
 
-interface AuthState {
+export interface AuthState {
     accessToken: string | null
     user: User | null
-    // Optional but very useful in real apps:
-    isAuthenticated: boolean // derived, but convenient for quick checks
-    lastRefreshedAt?: number // timestamp — helps debug stale sessions
+    isAuthenticated: boolean
+    lastRefreshedAt?: number
+}
+
+const loadPersistedState = (): Partial<AuthState> => {
+    try {
+        const token = localStorage.getItem('accessToken')
+        // const refresh = localStorage.getItem('refreshToken') // if you add later
+        if (!token) return {}
+
+        return {
+            accessToken: token,
+            // refreshToken: refresh,
+            isAuthenticated: true, // optimistic — will be verified by API
+        }
+    } catch {
+        return {}
+    }
 }
 
 const initialState: AuthState = {
-    accessToken: localStorage.getItem('accessToken') || null,
+    accessToken: null,
     user: null,
     isAuthenticated: false,
-    // lastRefreshedAt: undefined,
+    ...loadPersistedState(),
 }
 
 export const authSlice = createSlice({
@@ -26,21 +42,20 @@ export const authSlice = createSlice({
             action: PayloadAction<{
                 accessToken: string
                 user: User | null
-                persist?: boolean // optional — some flows don't want to save to storage
+                persist?: boolean
             }>,
         ) => {
-            state.accessToken = action.payload.accessToken
-            state.user = action.payload.user
-            state.isAuthenticated =
-                !!action.payload.accessToken && !!action.payload.user
+            const { accessToken, user, persist = true } = action.payload
 
-            if (action.payload.persist !== false) {
-                localStorage.setItem('accessToken', action.payload.accessToken)
-                // If you store refreshToken separately:
-                // localStorage.setItem('refreshToken', action.payload.refreshToken);
-            }
-
+            state.accessToken = accessToken
+            state.user = user
+            state.isAuthenticated = !!accessToken && !!user
             state.lastRefreshedAt = Date.now()
+
+            if (persist) {
+                localStorage.setItem('accessToken', accessToken)
+                // localStorage.setItem('refreshToken', refreshToken) // if you have it
+            }
         },
 
         logout: (state) => {
@@ -50,28 +65,16 @@ export const authSlice = createSlice({
             state.lastRefreshedAt = undefined
 
             localStorage.removeItem('accessToken')
-            localStorage.removeItem('refreshToken') // good — you already have this
-            // Optional: clear other auth-related storage if you have any
-            // sessionStorage.clear(); // only if you use sessionStorage too
+            // localStorage.removeItem('refreshToken')
         },
 
-        // Optional: lightweight action for token refresh without full user reload
         updateAccessToken: (state, action: PayloadAction<string>) => {
-            if (state.accessToken) {
-                state.accessToken = action.payload
-                localStorage.setItem('accessToken', action.payload)
-                state.lastRefreshedAt = Date.now()
-            }
-        },
-
-        // Optional: clear user data but keep token (rare, but useful during profile update flows)
-        clearUser: (state) => {
-            state.user = null
+            state.accessToken = action.payload
+            localStorage.setItem('accessToken', action.payload)
+            state.lastRefreshedAt = Date.now()
         },
     },
 })
 
-export const { setCredentials, logout, updateAccessToken, clearUser } =
-    authSlice.actions
-
+export const { setCredentials, logout, updateAccessToken } = authSlice.actions
 export default authSlice.reducer
