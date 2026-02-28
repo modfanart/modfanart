@@ -2,13 +2,15 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const attachDb = require('./src/middleware/attachDb');
+const requestLogger = require('./src/middleware/requestLogger');
 dotenv.config();
 
 const app = express();
 
 app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:3000' || "http://localhost:5173" }));
 app.use(express.json());
-
+// ← Add this line
+app.use(requestLogger);
 app.use(attachDb);
 // Routes
 
@@ -24,6 +26,8 @@ app.use('/api/users', require('./src/routes/user.routes'));
 app.use('/api/brands', require("./src/routes/brand.routes"));
 app.use("/api/collections", require("./src/routes/collection.route"))
 app.use("/api/search", require("./src/routes/search.routes"))
+app.use("/api/payout", require("./src/routes/payout.routes"))
+app.use("/api/webhook", require("./src/routes/webhooks"))
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', env: process.env.NODE_ENV || 'dev' });

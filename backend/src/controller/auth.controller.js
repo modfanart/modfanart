@@ -260,30 +260,56 @@ console.log(user)
   }
 
   // POST /auth/logout
-  static async logout(req, res) {
-    try {
-      const { refreshToken } = req.body;
+// POST /auth/logout
+static async logout(req, res) {
+  try {
+    const { refreshToken } = req.body; // optional
 
-      if (refreshToken) {
-        const refreshHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
-        const token = await db
-          .selectFrom('refresh_tokens')
-          .select('id')
-          .where('token_hash', '=', refreshHash)
-          .executeTakeFirst();
+    if (refreshToken) {
+      const refreshHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
 
-        if (token) {
-          await RefreshToken.revoke(token.id);
-        }
+      // Revoke specific token if provided and valid
+      const tokenRecord = await db
+        .selectFrom('refresh_tokens')
+        .select('id')
+        .where('token_hash', '=', refreshHash)
+        .where('revoked_at', 'is', null)
+        .executeTakeFirst();
+
+      if (tokenRecord) {
+        await RefreshToken.revoke(tokenRecord.id);
+        console.log(`Refresh token revoked for logout: ${refreshHash.substring(0, 8)}...`);
       }
-
-      // Invalidate current access token? → client just deletes it
-      res.json({ message: 'Logged out successfully' });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Logout failed' });
     }
+
+    // You could also revoke ALL refresh tokens for the user (more aggressive)
+    // But requires authenticated request → needs access token validation first
+    // Example (if you want this behavior):
+    /*
+    const authHeader = req.headers.authorization;
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      try {
+        const decoded = verifyAccessToken(token); // your util
+        await RefreshToken.revokeAllForUser(decoded.userId);
+      } catch {}
+    }
+    */
+
+    // Always return success — client clears local state anyway
+    res.status(200).json({
+      success: true,
+      message: 'Logged out successfully',
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+    // Still return 200 — client should clear tokens regardless
+    res.status(200).json({
+      success: true,
+      message: 'Logged out (partial server cleanup)',
+    });
   }
+}
 }
 
 module.exports = AuthController;

@@ -1,3 +1,4 @@
+// src/auth/AuthContext.tsx
 import { createContext } from 'react'
 import type {
     SignInCredential,
@@ -7,41 +8,36 @@ import type {
     OauthSignInCallbackPayload,
 } from '@/@types/auth'
 
-type Auth = {
+export type AuthContextType = {
     authenticated: boolean
-    user: User
-    signIn: (values: SignInCredential) => AuthResult
-    signUp: (values: SignUpCredential) => AuthResult
-    signOut: () => void
+    user: User | null
+    isLoading: boolean // ← add this
+    signIn: (values: SignInCredential) => Promise<AuthResult>
+    signUp: (values: SignUpCredential) => Promise<AuthResult>
+    signOut: () => Promise<void>
     oAuthSignIn: (
         callback: (payload: OauthSignInCallbackPayload) => void,
     ) => void
 }
 
-const defaultFunctionPlaceHolder = async (): AuthResult => {
-    await new Promise((resolve) => setTimeout(resolve, 0))
-    return {
-        status: '',
-        message: '',
-    }
-}
+const defaultFunctionPlaceHolder = async (): Promise<AuthResult> => ({
+    status: 'failed',
+    message: '',
+})
 
 const defaultOAuthSignInPlaceHolder = (
     callback: (payload: OauthSignInCallbackPayload) => void,
 ): void => {
-    callback({
-        onSignIn: () => {},
-        redirect: () => {},
-    })
+    callback({ onSignIn: () => {}, redirect: () => {} })
 }
 
-const AuthContext = createContext<Auth>({
+const AuthContext = createContext<AuthContextType>({
     authenticated: false,
-    user: {},
-    signIn: async () => defaultFunctionPlaceHolder(),
-    signUp: async () => defaultFunctionPlaceHolder(),
-    signOut: () => {},
+    user: null,
+    isLoading: false, // ← add default
+    signIn: defaultFunctionPlaceHolder,
+    signUp: defaultFunctionPlaceHolder,
+    signOut: async () => {},
     oAuthSignIn: defaultOAuthSignInPlaceHolder,
 })
-
 export default AuthContext

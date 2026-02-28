@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import { useParams } from 'next/navigation'; // ← add this
 import { CalendarIcon, Users, PlusCircle, Edit, Eye, Trash2, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,49 +18,132 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { DashboardShell } from '@/components/dashboard-shell';
 import { useGetContestsQuery } from '@/services/api/contestsApi';
-// ── Import RTK Query hooks ───────────────────────────────────────
-// Optional: helper to map backend status → UI-friendly label & variant
-function getStatusBadge(status: string) {
-  switch (status) {
-    case 'live':
-    case 'published':
-      return {
-        label: 'Active',
-        variant: 'default' as const,
-        className: 'bg-green-100 text-green-800',
-      };
-    case 'completed':
-    case 'archived':
-      return { label: 'Closed', variant: 'secondary' as const, className: '' };
-    case 'draft':
-      return { label: 'Draft', variant: 'outline' as const, className: '' };
-    default:
-      return { label: status, variant: 'secondary' as const, className: '' };
-  }
-}
+import { CheckCircle, XCircle, Clock, Trophy } from 'lucide-react';
+// ... keep getStatusBadge unchanged ...
+const getStatusBadge = (status: string = 'unknown') => {
+  const s = status.toLowerCase();
 
+  switch (s) {
+    case 'published':
+    case 'live':
+      return {
+        label: 'Live',
+        variant: 'default' as const,
+        className: 'bg-green-600 hover:bg-green-600',
+      };
+
+    case 'draft':
+      return {
+        label: 'Draft',
+        variant: 'secondary' as const,
+        className: 'bg-yellow-500/20 text-yellow-700',
+      };
+
+    case 'pending':
+    case 'judging':
+      return {
+        label: 'In Review',
+        variant: 'outline' as const,
+        className: 'border-orange-500 text-orange-700',
+      };
+
+    case 'completed':
+      return {
+        label: 'Completed',
+        variant: 'secondary' as const,
+        className: 'bg-gray-600 hover:bg-gray-600',
+      };
+
+    case 'archived':
+      return {
+        label: 'Archived',
+        variant: 'outline' as const,
+        className: 'border-gray-400 text-gray-500',
+      };
+
+    case 'rejected':
+      return {
+        label: 'Rejected',
+        variant: 'destructive' as const,
+        className: '',
+      };
+
+    case 'approved':
+      return {
+        label: 'Approved',
+        variant: 'default' as const,
+        className: 'bg-emerald-600 hover:bg-emerald-600',
+      };
+
+    case 'winner':
+    case 'winners announced':
+      return {
+        label: 'Winners Announced',
+        variant: 'default' as const,
+        className: 'bg-amber-500 hover:bg-amber-500',
+      };
+
+    default:
+      return {
+        label: 'Unknown',
+        variant: 'secondary' as const,
+        className: 'bg-gray-400/30',
+      };
+  }
+};
 export default function OpportunitiesManagementPage() {
-  // You can pass status filter via query param if your backend supports it
-  // Here we fetch all → then filter client-side (simple & works with small-medium datasets)
-  const { data: contestsResponse, isLoading, isError, error } = useGetContestsQuery(); // or useGetContestsQuery({ status: undefined }) if needed
+  const params = useParams();
+
+  // Option A: if route is /dashboard/brands/[brandId]/opportunities
+  const brandId = params['brandId'] as string | undefined;
+
+  // Option B: if route is /dashboard/opportunities/[brandSlug]
+  // const brandSlug = params.brandSlug as string | undefined;
+
+  // Option C: if you pass brand manager id or something else
+  // const brandManagerId = params.brandManagerId as string | undefined;
+
+  // Choose one depending on your route structure
+  // Here we assume brandId is in the dynamic segment
+  const {
+    data: contestsResponse,
+    isLoading,
+    isError,
+    error,
+  } = useGetContestsQuery(brandId ? { brandId } : undefined, {
+    // Optional: skip query if no brandId
+    skip: !brandId,
+  });
 
   const contests = contestsResponse?.contests ?? [];
 
-  // Optional: group/filter once (you can also do it inside each TabsContent)
   const activeContests = contests.filter((c) => c.status === 'live' || c.status === 'published');
   const closedContests = contests.filter(
     (c) => c.status === 'completed' || c.status === 'archived'
   );
   const draftContests = contests.filter((c) => c.status === 'draft');
 
-  // You may also want to derive "type": contest / rfd later from another field
-  // For now we assume everything is contest (adjust if you have RFDs/licensing opps)
+  // Optional: show brand name in header if you fetch it or pass it
+  // const brandName = contests[0]?.brand_name || 'Your Brand';
+
+  if (!brandId) {
+    return (
+      <DashboardShell>
+        <div className="rounded-lg border border-destructive p-6 text-center">
+          <p className="text-destructive">No brand selected</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Please access this page from a specific brand dashboard.
+          </p>
+        </div>
+      </DashboardShell>
+    );
+  }
 
   if (isLoading) {
     return (
       <DashboardShell>
         <div className="flex justify-center py-12">
-          <p className="text-muted-foreground">Loading your opportunities...</p>
+          <p className="text-muted-foreground">Loading brand opportunities...</p>
         </div>
       </DashboardShell>
     );
@@ -83,12 +167,14 @@ export default function OpportunitiesManagementPage() {
       <div className="flex flex-col gap-8">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="space-y-1">
-            <h1 className="text-3xl font-bold tracking-tight">Opportunities Management</h1>
+            <h1 className="text-3xl font-bold tracking-tight">
+              {/* {brandName ? `${brandName} ` : ''} */}Opportunities Management
+            </h1>
             <p className="text-lg text-muted-foreground">
-              Create and manage fan art contests and licensing opportunities.
+              Create and manage fan art contests and licensing opportunities for this brand.
             </p>
           </div>
-          <Link href="/dashboard/opportunities/create">
+          <Link href={`/dashboard/brands/${brandId}/opportunities/create`}>
             <Button size="lg">
               <PlusCircle className="mr-2 h-5 w-5" />
               Create New
@@ -98,38 +184,24 @@ export default function OpportunitiesManagementPage() {
 
         <Tabs defaultValue="all" className="space-y-8">
           <TabsList className="w-full justify-start border-b bg-transparent p-0">
-            <TabsTrigger
-              value="all"
-              className="relative h-11 rounded-none border-b-2 border-transparent px-4 pb-3 pt-2 font-semibold text-muted-foreground hover:text-primary data-[state=active]:border-primary data-[state=active]:text-primary"
-            >
+            <TabsTrigger value="all" className="...">
               All Opportunities
             </TabsTrigger>
-            <TabsTrigger
-              value="active"
-              className="relative h-11 rounded-none border-b-2 border-transparent px-4 pb-3 pt-2 font-semibold text-muted-foreground hover:text-primary data-[state=active]:border-primary data-[state=active]:text-primary"
-            >
+            <TabsTrigger value="active" className="...">
               Active
             </TabsTrigger>
-            <TabsTrigger
-              value="closed"
-              className="relative h-11 rounded-none border-b-2 border-transparent px-4 pb-3 pt-2 font-semibold text-muted-foreground hover:text-primary data-[state=active]:border-primary data-[state=active]:text-primary"
-            >
+            <TabsTrigger value="closed" className="...">
               Closed
             </TabsTrigger>
-            <TabsTrigger
-              value="draft"
-              className="relative h-11 rounded-none border-b-2 border-transparent px-4 pb-3 pt-2 font-semibold text-muted-foreground hover:text-primary data-[state=active]:border-primary data-[state=active]:text-primary"
-            >
+            <TabsTrigger value="draft" className="...">
               Drafts
             </TabsTrigger>
           </TabsList>
 
-          {/* ── ALL ──────────────────────────────────────────────── */}
           <TabsContent value="all" className="space-y-8">
             {contests.length === 0 ? <EmptyState /> : <OpportunityGrid items={contests} />}
           </TabsContent>
 
-          {/* ── ACTIVE ───────────────────────────────────────────── */}
           <TabsContent value="active" className="space-y-8">
             {activeContests.length === 0 ? (
               <EmptyState label="active" />
@@ -138,7 +210,6 @@ export default function OpportunitiesManagementPage() {
             )}
           </TabsContent>
 
-          {/* ── CLOSED ───────────────────────────────────────────── */}
           <TabsContent value="closed" className="space-y-8">
             {closedContests.length === 0 ? (
               <EmptyState label="closed" />
@@ -147,7 +218,6 @@ export default function OpportunitiesManagementPage() {
             )}
           </TabsContent>
 
-          {/* ── DRAFTS ───────────────────────────────────────────── */}
           <TabsContent value="draft" className="space-y-8">
             {draftContests.length === 0 ? (
               <EmptyState label="draft" isCreateButton />
@@ -161,6 +231,8 @@ export default function OpportunitiesManagementPage() {
   );
 }
 
+// Keep OpportunityGrid and EmptyState the same
+// (just remember to adjust create & view links to include brandId if needed)
 // ── Reusable grid renderer ───────────────────────────────────────
 function OpportunityGrid({
   items,

@@ -1,33 +1,81 @@
 'use client';
 
-import { Globe, Instagram, Twitter, ExternalLink, Heart, Trophy, FolderHeart } from 'lucide-react';
+import { useEffect, useMemo } from 'react';
+import {
+  Globe,
+  Instagram,
+  Twitter,
+  ExternalLink,
+  Heart,
+  Trophy,
+  FolderHeart,
+  UserPlus,
+  MessageSquare,
+  MoreHorizontal,
+  Edit,
+  Settings,
+} from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { userApi } from '@/services/api/userApi'; // adjust path
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+
+import {
+  useGetCurrentUserQuery,
+  useGetUserByUsernameQuery,
+  // If you add follow endpoint later:
+  // useFollowUserMutation,
+  // useUnfollowUserMutation,
+} from '@/services/api/userApi';
 
 interface ProfileViewProps {
-  isPublic?: boolean;
-  userId?: string;
+  targetUsername: string;
 }
 
-export function ProfileView({ isPublic = false, userId }: ProfileViewProps) {
-  const { data: userResponse, isLoading, isError } = userApi.useGetCurrentUserQuery();
+export function ProfileView({ targetUsername }: ProfileViewProps) {
+  // ── Current logged-in user ───────────────────────────────────────
+  const {
+    data: currentData,
+    isLoading: currentLoading,
+    isError: currentError,
+  } = useGetCurrentUserQuery();
 
-  const user = userResponse?.user;
+  const currentUser = currentData?.user;
 
-  // Placeholder favs data (filtered by rating sub-tabs later)
+  // ── Target profile ───────────────────────────────────────────────
+  const {
+    data: profileData,
+    isLoading: profileLoading,
+    isError: profileError,
+    isSuccess: profileSuccess,
+  } = useGetUserByUsernameQuery(targetUsername, {
+    skip: !targetUsername,
+  });
+
+  const profileUser = profileData?.user;
+
+  const isLoading = currentLoading || profileLoading;
+  const hasError = currentError || profileError || (!profileSuccess && !profileLoading);
+
+  const isOwnProfile = useMemo(() => {
+    if (!currentUser?.username || !targetUsername) return false;
+    return currentUser.username.toLowerCase() === targetUsername.toLowerCase();
+  }, [currentUser?.username, targetUsername]);
+
+  // Placeholder / mock data ────────────────────────────────────────
+  // In real app these would come from separate endpoints
   const favArtworks = [
     {
       id: '1',
       title: 'Ankhon Dekhi Inspired Art',
       poster: '/placeholder.svg?height=200&width=140',
       rating: 'Perfection',
-      review:
-        'This artwork is an eye-opener for creative living. I was inspired as a kid when this style emerged but ill promise myself that when ill make my own theater ill screen it for 2 days just for myself.',
+      review: 'This artwork is an eye-opener for creative living. I was inspired as a kid...',
       likes: 42,
       comments: 8,
     },
@@ -36,246 +84,267 @@ export function ProfileView({ isPublic = false, userId }: ProfileViewProps) {
       title: 'Border 2 Fan Poster',
       poster: '/placeholder.svg?height=200&width=140',
       rating: 'Timeless',
-      review: 'PATHETIC MOVIE but still enjoyed my time. No comparison with original BORDER',
+      review: 'PATHETIC MOVIE but still enjoyed my time...',
       likes: 19,
       comments: 5,
     },
-    // Add more entries with different ratings: Skip, Go For It, etc.
   ];
 
   const contests = [
-    {
-      id: 'c1',
-      title: 'Ramayana Fan Art Contest',
-      poster: '/placeholder.svg?height=140&width=100',
-      status: 'Submitted • Pending',
-    },
-    {
-      id: 'c2',
-      title: 'Marvel Redesign Challenge',
-      poster: '/placeholder.svg?height=140&width=100',
-      status: 'Won 2nd Place',
-    },
+    { id: 'c1', title: 'Ramayana Fan Art Contest', status: 'Submitted • Pending' },
+    { id: 'c2', title: 'Marvel Redesign Challenge', status: 'Won 2nd Place' },
   ];
 
   const collections = [
-    {
-      id: 'col1',
-      name: 'My Cyberpunk Vibes',
-      count: 18,
-      cover: '/placeholder.svg?height=140&width=100',
-    },
-    {
-      id: 'col2',
-      name: 'Saved from @PixelNinja',
-      count: 12,
-      cover: '/placeholder.svg?height=140&width=100',
-    },
+    { id: 'col1', name: 'My Cyberpunk Vibes', count: 18 },
+    { id: 'col2', name: 'Saved from @PixelNinja', count: 12 },
   ];
 
-  if (isLoading) return <div className="animate-pulse h-96 bg-gray-100 rounded-xl" />;
-  if (isError || !user)
-    return <p className="text-red-500 text-center py-20">Could not load profile</p>;
+  if (isLoading) {
+    return (
+      <div className="space-y-8">
+        <div className="flex flex-col md:flex-row gap-10">
+          <Skeleton className="h-96 w-full md:w-80 rounded-xl" />
+          <div className="flex-1 space-y-6">
+            <Skeleton className="h-12 w-3/4" />
+            <Skeleton className="h-32 w-full" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  const initials = user.username?.slice(0, 2).toUpperCase() || 'U';
-  const displayName = user.username || user.email?.split('@')[0] || 'User';
-  const handle = user.username ? `@${user.username}` : '';
-  const role = user.role?.name || 'Artist';
+  if (hasError || !profileUser) {
+    return (
+      <div className="text-center py-20">
+        <h2 className="text-2xl font-semibold text-muted-foreground">
+          @{targetUsername} not found
+        </h2>
+        <p className="mt-3 text-muted-foreground">
+          The profile may be private, suspended, or the username may be incorrect.
+        </p>
+      </div>
+    );
+  }
 
-  const twitter = user.profile?.twitter;
-  const instagram = user.profile?.instagram;
+  const initials = profileUser.username?.slice(0, 2).toUpperCase() || 'U';
+  const displayName = profileUser.username || 'User';
+  const handle = profileUser.username ? `@${profileUser.username}` : '';
+  const role = profileUser.role?.name || 'Artist';
+  const bio = profileUser.bio;
+  const twitter = profileUser.profile?.twitter;
+  const instagram = profileUser.profile?.instagram;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-10 max-w-6xl mx-auto">
-      {/* LEFT – Profile Info (sticky) */}
-      <div className="lg:sticky lg:top-8 lg:h-fit space-y-6 order-2 lg:order-1">
+    <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-10 max-w-7xl mx-auto">
+      {/* ── LEFT COLUMN ────────────────────────────────────────────── */}
+      <div className="lg:sticky lg:top-8 space-y-7 self-start">
         <div className="text-center lg:text-left">
-          <Avatar className="mx-auto lg:mx-0 h-28 w-28 mb-4 ring-2 ring-background shadow-lg">
-            <AvatarImage src={user.avatar_url ?? undefined} />
-            <AvatarFallback className="text-4xl font-bold bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white">
+          <Avatar className="mx-auto lg:mx-0 h-32 w-32 mb-5 ring-2 ring-background shadow-xl">
+            <AvatarImage src={profileUser.avatar_url ?? undefined} alt={displayName} />
+            <AvatarFallback className="text-5xl font-bold bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white">
               {initials}
             </AvatarFallback>
           </Avatar>
 
-          <h1 className="text-2xl font-bold">{displayName}</h1>
-          <p className="text-lg text-muted-foreground mt-1">{handle}</p>
-          <p className="text-base text-gray-600 mt-2 font-medium">{role}</p>
+          <h1 className="text-3xl font-bold tracking-tight">{displayName}</h1>
+          <p className="text-xl text-muted-foreground mt-1">{handle}</p>
+
+          {role && (
+            <Badge variant="secondary" className="mt-3 px-4 py-1 text-sm">
+              {role}
+            </Badge>
+          )}
         </div>
 
-        <div className="grid grid-cols-4 gap-4 text-center bg-muted/50 p-5 rounded-xl">
+        {/* Stats */}
+        <div className="grid grid-cols-4 gap-4 text-center bg-muted/40 p-6 rounded-2xl border">
           <div>
-            <div className="text-2xl font-bold">211</div>
-            <div className="text-xs text-muted-foreground">Artworks</div>
+            <div className="text-2xl font-bold">248</div>
+            <div className="text-xs text-muted-foreground mt-1">Artworks</div>
           </div>
           <div>
-            <div className="text-2xl font-bold">53</div>
-            <div className="text-xs text-muted-foreground">Licenses</div>
+            <div className="text-2xl font-bold">67</div>
+            <div className="text-xs text-muted-foreground mt-1">Licenses</div>
           </div>
           <div>
-            <div className="text-2xl font-bold">3</div>
-            <div className="text-xs text-muted-foreground">Contests</div>
+            <div className="text-2xl font-bold">4</div>
+            <div className="text-xs text-muted-foreground mt-1">Contests</div>
           </div>
           <div>
-            <div className="text-2xl font-bold">5</div>
-            <div className="text-xs text-muted-foreground">Collections</div>
+            <div className="text-2xl font-bold">9</div>
+            <div className="text-xs text-muted-foreground mt-1">Collections</div>
           </div>
         </div>
 
-        {user.bio && (
-          <p className="text-sm leading-relaxed text-muted-foreground bg-muted/30 p-4 rounded-xl whitespace-pre-wrap">
-            {user.bio}
-          </p>
+        {/* Bio */}
+        {bio && (
+          <div className="bg-muted/30 p-5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap border">
+            {bio}
+          </div>
         )}
 
-        <div className="space-y-2.5 text-sm">
+        {/* Social links */}
+        <div className="space-y-2.5">
           {twitter && (
-            <Link href={twitter} className="flex items-center gap-2.5 hover:text-primary">
-              <Twitter className="h-4 w-4" />{' '}
+            <a
+              href={twitter}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 text-sm hover:text-primary transition-colors"
+            >
+              <Twitter className="h-4 w-4" />
               {twitter.replace(/^https?:\/\/(www\.)?(twitter\.com\/|x\.com\/)?/, '@')}
-            </Link>
+            </a>
           )}
           {instagram && (
-            <Link href={instagram} className="flex items-center gap-2.5 hover:text-primary">
-              <Instagram className="h-4 w-4" />{' '}
+            <a
+              href={instagram}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 text-sm hover:text-primary transition-colors"
+            >
+              <Instagram className="h-4 w-4" />
               {instagram.replace(/^https?:\/\/(www\.)?(instagram\.com\/)?/, '@')}
-            </Link>
+            </a>
           )}
         </div>
 
-        <p className="text-sm text-muted-foreground">13 Followers · 7 Following</p>
+        {/* Action buttons */}
+        <div className="flex flex-wrap gap-3 pt-4">
+          {isOwnProfile ? (
+            <>
+              <Button asChild className="flex-1 gap-2">
+                <Link href="/profile/edit">
+                  <Edit className="h-4 w-4" />
+                  Edit Profile
+                </Link>
+              </Button>
+              <Button variant="outline" className="flex-1 gap-2">
+                <Settings className="h-4 w-4" />
+                Settings
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button className="flex-1 gap-2">
+                <UserPlus className="h-4 w-4" />
+                Follow
+              </Button>
+              <Button variant="outline" className="flex-1 gap-2">
+                <MessageSquare className="h-4 w-4" />
+                Message
+              </Button>
+              <Button variant="ghost" size="icon" className="h-10 w-10">
+                <MoreHorizontal className="h-5 w-5" />
+              </Button>
+            </>
+          )}
+        </div>
 
-        {!isPublic && (
-          <Link
-            href="/profile/edit"
-            className="text-sm text-primary hover:underline flex items-center gap-1.5"
-          >
-            Edit Profile <ExternalLink className="h-3.5 w-3.5" />
-          </Link>
+        {!isOwnProfile && currentUser && (
+          <p className="text-xs text-center text-muted-foreground pt-2">
+            Logged in as @{currentUser.username}
+          </p>
         )}
       </div>
 
-      {/* RIGHT / MAIN – Tabs + Content */}
-      <div className="space-y-10 order-1 lg:order-2">
-        <Tabs defaultValue="favs">
-          <TabsList className="bg-transparent border-b w-full justify-start rounded-none h-auto p-0 mb-6">
+      {/* ── RIGHT COLUMN ── Tabs ───────────────────────────────────── */}
+      <div className="space-y-10">
+        <Tabs defaultValue="favs" className="w-full">
+          <TabsList className="bg-transparent border-b w-full justify-start rounded-none h-auto p-0 mb-8">
             <TabsTrigger
               value="favs"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:shadow-none px-6"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:shadow-none px-8 py-4 text-base"
             >
-              <Heart className="mr-2 h-4 w-4" /> Favs
+              <Heart className="mr-2 h-5 w-5" />
+              Favs
             </TabsTrigger>
             <TabsTrigger
               value="contests"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:shadow-none px-6"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:shadow-none px-8 py-4 text-base"
             >
-              <Trophy className="mr-2 h-4 w-4" /> Contests
+              <Trophy className="mr-2 h-5 w-5" />
+              Contests
             </TabsTrigger>
             <TabsTrigger
               value="collections"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:shadow-none px-6"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:shadow-none px-8 py-4 text-base"
             >
-              <FolderHeart className="mr-2 h-4 w-4" /> Collections
+              <FolderHeart className="mr-2 h-5 w-5" />
+              Collections
             </TabsTrigger>
           </TabsList>
 
-          {/* Favs – with sub-tabs for ratings */}
-          <TabsContent value="favs" className="mt-2">
-            <Tabs defaultValue="all">
-              <TabsList className="bg-transparent border-b w-full justify-start rounded-none h-10 px-0 mb-6">
-                <TabsTrigger
-                  value="all"
-                  className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary px-5"
-                >
-                  All
-                </TabsTrigger>
-                <TabsTrigger
-                  value="skip"
-                  className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary px-5"
-                >
-                  Skip
-                </TabsTrigger>
-                <TabsTrigger
-                  value="timeless"
-                  className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary px-5"
-                >
-                  Timeless
-                </TabsTrigger>
-                <TabsTrigger
-                  value="go-for-it"
-                  className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary px-5"
-                >
-                  Go For It
-                </TabsTrigger>
-                <TabsTrigger
-                  value="perfection"
-                  className="rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary px-5"
-                >
-                  Perfection
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="all" className="space-y-6">
-                {favArtworks.map((art) => (
-                  <Card
-                    key={art.id}
-                    className="overflow-hidden shadow-sm hover:shadow transition-shadow"
-                  >
-                    <CardContent className="p-5 flex gap-6">
-                      <div className="relative h-44 w-32 rounded-lg overflow-hidden flex-shrink-0">
-                        <Image src={art.poster} alt={art.title} fill className="object-cover" />
-                        <span className="absolute top-2 right-2 bg-purple-600 text-white text-xs px-2.5 py-1 rounded-full font-medium">
-                          {art.rating}
+          <TabsContent value="favs">
+            <div className="space-y-6">
+              {favArtworks.map((art) => (
+                <Card key={art.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                  <CardContent className="p-6 flex gap-6">
+                    <div className="relative h-48 w-36 rounded-xl overflow-hidden flex-shrink-0 shadow-sm">
+                      <Image src={art.poster} alt={art.title} fill className="object-cover" />
+                      <Badge
+                        variant="secondary"
+                        className="absolute top-3 right-3 bg-purple-600 text-white hover:bg-purple-600"
+                      >
+                        {art.rating}
+                      </Badge>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-xl mb-3 line-clamp-2">{art.title}</h3>
+                      <p className="text-sm text-muted-foreground line-clamp-4 mb-4">
+                        {art.review}
+                      </p>
+                      <div className="flex gap-6 text-sm text-muted-foreground">
+                        <span className="flex items-center gap-1.5">
+                          <Heart className="h-4 w-4 fill-red-500 text-red-500" /> {art.likes}
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <MessageSquare className="h-4 w-4" /> {art.comments}
                         </span>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-lg mb-2">{art.title}</h3>
-                        <p className="text-sm text-muted-foreground line-clamp-4">{art.review}</p>
-                        <div className="flex items-center gap-5 mt-4 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1.5">
-                            <Heart className="h-4 w-4 fill-red-500 text-red-500" /> {art.likes}
-                          </span>
-                          <span className="flex items-center gap-1.5">
-                            <span className="text-base">💬</span> {art.comments}
-                          </span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </TabsContent>
-
-              {/* You can add filtered content for other sub-tabs here */}
-              {/* Example: <TabsContent value="perfection"> ... show only Perfection rated items </TabsContent> */}
-            </Tabs>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </TabsContent>
 
-          {/* Contests section */}
-          <TabsContent value="contests" className="space-y-6 mt-2">
-            <h2 className="text-xl font-semibold mb-4">Contests</h2>
-            {contests.map((contest) => (
-              <Card key={contest.id} className="overflow-hidden shadow-sm">
-                <CardContent className="p-5 flex gap-5">
-                  <div className="relative h-36 w-24 rounded-lg overflow-hidden flex-shrink-0">
-                    <Image src={contest.poster} alt={contest.title} fill className="object-cover" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-lg">{contest.title}</h3>
-                    <p className="text-sm mt-2 text-muted-foreground">{contest.status}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+          <TabsContent value="contests">
+            <div className="space-y-6">
+              {contests.map((contest) => (
+                <Card key={contest.id} className="overflow-hidden">
+                  <CardContent className="p-6 flex gap-5">
+                    <div className="relative h-40 w-28 rounded-xl overflow-hidden flex-shrink-0">
+                      <Image
+                        src="/placeholder.svg?height=160&width=112"
+                        alt={contest.title}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-lg mb-2">{contest.title}</h3>
+                      <p className="text-sm text-muted-foreground">{contest.status}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </TabsContent>
 
-          {/* Collections section */}
-          <TabsContent value="collections" className="space-y-6 mt-2">
-            <h2 className="text-xl font-semibold mb-4">Collections</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <TabsContent value="collections">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {collections.map((col) => (
-                <Card key={col.id} className="overflow-hidden shadow-sm">
-                  <CardContent className="p-4">
-                    <div className="relative h-48 w-full rounded-lg overflow-hidden mb-3">
-                      <Image src={col.cover} alt={col.name} fill className="object-cover" />
+                <Card key={col.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                  <CardContent className="p-5">
+                    <div className="relative h-52 w-full rounded-xl overflow-hidden mb-4">
+                      <Image
+                        src="/placeholder.svg?height=208&width=full"
+                        alt={col.name}
+                        fill
+                        className="object-cover"
+                      />
                     </div>
                     <h3 className="font-semibold">{col.name}</h3>
                     <p className="text-sm text-muted-foreground mt-1">{col.count} items</p>

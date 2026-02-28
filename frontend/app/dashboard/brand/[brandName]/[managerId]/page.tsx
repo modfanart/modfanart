@@ -1,50 +1,86 @@
 // app/(dashboard)/brand/page.tsx
-import React from 'react';
+'use client';
+
+import RoleGuard from '@/components/RoleGuard';
 import { Sidebar } from './brandsidebar'; // adjust path if needed
 
 export default function BrandDashboard() {
-  // No props, no children — this is now a full page
   return (
-    <div className="grid min-h-screen w-full lg:grid-cols-[280px_1fr]">
-      <Sidebar />
-      <div className="flex flex-col">
-        <main className="flex-1 overflow-y-auto p-6">
-          {/* 
-            Put your actual brand dashboard content here.
-            This is where your page-specific UI lives now.
-            Examples:
-              - Overview stats
-              - List of submissions/brands
-              - Welcome message
-              - Any server-fetched data
-          */}
-          <div className="space-y-6">
-            <h1 className="text-3xl font-bold">Brand Dashboard</h1>
-            <p className="text-muted-foreground">
-              Welcome back! Here's an overview of your brand activity.
+    <RoleGuard
+      allowedRoles={['BrandManager', 'Brand-Manager', 'brandmanager', 'brand_manager']}
+      redirectTo="/dashboard"
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-lg font-medium">Checking permissions...</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              You will be redirected if you don't have access.
             </p>
+          </div>
+        </div>
+      }
+    >
+      <div className="grid min-h-screen w-full lg:grid-cols-[280px_1fr]">
+        <Sidebar />
 
-            {/* Add cards, tables, charts, etc. here */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {/* Example placeholder cards */}
-              <div className="rounded-lg border bg-card p-6 shadow-sm">
-                <h3 className="text-lg font-semibold">Active Submissions</h3>
-                <p className="text-3xl font-bold mt-2">24</p>
+        <div className="flex flex-col">
+          <main className="flex-1 overflow-y-auto p-6">
+            <div className="space-y-6">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <h1 className="text-3xl font-bold tracking-tight">Brand Dashboard</h1>
+                  <p className="text-muted-foreground mt-1">
+                    Welcome back! Manage your brand's fan art submissions, licenses & reviews.
+                  </p>
+                </div>
+
+                {/* Example action button – adjust to your needs */}
+                <button className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+                  + New Campaign / Brief
+                </button>
               </div>
-              <div className="rounded-lg border bg-card p-6 shadow-sm">
-                <h3 className="text-lg font-semibold">Pending Reviews</h3>
-                <p className="text-3xl font-bold mt-2">7</p>
+
+              {/* Stats cards – placeholder / example */}
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="rounded-lg border bg-card p-6 shadow-sm">
+                  <h3 className="text-sm font-medium text-muted-foreground">Active Campaigns</h3>
+                  <p className="text-3xl font-bold mt-2">8</p>
+                  <p className="text-xs text-muted-foreground mt-1">+2 this month</p>
+                </div>
+
+                <div className="rounded-lg border bg-card p-6 shadow-sm">
+                  <h3 className="text-sm font-medium text-muted-foreground">Pending Submissions</h3>
+                  <p className="text-3xl font-bold mt-2">42</p>
+                  <p className="text-xs text-muted-foreground mt-1">12 need review</p>
+                </div>
+
+                <div className="rounded-lg border bg-card p-6 shadow-sm">
+                  <h3 className="text-sm font-medium text-muted-foreground">Approved This Month</h3>
+                  <p className="text-3xl font-bold mt-2">67</p>
+                  <p className="text-xs text-muted-foreground mt-1">+18% vs last month</p>
+                </div>
+
+                <div className="rounded-lg border bg-card p-6 shadow-sm">
+                  <h3 className="text-sm font-medium text-muted-foreground">
+                    Total Licensed Artworks
+                  </h3>
+                  <p className="text-3xl font-bold mt-2">184</p>
+                  <p className="text-xs text-muted-foreground mt-1">Revenue: $12,450</p>
+                </div>
               </div>
-              <div className="rounded-lg border bg-card p-6 shadow-sm">
-                <h3 className="text-lg font-semibold">Approved This Month</h3>
-                <p className="text-3xl font-bold mt-2">15</p>
+
+              {/* You can add more sections here: */}
+              {/* Recent activity, charts, tables of submissions, brand briefs, etc. */}
+              <div className="rounded-lg border bg-card p-6">
+                <h2 className="text-xl font-semibold mb-4">Recent Submissions</h2>
+                <p className="text-sm text-muted-foreground">
+                  (Add your data table / list component here)
+                </p>
               </div>
             </div>
-
-            {/* More content... */}
-          </div>
-        </main>
+          </main>
+        </div>
       </div>
-    </div>
+    </RoleGuard>
   );
 }
