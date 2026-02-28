@@ -1,8 +1,6 @@
+// src/services/api/licensesApi.ts
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
-/**
- * Aligned strictly with LicenseRow (authoritative schema)
- */
 export interface License {
   id: string;
   order_item_id: string;
@@ -16,32 +14,45 @@ export interface License {
   revoked_at?: string | null;
   created_at: string;
 
-  // ── derived / expanded fields (API join responses, optional) ──
+  // expanded fields (joined)
   artwork?: {
     id: string;
     title: string;
     thumbnail_url?: string | null;
   };
-  buyer?: {
-    id: string;
-    username: string;
-    email?: string;
-  };
-  seller?: {
-    id: string;
-    username: string;
-  };
+  buyer?: { id: string; username: string; email?: string };
+  seller?: { id: string; username: string };
 }
 
 export interface RevokeLicenseRequest {
   id: string;
-  reason?: string;
+  reason?: string | undefined;
 }
 
-// ─────────────────────────────────────────────────────────────
+/**
+ * Payload the frontend sends when initiating a license purchase
+ */
+export interface CreateLicenseCheckoutSessionRequest {
+  artwork_id: string;
+  pricing_tier_id: string;
+}
+
+/**
+ * Response from /api/licenses/checkout-session
+ */
+export interface LicenseCheckoutSessionResponse {
+  clientSecret: string; // paymentIntent.client_secret
+  orderId: string;
+  amount: number; // total in cents
+  currency: string; // 'inr' | 'usd'
+  // optional extras you might return
+  paymentIntentId?: string;
+  metadata?: Record<string, any>;
+}
 
 export const licensesApi = createApi({
   reducerPath: 'licensesApi',
+
   baseQuery: fetchBaseQuery({
     baseUrl: '/api/licenses',
     prepareHeaders: (headers, { getState }) => {
@@ -53,32 +64,32 @@ export const licensesApi = createApi({
     },
   }),
 
-  tagTypes: ['MyLicenses', 'License', 'IssuedLicenses', 'AllLicenses'],
+  tagTypes: [
+    'MyLicenses',
+    'License',
+    'IssuedLicenses',
+    'AllLicenses',
+    // You could add 'PendingOrders' if you want to invalidate later
+  ],
 
   endpoints: (builder) => ({
-    // ── Buyer routes ─────────────────────────────────────────
-
-    // GET /licenses/me
+    // ── Buyer: My licenses ────────────────────────────────
     getMyLicenses: builder.query<License[], void>({
       query: () => '/me',
       providesTags: ['MyLicenses'],
     }),
 
-    // GET /licenses/:id
     getLicense: builder.query<License, string>({
       query: (id) => `/${id}`,
       providesTags: (result, error, id) => [{ type: 'License', id }],
     }),
 
-    // ── Seller / Brand routes ────────────────────────────────
-
-    // GET /licenses/issued
+    // ── Seller: Issued licenses ───────────────────────────
     getIssuedLicenses: builder.query<License[], void>({
       query: () => '/issued',
       providesTags: ['IssuedLicenses'],
     }),
 
-    // PATCH /licenses/:id/revoke
     revokeLicense: builder.mutation<License, RevokeLicenseRequest>({
       query: ({ id, reason }) => ({
         url: `/${id}/revoke`,
@@ -93,12 +104,24 @@ export const licensesApi = createApi({
       ],
     }),
 
-    // ── Admin routes ────────────────────────────────────────
-
-    // GET /licenses
+    // ── Admin ─────────────────────────────────────────────
     getAllLicenses: builder.query<License[], void>({
       query: () => '/',
       providesTags: ['AllLicenses'],
+    }),
+
+    // ── NEW: Create Stripe checkout session / PaymentIntent ──
+    createLicenseCheckoutSession: builder.mutation<
+      LicenseCheckoutSessionResponse,
+      CreateLicenseCheckoutSessionRequest
+    >({
+      query: (body) => ({
+        url: '/checkout-session', // or '/checkout' — match your route
+        method: 'POST',
+        body,
+      }),
+      // Optional: invalidate tags if needed (e.g. pending orders)
+      // invalidatesTags: ['MyLicenses'], // usually not needed here
     }),
   }),
 });
@@ -106,12 +129,14 @@ export const licensesApi = createApi({
 export const {
   useGetMyLicensesQuery,
   useGetLicenseQuery,
-
   useGetIssuedLicensesQuery,
   useRevokeLicenseMutation,
-
   useGetAllLicensesQuery,
 
+  // new hook
+  useCreateLicenseCheckoutSessionMutation,
+
+  // lazy versions if needed
   useLazyGetMyLicensesQuery,
   useLazyGetLicenseQuery,
 } = licensesApi;

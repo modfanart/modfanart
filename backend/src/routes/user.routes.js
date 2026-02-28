@@ -12,6 +12,7 @@ router.use(authenticateToken); // All user routes require auth
 
 router.get('/me', UserController.getCurrentUser);
 router.patch('/me', UserController.updateProfile);
+router.get('/by-username/:username', UserController.getUserByUsername);
 router.patch('/me/password', UserController.changePassword);
 router.post('/me/avatar', upload.single('avatar'), UserController.uploadAvatar);
 router.delete('/me/avatar', UserController.removeAvatar);

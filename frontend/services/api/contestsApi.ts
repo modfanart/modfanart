@@ -105,7 +105,26 @@ export interface LeaderboardEntry {
   // optional joined fields
   thumbnail_url?: string | null;
 }
-
+// Define this near the other interfaces
+export interface UserContestEntry {
+  // better name than MyContestEntry
+  entry_id: string;
+  entry_status: 'pending' | 'approved' | 'rejected' | 'disqualified' | 'winner';
+  rank?: number | null;
+  submitted_at: string;
+  contest_id: string;
+  contest_title: string;
+  contest_slug?: string;
+  contest_status: string;
+  artwork_id: string;
+  artwork_title: string;
+  artwork_description?: string | null;
+  artwork_thumbnail_url?: string | null;
+  artwork_file_url?: string | null;
+  artwork_status: string;
+  artwork_views_count: number;
+  artwork_created_at: string;
+}
 // ────────────────────────────────────────────────
 // Add this interface
 export interface GetContestsResponse {
@@ -141,6 +160,8 @@ const contestsApi = createApi({
     'ContestScores',
     'ContestVotes',
     'Leaderboard',
+    'MyContestEntries',
+    'MyContestEntry',
     'Artwork', // useful when entry links to artwork
   ],
 
@@ -288,7 +309,32 @@ const contestsApi = createApi({
         { type: 'Contest', id: contestId },
       ],
     }),
-
+    // ── NEW: Get all contest entries submitted by the current user ──
+    getMyContestEntries: builder.query<
+      { entries: UserContestEntry[]; total?: number },
+      { status?: ContestEntry['status']; limit?: number; offset?: number } | void
+    >({
+      query: (params) =>
+        params ? { url: '/me/contest-entries', params } : { url: '/me/contest-entries' },
+      providesTags: ['MyContestEntries', 'ContestEntries', 'Contests'],
+    }),
+    // ── NEW: Delete / withdraw your own contest entry ──
+    deleteContestEntry: builder.mutation<
+      { success: boolean; message?: string },
+      { contestId: string; entryId: string }
+    >({
+      query: ({ contestId, entryId }) => ({
+        url: `/contest/${contestId}/entries/${entryId}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: (result, error, { contestId, entryId }) => [
+        'ContestEntries',
+        { type: 'ContestEntry', id: entryId },
+        { type: 'Contest', id: contestId },
+        'MyContestEntries', // important – refresh personal list
+        'Artwork', // if it affects artwork visibility/counts
+      ],
+    }),
     // ── Judges ───────────────────────────────────────────────
 
     getContestJudges: builder.query<ContestJudge[], string>({
@@ -411,7 +457,8 @@ export const {
   useSubmitEntryMutation,
   useGetContestEntriesQuery,
   useUpdateEntryStatusMutation,
-
+  useGetMyContestEntriesQuery,
+  useDeleteContestEntryMutation,
   useGetContestJudgesQuery,
   useInviteJudgeMutation,
   useAcceptJudgeInvitationMutation,

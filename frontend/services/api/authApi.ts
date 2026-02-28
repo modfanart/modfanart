@@ -169,8 +169,25 @@ export const authApi = createApi({
       query: () => ({
         url: '/logout',
         method: 'POST',
+        // body: {}   ← no need to send refreshToken
+        // credentials: 'include' is already set in baseQuery
       }),
       invalidatesTags: ['CurrentUser'],
+      // Optional: you can add extra logic in onQueryStarted if needed
+      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          // Extra safety: force clear tokens even if server fails
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          dispatch(logout()); // your redux action
+        } catch {
+          // even on error → clear everything
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          dispatch(logout());
+        }
+      },
     }),
 
     // You can keep this endpoint, but we are using raw fetch for refresh in baseQuery

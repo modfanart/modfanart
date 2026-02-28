@@ -18,7 +18,9 @@ export const config = {
     baseUrl: 'https://api.grok.ai/v1',
     timeout: 30000, // 30 seconds
   },
-
+  stripe: {
+    publicKey: process.env['NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY'] || '',
+  },
   duckDb: {
     connectionString: process.env.DUCKDB_CONNECTION_STRING || '',
     mdToken: process.env.MOTHERDUCK_TOKEN || '', // ← add this

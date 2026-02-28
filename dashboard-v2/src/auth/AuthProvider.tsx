@@ -1,7 +1,7 @@
 // src/auth/AuthProvider.tsx
-import { createContext, useContext, ReactNode } from 'react'
+import { createContext, useContext, ReactNode, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { useSelector, useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 
 import {
     useLoginMutation,
@@ -9,18 +9,21 @@ import {
     useLogoutMutation,
 } from '@/services/authApi'
 import { useGetCurrentUserQuery } from '@/services/userApi'
-import { setCredentials, logout } from '../services/features/authSlice' // adjust path if needed
-import type { RootState } from '@/store'
 
+import {
+    setCredentials,
+    logout,
+    type AuthState,
+} from '@/services/features/authSlice'
+import type { RootState } from '@/store'
 import appConfig from '@/configs/app.config'
 import { REDIRECT_URL_KEY } from '@/constants/app.constant'
+import type { User } from '@/services/authApi'
 
 import type {
     SignInCredential,
     SignUpCredential,
     AuthResult,
-    OauthSignInCallbackPayload,
-    User,
 } from '@/@types/auth'
 
 interface AuthContextValue {
@@ -30,43 +33,75 @@ interface AuthContextValue {
     signIn: (values: SignInCredential) => Promise<AuthResult>
     signUp: (values: SignUpCredential) => Promise<AuthResult>
     signOut: () => Promise<void>
-    oAuthSignIn?: (
-        callback: (payload: OauthSignInCallbackPayload) => void,
-    ) => void
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
 export function useAuth() {
-    const ctx = useContext(AuthContext)
-    if (!ctx) throw new Error('useAuth must be used within AuthProvider')
-    return ctx
+    const context = useContext(AuthContext)
+    if (!context) {
+        throw new Error('useAuth must be used within AuthProvider')
+    }
+    return context
 }
 
-export default function AuthProvider({ children }: { children: ReactNode }) {
+interface AuthProviderProps {
+    children: ReactNode
+}
+
+// Helper to map API response to User
+function mapCurrentUserResponseToUser(resp: any): User {
+    return {
+        id: resp.id,
+        username: resp.username,
+        email: resp.email,
+        email_verified: resp.email_verified,
+        role_id: resp.role_id,
+        status: resp.status,
+        profile: resp.profile,
+        avatar_url: resp.avatar_url,
+        banner_url: resp.banner_url,
+        bio: resp.bio,
+        location: resp.location,
+        website: resp.website,
+        payout_method: resp.payout_method,
+        stripe_connect_id: resp.stripe_connect_id,
+        last_login_at: resp.last_login_at,
+        created_at: resp.created_at,
+        updated_at: resp.updated_at,
+        deleted_at: resp.deleted_at,
+    }
+}
+
+export default function AuthProvider({ children }: AuthProviderProps) {
     const dispatch = useDispatch()
     const navigate = useNavigate()
     const location = useLocation()
 
     const { accessToken, user: storedUser } = useSelector(
-        (s: RootState) => s.auth,
-    )
+        (state: RootState) => state.auth,
+    ) as AuthState
+
+    const shouldFetchUser = !!accessToken && !storedUser
 
     const { data: freshUser, isLoading: isUserLoading } =
-        useGetCurrentUserQuery(undefined, {
-            skip: !accessToken || !!storedUser,
-        })
+        useGetCurrentUserQuery(undefined, { skip: !shouldFetchUser })
 
-    const effectiveUser = freshUser || storedUser
+    // Normalize freshUser to full User type
+    const effectiveUser: User | null = freshUser
+        ? mapCurrentUserResponseToUser(freshUser)
+        : storedUser
+
     const authenticated = !!accessToken && !!effectiveUser && !isUserLoading
 
-    const [login] = useLoginMutation()
+    const [login, { isLoading: isLoginLoading }] = useLoginMutation()
     const [register] = useRegisterMutation()
     const [logoutApi] = useLogoutMutation()
 
     const getRedirectTarget = () => {
-        const params = new URLSearchParams(location.search)
-        return params.get(REDIRECT_URL_KEY) || appConfig.authenticatedEntryPath
+        const searchParams = new URLSearchParams(location.search)
+        const from = searchParams.get(REDIRECT_URL_KEY)
+        return from || appConfig.authenticatedEntryPath || '/dashboard'
     }
 
     const handleSuccessfulAuth = (accessToken: string, userData: User) => {
@@ -80,19 +115,33 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
         navigate(getRedirectTarget(), { replace: true })
     }
 
-    const signIn = async (values: SignInCredential): Promise<AuthResult> => {
+    const signIn = async (
+        credentials: SignInCredential,
+    ): Promise<AuthResult> => {
         try {
-            const res = await login({
-                email: values.email,
-                password: values.password,
-            }).unwrap()
-            handleSuccessfulAuth(res.accessToken, res.user)
-            return { status: 'success', message: '' }
-        } catch (err: any) {
-            return {
-                status: 'failed',
-                message: err?.data?.message || 'Sign in failed',
+            const response = await login(credentials).unwrap()
+
+            if (!response?.accessToken || !response?.user) {
+                throw new Error('Invalid response from server')
             }
+
+            handleSuccessfulAuth(response.accessToken, response.user)
+
+            return { status: 'success', message: 'Signed in successfully' }
+        } catch (err: any) {
+            let message = 'Login failed. Please try again.'
+
+            if (err?.data?.message) {
+                message = err.data.message
+            } else if (err?.status === 401) {
+                message = 'Invalid email or password'
+            } else if (err?.status === 403) {
+                message = 'Account not verified or suspended'
+            } else if (err?.status >= 500) {
+                message = 'Server error — please try again later'
+            }
+
+            return { status: 'failed', message }
         }
     }
 
@@ -103,8 +152,12 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
                 email: values.email,
                 password: values.password,
             }).unwrap()
+
             handleSuccessfulAuth(res.accessToken, res.user)
-            return { status: 'success', message: '' }
+            return {
+                status: 'success',
+                message: 'Account created successfully',
+            }
         } catch (err: any) {
             return {
                 status: 'failed',
@@ -117,33 +170,26 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
         try {
             await logoutApi().unwrap()
         } catch (err) {
-            console.warn('Logout failed – clearing anyway', err)
+            console.warn('Logout API failed — clearing local state anyway', err)
         } finally {
             dispatch(logout())
-            navigate(appConfig.unAuthenticatedEntryPath, { replace: true })
+            navigate(appConfig.unAuthenticatedEntryPath || '/sign-in', {
+                replace: true,
+            })
         }
     }
 
-    const oAuthSignIn = (cb: (payload: OauthSignInCallbackPayload) => void) => {
-        cb({
-            onSignIn: (tokens, userData) => {
-                if (tokens.accessToken && userData) {
-                    handleSuccessfulAuth(tokens.accessToken, userData)
-                }
-            },
-            redirect: () => navigate(getRedirectTarget(), { replace: true }),
-        })
-    }
-
-    const value: AuthContextValue = {
-        authenticated,
-        user: effectiveUser,
-        isLoading: isUserLoading,
-        signIn,
-        signUp,
-        signOut,
-        oAuthSignIn,
-    }
+    const value = useMemo(
+        () => ({
+            authenticated,
+            user: effectiveUser,
+            isLoading: isUserLoading || isLoginLoading,
+            signIn,
+            signUp,
+            signOut,
+        }),
+        [authenticated, effectiveUser, isUserLoading, isLoginLoading],
+    )
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

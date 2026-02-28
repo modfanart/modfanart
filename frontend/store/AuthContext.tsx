@@ -15,6 +15,7 @@ export interface RoleRow {
 export interface AuthUser {
   id: string;
   email: string;
+  username?: string;
   role?: RoleRow;
 }
 
@@ -34,6 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     ? {
         id: data.user.id,
         email: data.user.email,
+        username: data.user.username, // ← add this line
         ...(data.user.role && {
           role: {
             id: data.user.role.id,

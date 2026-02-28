@@ -111,12 +111,12 @@ export default function OpportunitiesPage() {
               <TabsTrigger value="contests">Active Contests</TabsTrigger>
               <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
             </TabsList>
-            <Link href="/dashboard/contests/create">
+            {/* <Link href="/dashboard/contests/create">
               <Button>
                 Create Contest
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
-            </Link>
+            </Link> */}
           </div>
 
           <TabsContent value="all" className="mt-6 space-y-12">

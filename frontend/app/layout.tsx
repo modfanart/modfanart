@@ -6,6 +6,7 @@ import '@/styles/globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { DevToolsWrapper } from '@/components/dev/dev-tools-wrapper';
 import { Providers } from '@/store/Providers';
+import { AuthProvider } from '@/store/AuthContext';
 const fontSans = FontSans({
   subsets: ['latin'],
   variable: '--font-sans',
@@ -24,12 +25,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body className={cn('min-h-screen bg-white font-sans antialiased', fontSans.variable)}>
         {/* ✅ Client boundary */}
         <Providers>
-          <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
-            <DevToolsWrapper showDebugTools={process.env.NODE_ENV === 'development'}>
-              {children}
-              <Toaster />
-            </DevToolsWrapper>
-          </ThemeProvider>
+          <AuthProvider>
+            <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+              <DevToolsWrapper showDebugTools={process.env.NODE_ENV === 'development'}>
+                {children}
+                <Toaster />
+              </DevToolsWrapper>
+            </ThemeProvider>
+          </AuthProvider>
         </Providers>
       </body>
     </html>

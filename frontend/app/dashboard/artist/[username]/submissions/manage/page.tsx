@@ -16,7 +16,7 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  DollarSign,
+  Trophy,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -38,173 +38,282 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useGetMyArtworksQuery, useDeleteArtworkMutation } from '@/services/api/artworkApi'; // ← import your RTK Query hook
-import { ArtworkListItem } from '@/services/api/artworkApi'; // type
 
-// Helper: map backend status to UI-friendly display
-const getStatusIcon = (status: string) => {
-  switch (status) {
-    case 'published':
-      return <CheckCircle className="h-4 w-4 text-green-500" />;
-    case 'draft':
-      return <Clock className="h-4 w-4 text-yellow-500" />;
-    case 'pending':
-      return <Clock className="h-4 w-4 text-orange-500" />;
-    case 'rejected':
-      return <XCircle className="h-4 w-4 text-red-500" />;
-    case 'archived':
-      return <XCircle className="h-4 w-4 text-gray-500" />;
-    default:
-      return <Clock className="h-4 w-4 text-gray-500" />;
-  }
+import { useAuth } from '@/store/AuthContext';
+import { useGetMyArtworksQuery, useDeleteArtworkMutation } from '@/services/api/artworkApi';
+import { useGetMyContestEntriesQuery, type UserContestEntry } from '@/services/api/contestsApi';
+
+import type { ArtworkListItem } from '@/services/api/artworkApi';
+
+interface UnifiedSubmission {
+  id: string;
+  title: string;
+  description?: string | null;
+  thumbnail_url?: string | null;
+  status: string;
+  views_count: number;
+  created_at: string;
+
+  contestEntryId?: string;
+  contestId?: string;
+  contestTitle?: string;
+  contestEntryStatus?: string;
+  rank?: number | null;
+  isContestSubmission: boolean;
+}
+
+const getStatusIcon = (status: string = 'unknown') => {
+  const s = status.toLowerCase();
+  if (s === 'published') return <CheckCircle className="h-4 w-4 text-green-500" />;
+  if (s === 'draft') return <Clock className="h-4 w-4 text-yellow-500" />;
+  if (s === 'pending') return <Clock className="h-4 w-4 text-orange-500" />;
+  if (s === 'rejected') return <XCircle className="h-4 w-4 text-red-500" />;
+  if (s === 'archived') return <XCircle className="h-4 w-4 text-gray-500" />;
+  if (s === 'approved') return <CheckCircle className="h-4 w-4 text-emerald-600" />;
+  if (s === 'winner') return <Trophy className="h-4 w-4 text-amber-500" />;
+  if (s === 'disqualified') return <XCircle className="h-4 w-4 text-purple-600" />;
+  return <Clock className="h-4 w-4 text-gray-500" />;
 };
 
-const getStatusBadge = (status: string) => {
-  switch (status) {
-    case 'published':
-      return 'bg-green-100 text-green-800';
-    case 'draft':
-      return 'bg-yellow-100 text-yellow-800';
-    case 'pending':
-      return 'bg-orange-100 text-orange-800';
-    case 'rejected':
-      return 'bg-red-100 text-red-800';
-    case 'archived':
-      return 'bg-gray-100 text-gray-800';
-    default:
-      return 'bg-gray-100 text-gray-800';
-  }
+const getStatusBadge = (status: string = 'unknown') => {
+  const s = status.toLowerCase();
+  if (s === 'published') return 'bg-green-100 text-green-800';
+  if (s === 'draft') return 'bg-yellow-100 text-yellow-800';
+  if (s === 'pending') return 'bg-orange-100 text-orange-800';
+  if (s === 'rejected') return 'bg-red-100 text-red-800';
+  if (s === 'archived') return 'bg-gray-100 text-gray-800';
+  if (s === 'approved') return 'bg-emerald-100 text-emerald-800';
+  if (s === 'winner') return 'bg-amber-100 text-amber-800 font-semibold';
+  if (s === 'disqualified') return 'bg-purple-100 text-purple-800';
+  return 'bg-gray-100 text-gray-800';
 };
 
 export default function ManageSubmissionsPage() {
   const [activeTab, setActiveTab] = useState('all');
-  const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  // Fetch real data from backend
+  // ── ALL HOOKS FIRST – unconditionally ───────────────────────────
+  const { user, loading: authLoading } = useAuth();
+
   const {
-    data, // { artworks: ArtworkListItem[], pagination }
-    isLoading,
-    isFetching,
-    error,
-  } = useGetMyArtworksQuery(activeTab === 'all' ? undefined : { status: activeTab });
-  console.log(data);
-  // Mutation for delete
-  const [deleteArtwork, { isLoading: isDeleting }] = useDeleteArtworkMutation();
+    data: artworksData,
+    isLoading: artworksLoading,
+    isFetching: artworksFetching,
+  } = useGetMyArtworksQuery(
+    activeTab === 'all' || activeTab === 'in-contests' ? undefined : { status: activeTab }
+  );
 
-  const handleDelete = async (id: string) => {
-    try {
-      await deleteArtwork(id).unwrap();
-      setDeleteId(null);
-      // RTK Query will automatically refetch the list thanks to invalidatesTags
-    } catch (err) {
-      console.error('Delete failed:', err);
-      // TODO: show toast error
-    }
-  };
+  const {
+    data: entriesResponse,
+    isLoading: entriesLoading,
+    isFetching: entriesFetching,
+  } = useGetMyContestEntriesQuery(undefined);
 
-  const artworks = data?.artworks ?? [];
+  const [deleteArtwork, { isLoading: isDeletingArtwork }] = useDeleteArtworkMutation();
 
-  if (error) {
+  // ── Derived values ──────────────────────────────────────────────
+  const artworks = artworksData?.artworks ?? [];
+  const contestEntries = entriesResponse?.entries ?? [];
+
+  const isLoadingOrFetching =
+    authLoading || artworksLoading || entriesLoading || artworksFetching || entriesFetching;
+
+  // ── Early returns AFTER all hooks ───────────────────────────────
+  if (isLoadingOrFetching) {
     return (
-      <div className="flex-1 p-6 text-center text-red-600">
-        Failed to load your submissions. Please try again later.
+      <div className="flex-1 p-6 flex items-center justify-center min-h-[60vh]">
+        <div className="text-center space-y-4">
+          <Skeleton className="h-12 w-12 rounded-full mx-auto animate-pulse" />
+          <p className="text-muted-foreground">
+            {authLoading ? 'Authenticating...' : 'Loading your submissions...'}
+          </p>
+        </div>
       </div>
     );
   }
 
+  if (!user) {
+    return (
+      <div className="flex-1 p-6 flex items-center justify-center min-h-[60vh]">
+        <div className="text-center space-y-6">
+          <h2 className="text-2xl font-semibold">Please sign in</h2>
+          <p className="text-muted-foreground">
+            You need to be logged in to view and manage your submissions.
+          </p>
+          <Link href="/login">
+            <Button>Sign In</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Safe to use user here ───────────────────────────────────────
+  const username = user?.username?.trim().toLowerCase() ?? 'anonymous';
+  const artistBase = `/dashboard/artist/${username}`;
+
+  const handleDeleteArtwork = async (id: string) => {
+    try {
+      await deleteArtwork(id).unwrap();
+    } catch (err) {
+      console.error('Failed to delete artwork:', err);
+    }
+  };
+
+  // ── Build unified submissions ───────────────────────────────────
+  const unifiedSubmissions: UnifiedSubmission[] = [];
+
+  artworks.forEach((art: ArtworkListItem) => {
+    const entry = contestEntries.find((e) => e.artwork_id === art.id);
+
+    unifiedSubmissions.push({
+      id: art.id,
+      title: art.title || 'Untitled',
+      description: art.description,
+      thumbnail_url: art.thumbnail_url || art.file_url,
+      status: art.status || 'unknown',
+      views_count: art.views_count ?? 0,
+      created_at: art.created_at,
+      isContestSubmission: !!entry,
+      ...(entry && {
+        contestEntryId: entry.entry_id,
+        contestId: entry.contest_id,
+        contestTitle: entry.contest_title,
+        contestEntryStatus: entry.entry_status,
+        rank: entry.rank ?? null,
+      }),
+    });
+  });
+
+  contestEntries.forEach((entry: UserContestEntry) => {
+    if (!unifiedSubmissions.some((u) => u.id === entry.artwork_id)) {
+      unifiedSubmissions.push({
+        id: entry.artwork_id,
+        title: entry.artwork_title || 'Untitled',
+        description: entry.artwork_description || null,
+        thumbnail_url: entry.artwork_thumbnail_url || null,
+        status: entry.artwork_status || 'unknown',
+        views_count: entry.artwork_views_count ?? 0,
+        created_at: entry.artwork_created_at || entry.submitted_at || new Date().toISOString(),
+        contestEntryId: entry.entry_id,
+        contestId: entry.contest_id,
+        contestTitle: entry.contest_title,
+        contestEntryStatus: entry.entry_status,
+        rank: entry.rank ?? null,
+        isContestSubmission: true,
+      });
+    }
+  });
+
+  let displayed = unifiedSubmissions;
+
+  if (activeTab !== 'all' && activeTab !== 'in-contests') {
+    displayed = unifiedSubmissions.filter((item) => item.status.toLowerCase() === activeTab);
+  } else if (activeTab === 'in-contests') {
+    displayed = unifiedSubmissions.filter((item) => item.isContestSubmission);
+  }
+
+  // ── JSX ──────────────────────────────────────────────────────────
   return (
     <div className="flex-1 space-y-6 p-6">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <h1 className="text-3xl font-bold tracking-tight">My Submissions</h1>
-        <Link href="/submissions/new">
+        <Link href={`${artistBase}/artworks/new`}>
           <Button className="bg-[#9747ff] hover:bg-[#8035e0]">
             <PlusCircle className="mr-2 h-4 w-4" />
-            New Submission
+            New Artwork
           </Button>
         </Link>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-5">
+        <TabsList className="grid w-full max-w-xl grid-cols-6">
           <TabsTrigger value="all">All</TabsTrigger>
           <TabsTrigger value="draft">Drafts</TabsTrigger>
           <TabsTrigger value="pending">Pending</TabsTrigger>
           <TabsTrigger value="published">Published</TabsTrigger>
           <TabsTrigger value="rejected">Rejected</TabsTrigger>
+          <TabsTrigger value="in-contests">In Contests</TabsTrigger>
         </TabsList>
 
         <TabsContent value={activeTab} className="mt-6">
-          {isLoading || isFetching ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <Card key={i} className="overflow-hidden">
-                  <div className="aspect-square relative">
-                    <Skeleton className="h-full w-full absolute" />
-                  </div>
-                  <CardContent className="p-4">
-                    <div className="space-y-3">
-                      <Skeleton className="h-5 w-3/4" />
-                      <Skeleton className="h-4 w-1/2" />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : artworks.length === 0 ? (
-            <div className="text-center py-12 border rounded-lg">
+          {displayed.length === 0 ? (
+            <div className="text-center py-12 border rounded-lg bg-muted/40">
               <h3 className="text-lg font-medium">
-                No {activeTab === 'all' ? 'submissions' : activeTab} yet
+                No {activeTab === 'all' ? 'submissions' : activeTab.replace(/-/g, ' ')} yet
               </h3>
-              <p className="text-muted-foreground mt-2">Start creating your first artwork!</p>
-              <Link href="/submissions/new">
-                <Button className="mt-6 bg-[#9747ff] hover:bg-[#8035e0]">
+              <p className="text-muted-foreground mt-2">
+                {activeTab === 'in-contests'
+                  ? 'Submit your artwork to an active contest to see it here.'
+                  : 'Start creating your first artwork!'}
+              </p>
+              <Link href={activeTab === 'in-contests' ? '/contests' : '/submissions/new'}>
+                <Button className="mt-6 bg-[#9747ff] hover:bg-[#7e3dd1]">
                   <PlusCircle className="mr-2 h-4 w-4" />
-                  Create New Artwork
+                  {activeTab === 'in-contests' ? 'Browse Contests' : 'Create Artwork'}
                 </Button>
               </Link>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {artworks.map((art: ArtworkListItem) => (
-                <Card key={art.id} className="overflow-hidden hover:shadow-md transition-shadow">
+              {displayed.map((item) => (
+                <Card
+                  key={item.id}
+                  className="overflow-hidden hover:shadow-md transition-shadow duration-200"
+                >
                   <div className="aspect-square relative">
                     <Image
                       src={
-                        art.thumbnail_url ||
-                        art.file_url ||
-                        '/placeholder.svg?height=400&width=400&text=Artwork'
+                        item.thumbnail_url || '/placeholder.svg?height=400&width=400&text=Artwork'
                       }
-                      alt={art.title}
+                      alt={item.title}
                       fill
                       className="object-cover"
                     />
-                    <div className="absolute top-2 right-2">
-                      <Badge className={getStatusBadge(art.status)}>
+
+                    <div className="absolute top-3 right-3 flex flex-col gap-1.5 items-end">
+                      <Badge className={getStatusBadge(item.status)}>
                         <span className="flex items-center gap-1">
-                          {getStatusIcon(art.status)}
-                          {art.status.charAt(0).toUpperCase() + art.status.slice(1)}
+                          {getStatusIcon(item.status)}
+                          {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
                         </span>
                       </Badge>
+
+                      {item.isContestSubmission && item.contestEntryStatus && (
+                        <Badge variant="outline" className="bg-white/90 text-xs">
+                          {item.contestEntryStatus === 'winner'
+                            ? 'Winner'
+                            : item.contestEntryStatus}
+                          {item.rank ? ` #${item.rank}` : ''}
+                        </Badge>
+                      )}
                     </div>
                   </div>
 
                   <CardContent className="p-4">
                     <div className="space-y-2">
-                      <h3 className="font-medium line-clamp-1">{art.title}</h3>
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {art.description || 'No description provided'}
+                      <h3 className="font-medium line-clamp-1">{item.title}</h3>
+
+                      {item.isContestSubmission && item.contestTitle && (
+                        <p className="text-xs text-violet-600 font-medium">
+                          Contest: {item.contestTitle}
+                        </p>
+                      )}
+
+                      <p className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
+                        {item.description || 'No description provided'}
                       </p>
-                      <div className="flex items-center justify-between text-sm text-muted-foreground">
-                        <span>Views: {art.views_count}</span>
-                        <span>{new Date(art.created_at).toLocaleDateString()}</span>
+
+                      <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
+                        <span>Views: {item.views_count.toLocaleString()}</span>
+                        <span>{new Date(item.created_at).toLocaleDateString()}</span>
                       </div>
                     </div>
                   </CardContent>
 
-                  <CardFooter className="p-4 pt-0 flex justify-between">
-                    <Link href={`/artworks/${art.id}`}>
-                      <Button variant="outline" size="sm">
-                        <Eye className="mr-1 h-4 w-4" />
+                  <CardFooter className="p-4 pt-0 flex justify-between gap-2">
+                    <Link href={`/artworks/${item.id}`} className="flex-1">
+                      <Button variant="outline" size="sm" className="w-full">
+                        <Eye className="mr-1.5 h-4 w-4" />
                         View
                       </Button>
                     </Link>
@@ -215,52 +324,51 @@ export default function ManageSubmissionsPage() {
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
+                      <DropdownMenuContent align="end" className="w-44">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem asChild>
-                          <Link href={`/artworks/${art.id}/edit`}>
+                          <Link href={`/artworks/${item.id}/edit`} className="flex items-center">
                             <Edit className="mr-2 h-4 w-4" />
                             Edit
                           </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <AlertDialog
-                          open={deleteId === art.id}
-                          onOpenChange={(open) => !open && setDeleteId(null)}
-                        >
-                          <AlertDialogTrigger asChild>
-                            <DropdownMenuItem
-                              className="text-red-600 focus:text-red-600"
-                              onSelect={(e) => {
-                                e.preventDefault();
-                                setDeleteId(art.id);
-                              }}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete this artwork?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This action cannot be undone. The artwork will be permanently
-                                removed.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                className="bg-red-600 hover:bg-red-700"
-                                disabled={isDeleting}
-                                onClick={() => handleDelete(art.id)}
-                              >
-                                {isDeleting ? 'Deleting...' : 'Delete'}
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+
+                        {!item.contestEntryId && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <DropdownMenuItem
+                                  className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                                  onSelect={(e) => e.preventDefault()}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Artwork?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This action cannot be undone. The artwork and all associated
+                                    data will be permanently removed.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    className="bg-red-600 hover:bg-red-700 text-white"
+                                    disabled={isDeletingArtwork}
+                                    onClick={() => handleDeleteArtwork(item.id)}
+                                  >
+                                    {isDeletingArtwork ? 'Deleting...' : 'Delete'}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </CardFooter>
