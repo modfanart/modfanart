@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DashboardShell } from '@/components/dashboard-shell';
 
 const OPPORTUNITY_ROUTES: Record<string, string> = {
   'the-librarians': '/opportunities/the-librarians',
@@ -108,95 +109,22 @@ export default function ContestManagement() {
   console.log('Live Opportunities:', liveOpps);
 
   return (
-    <div className="container py-10">
-      <Tabs defaultValue="all" className="mb-10">
-        <div className="flex items-center justify-between">
-          <TabsList>
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="live">Live</TabsTrigger>
-            <TabsTrigger value="rfds">Closed</TabsTrigger>
-          </TabsList>
-        </div>
-
-        <TabsContent value="all" className="mt-6">
-          <div className="mb-8">
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {[...live]
-                .filter((item) => item.featured)
-                .map((item) => (
-                  <Card key={item.id} className="overflow-hidden">
-                    <div className="relative h-48 w-full">
-                      <Image
-                        src={item.image || '/placeholder.svg'}
-                        alt={item.title}
-                        fill
-                        className="object-cover"
-                      />
-                      <div className="absolute right-2 top-2">
-                        <Badge
-                          variant="secondary"
-                          className="bg-black/70 text-white hover:bg-black/70"
-                        >
-                          {item.type === 'contest' ? 'Contest' : 'Licensing RFD'}
-                        </Badge>
-                      </div>
-                    </div>
-                    <CardHeader>
-                      <CardTitle className="line-clamp-1">{item.title}</CardTitle>
-                      <CardDescription className="flex items-center gap-1">
-                        <span>By {item.organizer}</span>
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="line-clamp-2 text-sm text-muted-foreground">
-                        {item.description}
-                      </p>
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {item.categories.map((category) => (
-                          <Badge key={category} variant="outline">
-                            {category}
-                          </Badge>
-                        ))}
-                      </div>
-                      <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-                        <div className="flex items-center gap-1">
-                          <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                          <span>Due {new Date(item.deadline).toLocaleDateString()}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Award className="h-4 w-4 text-muted-foreground" />
-                          <span>Prize: {item.prize}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Users className="h-4 w-4 text-muted-foreground" />
-                          <span>{item.entries} Entries</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Badge
-                            variant="secondary"
-                            className="bg-black/70 text-white hover:bg-black/70"
-                          >
-                            Generate Judging Link
-                          </Badge>
-                        </div>
-                      </div>
-                    </CardContent>
-                    <CardFooter>
-                      <Link href={`/brand/manage/${item.id}`} className="w-full">
-                        <Button className="w-full">Manage</Button>
-                      </Link>
-                    </CardFooter>
-                  </Card>
-                ))}
-            </div>
+    <DashboardShell>
+      <div className="container py-10">
+        <Tabs defaultValue="all" className="mb-10">
+          <div className="flex items-center justify-between">
+            <TabsList>
+              <TabsTrigger value="all">All</TabsTrigger>
+              <TabsTrigger value="live">Live</TabsTrigger>
+              <TabsTrigger value="rfds">Closed</TabsTrigger>
+            </TabsList>
           </div>
 
-          {liveOpps > 1 ? (
-            <div>
-              <h2 className="mb-4 text-2xl font-bold">All Contests</h2>
+          <TabsContent value="all" className="mt-6">
+            <div className="mb-8">
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {[...live]
-                  .filter((item) => !item.featured)
+                  .filter((item) => item.featured)
                   .map((item) => (
                     <Card key={item.id} className="overflow-hidden">
                       <div className="relative h-48 w-full">
@@ -238,17 +166,20 @@ export default function ContestManagement() {
                             <span>Due {new Date(item.deadline).toLocaleDateString()}</span>
                           </div>
                           <div className="flex items-center gap-1">
-                            {item.id.startsWith('contest') ? (
-                              <>
-                                <Award className="h-4 w-4 text-muted-foreground" />
-                                <span>Prize: {(item as any).prize}</span>
-                              </>
-                            ) : (
-                              <>
-                                <Clock className="h-4 w-4 text-muted-foreground" />
-                                <span>{(item as any).compensation}</span>
-                              </>
-                            )}
+                            <Award className="h-4 w-4 text-muted-foreground" />
+                            <span>Prize: {item.prize}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Users className="h-4 w-4 text-muted-foreground" />
+                            <span>{item.entries} Entries</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Badge
+                              variant="secondary"
+                              className="bg-black/70 text-white hover:bg-black/70"
+                            >
+                              Generate Judging Link
+                            </Badge>
                           </div>
                         </div>
                       </CardContent>
@@ -261,71 +192,143 @@ export default function ContestManagement() {
                   ))}
               </div>
             </div>
-          ) : null}
-        </TabsContent>
 
-        <TabsContent value="live" className="mt-6">
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {live.map((contest) => (
-              <Card key={contest.id} className="overflow-hidden">
-                <div className="relative h-48 w-full">
-                  <Image
-                    src={contest.image || '/placeholder.svg'}
-                    alt={contest.title}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-                <CardHeader>
-                  <CardTitle className="line-clamp-1">{contest.title}</CardTitle>
-                  <CardDescription className="flex items-center gap-1">
-                    <span>By {contest.organizer}</span>
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="line-clamp-2 text-sm text-muted-foreground">
-                    {contest.description}
-                  </p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {contest.categories.map((category) => (
-                      <Badge key={category} variant="outline">
-                        {category}
-                      </Badge>
+            {liveOpps > 1 ? (
+              <div>
+                <h2 className="mb-4 text-2xl font-bold">All Contests</h2>
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {[...live]
+                    .filter((item) => !item.featured)
+                    .map((item) => (
+                      <Card key={item.id} className="overflow-hidden">
+                        <div className="relative h-48 w-full">
+                          <Image
+                            src={item.image || '/placeholder.svg'}
+                            alt={item.title}
+                            fill
+                            className="object-cover"
+                          />
+                          <div className="absolute right-2 top-2">
+                            <Badge
+                              variant="secondary"
+                              className="bg-black/70 text-white hover:bg-black/70"
+                            >
+                              {item.type === 'contest' ? 'Contest' : 'Licensing RFD'}
+                            </Badge>
+                          </div>
+                        </div>
+                        <CardHeader>
+                          <CardTitle className="line-clamp-1">{item.title}</CardTitle>
+                          <CardDescription className="flex items-center gap-1">
+                            <span>By {item.organizer}</span>
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="line-clamp-2 text-sm text-muted-foreground">
+                            {item.description}
+                          </p>
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            {item.categories.map((category) => (
+                              <Badge key={category} variant="outline">
+                                {category}
+                              </Badge>
+                            ))}
+                          </div>
+                          <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
+                            <div className="flex items-center gap-1">
+                              <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                              <span>Due {new Date(item.deadline).toLocaleDateString()}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              {item.id.startsWith('contest') ? (
+                                <>
+                                  <Award className="h-4 w-4 text-muted-foreground" />
+                                  <span>Prize: {(item as any).prize}</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Clock className="h-4 w-4 text-muted-foreground" />
+                                  <span>{(item as any).compensation}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                        <CardFooter>
+                          <Link href={`/brand/manage/${item.id}`} className="w-full">
+                            <Button className="w-full">Manage</Button>
+                          </Link>
+                        </CardFooter>
+                      </Card>
                     ))}
+                </div>
+              </div>
+            ) : null}
+          </TabsContent>
+
+          <TabsContent value="live" className="mt-6">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {live.map((contest) => (
+                <Card key={contest.id} className="overflow-hidden">
+                  <div className="relative h-48 w-full">
+                    <Image
+                      src={contest.image || '/placeholder.svg'}
+                      alt={contest.title}
+                      fill
+                      className="object-cover"
+                    />
                   </div>
-                  <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-                    <div className="flex items-center gap-1">
-                      <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                      <span>Due {new Date(contest.deadline).toLocaleDateString()}</span>
+                  <CardHeader>
+                    <CardTitle className="line-clamp-1">{contest.title}</CardTitle>
+                    <CardDescription className="flex items-center gap-1">
+                      <span>By {contest.organizer}</span>
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="line-clamp-2 text-sm text-muted-foreground">
+                      {contest.description}
+                    </p>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {contest.categories.map((category) => (
+                        <Badge key={category} variant="outline">
+                          {category}
+                        </Badge>
+                      ))}
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Award className="h-4 w-4 text-muted-foreground" />
-                      <span>Prize: {contest.prize}</span>
+                    <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
+                      <div className="flex items-center gap-1">
+                        <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                        <span>Due {new Date(contest.deadline).toLocaleDateString()}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Award className="h-4 w-4 text-muted-foreground" />
+                        <span>Prize: {contest.prize}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                        <span>{contest.entries} Entries</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Badge
+                          variant="secondary"
+                          className="bg-black/70 text-white hover:bg-black/70"
+                        >
+                          Generate Judging Link
+                        </Badge>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                      <span>{contest.entries} Entries</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Badge
-                        variant="secondary"
-                        className="bg-black/70 text-white hover:bg-black/70"
-                      >
-                        Generate Judging Link
-                      </Badge>
-                    </div>
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Link href={`/brand/manage/${contest.id}`} className="w-full">
-                    <Button className="w-full">Manage</Button>
-                  </Link>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-      </Tabs>
-    </div>
+                  </CardContent>
+                  <CardFooter>
+                    <Link href={`/brand/manage/${contest.id}`} className="w-full">
+                      <Button className="w-full">Manage</Button>
+                    </Link>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </DashboardShell>
   );
 }

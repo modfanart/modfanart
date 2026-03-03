@@ -33,7 +33,7 @@ export interface UserProfile {
     linkedin?: string | null;
     [key: string]: any; // ← still allows unknown extra fields
   };
-
+  brands?: any[]; // can replace with Brand[] for strict typing
   avatar_url?: string | null;
   banner_url?: string | null;
   bio?: string | null;
@@ -102,7 +102,21 @@ export interface UserViolationResponse {
   resolved_at: string | null;
   created_at: string;
 }
+export interface Brand {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  logo_url?: string | null;
+  banner_url?: string | null;
+  created_at: string;
+  updated_at?: string | null;
+}
 
+export interface UserBrandsResponse {
+  success: boolean;
+  brands: Brand[];
+}
 export interface UserViolationsResponse {
   user: {
     id: string;
@@ -270,7 +284,11 @@ export const userApi = createApi({
         { type: 'UserViolations', id: userId },
       ],
     }),
-
+    // GET /users/me/brands → Brand Manager: Get brands managed by the user
+    getMyBrands: builder.query<UserBrandsResponse, void>({
+      query: () => '/me/brands',
+      providesTags: ['CurrentUser'],
+    }),
     // GET /users/violations → Admin: Global violations list
     getAllViolations: builder.query<
       AllViolationsResponse,
@@ -298,6 +316,7 @@ export const {
   useUploadAvatarMutation,
   useRemoveAvatarMutation,
   useGetUserByUsernameQuery,
+  useGetMyBrandsQuery,
   // Admin endpoints
   useGetAllUsersQuery,
   useGetUserByIdQuery,

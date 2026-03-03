@@ -13,72 +13,54 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { userApi } from '@/services/api/userApi';
 
-// Assuming you have an auth context/store/hook that handles logout
-// Option 1: Using RTK Query logout mutation (recommended if you have it)
-// Option 2: Using a simple auth context with logout function
-// Option 3: Manual token removal (fallback)
-
-import { useLogoutMutation } from '@/services/api/authApi'; // ← adjust path if different
-// OR if using context:
-// import { useAuth } from '@/store/AuthContext';
+import { useLogoutMutation } from '@/services/api/authApi';
+import { useAuth } from '@/store/AuthContext';
 
 export function UserNav() {
   const router = useRouter();
 
-  // Option A: Using RTK Query logout mutation (cleanest if you have it)
   const [logout, { isLoading: isLoggingOut }] = useLogoutMutation();
-
-  // Option B: Using Auth Context (alternative)
-  // const { logout: contextLogout, user } = useAuth();
-
-  const { data: userData, isLoading: isUserLoading } = userApi.useGetCurrentUserQuery();
-
-  const user = userData?.user;
+  const { user, loading: isUserLoading } = useAuth(); // ✅ FIXED
 
   if (isUserLoading || !user) return null;
 
   const displayName = user.username || user.email?.split('@')[0] || 'User';
-  const roleName = (user.role?.name || 'Member').toLowerCase();
+  const roleName = user.role?.name?.toLowerCase() ?? 'member';
   const avatarSrc = user.avatar_url || '/default-avatar.png';
   const initials = displayName.slice(0, 2).toUpperCase();
 
-  // Determine dashboard path based on role
+  // ------------------------------------------------------
+  // Correct Dashboard Path
+  // ------------------------------------------------------
   let dashboardPath = '/dashboard';
 
   if (roleName === 'artist') {
-    dashboardPath = user.username ? `/dashboard/artist/${user.username}` : '/dashboard/artist';
-  } else if (
-    roleName.includes('brand') ||
-    roleName === 'brandmanager' ||
-    roleName === 'brand_manager'
-  ) {
-    const brandName = user.profile?.['brandName'] || user.username || 'my-brand';
-    dashboardPath = `/dashboard/brand/${brandName}/${user.id}`;
+    dashboardPath = `/dashboard/artist/${user.username}`;
   }
 
-  const isEligibleForDashboard = roleName === 'artist' || roleName.includes('brand');
+  if (roleName === 'brand_manager') {
+    const brand = user?.brands?.[0]; // ✅ Now available via AuthProvider
+    const slug = brand?.slug;
 
+    console.log('Brand Manager Dashboard - brand:', brand);
+
+    if (slug) {
+      dashboardPath = `/dashboard/brand/${slug}/${user.id}`;
+    }
+  }
+
+  const isEligibleForDashboard = roleName === 'artist' || roleName === 'brand_manager';
+
+  // ------------------------------------------------------
+  // Logout
+  // ------------------------------------------------------
   const handleLogout = async () => {
     try {
-      // Preferred: Use RTK Query logout mutation (clears token, invalidates tags, etc.)
       await logout().unwrap();
-
-      // Option B: if using context
-      // await contextLogout();
-
-      // Option C: manual (fallback / simple apps)
-      // localStorage.removeItem('access_token');
-      // localStorage.removeItem('refresh_token'); // if you use refresh tokens
-      // document.cookie = "access_token=; Max-Age=0; path=/;";
-
       router.push('/login');
-      // Optional: router.refresh() if you want to force re-fetch
     } catch (err) {
       console.error('Logout failed:', err);
-      // You could show a toast here
-      // toast.error("Logout failed. Please try again.");
     }
   };
 
@@ -93,7 +75,7 @@ export function UserNav() {
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="relative h-9 w-9 rounded-full" disabled={isLoggingOut}>
             <Avatar className="h-9 w-9">
-              {avatarSrc && <AvatarImage src={avatarSrc} alt={displayName} />}
+              <AvatarImage src={avatarSrc} alt={displayName} />
               <AvatarFallback>{initials}</AvatarFallback>
             </Avatar>
           </Button>

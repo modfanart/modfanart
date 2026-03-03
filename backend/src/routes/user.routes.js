@@ -19,6 +19,8 @@ router.delete('/me/avatar', UserController.removeAvatar);
 router.get('/all', UserController.getAllUsers);
 router.get('/:id',  UserController.getUserById);
 router.patch('/:id/status', UserController.updateUserStatus);
+
+router.get('/me/brands', UserController.getMyBrands);
 // Future: router.patch('/me/banner', ...)
 // Future: router.post('/me/payout-setup', ...)
 
