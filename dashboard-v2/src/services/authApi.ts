@@ -29,6 +29,7 @@ export interface User {
     created_at: string // ISO
     updated_at: string // ISO
     deleted_at: string | null // soft delete
+    authority?: string | string[] | null
 }
 
 // ────────────────────────────────────────────────

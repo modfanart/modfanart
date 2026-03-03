@@ -584,6 +584,68 @@ static async getCurrentUser(req, res) {
       res.status(500).json({ error: 'Failed to update user status' });
     }
   }
+
+  /**
+ * GET /users/me/brands
+ * Returns all brands where the authenticated user is the brand manager
+ */
+static async getMyBrands(req, res) {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required',
+      });
+    }
+
+    // Check if user is assigned as a brand manager or owner
+    const managerRows = await req.db
+      .selectFrom('brand_managers')
+      .select(['brand_id', 'role'])
+      .where('user_id', '=', userId)
+      .execute();
+
+    if (managerRows.length === 0) {
+      return res.status(403).json({
+        success: false,
+        message: 'You are not managing any brands',
+      });
+    }
+
+    const brandIds = managerRows.map(m => m.brand_id);
+
+    // Fetch the brands this user manages
+    const brands = await req.db
+      .selectFrom('brands')
+      .select([
+        'id',
+        'name',
+        'slug',
+        'description',
+        'logo_url',
+        'banner_url',
+        'created_at',
+        'updated_at',
+        'status',
+      ])
+      .where('id', 'in', brandIds)
+      .where('deleted_at', 'is', null)
+      .execute();
+
+    return res.status(200).json({
+      success: true,
+      brands,
+    });
+  } catch (err) {
+    console.error('[getMyBrands] Error:', err);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch brands for this manager',
+    });
+  }
+}
 }
 
 module.exports = UserController;
