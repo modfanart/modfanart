@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext } from 'react';
-import { useGetCurrentUserQuery } from '@/services/api/userApi';
+import { useGetCurrentUserQuery, useGetMyBrandsQuery } from '@/services/api/userApi';
 
 export interface RoleRow {
   id: string;
@@ -12,11 +12,17 @@ export interface RoleRow {
   created_at: string;
 }
 
+/**
+ * Represents only the data the frontend needs from the backend User object.
+ * This makes your UI strongly typed AND keeps your API clean.
+ */
 export interface AuthUser {
   id: string;
   email: string;
-  username?: string;
+  username: string | null; // ← backend returns string OR null
+  avatar_url: string | null; // ← backend returns string OR null
   role?: RoleRow;
+  brands?: any[]; // TODO: replace with Brand[]
 }
 
 interface AuthContextType {
@@ -30,12 +36,21 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { data, isLoading, isError } = useGetCurrentUserQuery();
+  const { data, isLoading } = useGetCurrentUserQuery();
+
+  const isBrandManager = data?.user?.role?.name === 'brand_manager';
+
+  const { data: brandsData } = useGetMyBrandsQuery(undefined, {
+    skip: !isBrandManager,
+  });
+
   const user: AuthUser | null = data?.user
     ? {
         id: data.user.id,
         email: data.user.email,
-        username: data.user.username, // ← add this line
+        username: data.user.username ?? null,
+        avatar_url: data.user.avatar_url ?? null,
+
         ...(data.user.role && {
           role: {
             id: data.user.role.id,
@@ -45,6 +60,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             permissions: {},
             created_at: '',
           },
+        }),
+
+        ...(isBrandManager && {
+          brands: brandsData?.brands ?? [],
         }),
       }
     : null;

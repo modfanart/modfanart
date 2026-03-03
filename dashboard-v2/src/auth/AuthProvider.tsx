@@ -70,6 +70,8 @@ function mapCurrentUserResponseToUser(resp: any): User {
         created_at: resp.created_at,
         updated_at: resp.updated_at,
         deleted_at: resp.deleted_at,
+        /** ADD THIS */
+        authority: resp.authority ?? resp.role?.authority ?? null,
     }
 }
 

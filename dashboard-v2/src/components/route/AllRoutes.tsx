@@ -34,7 +34,7 @@ const AllRoutes = (props: AllRoutesProps) => {
                         path={route.path}
                         element={
                             <AuthorityGuard
-                                userAuthority={user.authority}
+                                userAuthority={user?.authority}
                                 authority={route.authority}
                             >
                                 <PageContainer {...props} {...route.meta}>

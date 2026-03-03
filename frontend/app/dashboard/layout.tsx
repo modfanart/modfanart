@@ -15,9 +15,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       redirect('/login');
       return;
     }
-    console.log(user);
+
     const role = user.role?.name?.toLowerCase();
-    console.log(role);
+
     const currentPath = window.location.pathname;
 
     // Artist trying to access brand dashboard
@@ -27,7 +27,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     // Brand manager trying to access artist dashboard
     if (
-      (role === 'brandmanager' || role === 'brand-manager') &&
+      (role === 'brand_manager' || role === 'brand_manager') &&
       currentPath.startsWith('/dashboard/artist')
     ) {
       redirect('/dashboard/brand'); // or specific brand page
