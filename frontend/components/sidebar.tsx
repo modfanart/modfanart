@@ -27,9 +27,9 @@ export default function Sidebar() {
   if (role === 'brand_manager') {
     // FIX: brands is an array, so use brands[0]
     const brand = user?.brands?.[0];
-    const brandSlug = brand?.slug?.trim().toLowerCase();
+    const brandSlug = brand?.slug;
 
-    if (brandSlug) brandBase = `/dashboard/brand/${brandSlug}`;
+    if (brandSlug) brandBase = `/dashboard/brand/${brandSlug}/${user?.id}`;
   }
 
   if (role === 'Judge') {
@@ -90,7 +90,27 @@ export default function Sidebar() {
             },
             {
               name: 'Campaigns',
-              href: `${brandBase}/campaigns`,
+              href: `${brandBase}/contests`,
+              icon: Share2,
+            },
+            {
+              name: 'License Requests',
+              href: `${brandBase}/license-requests`,
+              icon: Share2,
+            },
+            {
+              name: 'Storefront',
+              href: `${brandBase}/storefront`,
+              icon: Share2,
+            },
+            {
+              name: 'Posts',
+              href: `${brandBase}/posts`,
+              icon: Share2,
+            },
+            {
+              name: 'Settings',
+              href: `${brandBase}/settings`,
               icon: Share2,
             },
           ]

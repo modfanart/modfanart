@@ -147,7 +147,7 @@ export default function ExplorePage() {
             ) : (
               <div className="grid gap-6 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
                 {previewBrands.map((brand) => (
-                  <Link key={brand.id} href={`/brands/${brand.slug}`}>
+                  <Link key={brand.id} href={`/brand/${brand.slug}`}>
                     <Card className="overflow-hidden hover:shadow-md transition-all h-full">
                       {brand.banner_url && (
                         <div className="h-24 w-full">
