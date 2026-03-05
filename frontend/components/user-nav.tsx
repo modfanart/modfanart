@@ -43,8 +43,6 @@ export function UserNav() {
     const brand = user?.brands?.[0]; // ✅ Now available via AuthProvider
     const slug = brand?.slug;
 
-    console.log('Brand Manager Dashboard - brand:', brand);
-
     if (slug) {
       dashboardPath = `/dashboard/brand/${slug}/${user.id}`;
     }
