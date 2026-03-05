@@ -126,19 +126,6 @@ export default function OpportunitiesManagementPage() {
   // Optional: show brand name in header if you fetch it or pass it
   // const brandName = contests[0]?.brand_name || 'Your Brand';
 
-  if (!brandId) {
-    return (
-      <DashboardShell>
-        <div className="rounded-lg border border-destructive p-6 text-center">
-          <p className="text-destructive">No brand selected</p>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Please access this page from a specific brand dashboard.
-          </p>
-        </div>
-      </DashboardShell>
-    );
-  }
-
   if (isLoading) {
     return (
       <DashboardShell>
