@@ -25,7 +25,10 @@ router.get('/:contestId/leaderboard', ContestVoteController.getLeaderboard);
 router.post('/',  ContestController.createContest);
 router.patch('/:id',  ContestController.updateContest);
 router.delete('/:id', ContestController.deleteContest);
-
+// In your router file
+router.get('/:brandId/contests/judges', ContestController.getAllContestJudgesByBrandId);
+router.post('/:id/judges', ContestController.assignUserAsJudgeByContestId);
+router.delete('/:id/judges/:userId', ContestController.removeUserAsJudgeByContestId);
 // Categories
 router.post('/:contestId/categories', ContestCategoryController.addCategory);
 router.delete('/:contestId/categories/:categoryId',  ContestCategoryController.removeCategory);
@@ -38,7 +41,7 @@ router.patch('/:contestId/entries/:entryId/status',  ContestEntryController.upda
 router.delete(
   '/contests/:contestId/entries/:entryId',
 
-  ContestEntryController.deleteEntry
+  ContestEntryController.deleteEntry  
 );
 
 router.get(

@@ -2,7 +2,21 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, FileCheck, Share2, Settings, Users, Star, Sparkles } from 'lucide-react';
+import {
+  LayoutDashboard,
+  Upload,
+  Settings,
+  Users,
+  Sparkles,
+  Star,
+  Share2,
+  Newspaper,
+  Megaphone,
+  Store,
+  FileText,
+  Trophy,
+  FileCheck,
+} from 'lucide-react';
 
 import { useAuth } from '@/store/AuthContext';
 import { cn } from '@/lib/utils';
@@ -11,6 +25,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
   const role = user?.role?.name;
+
   let artistBase = '';
   let brandBase = '';
   let judgeBase = '';
@@ -55,7 +70,7 @@ export default function Sidebar() {
   }
 
   //
-  // 🔧 Role-Specific Navigation Items
+  // 🔧 Role-Specific Navigation Items — only icons changed
   //
   const navigation =
     role === 'Artist'
@@ -68,12 +83,7 @@ export default function Sidebar() {
           {
             name: 'Submissions',
             href: `${artistBase}/submissions`,
-            icon: FileCheck,
-          },
-          {
-            name: 'Settings',
-            href: `${artistBase}/settings`,
-            icon: Settings,
+            icon: Upload, // changed: more clear for uploading artwork
           },
         ]
       : role === 'brand_manager'
@@ -91,27 +101,27 @@ export default function Sidebar() {
             {
               name: 'Campaigns',
               href: `${brandBase}/contests`,
-              icon: Share2,
+              icon: Megaphone, // changed: better represents campaigns/promotion
             },
             {
               name: 'License Requests',
               href: `${brandBase}/license-requests`,
-              icon: Share2,
+              icon: FileText, // changed: clearer for requests/documents
             },
             {
               name: 'Storefront',
               href: `${brandBase}/storefront`,
-              icon: Share2,
+              icon: Store, // changed: perfect match for storefront/shop
             },
             {
               name: 'Posts',
               href: `${brandBase}/posts`,
-              icon: Share2,
+              icon: Newspaper, // changed: more appropriate for brand posts/news
             },
             {
               name: 'Settings',
               href: `${brandBase}/settings`,
-              icon: Share2,
+              icon: Settings,
             },
           ]
         : role === 'Judge'
@@ -129,7 +139,7 @@ export default function Sidebar() {
               {
                 name: 'Leaderboard',
                 href: `${judgeBase}/leaderboard`,
-                icon: Star,
+                icon: Trophy, // changed: stronger visual for ranking/leaderboard
               },
             ]
           : role === 'Admin'
@@ -158,28 +168,42 @@ export default function Sidebar() {
             : [];
 
   return (
-    <div className="flex h-full flex-col border-r bg-white p-6">
-      <h2 className="mb-6 text-xl font-bold text-gray-800">Dashboard</h2>
+    <div className="hidden lg:flex lg:flex-col lg:w-72 lg:border-r lg:bg-card lg:text-card-foreground">
+      {/* Header */}
+      <div className="border-b px-6 py-5">
+        <h2 className="text-xl font-semibold tracking-tight">Dashboard</h2>
+        {role && <p className="mt-1 text-sm text-muted-foreground capitalize">{role} Panel</p>}
+      </div>
 
-      <nav className="flex flex-col gap-2">
-        {navigation.map((item) => {
-          const isActive = pathname.startsWith(item.href);
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto px-3 py-6">
+        <div className="space-y-1">
+          {navigation.map((item) => {
+            const isActive = pathname.startsWith(item.href);
 
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={cn(
-                'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-all',
-                isActive ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
-              )}
-            >
-              <item.icon className="h-5 w-5" />
-              {item.name}
-            </Link>
-          );
-        })}
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={cn(
+                  'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                  isActive
+                    ? 'bg-accent text-accent-foreground shadow-sm'
+                    : 'text-muted-foreground hover:bg-accent/60 hover:text-accent-foreground'
+                )}
+              >
+                <item.icon className="h-5 w-5 shrink-0" />
+                <span>{item.name}</span>
+              </Link>
+            );
+          })}
+        </div>
       </nav>
+
+      {/* Subtle footer */}
+      <div className="border-t px-6 py-4 text-xs text-muted-foreground/70">
+        <p>© {new Date().getFullYear()} Your Platform</p>
+      </div>
     </div>
   );
 }
