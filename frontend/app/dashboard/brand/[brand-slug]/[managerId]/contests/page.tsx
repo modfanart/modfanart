@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useParams } from 'next/navigation'; // ← add this
+import { useParams } from 'next/navigation';
 import { CalendarIcon, Users, PlusCircle, Edit, Eye, Trash2, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,8 +18,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { DashboardShell } from '@/components/dashboard-shell';
 import { useGetContestsQuery } from '@/services/api/contestsApi';
+import { useAuth } from '@/store/AuthContext';
 import { CheckCircle, XCircle, Clock, Trophy } from 'lucide-react';
-// ... keep getStatusBadge unchanged ...
+
 const getStatusBadge = (status: string = 'unknown') => {
   const s = status.toLowerCase();
 
@@ -31,14 +32,12 @@ const getStatusBadge = (status: string = 'unknown') => {
         variant: 'default' as const,
         className: 'bg-green-600 hover:bg-green-600',
       };
-
     case 'draft':
       return {
         label: 'Draft',
         variant: 'secondary' as const,
         className: 'bg-yellow-500/20 text-yellow-700',
       };
-
     case 'pending':
     case 'judging':
       return {
@@ -46,35 +45,30 @@ const getStatusBadge = (status: string = 'unknown') => {
         variant: 'outline' as const,
         className: 'border-orange-500 text-orange-700',
       };
-
     case 'completed':
       return {
         label: 'Completed',
         variant: 'secondary' as const,
         className: 'bg-gray-600 hover:bg-gray-600',
       };
-
     case 'archived':
       return {
         label: 'Archived',
         variant: 'outline' as const,
         className: 'border-gray-400 text-gray-500',
       };
-
     case 'rejected':
       return {
         label: 'Rejected',
         variant: 'destructive' as const,
         className: '',
       };
-
     case 'approved':
       return {
         label: 'Approved',
         variant: 'default' as const,
         className: 'bg-emerald-600 hover:bg-emerald-600',
       };
-
     case 'winner':
     case 'winners announced':
       return {
@@ -82,7 +76,6 @@ const getStatusBadge = (status: string = 'unknown') => {
         variant: 'default' as const,
         className: 'bg-amber-500 hover:bg-amber-500',
       };
-
     default:
       return {
         label: 'Unknown',
@@ -91,46 +84,70 @@ const getStatusBadge = (status: string = 'unknown') => {
       };
   }
 };
+
 export default function OpportunitiesManagementPage() {
   const params = useParams();
+  const { user } = useAuth();
 
-  // Option A: if route is /dashboard/brands/[brandId]/opportunities
-  const brandId = params['brandId'] as string | undefined;
+  // ── Resolve brand info (prefer auth → most reliable) ───────────────────────
+  let brandId: string | undefined;
+  let brandSlug: string | undefined;
+  let brandBase = '';
 
-  // Option B: if route is /dashboard/opportunities/[brandSlug]
-  // const brandSlug = params.brandSlug as string | undefined;
+  if (user?.role?.name === 'brand_manager') {
+    const managedBrand = user?.brands?.[0];
 
-  // Option C: if you pass brand manager id or something else
-  // const brandManagerId = params.brandManagerId as string | undefined;
+    if (managedBrand) {
+      brandId = managedBrand.id; // ← primary: use this for API
+      brandSlug = managedBrand.slug; // ← for URLs
 
-  // Choose one depending on your route structure
-  // Here we assume brandId is in the dynamic segment
+      if (brandSlug && user?.id) {
+        brandBase = `/dashboard/brand/${brandSlug}/${user.id}`;
+      }
+    }
+  }
+
+  // Fallback: try to get slug from URL if auth didn't provide
+  if (!brandSlug) {
+    brandSlug = params['brand-slug'] as string | undefined;
+  }
+  if (!brandId && params['brand-slug']) {
+    // If your API can accept slug instead → you can switch here
+    // brandId = brandSlug;  // ← only if backend supports it
+  }
+
+  console.log('[Opportunities Page]', {
+    userId: user?.id,
+    role: user?.role?.name,
+    brandId,
+    brandSlug,
+    brandBase,
+    brandsFromAuth: user?.brands?.length ?? 0,
+  });
+
   const {
     data: contestsResponse,
     isLoading,
     isError,
     error,
-  } = useGetContestsQuery(brandId ? { brandId } : undefined, {
-    // Optional: skip query if no brandId
-    skip: !brandId,
-  });
+  } = useGetContestsQuery(brandId ? { brandId } : undefined, { skip: !brandId });
 
   const contests = contestsResponse?.contests ?? [];
+  console.log('[Contests loaded]', { count: contests.length, contests });
 
-  const activeContests = contests.filter((c) => c.status === 'live' || c.status === 'published');
-  const closedContests = contests.filter(
-    (c) => c.status === 'completed' || c.status === 'archived'
+  const activeContests = contests.filter((c) =>
+    ['live', 'published'].includes(c.status?.toLowerCase() ?? '')
   );
-  const draftContests = contests.filter((c) => c.status === 'draft');
-
-  // Optional: show brand name in header if you fetch it or pass it
-  // const brandName = contests[0]?.brand_name || 'Your Brand';
+  const closedContests = contests.filter((c) =>
+    ['completed', 'archived'].includes(c.status?.toLowerCase() ?? '')
+  );
+  const draftContests = contests.filter((c) => (c.status?.toLowerCase() ?? '') === 'draft');
 
   if (isLoading) {
     return (
       <DashboardShell>
         <div className="flex justify-center py-12">
-          <p className="text-muted-foreground">Loading brand opportunities...</p>
+          <p className="text-muted-foreground">Loading opportunities...</p>
         </div>
       </DashboardShell>
     );
@@ -142,7 +159,7 @@ export default function OpportunitiesManagementPage() {
         <div className="rounded-lg border border-destructive p-6 text-center">
           <p className="text-destructive">Failed to load opportunities</p>
           <p className="mt-2 text-sm text-muted-foreground">
-            {(error as any)?.data?.message || 'Please try again later.'}
+            {(error as any)?.data?.message || 'An unexpected error occurred. Please try again.'}
           </p>
         </div>
       </DashboardShell>
@@ -154,35 +171,33 @@ export default function OpportunitiesManagementPage() {
       <div className="flex flex-col gap-8">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="space-y-1">
-            <h1 className="text-3xl font-bold tracking-tight">
-              {/* {brandName ? `${brandName} ` : ''} */}Opportunities Management
-            </h1>
+            <h1 className="text-3xl font-bold tracking-tight">Opportunities Management</h1>
             <p className="text-lg text-muted-foreground">
-              Create and manage fan art contests and licensing opportunities for this brand.
+              Create and manage fan art contests and licensing opportunities.
             </p>
           </div>
-          <Link href={`/dashboard/brands/${brandId}/opportunities/create`}>
-            <Button size="lg">
+
+          {brandBase ? (
+            <Link href={`${brandBase}/contests/create`}>
+              <Button size="lg">
+                <PlusCircle className="mr-2 h-5 w-5" />
+                Create New Opportunity
+              </Button>
+            </Link>
+          ) : (
+            <Button size="lg" disabled>
               <PlusCircle className="mr-2 h-5 w-5" />
-              Create New
+              Create New (brand not found)
             </Button>
-          </Link>
+          )}
         </div>
 
         <Tabs defaultValue="all" className="space-y-8">
           <TabsList className="w-full justify-start border-b bg-transparent p-0">
-            <TabsTrigger value="all" className="...">
-              All Opportunities
-            </TabsTrigger>
-            <TabsTrigger value="active" className="...">
-              Active
-            </TabsTrigger>
-            <TabsTrigger value="closed" className="...">
-              Closed
-            </TabsTrigger>
-            <TabsTrigger value="draft" className="...">
-              Drafts
-            </TabsTrigger>
+            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="active">Active</TabsTrigger>
+            <TabsTrigger value="closed">Closed</TabsTrigger>
+            <TabsTrigger value="draft">Drafts</TabsTrigger>
           </TabsList>
 
           <TabsContent value="all" className="space-y-8">
@@ -207,7 +222,7 @@ export default function OpportunitiesManagementPage() {
 
           <TabsContent value="draft" className="space-y-8">
             {draftContests.length === 0 ? (
-              <EmptyState label="draft" isCreateButton />
+              <EmptyState label="draft" isCreateButton={!!brandBase} />
             ) : (
               <OpportunityGrid items={draftContests} />
             )}
@@ -218,16 +233,7 @@ export default function OpportunitiesManagementPage() {
   );
 }
 
-// Keep OpportunityGrid and EmptyState the same
-// (just remember to adjust create & view links to include brandId if needed)
-// ── Reusable grid renderer ───────────────────────────────────────
-function OpportunityGrid({
-  items,
-  isClosed = false,
-}: {
-  items: any[]; // Contest[]
-  isClosed?: boolean;
-}) {
+function OpportunityGrid({ items, isClosed = false }: { items: any[]; isClosed?: boolean }) {
   return (
     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {items.map((opp) => {
@@ -260,7 +266,7 @@ function OpportunityGrid({
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-40">
+                  <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem>
@@ -285,9 +291,11 @@ function OpportunityGrid({
             </CardHeader>
 
             <CardContent className="flex-1">
-              <p className="line-clamp-2 text-sm text-muted-foreground mb-4">{opp.description}</p>
+              <p className="line-clamp-2 text-sm text-muted-foreground mb-4">
+                {opp.description || 'No description provided.'}
+              </p>
 
-              {opp.categories && opp.categories.length > 0 && (
+              {opp.categories?.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-4">
                   {opp.categories.map((cat: string) => (
                     <Badge key={cat} variant="outline">
@@ -330,7 +338,7 @@ function OpportunityGrid({
               ) : (
                 <Link href={`/opportunities/${opp.slug || opp.id}`} className="w-full">
                   <Button variant="outline" className="w-full">
-                    View Public
+                    View Public Page
                   </Button>
                 </Link>
               )}
@@ -342,7 +350,6 @@ function OpportunityGrid({
   );
 }
 
-// ── Reusable empty states ────────────────────────────────────────
 function EmptyState({
   label = '',
   isCreateButton = false,
@@ -352,15 +359,15 @@ function EmptyState({
 }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
-      <h3 className="mb-2 text-lg font-medium">No {label ? label + ' ' : ''}Opportunities</h3>
+      <h3 className="mb-2 text-lg font-medium">No {label ? `${label} ` : ''}Opportunities</h3>
       <p className="mb-4 text-sm text-muted-foreground">
         {label
-          ? `You don't have any ${label.toLowerCase()} opportunities yet.`
+          ? `You don't have any ${label} opportunities yet.`
           : "You haven't created any opportunities yet."}
       </p>
 
       {isCreateButton && (
-        <Link href="/dashboard/opportunities/create">
+        <Link href="/dashboard/contests/create">
           <Button>
             <PlusCircle className="mr-2 h-4 w-4" />
             Create New Opportunity

@@ -21,7 +21,7 @@ import { Autoplay, Navigation } from 'swiper/modules';
 
 import 'swiper/css';
 import 'swiper/css/navigation';
-
+import { useAuth } from '@/store/AuthContext';
 import { cn } from '@/lib/utils';
 import { useGetContestQuery } from '@/services/api/contestsApi';
 import type { Contest } from '@/services/api/contestsApi';
@@ -30,6 +30,13 @@ import { LayoutWrapper } from '@/components/layout-wrapper';
 export default function ContestDetailPage() {
   const params = useParams<{ id: string }>();
   const contestId = params.id;
+  const { user } = useAuth();
+  const role = user?.role?.name;
+  let artistBase = '';
+  if (role === 'Artist') {
+    const username = user?.username?.trim().toLowerCase();
+    if (username) artistBase = `/dashboard/artist/${username}`;
+  }
 
   // ─────────────────────────────────────────────────────────────
   // ALL HOOKS MUST BE CALLED HERE – BEFORE ANY RETURN
@@ -496,7 +503,7 @@ export default function ContestDetailPage() {
             <CardContent className="p-10 md:p-16 text-center">
               {isActive ? (
                 <Button asChild size="lg" className="w-full max-w-md h-14 text-lg">
-                  <Link href={`/submissions/new?contest=${contest.id}`}>
+                  <Link href={`${artistBase}/submissions/new?contest=${contest.id}`}>
                     Submit Your Artwork
                     <ArrowRight className="ml-3 h-5 w-5" />
                   </Link>

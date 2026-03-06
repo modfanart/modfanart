@@ -198,7 +198,7 @@ export default function ExplorePage() {
                 <h2 className="text-2xl md:text-3xl font-bold">Active Opportunities</h2>
               </div>
               <Button variant="ghost" asChild>
-                <Link href="/explore/opportunities">
+                <Link href="/explore/contests">
                   View All Contests <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
@@ -220,7 +220,7 @@ export default function ExplorePage() {
             ) : (
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {previewContests.map((contest) => (
-                  <Link key={contest.id} href={`/opportunities/${contest.id}`}>
+                  <Link key={contest.id} href={`/contest/${contest.id}`}>
                     <Card className="overflow-hidden hover:shadow-md transition-all h-full">
                       <div className="relative h-40 bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-end p-5">
                         <div>
@@ -266,7 +266,7 @@ export default function ExplorePage() {
                 <Link href="/explore/brands">Discover Brands</Link>
               </Button>
               <Button variant="secondary" asChild>
-                <Link href="/explore/opportunities">View Contests</Link>
+                <Link href="/explore/contests">View Contests</Link>
               </Button>
             </div>
           </div>
