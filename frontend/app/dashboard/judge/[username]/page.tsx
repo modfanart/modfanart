@@ -1,15 +1,13 @@
-// app/(dashboard)/brand/page.tsx
 'use client';
 
 import RoleGuard from '@/components/RoleGuard';
 import { DashboardShell } from '@/components/dashboard-shell';
 import { Suspense } from 'react';
-import DashboardContent from './DashboardContent'; // ← extract content to separate component
-
-export default function BrandDashboard() {
+import JudgeDashboardContent from './JudgeDashboardContent';
+export default function JudgeDashboard() {
   return (
     <RoleGuard
-      allowedRoles={['brand_manager']}
+      allowedRoles={['judge']}
       redirectTo="/dashboard"
       fallback={
         <div className="min-h-screen flex items-center justify-center">
@@ -23,8 +21,8 @@ export default function BrandDashboard() {
       }
     >
       <DashboardShell>
-        <Suspense fallback={<div className="p-6">Loading artist dashboard...</div>}>
-          <DashboardContent />
+        <Suspense fallback={<div className="p-6">Loading judge dashboard...</div>}>
+          <JudgeDashboardContent />
         </Suspense>
       </DashboardShell>
     </RoleGuard>
