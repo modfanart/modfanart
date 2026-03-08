@@ -87,6 +87,38 @@ class ContestJudgeController {
       res.status(500).json({ error: 'Failed to remove judge' });
     }
   }
+static async getAllContestsByJudgeId(req, res) {
+  try {
+    const judgeId = req.user.id;
+
+    const contests = await db
+      .selectFrom('contest_judges as cj')
+      .innerJoin('contests as c', 'c.id', 'cj.contest_id')
+      .select([
+        'c.id',
+        'c.title',
+        'c.slug',
+        'c.description',
+        'c.status',
+        'c.start_date',
+        'c.submission_end_date',
+        'c.judging_end_date',
+        'c.created_at',
+      ])
+      .where('cj.judge_id', '=', judgeId)
+      .where('cj.accepted', '=', true)
+      .orderBy('c.created_at', 'desc')
+      .execute();
+
+    res.json({
+      contests,
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch judge contests' });
+  }
+}
 }
 
 module.exports = ContestJudgeController;

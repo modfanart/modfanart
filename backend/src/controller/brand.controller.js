@@ -336,7 +336,6 @@ async function getMyBrands(req, res) {
 
 async function updateBrand(req, res) {
   try {
-    await ensureBrandAccess(req); // owner, manager, editor
 
     const updated = await Brand.update(req.params.id, req.body, req.user.id);
     if (!updated) return res.status(404).json({ error: 'Brand not found' });

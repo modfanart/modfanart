@@ -160,6 +160,7 @@ const contestsApi = createApi({
     'ContestScores',
     'ContestVotes',
     'Leaderboard',
+    'JudgeContests', // ✅ ADD THIS
     'MyContestEntries',
     'MyContestEntry',
     'Artwork', // useful when entry links to artwork
@@ -280,12 +281,8 @@ const contestsApi = createApi({
     }),
 
     getContestEntries: builder.query<
-      ContestEntry[],
-      {
-        contestId: string;
-        status?: string;
-        moderatedOnly?: boolean;
-      }
+      { entries: ContestEntry[]; total?: number; [key: string]: any }, // ← real shape
+      { contestId: string; status?: string; moderatedOnly?: boolean }
     >({
       query: ({ contestId, ...params }) => ({
         url: `/contest/${contestId}/entries`,
@@ -293,7 +290,12 @@ const contestsApi = createApi({
       }),
       providesTags: (result, error, { contestId }) => [{ type: 'ContestEntries', id: contestId }],
     }),
-
+    getJudgeContests: builder.query<{ contests: Contest[] }, void>({
+      query: () => ({
+        url: '/contest/judge/contests',
+      }),
+      providesTags: ['JudgeContests', 'Contests'],
+    }),
     updateEntryStatus: builder.mutation<
       ContestEntry,
       { contestId: string; entryId: string; status: ContestEntry['status'] }
@@ -445,7 +447,7 @@ export const {
   useGetContestsQuery,
   useGetContestQuery,
   useGetLeaderboardQuery,
-
+  useGetJudgeContestsQuery,
   useCreateContestMutation,
   useUpdateContestMutation,
   useDeleteContestMutation,
