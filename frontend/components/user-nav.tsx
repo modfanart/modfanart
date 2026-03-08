@@ -21,7 +21,7 @@ export function UserNav() {
   const router = useRouter();
 
   const [logout, { isLoading: isLoggingOut }] = useLogoutMutation();
-  const { user, loading: isUserLoading } = useAuth(); // ✅ FIXED
+  const { user, loading: isUserLoading } = useAuth();
 
   if (isUserLoading || !user) return null;
 
@@ -30,9 +30,7 @@ export function UserNav() {
   const avatarSrc = user.avatar_url || '/default-avatar.png';
   const initials = displayName.slice(0, 2).toUpperCase();
 
-  // ------------------------------------------------------
-  // Correct Dashboard Path
-  // ------------------------------------------------------
+  // Dashboard Path
   let dashboardPath = '/dashboard';
 
   if (roleName === 'artist') {
@@ -40,7 +38,7 @@ export function UserNav() {
   }
 
   if (roleName === 'brand_manager') {
-    const brand = user?.brands?.[0]; // ✅ Now available via AuthProvider
+    const brand = user?.brands?.[0];
     const slug = brand?.slug;
 
     if (slug) {
@@ -48,11 +46,13 @@ export function UserNav() {
     }
   }
 
-  const isEligibleForDashboard = roleName === 'artist' || roleName === 'brand_manager';
+  if (roleName === 'judge') {
+    dashboardPath = `/dashboard/judge/${user.username}`;
+  }
 
-  // ------------------------------------------------------
-  // Logout
-  // ------------------------------------------------------
+  const isEligibleForDashboard =
+    roleName === 'artist' || roleName === 'brand_manager' || roleName === 'judge';
+
   const handleLogout = async () => {
     try {
       await logout().unwrap();

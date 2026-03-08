@@ -43,7 +43,10 @@ router.delete(
 
   ContestEntryController.deleteEntry  
 );
-
+router.get(
+  '/judge/contests',
+  ContestJudgeController.getAllContestsByJudgeId
+);
 router.get(
   '/me/contest-entries',
 

@@ -47,8 +47,8 @@ export default function Sidebar() {
     if (brandSlug) brandBase = `/dashboard/brand/${brandSlug}/${user?.id}`;
   }
 
-  if (role === 'Judge') {
-    judgeBase = '/dashboard/judge';
+  if (role === 'judge') {
+    judgeBase = `/dashboard/judge/${user?.username}`;
   }
 
   if (role === 'Admin') {
@@ -124,7 +124,7 @@ export default function Sidebar() {
               icon: Settings,
             },
           ]
-        : role === 'Judge'
+        : role === 'judge'
           ? [
               {
                 name: 'Dashboard',
@@ -133,7 +133,7 @@ export default function Sidebar() {
               },
               {
                 name: 'Review Submissions',
-                href: `${judgeBase}/reviews`,
+                href: `${judgeBase}/submission`,
                 icon: FileCheck,
               },
               {

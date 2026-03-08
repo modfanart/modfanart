@@ -4,10 +4,12 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import { CalendarIcon, Users, PlusCircle, Edit, Eye, Trash2, MoreHorizontal } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,10 +18,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+
 import { DashboardShell } from '@/components/dashboard-shell';
 import { useGetContestsQuery } from '@/services/api/contestsApi';
 import { useAuth } from '@/store/AuthContext';
-import { CheckCircle, XCircle, Clock, Trophy } from 'lucide-react';
 
 const getStatusBadge = (status: string = 'unknown') => {
   const s = status.toLowerCase();
@@ -32,12 +34,14 @@ const getStatusBadge = (status: string = 'unknown') => {
         variant: 'default' as const,
         className: 'bg-green-600 hover:bg-green-600',
       };
+
     case 'draft':
       return {
         label: 'Draft',
         variant: 'secondary' as const,
         className: 'bg-yellow-500/20 text-yellow-700',
       };
+
     case 'pending':
     case 'judging':
       return {
@@ -45,30 +49,35 @@ const getStatusBadge = (status: string = 'unknown') => {
         variant: 'outline' as const,
         className: 'border-orange-500 text-orange-700',
       };
+
     case 'completed':
       return {
         label: 'Completed',
         variant: 'secondary' as const,
         className: 'bg-gray-600 hover:bg-gray-600',
       };
+
     case 'archived':
       return {
         label: 'Archived',
         variant: 'outline' as const,
         className: 'border-gray-400 text-gray-500',
       };
+
     case 'rejected':
       return {
         label: 'Rejected',
         variant: 'destructive' as const,
         className: '',
       };
+
     case 'approved':
       return {
         label: 'Approved',
         variant: 'default' as const,
         className: 'bg-emerald-600 hover:bg-emerald-600',
       };
+
     case 'winner':
     case 'winners announced':
       return {
@@ -76,6 +85,7 @@ const getStatusBadge = (status: string = 'unknown') => {
         variant: 'default' as const,
         className: 'bg-amber-500 hover:bg-amber-500',
       };
+
     default:
       return {
         label: 'Unknown',
@@ -89,7 +99,6 @@ export default function OpportunitiesManagementPage() {
   const params = useParams();
   const { user } = useAuth();
 
-  // ── Resolve brand info (prefer auth → most reliable) ───────────────────────
   let brandId: string | undefined;
   let brandSlug: string | undefined;
   let brandBase = '';
@@ -98,8 +107,8 @@ export default function OpportunitiesManagementPage() {
     const managedBrand = user?.brands?.[0];
 
     if (managedBrand) {
-      brandId = managedBrand.id; // ← primary: use this for API
-      brandSlug = managedBrand.slug; // ← for URLs
+      brandId = managedBrand.id;
+      brandSlug = managedBrand.slug;
 
       if (brandSlug && user?.id) {
         brandBase = `/dashboard/brand/${brandSlug}/${user.id}`;
@@ -107,23 +116,9 @@ export default function OpportunitiesManagementPage() {
     }
   }
 
-  // Fallback: try to get slug from URL if auth didn't provide
   if (!brandSlug) {
     brandSlug = params['brand-slug'] as string | undefined;
   }
-  if (!brandId && params['brand-slug']) {
-    // If your API can accept slug instead → you can switch here
-    // brandId = brandSlug;  // ← only if backend supports it
-  }
-
-  console.log('[Opportunities Page]', {
-    userId: user?.id,
-    role: user?.role?.name,
-    brandId,
-    brandSlug,
-    brandBase,
-    brandsFromAuth: user?.brands?.length ?? 0,
-  });
 
   const {
     data: contestsResponse,
@@ -133,15 +128,16 @@ export default function OpportunitiesManagementPage() {
   } = useGetContestsQuery(brandId ? { brandId } : undefined, { skip: !brandId });
 
   const contests = contestsResponse?.contests ?? [];
-  console.log('[Contests loaded]', { count: contests.length, contests });
 
-  const activeContests = contests.filter((c) =>
+  const activeContests = contests.filter((c: any) =>
     ['live', 'published'].includes(c.status?.toLowerCase() ?? '')
   );
-  const closedContests = contests.filter((c) =>
+
+  const closedContests = contests.filter((c: any) =>
     ['completed', 'archived'].includes(c.status?.toLowerCase() ?? '')
   );
-  const draftContests = contests.filter((c) => (c.status?.toLowerCase() ?? '') === 'draft');
+
+  const draftContests = contests.filter((c: any) => (c.status?.toLowerCase() ?? '') === 'draft');
 
   if (isLoading) {
     return (
@@ -187,7 +183,7 @@ export default function OpportunitiesManagementPage() {
           ) : (
             <Button size="lg" disabled>
               <PlusCircle className="mr-2 h-5 w-5" />
-              Create New (brand not found)
+              Create New
             </Button>
           )}
         </div>
@@ -200,31 +196,35 @@ export default function OpportunitiesManagementPage() {
             <TabsTrigger value="draft">Drafts</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="all" className="space-y-8">
-            {contests.length === 0 ? <EmptyState /> : <OpportunityGrid items={contests} />}
+          <TabsContent value="all">
+            {contests.length === 0 ? (
+              <EmptyState brandBase={brandBase} />
+            ) : (
+              <OpportunityGrid items={contests} brandBase={brandBase} />
+            )}
           </TabsContent>
 
-          <TabsContent value="active" className="space-y-8">
+          <TabsContent value="active">
             {activeContests.length === 0 ? (
-              <EmptyState label="active" />
+              <EmptyState label="active" brandBase={brandBase} />
             ) : (
-              <OpportunityGrid items={activeContests} />
+              <OpportunityGrid items={activeContests} brandBase={brandBase} />
             )}
           </TabsContent>
 
-          <TabsContent value="closed" className="space-y-8">
+          <TabsContent value="closed">
             {closedContests.length === 0 ? (
-              <EmptyState label="closed" />
+              <EmptyState label="closed" brandBase={brandBase} />
             ) : (
-              <OpportunityGrid items={closedContests} isClosed />
+              <OpportunityGrid items={closedContests} brandBase={brandBase} isClosed />
             )}
           </TabsContent>
 
-          <TabsContent value="draft" className="space-y-8">
+          <TabsContent value="draft">
             {draftContests.length === 0 ? (
-              <EmptyState label="draft" isCreateButton={!!brandBase} />
+              <EmptyState label="draft" brandBase={brandBase} isCreateButton />
             ) : (
-              <OpportunityGrid items={draftContests} />
+              <OpportunityGrid items={draftContests} brandBase={brandBase} />
             )}
           </TabsContent>
         </Tabs>
@@ -233,7 +233,15 @@ export default function OpportunitiesManagementPage() {
   );
 }
 
-function OpportunityGrid({ items, isClosed = false }: { items: any[]; isClosed?: boolean }) {
+function OpportunityGrid({
+  items,
+  brandBase,
+  isClosed = false,
+}: {
+  items: any[];
+  brandBase: string;
+  isClosed?: boolean;
+}) {
   return (
     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {items.map((opp) => {
@@ -244,11 +252,12 @@ function OpportunityGrid({ items, isClosed = false }: { items: any[]; isClosed?:
           <Card key={opp.id} className="flex flex-col overflow-hidden">
             <div className="relative h-48">
               <Image
-                src={opp.hero_image || '/placeholder.svg?height=300&text=No+Image'}
+                src={opp.hero_image || '/placeholder.svg'}
                 alt={opp.title}
                 fill
                 className="object-cover"
               />
+
               <div className="absolute right-2 top-2">
                 <Badge variant={statusInfo.variant} className={statusInfo.className}>
                   {statusInfo.label}
@@ -258,25 +267,26 @@ function OpportunityGrid({ items, isClosed = false }: { items: any[]; isClosed?:
               <div className="absolute right-2 bottom-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="bg-black/20 text-white hover:bg-black/30"
-                    >
+                    <Button variant="ghost" size="icon" className="bg-black/20 text-white">
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
+
                   <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
+
                     <DropdownMenuSeparator />
+
                     <DropdownMenuItem>
                       <Eye className="mr-2 h-4 w-4" />
                       View
                     </DropdownMenuItem>
+
                     <DropdownMenuItem>
                       <Edit className="mr-2 h-4 w-4" />
                       Edit
                     </DropdownMenuItem>
+
                     <DropdownMenuItem className="text-destructive">
                       <Trash2 className="mr-2 h-4 w-4" />
                       Delete
@@ -286,24 +296,14 @@ function OpportunityGrid({ items, isClosed = false }: { items: any[]; isClosed?:
               </div>
             </div>
 
-            <CardHeader className="flex-1">
+            <CardHeader>
               <CardTitle className="line-clamp-1 text-xl">{opp.title}</CardTitle>
             </CardHeader>
 
-            <CardContent className="flex-1">
+            <CardContent>
               <p className="line-clamp-2 text-sm text-muted-foreground mb-4">
                 {opp.description || 'No description provided.'}
               </p>
-
-              {opp.categories?.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {opp.categories.map((cat: string) => (
-                    <Badge key={cat} variant="outline">
-                      {cat}
-                    </Badge>
-                  ))}
-                </div>
-              )}
 
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="flex items-center gap-2">
@@ -313,24 +313,23 @@ function OpportunityGrid({ items, isClosed = false }: { items: any[]; isClosed?:
                     {deadline ? new Date(deadline).toLocaleDateString() : '—'}
                   </span>
                 </div>
+
                 <div className="flex items-center gap-2">
                   <Users className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">
-                    {opp.entry_count != null ? `${opp.entry_count} Entries` : '—'}
-                  </span>
+                  <span className="text-muted-foreground">{opp.entry_count ?? 0} Entries</span>
                 </div>
               </div>
             </CardContent>
 
             <CardFooter className="grid grid-cols-2 gap-4 border-t bg-muted/50 p-4">
-              <Link href={`/dashboard/opportunities/${opp.id}`} className="w-full">
+              <Link href={`${brandBase}/contests/${opp.id}`} className="w-full">
                 <Button variant="secondary" className="w-full">
                   {isClosed ? 'View Results' : 'Manage'}
                 </Button>
               </Link>
 
               {isClosed ? (
-                <Link href={`/dashboard/opportunities/${opp.id}/reopen`} className="w-full">
+                <Link href={`${brandBase}/contests/${opp.id}/reopen`} className="w-full">
                   <Button variant="outline" className="w-full">
                     Reopen
                   </Button>
@@ -352,22 +351,25 @@ function OpportunityGrid({ items, isClosed = false }: { items: any[]; isClosed?:
 
 function EmptyState({
   label = '',
+  brandBase = '',
   isCreateButton = false,
 }: {
   label?: string;
+  brandBase?: string;
   isCreateButton?: boolean;
 }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
       <h3 className="mb-2 text-lg font-medium">No {label ? `${label} ` : ''}Opportunities</h3>
+
       <p className="mb-4 text-sm text-muted-foreground">
         {label
           ? `You don't have any ${label} opportunities yet.`
           : "You haven't created any opportunities yet."}
       </p>
 
-      {isCreateButton && (
-        <Link href="/dashboard/contests/create">
+      {isCreateButton && brandBase && (
+        <Link href={`${brandBase}/contests/create`}>
           <Button>
             <PlusCircle className="mr-2 h-4 w-4" />
             Create New Opportunity
