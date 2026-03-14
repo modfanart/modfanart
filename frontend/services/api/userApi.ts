@@ -44,7 +44,28 @@ export interface UserProfile {
   created_at: string;
   updated_at?: string;
 }
+export interface CreateUserRequest {
+  username: string;
+  email: string;
+  password: string;
+  role?: string;
 
+  bio?: string | null;
+  location?: string | null;
+  website?: string | null;
+
+  avatar_url?: string | null;
+  banner_url?: string | null;
+
+  profile?: {
+    twitter?: string | null;
+    instagram?: string | null;
+    facebook?: string | null;
+    tiktok?: string | null;
+    youtube?: string | null;
+    linkedin?: string | null;
+  };
+}
 export interface UpdateProfileRequest {
   bio?: string | null;
   location?: string | null;
@@ -214,7 +235,14 @@ export const userApi = createApi({
         body,
       }),
     }),
-
+    createUser: builder.mutation<{ message: string; user: UserProfile }, CreateUserRequest>({
+      query: (body) => ({
+        url: '/create',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['UserList'],
+    }),
     // POST /users/me/avatar
     uploadAvatar: builder.mutation<UploadAvatarResponse, File>({
       query: (file) => {
@@ -275,7 +303,13 @@ export const userApi = createApi({
       }),
       invalidatesTags: ['UserList', 'CurrentUser'],
     }),
-
+    deleteUser: builder.mutation<{ message: string }, { userId: string }>({
+      query: ({ userId }) => ({
+        url: `/${userId}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['UserList'],
+    }),
     // GET /users/:id/violations → Admin: Get violations for a user
     getUserViolations: builder.query<UserViolationsResponse, string>({
       query: (userId) => `/${userId}/violations`,
@@ -317,6 +351,8 @@ export const {
   useRemoveAvatarMutation,
   useGetUserByUsernameQuery,
   useGetMyBrandsQuery,
+  useCreateUserMutation,
+  useDeleteUserMutation,
   // Admin endpoints
   useGetAllUsersQuery,
   useGetUserByIdQuery,

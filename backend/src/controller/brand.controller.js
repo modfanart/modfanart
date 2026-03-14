@@ -660,9 +660,6 @@ async function adminCreateBrand(req, res) {
     // Protected by middleware: admin/superadmin only
     const { ownerUserId, ...brandData } = req.body;
 
-    if (!ownerUserId) {
-      return res.status(400).json({ error: 'ownerUserId (brand manager user) required' });
-    }
 
     const brand = await Brand.create({
       ...brandData,

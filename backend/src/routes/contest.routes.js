@@ -17,7 +17,8 @@ router.use(authenticateToken); // All user routes require auth
 router.get('/', ContestController.getContests);
 router.get('/:id', ContestController.getContest);
 router.get('/:contestId/leaderboard', ContestVoteController.getLeaderboard);
-
+// routes/contest.js  (or admin/contest.js)
+router.get('/by-status', ContestController.getContestsByStatus);
 // Auth required below
 // router.use(authenticateToken);
 

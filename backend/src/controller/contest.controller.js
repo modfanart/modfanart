@@ -636,6 +636,145 @@ static async removeUserAsJudgeByContestId(req, res) {
     res.status(500).json({ error: 'Failed to remove judge' });
   }
 }
-}
+// src/controllers/contest.controller.js
+// ... (keep your existing methods)
 
+// NEW METHOD: GET /contests/by-status
+/**
+ * GET /contests/by-status
+ * Fetch contests filtered primarily by status (e.g. live, judging, completed)
+ * Useful for dashboards, public listings, admin moderation queues, etc.
+ */
+static async getContestsByStatus(req, res) {
+  try {
+    const {
+      status,                     // required or fallback to 'live'
+      visibility = 'public',      // default public
+      brand_id,                   // optional: filter by brand
+      page = 1,
+      limit = 20,
+      sort = 'start_date',        // common: start_date, submission_end_date, created_at
+      order = 'desc',
+    } = req.query;
+
+    // Validate status (optional but recommended)
+    const validStatuses = [
+      'draft',
+      'published',
+      'live',
+      'judging',
+      'completed',
+      'archived',
+    ];
+
+    if (status && !validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid status. Allowed: ${validStatuses.join(', ')}`,
+      });
+    }
+
+    // Pagination
+    const pageNum = Math.max(1, Number(page));
+    const perPage = Math.min(100, Math.max(1, Number(limit)));
+    const offset = (pageNum - 1) * perPage;
+
+    // Sorting
+    const allowedSortFields = [
+      'created_at',
+      'start_date',
+      'submission_end_date',
+      'judging_end_date',
+      'updated_at',
+    ];
+    const sortField = allowedSortFields.includes(sort) ? sort : 'start_date';
+    const sortDir = order.toLowerCase() === 'asc' ? 'asc' : 'desc';
+
+    // Base query
+    let query = db
+      .selectFrom('contests as c')
+      .select([
+        'c.id',
+        'c.brand_id',
+        'c.title',
+        'c.slug',
+        'c.description',
+        'c.rules',
+        'c.prizes',
+        'c.start_date',
+        'c.submission_end_date',
+        'c.voting_end_date',
+        'c.judging_end_date',
+        'c.status',
+        'c.visibility',
+        'c.max_entries_per_user',
+        'c.winner_announced',
+        'c.created_at',
+        'c.updated_at',
+        // Optional: count entries (very useful for admin/public view)
+        db
+          .selectFrom('contest_entries')
+          .whereRef('contest_entries.contest_id', '=', 'c.id')
+          .select(db.fn.countAll().as('entry_count'))
+          .as('entry_count'),
+      ])
+      .where('c.deleted_at', 'is', null)
+      .where('c.visibility', '=', visibility)
+      .$if(status, (qb) => qb.where('c.status', '=', status))
+      .$if(brand_id, (qb) => qb.where('c.brand_id', '=', brand_id))
+      .orderBy(`c.${sortField}`, sortDir)
+      .limit(perPage)
+      .offset(offset);
+
+    // Execute list
+    const contests = await query.execute();
+
+    // Get total count for pagination (efficient separate query)
+    let countQuery = db
+      .selectFrom('contests')
+      .select(db.fn.countAll().as('total'))
+      .where('deleted_at', 'is', null)
+      .where('visibility', '=', visibility);
+
+    if (status) countQuery = countQuery.where('status', '=', status);
+    if (brand_id) countQuery = countQuery.where('brand_id', '=', brand_id);
+
+    const { total } = await countQuery.executeTakeFirst();
+
+    const totalCount = Number(total || 0);
+    const totalPages = Math.ceil(totalCount / perPage);
+
+    // Enrich response with useful metadata
+    res.json({
+      success: true,
+      data: contests,
+      pagination: {
+        page: pageNum,
+        limit: perPage,
+        total: totalCount,
+        totalPages,
+        hasNext: pageNum < totalPages,
+        hasPrev: pageNum > 1,
+      },
+      filtersApplied: {
+        status: status || 'all',
+        visibility,
+        brand_id: brand_id || null,
+      },
+    });
+  } catch (err) {
+    console.error('[getContestsByStatus] Error:', {
+      message: err.message,
+      stack: err.stack,
+      query: req.query,
+    });
+
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch contests by status',
+      ...(process.env.NODE_ENV !== 'production' && { detail: err.message }),
+    });
+  }
+}
+}
 module.exports = ContestController;
