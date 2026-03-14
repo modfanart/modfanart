@@ -7,15 +7,14 @@ import {
   Upload,
   Settings,
   Users,
-  Sparkles,
-  Star,
-  Share2,
-  Newspaper,
   Megaphone,
+  Newspaper,
   Store,
-  FileText,
-  Trophy,
   FileCheck,
+  Trophy,
+  ShoppingBag,
+  Image,
+  Shield,
 } from 'lucide-react';
 
 import { useAuth } from '@/store/AuthContext';
@@ -31,16 +30,14 @@ export default function Sidebar() {
   let judgeBase = '';
   let adminBase = '';
 
-  //
-  // 🔥 ROLE-SPECIFIC BASE PATHS
-  //
+  // ROLE-SPECIFIC BASE PATHS
+
   if (role === 'Artist') {
     const username = user?.username?.trim().toLowerCase();
     if (username) artistBase = `/dashboard/artist/${username}`;
   }
 
   if (role === 'brand_manager') {
-    // FIX: brands is an array, so use brands[0]
     const brand = user?.brands?.[0];
     const brandSlug = brand?.slug;
 
@@ -52,12 +49,11 @@ export default function Sidebar() {
   }
 
   if (role === 'Admin') {
-    adminBase = '/dashboard/admin';
+    adminBase = `/dashboard/admin/${user?.role?.name}/${user?.username}`;
   }
 
-  //
-  // ❗ Missing identifier safety check
-  //
+  // SAFETY CHECK
+
   if ((role === 'Artist' && !artistBase) || (role === 'brand_manager' && !brandBase)) {
     return (
       <div className="flex h-full flex-col border-r bg-white p-6 text-red-600">
@@ -69,9 +65,8 @@ export default function Sidebar() {
     );
   }
 
-  //
-  // 🔧 Role-Specific Navigation Items — only icons changed
-  //
+  // NAVIGATION
+
   const navigation =
     role === 'Artist'
       ? [
@@ -83,7 +78,7 @@ export default function Sidebar() {
           {
             name: 'Submissions',
             href: `${artistBase}/submissions`,
-            icon: Upload, // changed: more clear for uploading artwork
+            icon: Upload,
           },
         ]
       : role === 'brand_manager'
@@ -96,27 +91,27 @@ export default function Sidebar() {
             {
               name: 'My Brand',
               href: `${brandBase}/overview`,
-              icon: Star,
+              icon: Store,
             },
             {
               name: 'Campaigns',
               href: `${brandBase}/contests`,
-              icon: Megaphone, // changed: better represents campaigns/promotion
+              icon: Megaphone,
             },
             {
               name: 'License Requests',
               href: `${brandBase}/license-requests`,
-              icon: FileText, // changed: clearer for requests/documents
+              icon: FileCheck,
             },
             {
               name: 'Storefront',
               href: `${brandBase}/storefront`,
-              icon: Store, // changed: perfect match for storefront/shop
+              icon: ShoppingBag,
             },
             {
               name: 'Posts',
               href: `${brandBase}/posts`,
-              icon: Newspaper, // changed: more appropriate for brand posts/news
+              icon: Newspaper,
             },
             {
               name: 'Settings',
@@ -139,7 +134,7 @@ export default function Sidebar() {
               {
                 name: 'Leaderboard',
                 href: `${judgeBase}/leaderboard`,
-                icon: Trophy, // changed: stronger visual for ranking/leaderboard
+                icon: Trophy,
               },
             ]
           : role === 'Admin'
@@ -157,12 +152,22 @@ export default function Sidebar() {
                 {
                   name: 'Brands',
                   href: `${adminBase}/brands`,
-                  icon: Sparkles,
+                  icon: Store,
                 },
                 {
-                  name: 'Settings',
-                  href: `${adminBase}/settings`,
-                  icon: Settings,
+                  name: 'Artworks',
+                  href: `${adminBase}/artworks`,
+                  icon: Image,
+                },
+                {
+                  name: 'Contests',
+                  href: `${adminBase}/contests`,
+                  icon: Trophy,
+                },
+                {
+                  name: 'Roles & Permissions',
+                  href: `${adminBase}/roles-permissions`,
+                  icon: Shield,
                 },
               ]
             : [];
@@ -170,12 +175,14 @@ export default function Sidebar() {
   return (
     <div className="hidden lg:flex lg:flex-col lg:w-72 lg:border-r lg:bg-card lg:text-card-foreground">
       {/* Header */}
+
       <div className="border-b px-6 py-5">
         <h2 className="text-xl font-semibold tracking-tight">Dashboard</h2>
         {role && <p className="mt-1 text-sm text-muted-foreground capitalize">{role} Panel</p>}
       </div>
 
       {/* Navigation */}
+
       <nav className="flex-1 overflow-y-auto px-3 py-6">
         <div className="space-y-1">
           {navigation.map((item) => {
@@ -199,11 +206,6 @@ export default function Sidebar() {
           })}
         </div>
       </nav>
-
-      {/* Subtle footer */}
-      <div className="border-t px-6 py-4 text-xs text-muted-foreground/70">
-        <p>© {new Date().getFullYear()} Your Platform</p>
-      </div>
     </div>
   );
 }

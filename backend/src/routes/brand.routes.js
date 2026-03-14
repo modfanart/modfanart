@@ -178,7 +178,6 @@ router.patch(
 router.post(
   '/',
   authenticateToken,
-  authorize(['admin', 'superadmin']),
   // hasPermission('brands.create'),
   brandController.adminCreateBrand
 );

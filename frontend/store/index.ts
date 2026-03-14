@@ -25,6 +25,7 @@ import { searchApi } from '@/services/api/searchApi';
 // Reducers (slices)
 // ────────────────────────────────────────────────
 import authReducer from '@/services/api/features/authSlice';
+import { adminApi } from '@/services/api/adminApi';
 // import otherSliceReducer from '@/features/other/otherSlice';  // add more as needed
 
 // ────────────────────────────────────────────────
@@ -51,7 +52,7 @@ export const store = configureStore({
     auth: authReducer,
     // Add other non-RTK reducers here when you create them
     // example: theme: themeReducer,
-
+    [adminApi.reducerPath]: adminApi.reducer,
     // RTK Query auto-generated reducers
     [authApi.reducerPath]: authApi.reducer,
     [userApi.reducerPath]: userApi.reducer,
@@ -81,6 +82,7 @@ export const store = configureStore({
       userApi.middleware,
       rolesApi.middleware,
       productsApi.middleware,
+      adminApi.middleware,
       ordersApi.middleware,
       moderationApi.middleware,
       licensesApi.middleware,
