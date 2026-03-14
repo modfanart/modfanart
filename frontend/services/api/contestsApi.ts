@@ -195,6 +195,32 @@ const contestsApi = createApi({
       query: (id) => `/contest/${id}`, // ← add ?populate=brand if your backend needs it
       providesTags: (result, error, id) => [{ type: 'Contest', id }, 'Contests'],
     }),
+    getContestsByStatus: builder.query<
+      GetContestsResponse,
+      {
+        status?: string; // e.g. 'live', 'judging', 'completed'
+        visibility?: 'public' | 'private' | 'unlisted';
+        brand_id?: string;
+        page?: number;
+        limit?: number;
+        sort?: 'created_at' | 'start_date' | 'submission_end_date' | 'updated_at';
+        order?: 'asc' | 'desc';
+      }
+    >({
+      query: (params) => ({
+        url: '/contests/by-status',
+        params: {
+          status: params.status,
+          visibility: params.visibility ?? 'public',
+          brand_id: params.brand_id,
+          page: params.page ?? 1,
+          limit: params.limit ?? 20,
+          sort: params.sort ?? 'start_date',
+          order: params.order ?? 'desc',
+        },
+      }),
+      providesTags: ['Contests'],
+    }),
     // ── CRUD ─────────────────────────────────────────────────
 
     createContest: builder.mutation<Contest, Partial<Contest>>({
@@ -446,6 +472,7 @@ const contestsApi = createApi({
 export const {
   useGetContestsQuery,
   useGetContestQuery,
+  useGetContestsByStatusQuery,
   useGetLeaderboardQuery,
   useGetJudgeContestsQuery,
   useCreateContestMutation,

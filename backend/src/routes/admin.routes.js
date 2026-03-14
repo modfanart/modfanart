@@ -1,19 +1,19 @@
-// backend/src/routes/admin.routes.js
+// routes/admin.js
 const express = require('express');
 const router = express.Router();
-const rateLimit = require('../middleware/rate-limit');
-const {
-  getAdminSettings,
-  postAdminSettings,
-} = require('../controller/admin.controller');
+const ctrl = require('../controllers/admin.controller');
+const { protect, adminOnly } = require('../middleware/auth');
 
-// Rate limit: 500 req/min (same as your code)
-const limiter = rateLimit({ windowMs: 60_000, limit: 500 });
+router.use(protect, adminOnly); // apply globally
 
-// GET /api/admin/settings
-router.get('/settings', limiter, getAdminSettings);
+router.get('/stats', ctrl.getPlatformStats);
+router.get('/users', ctrl.getUsers);
+router.patch('/users/:id/status', ctrl.updateUserStatus);
+router.delete('/users/:id', ctrl.deleteUser);
 
-// POST /api/admin/settings (read-only message)
-router.post('/settings', limiter, postAdminSettings);
+router.get('/brands/pending-verification', ctrl.getPendingBrandVerifications);
+router.patch('/brands/:brandId/verify', ctrl.verifyBrand);
+
+router.get('/moderation/queue', ctrl.getModerationQueue);
 
 module.exports = router;

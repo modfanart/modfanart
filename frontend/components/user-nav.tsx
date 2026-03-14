@@ -50,8 +50,16 @@ export function UserNav() {
     dashboardPath = `/dashboard/judge/${user.username}`;
   }
 
+  // Admin role
+  if (roleName === 'admin') {
+    dashboardPath = `/dashboard/admin/${user.role?.name}/${user.username}`;
+  }
+
   const isEligibleForDashboard =
-    roleName === 'artist' || roleName === 'brand_manager' || roleName === 'judge';
+    roleName === 'artist' ||
+    roleName === 'brand_manager' ||
+    roleName === 'judge' ||
+    roleName === 'admin';
 
   const handleLogout = async () => {
     try {
