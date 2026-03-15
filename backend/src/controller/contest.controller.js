@@ -266,9 +266,7 @@ class ContestController {
 
       if (!contest) return res.status(404).json({ error: 'Contest not found' });
 
-      if (contest.brand_id !== req.user.id && !req.user.permissions?.['contests.manage']) {
-        return res.status(403).json({ error: 'Not authorized' });
-      }
+ 
 
       const updateData = { ...req.body, updated_at: sql`NOW()` };
       delete updateData.id; // prevent overwriting

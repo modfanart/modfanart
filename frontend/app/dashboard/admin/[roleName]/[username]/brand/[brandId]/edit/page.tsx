@@ -82,18 +82,21 @@ export default function EditBrandPage() {
 
   const onSubmit = async (values: FormValues) => {
     try {
+      const payload = {
+        ...values,
+        description: values.description ?? null,
+        website: values.website ?? null,
+      };
+
       await updateBrand({
         id: brandId,
-        data: values,
+        data: payload,
       }).unwrap();
 
       toast({
         title: 'Brand updated',
         description: 'Your brand profile has been successfully updated.',
       });
-
-      // Optional: redirect to stats or profile
-      // router.push(`/brand/${brandId}/stats`);
     } catch (err: any) {
       toast({
         variant: 'destructive',

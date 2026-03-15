@@ -25,7 +25,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Building2, AlertCircle } from 'lucide-react';
 import { DashboardShell } from '@/components/dashboard-shell';
-
+import { useAuth } from '@/store/AuthContext';
 // ── Validation Schema ────────────────────────────────────────────────
 const formSchema = z.object({
   name: z.string().min(3, 'Brand name must be at least 3 characters').max(60),
@@ -45,6 +45,7 @@ export default function CreateBrandPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [createBrand, { isLoading }] = useAdminCreateBrandMutation(); // or useAdminCreateBrandMutation
+  const { user: currentUser } = useAuth(); // ← get logged-in admin
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -56,13 +57,30 @@ export default function CreateBrandPage() {
     },
   });
 
-  const onSubmit = async (values: FormValues) => {
+ const onSubmit = async (values: FormValues) => {
+    if (!currentUser) {
+      toast({
+        variant: 'destructive',
+        title: 'Not authenticated',
+        description: 'You must be logged in as an admin to create a brand.',
+      });
+      return;
+    }
+
     try {
-      const payload = {
-        ...values,
-        status: 'pending', // or 'active' depending on your flow
-        // logo_url / banner_url handled separately after creation
-      };
+   const payload = {
+  name: values.name,
+  slug: values.slug,
+  description: values.description || null,
+  website: values.website || null,
+  status: 'pending',
+  user_id: currentUser.id,       // ← required and must match DB column
+  logo_url: null,
+  banner_url: null,
+  social_links: null,
+  followers_count: 0,            // optional, default to 0
+  verification_request_id: null, // optional
+};
 
       const created = await createBrand(payload).unwrap();
 
@@ -71,8 +89,7 @@ export default function CreateBrandPage() {
         description: `${created.name} has been successfully created.`,
       });
 
-      // Redirect to brand dashboard or edit page
-      router.push(`/brand/${created.id}/edit`); // or `/brand/${created.slug}`
+      router.push(`/brand/${created.id}/edit`);
     } catch (err: any) {
       toast({
         variant: 'destructive',
@@ -81,6 +98,7 @@ export default function CreateBrandPage() {
       });
     }
   };
+
 
   // Auto-generate slug from name
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {

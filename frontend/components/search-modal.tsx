@@ -2,17 +2,35 @@
 
 import { Search, X } from 'lucide-react';
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { GlobalSearchResponse } from '@/services/api/features/searchTypes';
+
 import { useLazyGlobalSearchQuery } from '@/services/api/searchApi';
 
-// How many recent searches to keep
+// ─────────────────────────────────────────────
+// Search Tabs (must match backend types)
+// ─────────────────────────────────────────────
+const TABS = [
+  { label: 'All', value: undefined },
+  { label: 'Artworks', value: 'artwork' },
+  { label: 'Users', value: 'user' },
+  { label: 'Brands', value: 'brand' },
+  { label: 'Contests', value: 'contest' },
+  { label: 'Categories', value: 'category' },
+  { label: 'Tags', value: 'tag' },
+];
+
+// ─────────────────────────────────────────────
+// Recent Searches Config
+// ─────────────────────────────────────────────
 const MAX_RECENT_SEARCHES = 8;
 const STORAGE_KEY = 'recent_searches';
 
-// Helper to get/save recent searches
+// ─────────────────────────────────────────────
+// Local Storage Helpers
+// ─────────────────────────────────────────────
 const getRecentSearches = (): string[] => {
   if (typeof window === 'undefined') return [];
   try {
@@ -26,28 +44,41 @@ const getRecentSearches = (): string[] => {
 const saveRecentSearches = (searches: string[]) => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(searches));
-  } catch {
-    // silent fail
-  }
+  } catch {}
 };
 
+// ─────────────────────────────────────────────
+// Search Modal Component
+// ─────────────────────────────────────────────
 export function SearchModal() {
+  const router = useRouter();
+
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState<string | undefined>(undefined);
 
-  // Load recent searches on mount
+  const [triggerSearch, { data, isLoading, isFetching }] = useLazyGlobalSearchQuery();
+
+  // ─────────────────────────────────────────────
+  // Load recent searches
+  // ─────────────────────────────────────────────
   useEffect(() => {
     setRecentSearches(getRecentSearches());
   }, []);
 
-  // CMD/CTRL + K to open/close + ESC to close
+  // ─────────────────────────────────────────────
+  // Keyboard shortcuts
+  // CMD/CTRL + K → open
+  // ESC → close
+  // ─────────────────────────────────────────────
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         setOpen((prev) => !prev);
       }
+
       if (e.key === 'Escape') {
         setOpen(false);
       }
@@ -57,69 +88,108 @@ export function SearchModal() {
     return () => document.removeEventListener('keydown', down);
   }, []);
 
+  // ─────────────────────────────────────────────
+  // Debounced Search
+  // ─────────────────────────────────────────────
+  useEffect(() => {
+    if (!query.trim() || query.trim().length < 2) return;
+
+    const timer = setTimeout(() => {
+      const params: any = {
+        q: query.trim(),
+        limit: 12,
+        offset: 0,
+      };
+
+      if (activeTab) {
+        params.type = activeTab;
+      }
+
+      triggerSearch(params, true);
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [query, activeTab, triggerSearch]);
+  // ─────────────────────────────────────────────
+  // Save Search
+  // ─────────────────────────────────────────────
   const handleSearchSubmit = useCallback(() => {
     if (!query.trim()) return;
 
-    // Add to recent searches (dedupe + newest first + limit)
     setRecentSearches((prev) => {
       const trimmed = query.trim();
+
       const filtered = prev.filter((item) => item.toLowerCase() !== trimmed.toLowerCase());
+
       const updated = [trimmed, ...filtered].slice(0, MAX_RECENT_SEARCHES);
+
       saveRecentSearches(updated);
+
       return updated;
     });
-
-    // Optional: navigate or trigger full-page search
-    // router.push(`/search?q=${encodeURIComponent(query.trim())}`);
   }, [query]);
 
+  // ─────────────────────────────────────────────
+  // Clear Search History
+  // ─────────────────────────────────────────────
   const handleClearHistory = () => {
     setRecentSearches([]);
     saveRecentSearches([]);
   };
 
-  // RTK Query – lazy version
-  const [triggerSearch, { data, isLoading, isFetching }] = useLazyGlobalSearchQuery();
+  // ─────────────────────────────────────────────
+  // Result Navigation
+  // ─────────────────────────────────────────────
+  const handleResultClick = (item: any) => {
+    switch (item.type) {
+      case 'artwork':
+        router.push(`/artwork/${item.id}`);
+        break;
 
-  // Debounced auto-search when typing
-  useEffect(() => {
-    if (!query.trim() || query.trim().length < 2) return;
+      case 'user':
+        router.push(`/user/${item.id}`);
+        break;
 
-    const timer = setTimeout(() => {
-      triggerSearch(
-        {
-          q: query.trim(),
-          limit: 12,
-          offset: 0,
-          // type: 'artwork,user,brand' // can be made dynamic later
-        },
-        true // preferCacheValue
-      );
-    }, 400);
+      case 'brand':
+        router.push(`/brand/${item.id}`);
+        break;
 
-    return () => clearTimeout(timer);
-  }, [query, triggerSearch]);
+      case 'contest':
+        router.push(`/contest/${item.id}`);
+        break;
+
+      case 'category':
+        router.push(`/category/${item.id}`);
+        break;
+
+      case 'tag':
+        router.push(`/tag/${item.id}`);
+        break;
+    }
+
+    setOpen(false);
+  };
 
   return (
     <>
-      {/* Trigger button – usually placed in header */}
+      {/* Search Button */}
       <Button
         variant="ghost"
         size="icon"
         onClick={() => setOpen(true)}
         className="text-gray-600 hover:text-gray-900"
-        aria-label="Open search"
       >
-        <Search className="h-5 w-5" />
+        {' '}
+        <Search className="h-5 w-5" />{' '}
       </Button>
 
-      {/* Fullscreen modal */}
+      {/* Modal */}
       {open && (
         <div className="fixed inset-0 z-50 bg-white/95 backdrop-blur-sm animate-in fade-in duration-200">
+          {/* Close */}
           <button
             onClick={() => setOpen(false)}
-            className="absolute top-6 right-8 text-gray-600 hover:text-gray-900 transition-colors"
-            aria-label="Close search modal"
+            className="absolute top-6 right-8 text-gray-600 hover:text-gray-900"
           >
             <X size={28} />
           </button>
@@ -128,6 +198,7 @@ export function SearchModal() {
             {/* Search Input */}
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 h-6 w-6" />
+
               <Input
                 autoFocus
                 value={query}
@@ -138,33 +209,42 @@ export function SearchModal() {
                     handleSearchSubmit();
                   }
                 }}
-                placeholder="Search movies, shows, anime, cast & crew, users..."
-                className="pl-12 h-14 text-lg rounded-xl border-gray-300 focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:border-transparent shadow-sm"
+                placeholder="Search artworks, users, brands, contests..."
+                className="pl-12 h-14 text-lg rounded-xl border-gray-300 focus-visible:ring-2 focus-visible:ring-purple-500 shadow-sm"
               />
             </div>
 
-            {/* Tabs (currently static – can be made functional later) */}
-            <div className="flex gap-6 sm:gap-10 mt-8 border-b border-gray-200 text-sm font-medium">
-              <button className="pb-3 border-b-2 border-purple-600 text-purple-700">All</button>
-              <button className="pb-3 text-gray-600 hover:text-gray-900 transition">Movies</button>
-              <button className="pb-3 text-gray-600 hover:text-gray-900 transition">Shows</button>
-              <button className="pb-3 text-gray-600 hover:text-gray-900 transition">People</button>
-              <button className="pb-3 text-gray-600 hover:text-gray-900 transition">Users</button>
+            {/* Tabs */}
+            <div className="flex gap-6 sm:gap-10 mt-8 border-b border-gray-200 text-sm font-medium overflow-x-auto">
+              {TABS.map((tab) => (
+                <button
+                  key={tab.label}
+                  onClick={() => setActiveTab(tab.value)}
+                  className={`pb-3 whitespace-nowrap transition ${
+                    activeTab === tab.value
+                      ? 'border-b-2 border-purple-600 text-purple-700'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
 
-            {/* Main content area */}
+            {/* Content */}
             <div className="mt-8 min-h-[40vh]">
-              {/* Recent Searches – shown when query is empty */}
+              {/* Recent Searches */}
               {!query.trim() && (
                 <div>
                   <div className="flex justify-between items-center mb-5">
                     <h3 className="text-sm font-medium text-gray-500 tracking-wide">
                       RECENT SEARCHES
                     </h3>
+
                     {recentSearches.length > 0 && (
                       <button
                         onClick={handleClearHistory}
-                        className="text-xs text-gray-500 hover:text-gray-700 underline-offset-2 hover:underline"
+                        className="text-xs text-gray-500 hover:text-gray-700 underline"
                       >
                         Clear all
                       </button>
@@ -179,7 +259,7 @@ export function SearchModal() {
                         <button
                           key={item}
                           onClick={() => setQuery(item)}
-                          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm rounded-full transition-colors"
+                          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-sm rounded-full"
                         >
                           {item}
                         </button>
@@ -189,7 +269,7 @@ export function SearchModal() {
                 </div>
               )}
 
-              {/* Search results / loading state */}
+              {/* Search Results */}
               {query.trim() && (
                 <div>
                   {isLoading || isFetching ? (
@@ -202,31 +282,30 @@ export function SearchModal() {
                         Found {data.total} results for "{query}"
                       </p>
 
-                      {/* Results grid */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {data.results.slice(0, 9).map((item) => (
                           <div
                             key={`${item.type}-${item.id}`}
-                            className="p-4 border rounded-lg hover:border-purple-300 transition-colors bg-white shadow-sm"
+                            onClick={() => handleResultClick(item)}
+                            className="p-4 border rounded-lg hover:border-purple-300 transition bg-white shadow-sm cursor-pointer"
                           >
                             <div className="flex items-start gap-3">
                               {item.image && (
                                 <img
                                   src={item.image}
-                                  alt={item.title || item.name || item.username || ''}
-                                  className="w-16 h-16 object-cover rounded"
+                                  alt={item.title}
+                                  className="w-14 h-14 object-cover rounded-md"
                                   loading="lazy"
                                 />
                               )}
+
                               <div className="flex-1 min-w-0">
-                                <p className="font-medium truncate">
-                                  {item.title || item.name || item.username || '—'}
-                                </p>
-                                <p className="text-sm text-gray-500 capitalize">{item.type}</p>
-                                {item.description && (
-                                  <p className="text-sm text-gray-600 mt-1 line-clamp-2">
-                                    {item.description}
-                                  </p>
+                                <p className="font-medium truncate">{item.title}</p>
+
+                                <p className="text-xs text-purple-600 capitalize">{item.type}</p>
+
+                                {item.subtitle && (
+                                  <p className="text-sm text-gray-500 truncate">{item.subtitle}</p>
                                 )}
                               </div>
                             </div>
