@@ -1,38 +1,32 @@
 // ./api/features/searchTypes.ts
-// ──────────────────────────────────────────────────────────────────────────────
-// Centralized type definitions for the global search feature
-// ──────────────────────────────────────────────────────────────────────────────
 
-/**
- * Individual search result item – discriminated union would be ideal,
- * but keeping it simple & flexible as in your current code.
- */
+// ─────────────────────────────────────────────
+// Individual result item
+// ─────────────────────────────────────────────
 export interface SearchResultItem {
   type: 'artwork' | 'user' | 'brand' | 'contest' | 'category' | 'tag';
   id: string;
 
-  // Common display fields (most items will have at least one of these)
-  title?: string; // artworks, contests, brands...
-  name?: string; // users, brands, categories...
-  username?: string; // users
-  slug?: string; // friendly URL part (artworks, users, contests...)
+  // Main UI fields (match backend controller)
+  title: string;
+  subtitle?: string | null;
+  image?: string | null;
+  extra?: string | null;
 
+  created_at: string;
+
+  // Optional metadata
+  slug?: string;
+  status?: string;
   description?: string | null;
 
-  // Visuals
-  image?: string | null; // thumbnail / avatar / poster / logo
-
-  // Optional common metadata
-  status?: string; // e.g. "active", "draft", "completed"
-  created_at: string; // ISO string
-
-  // Allow backend to send extra type-specific fields without breaking
-  [key: string]: any;
+  // Allow backend expansion without breaking
+  [key: string]: unknown;
 }
 
-/**
- * Full shape of the response from /api/search
- */
+// ─────────────────────────────────────────────
+// API response
+// ─────────────────────────────────────────────
 export interface GlobalSearchResponse {
   results: SearchResultItem[];
   total: number;
@@ -40,39 +34,30 @@ export interface GlobalSearchResponse {
   offset: number;
 }
 
-/**
- * Query parameters accepted by the global search endpoint
- */
+// ─────────────────────────────────────────────
+// Query params
+// ─────────────────────────────────────────────
 export interface GlobalSearchParams {
   q: string;
   limit?: number;
   offset?: number;
-
-  /**
-   * Optional comma-separated list of types to filter by
-   * Example: "artwork,user,brand" or "contest,tag"
-   */
   type?: string;
 }
 
-// Optional: if you later want a stricter discriminated union approach
-
+// ─────────────────────────────────────────────
+// Optional stricter result types
+// ─────────────────────────────────────────────
 export type ArtworkSearchResult = SearchResultItem & {
   type: 'artwork';
-  title: string; // required for artworks
-  slug?: string;
-  // e.g. medium?: string; category?: string; etc.
+  title: string;
 };
 
 export type UserSearchResult = SearchResultItem & {
   type: 'user';
-  username: string; // required for users
-  name?: string;
-  // e.g. followers_count?: number;
+  title: string;
 };
 
 export type BrandSearchResult = SearchResultItem & {
   type: 'brand';
-  name: string;
-  // etc.
+  title: string;
 };

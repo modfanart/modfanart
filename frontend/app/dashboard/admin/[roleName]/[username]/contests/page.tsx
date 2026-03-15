@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { CalendarDays, Trophy, Users, Clock, Plus, Search, RefreshCcw } from 'lucide-react';
+import { CalendarDays, Trophy, Users, Clock, Plus, Search, RefreshCcw, Pencil } from 'lucide-react';
 
-import { useGetContestsQuery, Contest } from '@/services/api/contestsApi';
+import { useGetContestsQuery, useUpdateContestMutation, Contest } from '@/services/api/contestsApi';
+
+import { useAuth } from '@/store/AuthContext';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -27,16 +29,38 @@ export default function ContestsPage() {
   const [status, setStatus] = useState<string | undefined>(undefined);
   const [page, setPage] = useState(1);
 
+  const [editingStatusId, setEditingStatusId] = useState<string | null>(null);
+
+  const { user: currentUser } = useAuth();
+
   const { data, isLoading, refetch } = useGetContestsQuery();
+  const [updateContest] = useUpdateContestMutation();
 
   const contests = data?.contests ?? [];
 
+  const adminBase = useMemo(() => {
+    if (currentUser?.role?.name === 'Admin') {
+      return `/dashboard/admin/${currentUser.role.name.toLowerCase()}/${currentUser.username}`;
+    }
+    return '';
+  }, [currentUser]);
+
   const filtered = contests.filter((c) => c.title.toLowerCase().includes(search.toLowerCase()));
+
+  const changeStatus = async (id: string, newStatus: Contest['status']) => {
+    try {
+      await updateContest({ id, status: newStatus }).unwrap();
+      setEditingStatusId(null);
+    } catch (err) {
+      console.error('Failed to update status', err);
+    }
+  };
 
   if (isLoading) {
     return (
       <div className="container mx-auto py-10 px-4">
         <h1 className="text-3xl font-bold mb-8">Contests</h1>
+
         <div className="space-y-3">
           {Array.from({ length: 8 }).map((_, i) => (
             <Skeleton key={i} className="h-12 w-full rounded-lg" />
@@ -49,7 +73,7 @@ export default function ContestsPage() {
   return (
     <DashboardShell>
       <div className="container mx-auto py-10 px-4">
-        {/* Header */}
+        {/* HEADER */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold">Contests</h1>
 
@@ -60,7 +84,7 @@ export default function ContestsPage() {
             </Button>
 
             <Button asChild>
-              <Link href="/contest/add">
+              <Link href={`${adminBase}/contest/add`}>
                 <Plus className="h-4 w-4 mr-2" />
                 Create Contest
               </Link>
@@ -68,7 +92,7 @@ export default function ContestsPage() {
           </div>
         </div>
 
-        {/* Filters */}
+        {/* FILTERS */}
         <div className="flex flex-col md:flex-row gap-4 mb-6">
           <div className="relative w-full md:w-80">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -94,7 +118,7 @@ export default function ContestsPage() {
           </select>
         </div>
 
-        {/* Empty */}
+        {/* EMPTY STATE */}
         {filtered.length === 0 ? (
           <div className="text-center py-20">
             <Trophy className="mx-auto h-12 w-12 text-muted-foreground" />
@@ -124,7 +148,7 @@ export default function ContestsPage() {
 
                   return (
                     <TableRow key={contest.id}>
-                      {/* Contest */}
+                      {/* CONTEST */}
                       <TableCell>
                         <div>
                           <div className="font-medium">{contest.title}</div>
@@ -135,55 +159,78 @@ export default function ContestsPage() {
                         </div>
                       </TableCell>
 
-                      {/* Status */}
+                      {/* STATUS WITH EDIT */}
                       <TableCell>
-                        <Badge variant={contest.status === 'live' ? 'default' : 'secondary'}>
-                          {contest.status}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={contest.status === 'live' ? 'default' : 'secondary'}>
+                            {contest.status}
+                          </Badge>
+
+                          {editingStatusId === contest.id ? (
+                            <select
+                              autoFocus
+                              defaultValue={contest.status}
+                              className="border rounded px-2 py-1 text-xs"
+                              onChange={(e) =>
+                                changeStatus(contest.id, e.target.value as Contest['status'])
+                              }
+                              onBlur={() => setEditingStatusId(null)}
+                            >
+                              <option value="draft">Draft</option>
+                              <option value="published">Published</option>
+                              <option value="live">Live</option>
+                              <option value="judging">Judging</option>
+                              <option value="completed">Completed</option>
+                              <option value="archived">Archived</option>
+                            </select>
+                          ) : (
+                            <button
+                              onClick={() => setEditingStatusId(contest.id)}
+                              className="text-muted-foreground hover:text-foreground"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
                       </TableCell>
 
-                      {/* Dates */}
+                      {/* DATES */}
                       <TableCell className="text-sm text-muted-foreground">
                         <div className="flex items-center gap-2">
-                          <CalendarDays className="h-4 w-4" />
-                          {format(new Date(contest.start_date), 'MMM d')} –
+                          {format(new Date(contest.start_date), 'MMM d')} –{' '}
                           {format(new Date(contest.submission_end_date), 'MMM d')}
                         </div>
                       </TableCell>
 
-                      {/* Entries */}
+                      {/* ENTRIES */}
                       <TableCell className="text-sm text-muted-foreground">
                         <div className="flex items-center gap-2">
-                          <Users className="h-4 w-4" />
                           Max {contest.max_entries_per_user}
                         </div>
                       </TableCell>
 
-                      {/* Prize */}
+                      {/* PRIZE */}
                       <TableCell>
                         {maxPrize ? (
-                          <div className="flex items-center gap-2 font-medium">
-                            <Trophy className="h-4 w-4 text-amber-600" />₹{maxPrize}
-                          </div>
+                          <div className="flex items-center gap-2 font-medium">₹{maxPrize}</div>
                         ) : (
                           <span className="text-muted-foreground text-sm">—</span>
                         )}
                       </TableCell>
 
-                      {/* Visibility */}
+                      {/* VISIBILITY */}
                       <TableCell>
                         <Badge variant="outline">{contest.visibility}</Badge>
                       </TableCell>
 
-                      {/* Deadline */}
+                      {/* DEADLINE */}
                       <TableCell className="text-sm text-muted-foreground">
                         <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4" />
                           {format(new Date(contest.submission_end_date), 'd MMM yyyy')}
                         </div>
                       </TableCell>
 
-                      {/* Action */}
+                      {/* ACTION */}
                       <TableCell>
                         <Button variant="outline" size="sm" asChild>
                           <Link href={`/contest/${contest.id}`}>View</Link>
@@ -197,7 +244,7 @@ export default function ContestsPage() {
           </div>
         )}
 
-        {/* Pagination */}
+        {/* PAGINATION */}
         <div className="flex justify-end mt-6 gap-2">
           <Button variant="outline" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
             Previous

@@ -1,4 +1,4 @@
-// src/controllers/brand.controller.js
+  // src/controllers/brand.controller.js
 const { db, sql } = require('../config');
 const Brand = require('../models/brand.model');
 const BrandPost = require('../models/brandPost.model');
@@ -8,29 +8,12 @@ const BrandManager = require('../models/brandManager.model');
 
 // Assume these helpers exist
 const { hasPermission } = require('../middleware/permission.middleware');
-
-// ───────────────────────────────────────────────
+const {ensureBrandAccess, ensureBrandOwner}  = require("../middleware/brand.middleware")
+// ─────────────────────────────────────── ────────
 // Helpers
 // ───────────────────────────────────────────────
 
-async function ensureBrandAccess(req, allowedManagerRoles = ['owner', 'manager', 'editor']) {
-  const brandId = req.params.brandId || req.params.id || req.params.brand_id;
-  if (!brandId) {
-    throw Object.assign(new Error('Brand ID not found in request'), { status: 400 });
-  }
 
-  const access = await BrandManager.hasAccess(brandId, req.user.id, allowedManagerRoles);
-
-  if (!access) {
-    throw Object.assign(new Error('You do not have permission to perform this action on this brand'), {
-      status: 403,
-    });
-  }
-}
-
-async function ensureBrandOwner(req) {
-  await ensureBrandAccess(req, ['owner']);
-}
 
 async function ensureBrandManagerOrHigher(req) {
   const allowedRoles = ['brand_manager', 'admin', 'superadmin', 'moderator'];
@@ -49,7 +32,7 @@ async function getAllBrands(req, res) {
       limit = 20,
       offset = 0,
       search,
-      status = 'active',
+    
       sortBy = 'followers_count',
       sortOrder = 'desc',
       minFollowers,
@@ -63,7 +46,6 @@ async function getAllBrands(req, res) {
       ])
       .where('deleted_at', 'is', null);
 
-    if (status) query = query.where('status', '=', status);
 
     if (search) {
       const term = `%${search.trim()}%`;
@@ -95,7 +77,7 @@ async function getAllBrands(req, res) {
       .select(({ fn }) => fn.countAll().as('total'))
       .where('deleted_at', 'is', null);
 
-    if (status) totalQuery = totalQuery.where('status', '=', status);
+
     if (search) {
       const term = `%${search.trim()}%`;
       totalQuery = totalQuery.where((eb) =>
@@ -349,13 +331,21 @@ async function updateBrand(req, res) {
 
 async function deleteBrand(req, res) {
   try {
-    await ensureBrandOwner(req); // only owner can delete
+    if (!req.user) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    await ensureBrandOwner(req); // ensure only owner can delete
 
     await Brand.softDelete(req.params.id, req.user.id);
+
     return res.status(204).send();
   } catch (err) {
+    console.error('deleteBrand error:', err);
+
     const status = err.status || 400;
-    return res.status(status).json({ error: err.message || 'Failed to delete brand' });
+    const message = err.message || 'Failed to delete brand';
+    return res.status(status).json({ error: message });
   }
 }
 
@@ -657,22 +647,49 @@ async function incrementBrandView(req, res) {
 
 async function adminCreateBrand(req, res) {
   try {
-    // Protected by middleware: admin/superadmin only
-    const { ownerUserId, ...brandData } = req.body;
+    if (!req.body || Object.keys(req.body).length === 0) {
+      console.error('adminCreateBrand error: empty request body');
+      return res.status(400).json({ error: 'Request body is required' });
+    }
 
+    const {
+      name,
+      slug,
+      description,
+      website,
+      status,
+      logo_url,
+      banner_url,
+      social_links,
+      user_id,
+    } = req.body;
 
-    const brand = await Brand.create({
-      ...brandData,
-      user_id: ownerUserId,
-      status: brandData.status || 'active',
-    });
+    if (!name) {
+      console.error('adminCreateBrand error: missing brand name');
+      return res.status(400).json({ error: 'Brand name is required' });
+    }
 
-    // Create manager relation
-    await BrandManager.create({
-      brand_id: brand.id,
-      user_id: ownerUserId,
-      role: 'owner',
-    });
+    if (!user_id) {
+      console.error('adminCreateBrand error: missing user_id');
+      return res.status(400).json({ error: 'Admin user_id is required' });
+    }
+
+    // Prepare data for Brand.create (without user_id, pass it as first argument)
+    const brandData = {
+      name,
+      slug: slug || name.toLowerCase().replace(/\s+/g, '-'),
+      description: description || null,
+      logo_url: logo_url || null,
+      banner_url: banner_url || null,
+      website: website || null,
+      social_links: social_links || null,
+      status: status || 'pending',
+    };
+
+    console.log('Admin creating brand with data:', { user_id, ...brandData });
+
+    // Pass the admin ID as first argument
+    const brand = await Brand.create(user_id, brandData);
 
     return res.status(201).json(brand);
   } catch (err) {

@@ -1,20 +1,15 @@
-// src/routes/brand.routes.js
 const express = require('express');
 const router = express.Router();
 
 const brandController = require('../controller/brand.controller');
-const { ensureBrandAccess, ensureBrandOwner } = require('../middleware/brand.middleware');
-// ───────────────────────────────────────────────
-// Middleware Imports
-// ───────────────────────────────────────────────
+const { ensureBrandAccessMiddleware, ensureBrandOwnerMiddleware } = require('../middleware/brand.middleware');
 const { authenticateToken } = require('../middleware/auth.middleware');
-const { authorize } = require('../middleware/auth.middleware');           // global role check
-const { hasPermission } = require('../middleware/permission.middleware'); // optional granular
+const { authorize } = require('../middleware/auth.middleware');           
+const { hasPermission } = require('../middleware/permission.middleware'); 
 
 // ───────────────────────────────────────────────
 // Public Routes (no authentication required)
 // ───────────────────────────────────────────────
-
 router.get('/', brandController.getAllBrands);
 router.get('/:id', brandController.getBrand);
 router.get('/slug/:slug', brandController.getBrandBySlug);
@@ -30,19 +25,19 @@ router.post('/:id/view', brandController.incrementBrandView);
 // Authenticated Routes (login required)
 // ───────────────────────────────────────────────
 
-// Submit verification request (can be open to guests or require login)
+// Brand verification request
 router.post(
   '/verification-requests',
-  // authenticateToken,   // ← uncomment if you want only logged-in users
+  // authenticateToken, // optional
   brandController.submitBrandVerificationRequest
 );
 
-// Social / Follow
+// Follow / unfollow
 router.post('/:id/follow', authenticateToken, brandController.followBrand);
 router.delete('/:id/follow', authenticateToken, brandController.unfollowBrand);
 router.get('/:id/is-following', authenticateToken, brandController.checkIfFollowing);
 
-// Likes & Comments (any authenticated user)
+// Likes & Comments
 router.post('/:brandId/posts/:postId/like', authenticateToken, brandController.likeBrandPost);
 router.delete('/:brandId/posts/:postId/like', authenticateToken, brandController.unlikeBrandPost);
 
@@ -58,129 +53,57 @@ router.post(
 // Brand Management Routes (require brand-level access)
 // ───────────────────────────────────────────────
 
-// List brands I manage (any role: owner/manager/editor + admins)
-router.get(
-  '/my',
-  authenticateToken,
-  brandController.getMyBrands
-);
+// List brands user manages (any role + admins)
+router.get('/my', authenticateToken, brandController.getMyBrands);
 
 // Update brand (owner, manager, editor)
-router.patch(
-  '/:id',
-  authenticateToken,
-  ensureBrandAccess(),           // ← new: checks brand_managers table
-  // authorize(['brand_manager', 'admin', 'superadmin', 'moderator']), // optional global bypass
-  // hasPermission('brands.update'),           // optional if using granular perms
-  brandController.updateBrand
-);
+router.patch('/:id', authenticateToken, ensureBrandAccessMiddleware(), brandController.updateBrand);
 
-// Delete brand (only owner)
-router.delete(
-  '/:id',
-  authenticateToken,
-  brandController.ensureBrandOwner,             // ← stricter: owner only
-  // authorize(['brand_manager', 'admin', 'superadmin', 'moderator']),
-  // hasPermission('brands.delete'),
-  brandController.deleteBrand
-);
+// Delete brand (owner only)
+router.delete('/:id', authenticateToken, ensureBrandOwnerMiddleware(), brandController.deleteBrand);
 
-// Manage storefront artworks (owner, manager, editor)
-router.post(
-  '/:brandId/artworks',
-  authenticateToken,
-  ensureBrandAccess(),
-  // hasPermission('brands.artworks.manage'),
-  brandController.addArtworkToBrand
-);
+// Manage artworks (owner, manager, editor)
+router.post('/:brandId/artworks', authenticateToken, ensureBrandAccessMiddleware(), brandController.addArtworkToBrand);
+router.delete('/:brandId/artworks/:artworkId', authenticateToken, ensureBrandAccessMiddleware(), brandController.removeArtworkFromBrand);
 
-router.delete(
-  '/:brandId/artworks/:artworkId',
-  authenticateToken,
-  ensureBrandAccess(),
-  // hasPermission('brands.artworks.manage'),
-  brandController.removeArtworkFromBrand
-);
+// Create / update posts (owner, manager, editor)
+router.post('/:brandId/posts', authenticateToken, ensureBrandAccessMiddleware(), brandController.createBrandPost);
+router.patch('/:brandId/posts/:postId', authenticateToken, ensureBrandAccessMiddleware(), brandController.updateBrandPost);
 
-// Create / update post (owner, manager, editor)
-router.post(
-  '/:brandId/posts',
-  authenticateToken,
-  ensureBrandAccess(),           // allows editor too
-  // hasPermission('brands.posts.create'),
-  brandController.createBrandPost
-);
+// Delete / pin posts (owner, manager)
+router.delete('/:brandId/posts/:postId', authenticateToken, ensureBrandAccessMiddleware(['owner', 'manager']), brandController.deleteBrandPost);
+router.patch('/:brandId/posts/:postId/pin', authenticateToken, ensureBrandAccessMiddleware(['owner', 'manager']), brandController.togglePinBrandPost);
 
-router.patch(
-  '/:brandId/posts/:postId',
-  authenticateToken,
-  ensureBrandAccess(),
-  // hasPermission('brands.posts.update'),
-  brandController.updateBrandPost
-);
-
-// Delete / pin post (owner, manager only – editors usually cannot delete/pin)
-router.delete(
-  '/:brandId/posts/:postId',
-  authenticateToken,
-  ensureBrandAccess(['owner', 'manager']),
-  // hasPermission('brands.posts.delete'),
-  brandController.deleteBrandPost
-);
-
-router.patch(
-  '/:brandId/posts/:postId/pin',
-  authenticateToken,
-  ensureBrandAccess(['owner', 'manager']),
-  // hasPermission('brands.posts.pin'),
-  brandController.togglePinBrandPost
-);
-
-// Delete own comment (any authenticated user – no brand check needed)
-router.delete(
-  '/:brandId/posts/:postId/comments/:commentId',
-  authenticateToken,
-  brandController.deleteBrandPostComment
-);
+// Delete own comment (any authenticated user)
+router.delete('/:brandId/posts/:postId/comments/:commentId', authenticateToken, brandController.deleteBrandPostComment);
 
 // ───────────────────────────────────────────────
 // Admin / Internal Team Only Routes
 // ───────────────────────────────────────────────
-
-// Review verification requests
 router.get(
   '/verification-requests',
   authenticateToken,
   authorize(['admin', 'superadmin', 'moderator']),
-  // hasPermission('brands.verification.review'),
   brandController.getBrandVerificationRequests
 );
 
-// Approve request → creates brand + owner relation
 router.patch(
   '/verification-requests/:requestId/approve',
   authenticateToken,
   authorize(['admin', 'superadmin', 'moderator']),
-  // hasPermission('brands.verification.approve'),
   brandController.approveBrandVerificationRequest
 );
 
-// Optional: reject (implement controller method if needed)
+// Optional reject route
 // router.patch(
 //   '/verification-requests/:requestId/reject',
 //   authenticateToken,
 //   authorize(['admin', 'superadmin', 'moderator']),
-//   hasPermission('brands.verification.reject'),
-//   brandController.rejectBrandVerificationRequest // ← add to controller if needed
+//   brandController.rejectBrandVerificationRequest
 // );
 
-// Direct brand creation (bypass verification flow)
-router.post(
-  '/',
-  authenticateToken,
-  // hasPermission('brands.create'),
-  brandController.adminCreateBrand
-);
+// Direct brand creation (admin)
+router.post('/', authenticateToken, brandController.adminCreateBrand);
 
 // ───────────────────────────────────────────────
 // Export
