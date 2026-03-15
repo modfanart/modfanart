@@ -8,13 +8,21 @@ import {
   useGetBrandArtworksQuery,
   useGetBrandPostsQuery,
 } from '@/services/api/brands';
-
+import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart3, Users, Image, FileText, Eye, Heart, ArrowUpRight } from 'lucide-react';
+import {
+  BarChart3,
+  Users,
+  FileText,
+  Eye,
+  Heart,
+  ArrowUpRight,
+  Image as ImageIcon,
+} from 'lucide-react';
 import { DashboardShell } from '@/components/dashboard-shell';
 import { Button } from '@/components/ui/button';
 export default function BrandStatsPage() {
@@ -90,7 +98,7 @@ export default function BrandStatsPage() {
                     {brand.views_count} profile views
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <Image className="h-4 w-4" />
+                    <ImageIcon className="h-4 w-4" />
                     {artworks.length} artworks
                   </div>
                   <div className="flex items-center gap-1.5">
@@ -122,7 +130,7 @@ export default function BrandStatsPage() {
             trend="+28%"
           />
           <StatCard
-            icon={<Image className="h-6 w-6" />}
+            icon={<ImageIcon className="h-4 w-4" />}
             title="Artworks"
             value={artworks.length}
             trend="+3"

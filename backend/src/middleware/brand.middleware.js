@@ -1,29 +1,44 @@
-// src/middleware/brand.middleware.js
 const BrandManager = require('../models/brandManager.model');
+const Brand = require('../models/brand.model'); // your Brand model
 
-const ensureBrandAccess = (allowedRoles = ['owner', 'manager', 'editor']) => {
-  return async (req, res, next) => {
+// Returns middleware for checking brand access
+function ensureBrandAccessMiddleware(allowedManagerRoles = ['owner', 'manager', 'editor']) {
+  return async function (req, res, next) {
     try {
       const brandId = req.params.brandId || req.params.id || req.params.brand_id;
       if (!brandId) {
-        return res.status(400).json({ error: 'Brand ID required' });
+        const err = new Error('Brand ID not found in request');
+        err.status = 400;
+        throw err;
       }
 
-      const hasAccess = await BrandManager.hasAccess(brandId, req.user.id, allowedRoles);
-      if (!hasAccess) {
-        return res.status(403).json({ error: 'Insufficient brand permissions' });
+      // Check manager access first
+      const access = await BrandManager.hasAccess(brandId, req.user.id, allowedManagerRoles);
+      if (access) return next(); // allowed
+
+      // Fallback: check if the current user is the brand creator
+      const brand = await Brand.findById(brandId);
+      if (!brand) {
+        const err = new Error('Brand not found');
+        err.status = 404;
+        throw err;
       }
 
-      next();
+      if (brand.user_id === req.user.id) return next(); // allowed
+
+      // No access
+      const err = new Error('You do not have permission to perform this action on this brand');
+      err.status = 403;
+      throw err;
     } catch (err) {
       next(err);
     }
   };
-};
+}
 
-const ensureBrandOwner = ensureBrandAccess(['owner']);
+// Shortcut middleware for owner-only access
+function ensureBrandOwnerMiddleware() {
+  return ensureBrandAccessMiddleware(['owner']);
+}
 
-module.exports = {
-  ensureBrandAccess,
-  ensureBrandOwner,
-};
+module.exports = { ensureBrandAccessMiddleware, ensureBrandOwnerMiddleware };

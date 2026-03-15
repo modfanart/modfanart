@@ -42,7 +42,12 @@ import {
 
 import { DashboardShell } from '@/components/dashboard-shell';
 import { useAuth } from '@/store/AuthContext';
-
+type UsersQueryArgs = {
+  page: number;
+  limit: number;
+  search?: string;
+  status?: string;
+};
 export default function UsersAdminPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -64,12 +69,13 @@ export default function UsersAdminPage() {
 
   // ── Prepare clean query args (recommended pattern) ────
   const queryArgs = useMemo(() => {
-    const args: Record<string, any> = {
+    const args: UsersQueryArgs = {
       page,
       limit: 15,
     };
 
     const trimmedSearch = search.trim();
+
     if (trimmedSearch) {
       args.search = trimmedSearch;
     }

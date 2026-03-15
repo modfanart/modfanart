@@ -1,24 +1,37 @@
-// app/contest/add/page.tsx
 'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCreateContestMutation } from '@/services/api/contestsApi';
+import { useGetAllBrandsQuery } from '@/services/api/brands';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/components/ui/use-toast';
+
 import { Loader2 } from 'lucide-react';
 import { DashboardShell } from '@/components/dashboard-shell';
+import { useToast } from '@/components/ui/use-toast';
 
 export default function AddContestPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [createContest, { isLoading }] = useCreateContestMutation();
 
+  const [createContest, { isLoading }] = useCreateContestMutation();
+  const { data, isLoading: brandsLoading } = useGetAllBrandsQuery({});
+  const brands = data?.brands ?? [];
   const [form, setForm] = useState({
+    brand_id: '',
     title: '',
     description: '',
     rules: '',
@@ -31,7 +44,13 @@ export default function AddContestPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!form.title || !form.description || !form.start_date || !form.submission_end_date) {
+    if (
+      !form.brand_id ||
+      !form.title ||
+      !form.description ||
+      !form.start_date ||
+      !form.submission_end_date
+    ) {
       toast({
         title: 'Missing fields',
         description: 'Please fill all required fields',
@@ -43,12 +62,17 @@ export default function AddContestPage() {
     try {
       const payload = {
         ...form,
-        prizes: [], // can extend later
+        prizes: [],
         status: 'draft' as const,
       };
 
       const result = await createContest(payload).unwrap();
-      toast({ title: 'Success', description: 'Contest created as draft' });
+
+      toast({
+        title: 'Success',
+        description: 'Contest created as draft',
+      });
+
       router.push(`/contest/${result.id}/monitor`);
     } catch (err: any) {
       toast({
@@ -72,6 +96,35 @@ export default function AddContestPage() {
 
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* BRAND SELECT */}
+              <div className="space-y-2">
+                <Label>Select Brand *</Label>
+
+                <Select
+                  value={form.brand_id}
+                  onValueChange={(value) => setForm({ ...form, brand_id: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a brand" />
+                  </SelectTrigger>
+
+                  <SelectContent>
+                    {brandsLoading && (
+                      <SelectItem value="loading" disabled>
+                        Loading brands...
+                      </SelectItem>
+                    )}
+
+                    {brands?.map((brand) => (
+                      <SelectItem key={brand.id} value={brand.id}>
+                        {brand.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* TITLE */}
               <div className="space-y-2">
                 <Label htmlFor="title">Contest Title *</Label>
                 <Input
@@ -79,36 +132,39 @@ export default function AddContestPage() {
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
                   placeholder="e.g. Summer Design Challenge 2026"
-                  required
                 />
               </div>
 
+              {/* DESCRIPTION */}
               <div className="space-y-2">
                 <Label htmlFor="description">Description *</Label>
                 <Textarea
                   id="description"
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  placeholder="Describe the contest goal, theme, who should participate..."
                   rows={5}
-                  required
+                  placeholder="Describe the contest goal, theme, who should participate..."
                 />
               </div>
 
+              {/* RULES */}
               <div className="space-y-2">
                 <Label htmlFor="rules">Rules & Guidelines</Label>
                 <Textarea
                   id="rules"
                   value={form.rules}
                   onChange={(e) => setForm({ ...form, rules: e.target.value })}
-                  placeholder="• Original work only\n• Max file size 50MB\n..."
                   rows={6}
+                  placeholder="• Original work only
+• Max file size 50MB
+• Follow brand guidelines..."
                 />
               </div>
 
+              {/* DATES */}
               <div className="grid gap-6 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="start_date">Start Date</Label>
+                  <Label htmlFor="start_date">Start Date *</Label>
                   <Input
                     id="start_date"
                     type="date"
@@ -116,18 +172,24 @@ export default function AddContestPage() {
                     onChange={(e) => setForm({ ...form, start_date: e.target.value })}
                   />
                 </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="submission_end_date">Submission Deadline *</Label>
                   <Input
                     id="submission_end_date"
                     type="date"
                     value={form.submission_end_date}
-                    onChange={(e) => setForm({ ...form, submission_end_date: e.target.value })}
-                    required
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        submission_end_date: e.target.value,
+                      })
+                    }
                   />
                 </div>
               </div>
 
+              {/* MAX ENTRIES */}
               <div className="space-y-2">
                 <Label htmlFor="max_entries">Max Entries per User</Label>
                 <Input
@@ -137,15 +199,20 @@ export default function AddContestPage() {
                   max={10}
                   value={form.max_entries_per_user}
                   onChange={(e) =>
-                    setForm({ ...form, max_entries_per_user: Number(e.target.value) })
+                    setForm({
+                      ...form,
+                      max_entries_per_user: Number(e.target.value),
+                    })
                   }
                 />
               </div>
 
+              {/* ACTION BUTTONS */}
               <div className="flex justify-end gap-4 pt-6">
                 <Button type="button" variant="outline" onClick={() => router.back()}>
                   Cancel
                 </Button>
+
                 <Button type="submit" disabled={isLoading}>
                   {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Create Draft Contest

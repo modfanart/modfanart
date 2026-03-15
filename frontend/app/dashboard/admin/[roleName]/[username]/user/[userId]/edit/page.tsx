@@ -115,19 +115,23 @@ export default function EditUserProfilePage() {
 
   const onSubmit = async (values: FormValues) => {
     try {
-      await updateProfile({
-        bio: values.bio,
-        location: values.location,
-        website: values.website,
-        profile: values.profile,
-      }).unwrap();
+      const payload: any = {
+        bio: values.bio ?? null,
+        location: values.location ?? null,
+        website: values.website ?? null,
+      };
+
+      if (values.profile) {
+        payload.profile = values.profile;
+      }
+
+      await updateProfile(payload).unwrap();
 
       toast({
         title: 'Profile updated',
         description: 'Your profile has been successfully saved.',
       });
 
-      // Optional: redirect to profile view
       router.push(`/user/${userId}`);
     } catch (err: any) {
       toast({
