@@ -590,7 +590,7 @@ export default function BrandGuidelinesPage() {
         </section>
 
         {/* Specific IP Guidelines */}
-        <section>
+        {/* <section>
           <h2 className="text-2xl font-bold mb-6">Popular IP-Specific Guidelines</h2>
           <p className="mb-6">
             Many major IP holders have published their own fan art guidelines. Here are links to
@@ -710,7 +710,7 @@ export default function BrandGuidelinesPage() {
               </AlertDescription>
             </Alert>
           </div>
-        </section>
+        </section> */}
 
         {/* Submission Process */}
         <section>
@@ -825,13 +825,13 @@ export default function BrandGuidelinesPage() {
                 </CardContent>
               </Card>
 
-              <div className="flex justify-center">
+              {/* <div className="flex justify-center">
                 <Link href="/submissions/new">
                   <Button size="lg" className="bg-[#9747ff] hover:bg-[#8035e0]">
                     Submit Your Fan Art
                   </Button>
                 </Link>
-              </div>
+              </div> */}
 
               <div className="p-4 bg-gray-50 rounded-lg border">
                 <h4 className="font-medium mb-2">Need Help?</h4>
@@ -850,7 +850,7 @@ export default function BrandGuidelinesPage() {
         </section>
 
         {/* Resources */}
-        <section>
+        {/* <section>
           <h2 className="text-2xl font-bold mb-6">Additional Resources</h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <Card>
@@ -896,7 +896,7 @@ export default function BrandGuidelinesPage() {
               </CardContent>
             </Card>
           </div>
-        </section>
+        </section> */}
 
         {/* FAQ */}
         <section>
@@ -984,16 +984,16 @@ export default function BrandGuidelinesPage() {
             through the MOD Platform.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/submissions/new">
+            {/* <Link href="/submissions/new">
               <Button size="lg" className="bg-white text-[#9747ff] hover:bg-gray-100">
                 Submit Your Fan Art
               </Button>
-            </Link>
+            </Link> */}
             <Link href="/signup">
               <Button
                 size="lg"
                 variant="outline"
-                className="border-white text-white hover:bg-white/10"
+                className="bg-white text-[#9747ff] hover:bg-gray-100"
               >
                 Create an Account
               </Button>

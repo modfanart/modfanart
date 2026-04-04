@@ -79,7 +79,7 @@ export function MainNav() {
                   </NavigationMenuLink>
                 </NavigationMenuItem>
 
-                <NavigationMenuItem>
+                {/* <NavigationMenuItem>
                   <NavigationMenuLink
                     asChild
                     className={navigationMenuTriggerStyle()}
@@ -87,7 +87,7 @@ export function MainNav() {
                   >
                     <Link href="/categories">Categories</Link>
                   </NavigationMenuLink>
-                </NavigationMenuItem>
+                </NavigationMenuItem> */}
 
                 <NavigationMenuItem>
                   <NavigationMenuLink
@@ -99,13 +99,14 @@ export function MainNav() {
                   </NavigationMenuLink>
                 </NavigationMenuItem>
 
+
                 <NavigationMenuItem>
                   <NavigationMenuLink
                     asChild
                     className={navigationMenuTriggerStyle()}
-                    active={pathname === '/gallery/featured'}
+                    active={pathname === '/explore/contests'}
                   >
-                    <Link href="/gallery/featured">Gallery</Link>
+                    <Link href="/explore/contests">Resources</Link>
                   </NavigationMenuLink>
                 </NavigationMenuItem>
 
@@ -113,11 +114,31 @@ export function MainNav() {
                   <NavigationMenuLink
                     asChild
                     className={navigationMenuTriggerStyle()}
+                    active={pathname === '/explore/contests'}
+                  >
+                    <Link href="/explore/contests">Legal</Link>
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+
+                {/* <NavigationMenuItem>
+                  <NavigationMenuLink
+                    asChild
+                    className={navigationMenuTriggerStyle()}
+                    active={pathname === '/gallery/featured'}
+                  >
+                    <Link href="/gallery/featured">Gallery</Link>
+                  </NavigationMenuLink>
+                </NavigationMenuItem> */}
+
+                {/* <NavigationMenuItem>
+                  <NavigationMenuLink
+                    asChild
+                    className={navigationMenuTriggerStyle()}
                     active={pathname.startsWith('/collections')}
                   >
                     <Link href="/collections">Collections</Link>
                   </NavigationMenuLink>
-                </NavigationMenuItem>
+                </NavigationMenuItem> */}
               </>
             ) : (
               <>

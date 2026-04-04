@@ -119,8 +119,8 @@ export default function SupportPage() {
       {/* Contact Options */}
       <div className="mb-16">
         <h2 className="text-2xl font-bold mb-8 text-center">Contact Us</h2>
-        <div className="grid gap-6 md:grid-cols-3">
-          <Card className="hover:shadow-md transition-shadow">
+        <div className="grid gap-6 md:grid-cols-3" aria-label="Contact options">
+          <Card className="hover:shadow-md transition-shadow md:col-start-2 md:col-end-3">
             <CardHeader>
               <CardTitle className="flex items-center justify-center">
                 <Mail className="h-8 w-8 mb-2 text-primary" />
@@ -138,7 +138,8 @@ export default function SupportPage() {
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-md transition-shadow">
+
+          {/* <Card className="hover:shadow-md transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center justify-center">
                 <MessageSquare className="h-8 w-8 mb-2 text-primary" />
@@ -152,9 +153,9 @@ export default function SupportPage() {
               </p>
               <Button className="w-full">Start Chat</Button>
             </CardContent>
-          </Card>
+          </Card> */}
 
-          <Card className="hover:shadow-md transition-shadow">
+          {/* <Card className="hover:shadow-md transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center justify-center">
                 <Phone className="h-8 w-8 mb-2 text-primary" />
@@ -168,12 +169,12 @@ export default function SupportPage() {
                 1-800-MOD-HELP
               </Button>
             </CardContent>
-          </Card>
+          </Card> */}
         </div>
       </div>
 
       {/* Support Hours */}
-      <div className="mb-16 bg-muted p-8 rounded-lg">
+      {/* <div className="mb-16 bg-muted p-8 rounded-lg">
         <div className="flex flex-col md:flex-row items-center justify-between">
           <div className="flex items-center mb-4 md:mb-0">
             <Clock className="h-10 w-10 mr-4 text-primary" />
@@ -201,7 +202,7 @@ export default function SupportPage() {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* FAQs Section */}
       <div className="mb-16">
@@ -405,7 +406,7 @@ export default function SupportPage() {
       </div>
 
       {/* Support Resources */}
-      <div>
+      {/* <div>
         <h2 className="text-2xl font-bold mb-8 text-center">Additional Resources</h2>
         <div className="grid gap-6 md:grid-cols-3">
           <Card>
@@ -462,7 +463,7 @@ export default function SupportPage() {
             </CardFooter>
           </Card>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }
