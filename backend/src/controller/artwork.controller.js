@@ -233,16 +233,17 @@ const fileUrl = `https://amzn-artwork-images.s3.eu-north-1.amazonaws.com/${fileK
 
       let query = db
         .selectFrom('artworks')
-        .select([
-          'id',
-          'title',
-          'description',
-          'thumbnail_url',
-          'views_count',
-          'favorites_count',
-          'creator_id',
-          'created_at',
-        ])
+       .select([
+  'id',
+  'title',
+  'description',
+  'thumbnail_url',
+  'views_count',
+  'favorites_count',
+  'creator_id',
+  'status', // ✅ ADD THIS
+  'created_at',
+])
         .where('status', '=', 'published')
         .where('deleted_at', 'is', null)
         .orderBy('created_at', 'desc');
@@ -404,15 +405,16 @@ const fileUrl = `https://amzn-artwork-images.s3.eu-north-1.amazonaws.com/${fileK
       let query = db
         .selectFrom('artworks')
         .select([
-          'id',
-          'title',
-          'description',
-          'thumbnail_url',
-          'views_count',
-          'favorites_count',
-          'creator_id',
-          'created_at',
-        ])
+  'id',
+  'title',
+  'description',
+  'thumbnail_url',
+  'views_count',
+  'favorites_count',
+  'creator_id',
+  'status', // ✅ ADD THIS
+  'created_at',
+])
         .where('creator_id', '=', creatorId)
         .where('status', '=', 'published')
         .where('deleted_at', 'is', null)

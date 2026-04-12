@@ -8,101 +8,103 @@ const crypto = require('crypto');
 const path = require('path');
 const { db } = require('../config');
 const { sql } = require('kysely'); // ← Critical fix for sql`NOW()`
-
+const UserStatsService = require('../services/userStats.service');
 class UserController {
   /**
    * GET /users/me
    */
-  static async getUserByUsername(req, res) {
-    try {
-      const { username } = req.params;
+static async getUserByUsername(req, res) {
+  try {
+    const { username } = req.params;
 
-      if (!username || typeof username !== 'string' || username.trim() === '') {
-        return res.status(400).json({
-          success: false,
-          message: 'Valid username is required',
-        });
-      }
-
-      // You can add more sanitization if needed (length, allowed chars, etc.)
-      const cleanUsername = username.trim().toLowerCase();
-
-      const user = await req.db
-        .selectFrom('users')
-        .leftJoin('roles', 'users.role_id', 'roles.id')
-        .select([
-          'users.id',
-          'users.username',
-          'users.status',
-          'users.profile',           // JSONB – social links, etc.
-          'users.avatar_url',
-          'users.banner_url',
-          'users.bio',
-          'users.location',
-          'users.website',
-          'users.last_login_at',     // optional – can be removed for privacy
-          'users.created_at',
-          'users.updated_at',
-
-          // Role
-          'roles.id as role_id',
-          'roles.name as role_name',
-          'roles.hierarchy_level as role_hierarchy_level',
-        ])
-        .where('users.username', 'ilike', cleanUsername) // case-insensitive
-        .where('users.status', '=', 'active')             // only show active users
-        .where('users.deleted_at', 'is', null)
-        .executeTakeFirst();
-
-      if (!user) {
-        return res.status(404).json({
-          success: false,
-          message: `User @${username} not found or profile is not available`,
-        });
-      }
-
-      // Optional: Decide what fields to expose publicly
-      // You might want to hide last_login_at, or conditionally show email if it's you
-      const isOwnProfile = req.user && req.user.id === user.id;
-
-      const publicUser = {
-        id: user.id,
-        username: user.username,
-        status: user.status,
-        role: {
-          id: user.role_id,
-          name: user.role_name || 'Artist',
-          hierarchy_level: user.role_hierarchy_level ?? 0,
-        },
-        profile: user.profile || {},
-        avatar_url: user.avatar_url,
-        banner_url: user.banner_url,
-        bio: user.bio,
-        location: user.location,
-        website: user.website,
-        created_at: user.created_at,
-        updated_at: user.updated_at,
-        // last_login_at: isOwnProfile ? user.last_login_at : null,   // example
-      };
-
-      return res.status(200).json({
-        success: true,
-        user: publicUser,
-      });
-    } catch (error) {
-      console.error('[getUserByUsername] Error:', {
-        message: error.message,
-        username: req.params.username,
-        stack: error.stack,
-      });
-
-      return res.status(500).json({
+    if (!username || typeof username !== 'string' || username.trim() === '') {
+      return res.status(400).json({
         success: false,
-        message: 'Failed to fetch user profile',
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+        message: 'Valid username is required',
       });
     }
+
+    const cleanUsername = username.trim().toLowerCase();
+
+    const user = await req.db
+      .selectFrom('users')
+      .leftJoin('roles', 'users.role_id', 'roles.id')
+      .select([
+        'users.id',
+        'users.username',
+        'users.status',
+        'users.profile',
+        'users.avatar_url',
+        'users.banner_url',
+        'users.bio',
+        'users.location',
+        'users.website',
+        'users.last_login_at',
+        'users.created_at',
+        'users.updated_at',
+
+        'roles.id as role_id',
+        'roles.name as role_name',
+        'roles.hierarchy_level as role_hierarchy_level',
+      ])
+      .where('users.username', 'ilike', cleanUsername)
+      .where('users.status', '=', 'active')
+      .where('users.deleted_at', 'is', null)
+      .executeTakeFirst();
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: `User @${username} not found or profile is not available`,
+      });
+    }
+
+    const isOwnProfile = req.user && req.user.id === user.id;
+
+    // 🔥 ADD THIS: compute stats from existing tables
+    const stats = await UserStatsService.getUserStats(user.id);
+
+    const publicUser = {
+      id: user.id,
+      username: user.username,
+      status: user.status,
+      role: {
+        id: user.role_id,
+        name: user.role_name || 'Artist',
+        hierarchy_level: user.role_hierarchy_level ?? 0,
+      },
+      profile: user.profile || {},
+      avatar_url: user.avatar_url,
+      banner_url: user.banner_url,
+      bio: user.bio,
+      location: user.location,
+      website: user.website,
+      created_at: user.created_at,
+      updated_at: user.updated_at,
+
+      // 🔥 ADD STATS HERE
+      stats,
+    };
+
+    return res.status(200).json({
+      success: true,
+      user: publicUser,
+    });
+
+  } catch (error) {
+    console.error('[getUserByUsername] Error:', {
+      message: error.message,
+      username: req.params.username,
+      stack: error.stack,
+    });
+
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch user profile',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
   }
+}
 static async getCurrentUser(req, res) {
     try {
       // 1. Ensure user is authenticated (from auth middleware)
@@ -337,7 +339,7 @@ static async getCurrentUser(req, res) {
         Key: key,
         Body: file.buffer,
         ContentType: file.mimetype,
-        ACL: 'public-read',
+
       }));
 
       const avatarUrl = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;

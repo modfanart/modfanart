@@ -31,28 +31,28 @@ export function UserNav() {
   const initials = displayName.slice(0, 2).toUpperCase();
 
   // Dashboard Path
-  let dashboardPath = '/dashboard';
+  let dashboardPath = '/';
 
   if (roleName === 'artist') {
-    dashboardPath = `/dashboard/artist/${user.username}`;
+    dashboardPath = `/artist/${user.username}`;
   }
 
   if (roleName === 'brand_manager') {
     const brand = user?.brands?.[0];
-    const slug = brand?.slug;
+    const slug = brand?.id;
 
     if (slug) {
-      dashboardPath = `/dashboard/brand/${slug}/${user.id}`;
+      dashboardPath = `/brand-manager/${slug}`;
     }
   }
 
   if (roleName === 'judge') {
-    dashboardPath = `/dashboard/judge/${user.username}`;
+    dashboardPath = `/judge/${user.username}`;
   }
 
   // Admin role
   if (roleName === 'admin') {
-    dashboardPath = `/dashboard/admin/${user.role?.name}/${user.username}`;
+    dashboardPath = `/admin/${user.role?.name}`;
   }
 
   const isEligibleForDashboard =
