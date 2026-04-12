@@ -69,7 +69,31 @@ export interface ContestEntry {
   created_at: string;
   updated_at: string;
 }
+export interface CreateContestRequest {
+  brand_id: string;
+  title: string;
+  slug: string;
+  description: string;
 
+  hero_image?: string | null;
+  gallery?: string[];
+
+  rules?: string | null;
+  prizes?: Contest['prizes'];
+
+  start_date: string;
+  submission_end_date: string;
+  voting_end_date?: string | null;
+  judging_end_date?: string | null;
+
+  entry_requirements?: Record<string, any> | null;
+  categories?: string[];
+
+  visibility: 'public' | 'private' | 'unlisted';
+  status: 'draft' | 'published' | 'live' | 'judging' | 'completed' | 'archived';
+
+  max_entries_per_user?: number;
+}
 export interface ContestJudge {
   contest_id: string;
   judge_id: string; // user id
@@ -223,7 +247,7 @@ const contestsApi = createApi({
     }),
     // ── CRUD ─────────────────────────────────────────────────
 
-    createContest: builder.mutation<Contest, Partial<Contest>>({
+    createContest: builder.mutation<Contest, CreateContestRequest>({
       query: (body) => ({
         url: '/contest',
         method: 'POST',

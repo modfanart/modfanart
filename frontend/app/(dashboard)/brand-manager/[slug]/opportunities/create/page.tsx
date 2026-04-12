@@ -3,20 +3,29 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Trophy, Briefcase, Calendar } from 'lucide-react';
+import {
+  ArrowLeft,
+  Trophy,
+  Image as ImageIcon,
+  FileText,
+  Calendar,
+  Sparkles,
+  Users,
+  ShieldCheck,
+} from 'lucide-react';
 
 import { useAuth } from '@/store/AuthContext';
+import { useCreateContestMutation } from '@/services/api/contestsApi';
+
 import { SingleDatePicker } from '@/components/ui/single-date-picker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { DashboardShell } from '@/components/dashboard-shell';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-import { useCreateContestMutation } from '@/services/api/contestsApi';
+/* ───────────────── HELPERS ───────────────── */
 
 function toISODate(date: Date | undefined): string | undefined {
   return date ? date.toISOString().split('T')[0] : undefined;
@@ -32,266 +41,241 @@ function generateSlug(title: string): string {
     .replace(/^-|-$/g, '');
 }
 
+/* ───────────────── PAGE ───────────────── */
+
 export default function CreateOpportunityPage() {
   const router = useRouter();
   const { user } = useAuth();
 
-  const brands = user?.brands ?? [];
-
   const [brandId, setBrandId] = useState<string | null>(null);
-
-  const [opportunityType, setOpportunityType] = useState<'contest' | 'rfd'>('contest');
 
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
   const [description, setDescription] = useState('');
-  const [coverImage, setCoverImage] = useState('');
 
-  const [startDate, setStartDate] = useState<Date | undefined>(new Date());
-  const [endDate, setEndDate] = useState<Date | undefined>();
+  const [heroImage, setHeroImage] = useState('');
+  const [gallery, setGallery] = useState(''); // comma separated URLs
 
-  const [prizeDetails, setPrizeDetails] = useState('');
+  const [rules, setRules] = useState('');
   const [requirements, setRequirements] = useState('');
 
+  const [categories, setCategories] = useState('');
+
+  const [startDate, setStartDate] = useState<Date | undefined>(new Date());
+  const [submissionEnd, setSubmissionEnd] = useState<Date | undefined>();
+  const [votingEnd, setVotingEnd] = useState<Date | undefined>();
+  const [judgingEnd, setJudgingEnd] = useState<Date | undefined>();
+
+  const [prizeDetails, setPrizeDetails] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
 
-  const [createContest, { isLoading: isCreating, error: createError }] = useCreateContestMutation();
+  const [createContest, { isLoading }] = useCreateContestMutation();
+
+  /* ───────────────── AUTH BRAND AUTO SET ───────────────── */
 
   useEffect(() => {
-    if (brands.length && !brandId) {
-      setBrandId(brands[0].id);
+    const managedBrand = user?.brands?.[0];
+    if (managedBrand && !brandId) {
+      setBrandId(managedBrand.id);
     }
-  }, [brands]);
+  }, [user, brandId]);
+
+  /* ───────────────── AUTO SLUG ───────────────── */
 
   useEffect(() => {
-    if (title && !slug) {
-      setSlug(generateSlug(title));
-    }
+    if (title && !slug) setSlug(generateSlug(title));
   }, [title]);
+
+  /* ───────────────── SUBMIT ───────────────── */
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
 
-    if (opportunityType !== 'contest') {
-      alert('RFD / Licensing opportunities coming soon');
-      return;
-    }
-
     if (!brandId) {
-      setFormError('Please select a brand');
+      setFormError('No brand found for your account');
       return;
     }
 
-    if (
-      !title.trim() ||
-      !slug.trim() ||
-      !description.trim() ||
-      !coverImage.trim() ||
-      !startDate ||
-      !endDate
-    ) {
-      setFormError('Please fill all required fields (title, slug, description, image, dates)');
+    if (!title || !slug || !description || !heroImage || !submissionEnd) {
+      setFormError('Please fill required fields');
       return;
     }
-
-    const payload = {
-      brand_id: brandId,
-      title: title.trim(),
-      slug: slug.trim(),
-      description: description.trim(),
-      hero_image: coverImage.trim(),
-
-      start_date: toISODate(startDate)!,
-      submission_end_date: toISODate(endDate)!,
-
-      prizes: prizeDetails.trim()
-        ? [
-            {
-              rank: 1,
-              type: 'cash',
-              amount_inr: 0,
-              description: prizeDetails.trim(),
-            },
-          ]
-        : null,
-
-      entry_requirements: requirements.trim() ? { instructions: requirements.trim() } : null,
-
-      categoryIds: [],
-      visibility: 'public' as const,
-      status: 'draft' as const,
-      max_entries_per_user: 3,
-    };
 
     try {
-      await createContest(payload).unwrap();
+      await createContest({
+        brand_id: brandId,
 
-      router.push('/dashboard/opportunities?success=true');
+        title: title.trim(),
+        slug: slug.trim(),
+        description: description.trim(),
+
+        hero_image: heroImage.trim(),
+        gallery: gallery ? gallery.split(',').map((g) => g.trim()) : [],
+
+        rules: rules || null,
+        entry_requirements: requirements ? { instructions: requirements } : null,
+
+        categories: categories ? categories.split(',').map((c) => c.trim()) : [],
+
+        start_date: toISODate(startDate)!,
+        submission_end_date: toISODate(submissionEnd)!,
+        voting_end_date: toISODate(votingEnd) || null,
+        judging_end_date: toISODate(judgingEnd) || null,
+
+        prizes: prizeDetails
+          ? [
+              {
+                rank: 1,
+                type: 'custom',
+                description: prizeDetails,
+              },
+            ]
+          : null,
+
+        visibility: 'public',
+        status: 'draft',
+        max_entries_per_user: 3,
+      }).unwrap();
+
+      router.push('/dashboard/opportunities');
     } catch (err: any) {
-      console.error(err);
-
-      setFormError(err?.data?.message || 'Failed to create contest. Please try again.');
+      setFormError(err?.data?.message || 'Failed to create contest');
     }
   };
 
+  /* ───────────────── UI ───────────────── */
+
   return (
-    <>
-      <div className="mb-8 flex items-center gap-4">
+    <div className="max-w-4xl mx-auto space-y-8">
+      {/* HEADER */}
+      <div className="flex items-center gap-4">
         <Link href="/dashboard/opportunities">
           <Button variant="ghost" size="icon">
-            <ArrowLeft className="h-5 w-5" />
+            <ArrowLeft />
           </Button>
         </Link>
 
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Create New Opportunity</h1>
-          <p className="text-muted-foreground mt-1">Launch a fan art contest for your brand.</p>
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <Trophy className="h-6 w-6 text-primary" />
+            Create Opportunity
+          </h1>
+          <p className="text-muted-foreground">Launch a contest with full control</p>
         </div>
       </div>
 
-      <Card>
-        <CardContent className="pt-8 pb-10">
-          <form onSubmit={handleSubmit} className="space-y-10">
-            {/* Opportunity Type */}
-            <div>
-              <h2 className="mb-5 text-2xl font-semibold">Opportunity Type</h2>
+      <form onSubmit={handleSubmit} className="space-y-8">
+        <Card>
+          <CardContent className="space-y-6 pt-6">
+            {/* BASIC INFO */}
+            <div className="space-y-4">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Sparkles className="h-4 w-4" /> Basic Info
+              </h2>
 
-              <RadioGroup
-                value={opportunityType}
-                onValueChange={(v) => setOpportunityType(v as 'contest' | 'rfd')}
-                className="grid gap-6 md:grid-cols-2"
-              >
+              <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <RadioGroupItem value="contest" id="contest" className="peer sr-only" />
-
-                  <Label
-                    htmlFor="contest"
-                    className="flex cursor-pointer flex-col gap-3 rounded-xl border p-6"
-                  >
-                    <div className="flex justify-between">
-                      <h3 className="text-lg font-semibold">Fan Art Contest</h3>
-                      <Trophy className="h-6 w-6 text-primary" />
-                    </div>
-
-                    <p className="text-sm text-muted-foreground">Run a competition with prizes.</p>
-                  </Label>
+                  <Label>Title *</Label>
+                  <Input value={title} onChange={(e) => setTitle(e.target.value)} />
                 </div>
 
                 <div>
-                  <RadioGroupItem value="rfd" id="rfd" className="peer sr-only" />
-
-                  <Label
-                    htmlFor="rfd"
-                    className="flex cursor-pointer flex-col gap-3 rounded-xl border p-6 opacity-60"
-                  >
-                    <div className="flex justify-between">
-                      <h3 className="text-lg font-semibold">Licensing Request</h3>
-                      <Briefcase className="h-6 w-6" />
-                    </div>
-
-                    <p className="text-sm text-muted-foreground">Coming soon.</p>
-                  </Label>
+                  <Label>Slug *</Label>
+                  <Input value={slug} onChange={(e) => setSlug(e.target.value)} />
                 </div>
-              </RadioGroup>
-            </div>
-
-            {/* Brand selector */}
-            <div className="space-y-2">
-              <Label>Select Brand *</Label>
-
-              <select
-                value={brandId ?? ''}
-                onChange={(e) => setBrandId(e.target.value)}
-                className="w-full border rounded-md p-2"
-                required
-              >
-                <option value="">Select brand</option>
-
-                {brands.map((brand: any) => (
-                  <option key={brand.id} value={brand.id}>
-                    {brand.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Title + Slug */}
-            <div className="grid gap-8 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Contest Title *</Label>
-                <Input value={title} onChange={(e) => setTitle(e.target.value)} />
               </div>
 
-              <div className="space-y-2">
-                <Label>Slug *</Label>
-                <Input value={slug} onChange={(e) => setSlug(e.target.value)} />
-              </div>
-            </div>
-
-            {/* Description */}
-            <div className="space-y-2">
-              <Label>Description *</Label>
-
-              <Textarea value={description} onChange={(e) => setDescription(e.target.value)} />
-            </div>
-
-            {/* Dates */}
-            <div className="grid gap-8 md:grid-cols-2">
               <div>
-                <Label>Start Date</Label>
+                <Label>Description *</Label>
+                <Textarea value={description} onChange={(e) => setDescription(e.target.value)} />
+              </div>
+            </div>
+
+            {/* MEDIA */}
+            <div className="space-y-4">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <ImageIcon className="h-4 w-4" /> Media
+              </h2>
+
+              <div>
+                <Label>Hero Image *</Label>
+                <Input value={heroImage} onChange={(e) => setHeroImage(e.target.value)} />
+              </div>
+
+              <div>
+                <Label>Gallery (comma separated URLs)</Label>
+                <Input value={gallery} onChange={(e) => setGallery(e.target.value)} />
+              </div>
+            </div>
+
+            {/* DATES */}
+            <div className="space-y-4">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Calendar className="h-4 w-4" /> Timeline
+              </h2>
+
+              <div className="grid md:grid-cols-2 gap-4">
                 <SingleDatePicker date={startDate} onDateChange={setStartDate} />
-              </div>
-
-              <div>
-                <Label>Submission Deadline</Label>
-                <SingleDatePicker date={endDate} onDateChange={setEndDate} />
+                <SingleDatePicker date={submissionEnd} onDateChange={setSubmissionEnd} />
+                <SingleDatePicker date={votingEnd} onDateChange={setVotingEnd} />
+                <SingleDatePicker date={judgingEnd} onDateChange={setJudgingEnd} />
               </div>
             </div>
 
-            {/* Cover Image */}
-            <div className="space-y-2">
-              <Label>Hero Image *</Label>
+            {/* RULES + REQUIREMENTS */}
+            <div className="space-y-4">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4" /> Rules & Requirements
+              </h2>
 
-              <Input value={coverImage} onChange={(e) => setCoverImage(e.target.value)} />
+              <Textarea
+                placeholder="Rules"
+                value={rules}
+                onChange={(e) => setRules(e.target.value)}
+              />
+
+              <Textarea
+                placeholder="Entry requirements"
+                value={requirements}
+                onChange={(e) => setRequirements(e.target.value)}
+              />
             </div>
 
-            {/* Prize */}
-            <div className="space-y-2">
-              <Label>Prize Description</Label>
+            {/* PRIZES */}
+            <div>
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Users className="h-4 w-4" /> Prize
+              </h2>
 
-              <Textarea value={prizeDetails} onChange={(e) => setPrizeDetails(e.target.value)} />
+              <Textarea
+                placeholder="Prize details"
+                value={prizeDetails}
+                onChange={(e) => setPrizeDetails(e.target.value)}
+              />
             </div>
 
-            {/* Requirements */}
-            <div className="space-y-2">
-              <Label>Entry Requirements</Label>
-
-              <Textarea value={requirements} onChange={(e) => setRequirements(e.target.value)} />
-            </div>
-
-            {(formError || createError) && (
+            {/* ERROR */}
+            {formError && (
               <Alert variant="destructive">
                 <AlertTitle>Error</AlertTitle>
-
-                <AlertDescription>
-                  {formError || (createError as any)?.data?.message || 'Something went wrong'}
-                </AlertDescription>
+                <AlertDescription>{formError}</AlertDescription>
               </Alert>
             )}
 
-            <div className="flex justify-end gap-4 pt-8">
+            {/* ACTIONS */}
+            <div className="flex justify-end gap-3">
               <Button type="button" variant="outline" onClick={() => router.back()}>
                 Cancel
               </Button>
 
-              <Button type="submit" disabled={isCreating}>
-                {isCreating ? 'Creating...' : 'Create Contest'}
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? 'Creating...' : 'Create Contest'}
               </Button>
             </div>
-          </form>
-        </CardContent>
-      </Card>
-    </>
+          </CardContent>
+        </Card>
+      </form>
+    </div>
   );
 }
