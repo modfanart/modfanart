@@ -1,4 +1,4 @@
-import { logger } from '../lib/utils/logger';
+import { logger } from '../../lib/utils/logger';
 import fs from 'fs';
 import path from 'path';
 import { Pool, PoolClient } from 'pg';
