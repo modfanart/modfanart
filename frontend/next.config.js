@@ -21,6 +21,8 @@ const nextConfig = {
       },
       { protocol: 'https', hostname: 'cdn.example.com' },
       { protocol: 'https', hostname: 'i.postimg.cc' },
+      { protocol: 'https', hostname: 'wallpapercave.com' },
+      { protocol: 'https', hostname: 'i.pinimg.com' },
     ],
   },
 

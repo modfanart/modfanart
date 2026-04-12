@@ -8,7 +8,13 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
  */
 
 // src/services/api/userApi.ts
-
+export interface UserStats {
+  artworks_count: number;
+  followers_count: number;
+  following_count: number;
+  likes_received: number;
+  views_received: number;
+}
 export interface UserProfile {
   id: string;
   username: string;
@@ -23,7 +29,6 @@ export interface UserProfile {
     hierarchy_level?: number;
   };
 
-  // ── Improved profile type ────────────────────────────────────────
   profile: {
     twitter?: string | null;
     instagram?: string | null;
@@ -31,18 +36,23 @@ export interface UserProfile {
     tiktok?: string | null;
     youtube?: string | null;
     linkedin?: string | null;
-    [key: string]: any; // ← still allows unknown extra fields
+    [key: string]: any;
   };
-  brands?: any[]; // can replace with Brand[] for strict typing
+
+  brands?: any[];
+
   avatar_url?: string | null;
   banner_url?: string | null;
   bio?: string | null;
   location?: string | null;
-  website?: string | null; // ← you can keep this top-level if backend sends it separately
+  website?: string | null;
 
   last_login_at?: string | null;
   created_at: string;
   updated_at?: string;
+
+  // 🔥 ADD THIS
+  stats?: UserStats;
 }
 export interface CreateUserRequest {
   username: string;
@@ -221,11 +231,14 @@ export const userApi = createApi({
     }),
     getUserByUsername: builder.query<PublicUserResponse, string>({
       query: (username) => `/by-username/${username}`,
+
       providesTags: (result, error, username) => [
         { type: 'PublicProfile', id: username.toLowerCase() },
       ],
-      // Optional: you can add transformResponse if backend returns slightly different shape
-      // transformResponse: (response: PublicUserResponse) => response,
+
+      transformResponse: (response: { success: boolean; user: any }) => {
+        return response.user;
+      },
     }),
     // PATCH /users/me/password
     changePassword: builder.mutation<{ message: string }, ChangePasswordRequest>({

@@ -2,7 +2,8 @@
 
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 
 interface ErrorProps {
   error: Error & { digest?: string };
@@ -10,15 +11,10 @@ interface ErrorProps {
 }
 
 export default function GlobalError({ error, reset }: ErrorProps) {
-  // Log the error when it occurs
   useEffect(() => {
-    // Log to console in development
     console.error('Global error caught:', error);
 
-    // In production, you would send this to your error tracking service
     if (process.env.NODE_ENV === 'production') {
-      // Example of how you might log to an error tracking service
-      // This is a placeholder - replace with your actual error reporting
       const errorData = {
         message: error.message,
         stack: error.stack,
@@ -28,60 +24,49 @@ export default function GlobalError({ error, reset }: ErrorProps) {
         timestamp: new Date().toISOString(),
       };
 
-      // Send error to backend logging endpoint
       fetch('/api/log-error', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(errorData),
-        // Use keepalive to ensure the request completes even if the page is unloaded
         keepalive: true,
       }).catch((e) => console.error('Failed to log error:', e));
     }
   }, [error]);
 
-  // Determine if we should show technical details
   const showTechnicalDetails = process.env.NODE_ENV !== 'production';
 
   return (
     <html>
-      <body>
-        <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-gray-50 dark:bg-gray-900">
-          <div className="w-full max-w-md p-8 space-y-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
-            <div className="flex items-center justify-center w-16 h-16 mx-auto bg-red-100 dark:bg-red-900/20 rounded-full">
-              <AlertTriangle
-                className="w-8 h-8 text-red-600 dark:text-red-400"
-                aria-hidden="true"
-              />
+      <body className="min-h-screen flex items-center justify-center bg-muted/40 p-6">
+        <Card className="w-full max-w-lg shadow-xl border">
+          <CardHeader className="flex flex-col items-center text-center space-y-4">
+            <div className="flex items-center justify-center w-14 h-14 rounded-full bg-destructive/10">
+              <AlertTriangle className="w-7 h-7 text-destructive" />
             </div>
 
-            <h1 className="text-2xl font-bold text-center text-gray-900 dark:text-gray-100">
-              Something went wrong
-            </h1>
+            <CardTitle className="text-2xl font-semibold">Something went wrong</CardTitle>
 
-            <p className="text-center text-gray-600 dark:text-gray-300">
-              We've encountered an unexpected error. Our team has been notified and is working to
-              fix the issue.
+            <p className="text-sm text-muted-foreground max-w-sm">
+              An unexpected error occurred. You can try again or return to the homepage.
             </p>
+          </CardHeader>
 
+          <CardContent className="space-y-4">
             {showTechnicalDetails && (
-              <div className="p-4 mt-4 overflow-auto text-sm bg-gray-100 dark:bg-gray-900 rounded-md max-h-40">
-                <p className="font-medium text-red-600 dark:text-red-400">{error.message}</p>
+              <div className="rounded-md bg-muted p-3 text-sm max-h-40 overflow-auto border">
+                <p className="font-medium text-destructive">{error.message}</p>
                 {error.stack && (
-                  <pre className="mt-2 text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
-                    {error.stack}
-                  </pre>
+                  <pre className="mt-2 text-xs whitespace-pre-wrap opacity-80">{error.stack}</pre>
                 )}
               </div>
             )}
 
             {error.digest && (
-              <p className="text-xs text-center text-gray-500 dark:text-gray-400">
-                Error ID: {error.digest}
-              </p>
+              <p className="text-xs text-center text-muted-foreground">Error ID: {error.digest}</p>
             )}
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button onClick={() => reset()} className="flex items-center justify-center gap-2">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button onClick={reset} className="flex-1 flex items-center justify-center gap-2">
                 <RefreshCw className="w-4 h-4" />
                 Try again
               </Button>
@@ -89,17 +74,18 @@ export default function GlobalError({ error, reset }: ErrorProps) {
               <Button
                 variant="outline"
                 onClick={() => (window.location.href = '/')}
-                className="flex items-center justify-center"
+                className="flex-1 flex items-center justify-center gap-2"
               >
-                Return to home page
+                <Home className="w-4 h-4" />
+                Go home
               </Button>
             </div>
 
-            <p className="text-xs text-center text-gray-500 dark:text-gray-400">
-              If the problem persists, please contact our support team.
+            <p className="text-xs text-center text-muted-foreground">
+              If this keeps happening, please contact support.
             </p>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </body>
     </html>
   );
