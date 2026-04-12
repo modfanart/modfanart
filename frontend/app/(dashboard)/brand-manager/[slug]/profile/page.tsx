@@ -1,332 +1,308 @@
-// 'use client'
+'use client';
 
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { CalendarIcon, Clock, Award, Users, ArrowRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+  Users,
+  Eye,
+  Heart,
+  MessageSquare,
+  Image as ImageIcon,
+  FileText,
+  ArrowUpRight,
+  Settings,
+  PlusCircle,
+  BarChart3,
+  AlertCircle,
+} from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Separator } from '@/components/ui/separator';
 import { DashboardShell } from '@/components/dashboard-shell';
 
-const OPPORTUNITY_ROUTES: Record<string, string> = {
-  'the-librarians': '/opportunities/the-librarians',
-};
+import {
+  useGetBrandQuery,
+  useGetBrandPostsQuery,
+  useGetBrandArtworksQuery,
+} from '@/services/api/brands';
 
-export default function ContestManagement() {
-  // Sample data for contests live and closed
-  const live = [
-    {
-      id: 'the-librarians',
-      title: 'The Librarians Official Fan art Contest',
-      description:
-        'Create original fan art inspired by The Librarians universe — past, present, or future.',
-      image: 'https://i.postimg.cc/T27x4hk5/New-Images-Artboard-4-(1).png',
-      organizer: '2026 Electric Entertainment, Inc',
-      deadline: '2026-03-31',
-      prize: '$100',
-      entries: 15,
-      status: 'active',
-      categories: ['Fan Art'],
-      featured: true,
-      type: 'contest',
-    } /*
-    {
-      id: "contest-2",
-      title: "Marvel Cinematic Universe Art Challenge",
-      description: "Design fan art inspired by the latest Marvel movies and TV shows.",
-      image: "https://images.unsplash.com/photo-1612036782180-6f0b6cd846fe?q=80&w=2070&auto=format&fit=crop",
-      organizer: "Marvel Entertainment",
-      deadline: "2023-07-30",
-      prize: "$2,500",
-      entries: 342,
-      status: "active",
-      categories: ["Superhero", "Movies"],
-      featured: true,
-    },
-    {
-      id: "contest-3",
-      title: "Indie Game Character Reimagined",
-      description: "Reimagine characters from popular indie games in your unique style.",
-      image: "https://images.unsplash.com/photo-1511512578047-dfb367046420?q=80&w=2071&auto=format&fit=crop",
-      organizer: "Indie Game Alliance",
-      deadline: "2023-08-10",
-      prize: "$750",
-      entries: 89,
-      status: "active",
-      categories: ["Gaming", "Character Design"],
-    },*/,
-  ];
+import { useAuth } from '@/store/AuthContext';
 
-  const rfds = [
-    /*
-    {
-      id: "rfd-1",
-      title: "Star Wars Celebration Merchandise",
-      description: "Looking for unique Star Wars fan art designs for official merchandise.",
-      image: "https://images.unsplash.com/photo-1472457897821-70d3819a0e24?q=80&w=2069&auto=format&fit=crop",
-      organizer: "Lucasfilm Ltd.",
-      deadline: "2023-09-01",
-      compensation: "Royalty-based",
-      status: "active",
-      categories: ["Movies", "Merchandise"],
-      featured: true,
-    },
-    {
-      id: "rfd-2",
-      title: "Fantasy Novel Cover Art",
-      description: "Seeking artists to create cover art for upcoming fantasy novel series.",
-      image: "https://images.unsplash.com/photo-1518281361980-b26bfd556770?q=80&w=2070&auto=format&fit=crop",
-      organizer: "Penguin Random House",
-      deadline: "2023-07-20",
-      compensation: "$3,000 per cover",
-      status: "active",
-      categories: ["Books", "Fantasy"],
-    },
-    {
-      id: "rfd-3",
-      title: "Video Game Concept Art",
-      description: "Looking for concept artists to create fan art inspired designs for upcoming RPG.",
-      image: "https://images.unsplash.com/photo-1580327344181-c1163234e5a0?q=80&w=2067&auto=format&fit=crop",
-      organizer: "Epic Games",
-      deadline: "2023-08-15",
-      compensation: "$5,000 + Credit",
-      status: "active",
-      categories: ["Gaming", "Concept Art"],
-      featured: true,
-    },*/
-  ];
-  const liveOpps = live.length + rfds.length;
+export default function BrandOverviewPage() {
+  const { user, loading: authLoading } = useAuth();
 
-  console.log('Live Opportunities:', liveOpps);
+  const currentManagerId = user?.id;
+  const managedBrand = user?.brands?.[0];
+
+  const brandId = managedBrand?.id;
+  const brandSlug = managedBrand?.slug;
+
+  const {
+    data: brand,
+    isLoading: brandLoading,
+    isError: brandError,
+    error: brandErrorDetail,
+  } = useGetBrandQuery(brandId ?? '', {
+    skip: !brandId || authLoading,
+  });
+
+  const { data: posts = [], isLoading: postsLoading } = useGetBrandPostsQuery(brandId ?? '', {
+    skip: !brandId || !brand || authLoading,
+  });
+
+  const { data: artworks = [], isLoading: artworksLoading } = useGetBrandArtworksQuery(
+    brandId ?? '',
+    {
+      skip: !brandId || !brand || authLoading,
+    }
+  );
+
+  if (authLoading || brandLoading || postsLoading || artworksLoading) {
+    return <BrandOverviewSkeleton />;
+  }
+
+  if (!user || !currentManagerId || !managedBrand || brandError || !brand) {
+    return (
+      <div className="container py-16 text-center">
+        <AlertCircle className="mx-auto h-12 w-12 text-destructive" />
+        <h2 className="mt-4 text-2xl font-semibold">
+          {brandError ? 'Failed to load brand' : 'No brand found'}
+        </h2>
+        <p className="mt-2 text-muted-foreground max-w-md mx-auto">
+          {brandError
+            ? (brandErrorDetail as any)?.data?.error || 'Could not load brand data.'
+            : 'You are not currently managing any brand or lack permission.'}
+        </p>
+        <Button variant="outline" className="mt-6" asChild>
+          <Link href="/dashboard/brand">Back to My Brands</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  const recentPosts = posts.slice(0, 5);
+  const recentArtworks = artworks.slice(0, 4);
 
   return (
-    <div className="container py-10">
-      <Tabs defaultValue="all" className="mb-10">
-        <div className="flex items-center justify-between">
-          <TabsList>
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="live">Live</TabsTrigger>
-            <TabsTrigger value="rfds">Closed</TabsTrigger>
-          </TabsList>
+    <div className="container py-6 space-y-10">
+      {/* HERO */}
+      <Card className="overflow-hidden border shadow-sm">
+        <div className="relative h-72 w-full">
+          {brand.banner_url && (
+            <Image
+              src={brand.banner_url}
+              alt="banner"
+              fill
+              className="object-cover opacity-70"
+              priority
+            />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
         </div>
 
-        <TabsContent value="all" className="mt-6">
-          <div className="mb-8">
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {[...live]
-                .filter((item) => item.featured)
-                .map((item) => (
-                  <Card key={item.id} className="overflow-hidden">
-                    <div className="relative h-48 w-full">
+        <CardContent className="relative -mt-20 p-6 md:p-10">
+          <div className="flex flex-col md:flex-row md:items-end gap-6">
+            {/* LOGO */}
+            <div className="h-28 w-28 md:h-36 md:w-36 rounded-2xl border-4 border-background overflow-hidden bg-background shadow-xl">
+              {brand.logo_url ? (
+                <Image src={brand.logo_url} alt="logo" fill className="object-cover" />
+              ) : (
+                <div className="h-full w-full flex items-center justify-center text-4xl font-bold text-muted-foreground">
+                  {brand.name?.slice(0, 2).toUpperCase()}
+                </div>
+              )}
+            </div>
+
+            {/* INFO */}
+            <div className="flex-1 space-y-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <h1 className="text-4xl font-bold">{brand.name}</h1>
+
+                <Badge variant={brand.status === 'active' ? 'default' : 'outline'}>
+                  {brand.status}
+                </Badge>
+              </div>
+
+              <p className="text-muted-foreground max-w-3xl">
+                {brand.description || 'No brand description provided yet.'}
+              </p>
+
+              <Separator />
+
+              {/* STATS */}
+              <div className="flex flex-wrap gap-8">
+                <StatDisplay
+                  icon={<Users />}
+                  value={brand.followers_count ?? 0}
+                  label="Followers"
+                />
+                <StatDisplay icon={<Eye />} value={brand.views_count ?? 0} label="Views" />
+                <StatDisplay icon={<FileText />} value={posts.length} label="Posts" />
+                <StatDisplay icon={<ImageIcon />} value={artworks.length} label="Artworks" />
+              </div>
+            </div>
+
+            {/* ACTIONS */}
+            <div className="flex gap-3">
+              <Button variant="secondary" asChild>
+                <Link href={`/brand/${brandSlug || brand.id}`} target="_blank">
+                  <ArrowUpRight className="mr-2 h-4 w-4" />
+                  View
+                </Link>
+              </Button>
+
+              <Button asChild>
+                <Link href={`/dashboard/brand/${brandSlug}/${currentManagerId}/settings`}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  Settings
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* QUICK ACTIONS */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5">
+        <QuickActionCard icon={<PlusCircle />} title="New Post" href="#" />
+        <QuickActionCard icon={<ImageIcon />} title="Add Artwork" href="#" />
+        <QuickActionCard icon={<BarChart3 />} title="Analytics" href="#" disabled />
+        <QuickActionCard icon={<Users />} title="Followers" href="#" />
+        <QuickActionCard icon={<Heart />} title="Engagement" href="#" disabled />
+        <QuickActionCard icon={<MessageSquare />} title="Comments" href="#" disabled />
+      </div>
+
+      {/* CONTENT GRID */}
+      <div className="grid lg:grid-cols-2 gap-8">
+        {/* POSTS */}
+        <Card>
+          <CardHeader className="flex-row justify-between items-center">
+            <div>
+              <CardTitle>Recent Posts</CardTitle>
+              <CardDescription>Latest updates</CardDescription>
+            </div>
+            <Button variant="outline" size="sm">
+              View All
+            </Button>
+          </CardHeader>
+
+          <CardContent className="space-y-6">
+            {recentPosts.length === 0 ? (
+              <EmptyBox text="No posts created yet." />
+            ) : (
+              recentPosts.map((post: any) => (
+                <div key={post.id} className="flex gap-4">
+                  <div className="h-16 w-16 rounded-md overflow-hidden bg-muted relative">
+                    {post.media_urls?.[0] && (
+                      <Image src={post.media_urls[0]} alt="" fill className="object-cover" />
+                    )}
+                  </div>
+
+                  <div className="flex-1">
+                    <p className="font-medium line-clamp-1">{post.title}</p>
+                    <p className="text-sm text-muted-foreground line-clamp-2">{post.content}</p>
+                  </div>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        {/* ARTWORKS */}
+        <Card>
+          <CardHeader className="flex-row justify-between items-center">
+            <div>
+              <CardTitle>Storefront Highlights</CardTitle>
+              <CardDescription>Featured artworks</CardDescription>
+            </div>
+            <Button variant="outline" size="sm">
+              Manage
+            </Button>
+          </CardHeader>
+
+          <CardContent>
+            {recentArtworks.length === 0 ? (
+              <EmptyBox text="No artworks yet." />
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                {recentArtworks.map((art: any) => (
+                  <div key={art.id} className="space-y-2">
+                    <div className="aspect-square rounded-md overflow-hidden bg-muted relative">
                       <Image
-                        src={item.image || '/placeholder.svg'}
-                        alt={item.title}
+                        src={art.preview_url || '/placeholder.svg'}
+                        alt={art.title}
                         fill
                         className="object-cover"
                       />
-                      <div className="absolute right-2 top-2">
-                        <Badge
-                          variant="secondary"
-                          className="bg-black/70 text-white hover:bg-black/70"
-                        >
-                          {item.type === 'contest' ? 'Contest' : 'Licensing RFD'}
-                        </Badge>
-                      </div>
                     </div>
-                    <CardHeader>
-                      <CardTitle className="line-clamp-1">{item.title}</CardTitle>
-                      <CardDescription className="flex items-center gap-1">
-                        <span>By {item.organizer}</span>
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="line-clamp-2 text-sm text-muted-foreground">
-                        {item.description}
-                      </p>
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {item.categories.map((category) => (
-                          <Badge key={category} variant="outline">
-                            {category}
-                          </Badge>
-                        ))}
-                      </div>
-                      <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-                        <div className="flex items-center gap-1">
-                          <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                          <span>Due {new Date(item.deadline).toLocaleDateString()}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Award className="h-4 w-4 text-muted-foreground" />
-                          <span>Prize: {item.prize}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Users className="h-4 w-4 text-muted-foreground" />
-                          <span>{item.entries} Entries</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Badge
-                            variant="secondary"
-                            className="bg-black/70 text-white hover:bg-black/70"
-                          >
-                            Generate Judging Link
-                          </Badge>
-                        </div>
-                      </div>
-                    </CardContent>
-                    <CardFooter>
-                      <Link href={`/brand/manage/${item.id}`} className="w-full">
-                        <Button className="w-full">Manage</Button>
-                      </Link>
-                    </CardFooter>
-                  </Card>
+                    <p className="text-sm font-medium line-clamp-1">{art.title}</p>
+                  </div>
                 ))}
-            </div>
-          </div>
-
-          {liveOpps > 1 ? (
-            <div>
-              <h2 className="mb-4 text-2xl font-bold">All Contests</h2>
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {[...live]
-                  .filter((item) => !item.featured)
-                  .map((item) => (
-                    <Card key={item.id} className="overflow-hidden">
-                      <div className="relative h-48 w-full">
-                        <Image
-                          src={item.image || '/placeholder.svg'}
-                          alt={item.title}
-                          fill
-                          className="object-cover"
-                        />
-                        <div className="absolute right-2 top-2">
-                          <Badge
-                            variant="secondary"
-                            className="bg-black/70 text-white hover:bg-black/70"
-                          >
-                            {item.type === 'contest' ? 'Contest' : 'Licensing RFD'}
-                          </Badge>
-                        </div>
-                      </div>
-                      <CardHeader>
-                        <CardTitle className="line-clamp-1">{item.title}</CardTitle>
-                        <CardDescription className="flex items-center gap-1">
-                          <span>By {item.organizer}</span>
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="line-clamp-2 text-sm text-muted-foreground">
-                          {item.description}
-                        </p>
-                        <div className="mt-4 flex flex-wrap gap-2">
-                          {item.categories.map((category) => (
-                            <Badge key={category} variant="outline">
-                              {category}
-                            </Badge>
-                          ))}
-                        </div>
-                        <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-                          <div className="flex items-center gap-1">
-                            <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                            <span>Due {new Date(item.deadline).toLocaleDateString()}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            {item.id.startsWith('contest') ? (
-                              <>
-                                <Award className="h-4 w-4 text-muted-foreground" />
-                                <span>Prize: {(item as any).prize}</span>
-                              </>
-                            ) : (
-                              <>
-                                <Clock className="h-4 w-4 text-muted-foreground" />
-                                <span>{(item as any).compensation}</span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </CardContent>
-                      <CardFooter>
-                        <Link href={`/brand/manage/${item.id}`} className="w-full">
-                          <Button className="w-full">Manage</Button>
-                        </Link>
-                      </CardFooter>
-                    </Card>
-                  ))}
               </div>
-            </div>
-          ) : null}
-        </TabsContent>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
 
-        <TabsContent value="live" className="mt-6">
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {live.map((contest) => (
-              <Card key={contest.id} className="overflow-hidden">
-                <div className="relative h-48 w-full">
-                  <Image
-                    src={contest.image || '/placeholder.svg'}
-                    alt={contest.title}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-                <CardHeader>
-                  <CardTitle className="line-clamp-1">{contest.title}</CardTitle>
-                  <CardDescription className="flex items-center gap-1">
-                    <span>By {contest.organizer}</span>
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="line-clamp-2 text-sm text-muted-foreground">
-                    {contest.description}
-                  </p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {contest.categories.map((category) => (
-                      <Badge key={category} variant="outline">
-                        {category}
-                      </Badge>
-                    ))}
-                  </div>
-                  <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-                    <div className="flex items-center gap-1">
-                      <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                      <span>Due {new Date(contest.deadline).toLocaleDateString()}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Award className="h-4 w-4 text-muted-foreground" />
-                      <span>Prize: {contest.prize}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                      <span>{contest.entries} Entries</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Badge
-                        variant="secondary"
-                        className="bg-black/70 text-white hover:bg-black/70"
-                      >
-                        Generate Judging Link
-                      </Badge>
-                    </div>
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Link href={`/brand/manage/${contest.id}`} className="w-full">
-                    <Button className="w-full">Manage</Button>
-                  </Link>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-      </Tabs>
+/* ───────── UI HELPERS (NO LOGIC CHANGE) ───────── */
+
+function StatDisplay({ icon, value, label }: any) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="text-muted-foreground">{icon}</div>
+      <div>
+        <div className="text-xl font-bold">{value.toLocaleString()}</div>
+        <div className="text-xs text-muted-foreground">{label}</div>
+      </div>
+    </div>
+  );
+}
+
+function QuickActionCard({ icon, title, href, disabled }: any) {
+  const content = (
+    <Card className={`hover:shadow-sm transition ${disabled ? 'opacity-50' : ''}`}>
+      <CardContent className="p-5 text-center space-y-2">
+        <div className="mx-auto text-primary">{icon}</div>
+        <p className="text-sm font-medium">{title}</p>
+      </CardContent>
+    </Card>
+  );
+
+  return disabled ? content : <Link href={href}>{content}</Link>;
+}
+
+function EmptyBox({ text }: { text: string }) {
+  return (
+    <div className="text-center py-10 text-muted-foreground border rounded-lg bg-muted/20">
+      {text}
+    </div>
+  );
+}
+
+/* ───────── SKELETON (UI ONLY IMPROVED) ───────── */
+
+function BrandOverviewSkeleton() {
+  return (
+    <div className="container py-6 space-y-10">
+      <div className="h-72 bg-muted rounded-2xl animate-pulse" />
+
+      <div className="grid grid-cols-6 gap-4">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton key={i} className="h-20 rounded-xl" />
+        ))}
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-8">
+        <Skeleton className="h-96 rounded-xl" />
+        <Skeleton className="h-96 rounded-xl" />
+      </div>
     </div>
   );
 }

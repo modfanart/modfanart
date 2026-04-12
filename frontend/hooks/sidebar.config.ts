@@ -46,7 +46,7 @@ export const sidebarConfig: Record<Role, (base: string) => NavItem[]> = {
   brand_manager: (base: string) => [
     { name: 'Overview', href: `${base}`, icon: LayoutDashboard },
     { name: 'Brand Profile', href: `${base}/profile`, icon: Store },
-    { name: 'Opportunities', href: `${base}/contests`, icon: Megaphone },
+    { name: 'Opportunities', href: `${base}/opportunities`, icon: Megaphone },
     { name: 'Submissions', href: '#', icon: ClipboardList },
     { name: 'Licensing', href: `${base}/license-requests`, icon: FileText },
     { name: 'Asset Hub', href: '#', icon: Layers },
