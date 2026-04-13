@@ -10,7 +10,7 @@ import { Contest } from './entities/contest.entity';
 import { ContestEntry } from './entities/contest-entry.entity';
 import { ContestJudge } from './entities/contest-judge.entity';
 import { ContestJudgeScore } from './entities/contest-judge-score.entity';
-import { CreateContestDto } from '../dto/create-contest.dto';
+import { CreateContestDto } from './dto/create-contest.dto';
 
 @Injectable()
 export class ContestsService {

@@ -9,10 +9,10 @@ import {
   Req,
   HttpCode,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
-import { OrdersService } from '../services/orders.service';
-import { CreateOrderDto } from '../dto/create-order.dto';
-import { ConfirmOrderDto } from '../dto/confirm-order.dto';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { OrdersService } from './orders.service';
+import { CreateOrderDto } from './dto/create-order.dto';
+import { ConfirmOrderDto } from './dto/confirm-order.dto';
 
 @Controller('orders')
 export class OrdersController {

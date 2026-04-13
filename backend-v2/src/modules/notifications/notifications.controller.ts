@@ -10,10 +10,10 @@ import {
   Req,
   HttpCode,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
-import { NotificationsService } from '../services/notifications.service';
-import { CreateNotificationDto } from '../dto/create-notification.dto';
-import { MarkAsReadDto } from '../dto/mark-as-read.dto';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { NotificationsService } from './notifications.service';
+import { CreateNotificationDto } from './dto/create-notification.dto';
+import { MarkAsReadDto } from './dto/mark-as-read.dto';
 
 @Controller('notifications')
 export class NotificationsController {

@@ -10,10 +10,10 @@ import {
   UseGuards,
   Req,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
-import { CollectionsService } from '../services/collections.service';
-import { CreateCollectionDto } from '../dto/create-collection.dto';
-import { UpdateCollectionDto } from '../dto/update-collection.dto';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { CollectionsService } from './collections.service';
+import { CreateCollectionDto } from './dto/create-collection.dto';
+import { UpdateCollectionDto } from './dto/update-collection.dto';
 
 @Controller('collections')
 export class CollectionsController {

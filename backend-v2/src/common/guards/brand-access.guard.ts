@@ -4,8 +4,7 @@ import {
   ExecutionContext,
   ForbiddenException,
 } from '@nestjs/common';
-import { BrandsService } from '../services/brands.service';
-
+import { BrandsService } from 'src/modules/brands/brands.service';
 @Injectable()
 export class BrandAccessGuard implements CanActivate {
   constructor(private brandsService: BrandsService) {}

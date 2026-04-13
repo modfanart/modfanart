@@ -6,8 +6,7 @@ import {
   UpdateDateColumn,
   OneToMany,
 } from 'typeorm';
-import { CollectionItem } from './collection-item.entity';
-
+import { CollectionItem } from './collections-item.entity';
 @Entity('collections')
 export class Collection {
   @PrimaryGeneratedColumn('uuid')

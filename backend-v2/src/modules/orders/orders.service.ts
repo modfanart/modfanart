@@ -5,7 +5,7 @@ import { Order } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { License } from './entities/license.entity';
 import { Artwork } from '../artworks/entities/artwork.entity';
-import { StripeService } from '../../common/services/stripe.service';
+import { StripeService } from 'src/common/services/stripe.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 
 @Injectable()
