@@ -5,9 +5,9 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Collection } from '../entities/collection.entity';
-import { CreateCollectionDto } from '../dto/create-collection.dto';
-import { UpdateCollectionDto } from '../dto/update-collection.dto';
+import { Collection } from './entities/collection.entity';
+import { CreateCollectionDto } from './dto/create-collection.dto';
+import { UpdateCollectionDto } from './dto/update-collection.dto';
 
 @Injectable()
 export class CollectionsService {

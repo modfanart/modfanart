@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ContestsController } from './controllers/contests.controller';
-import { ContestsService } from './services/contests.service';
+import { ContestsController } from './contests.controller';
+import { ContestsService } from './contests.service';
 import { Contest } from './entities/contest.entity';
 import { ContestEntry } from './entities/contest-entry.entity';
 import { ContestJudge } from './entities/contest-judge.entity';

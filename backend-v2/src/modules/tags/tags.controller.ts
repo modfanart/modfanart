@@ -8,9 +8,9 @@ import {
   UseGuards,
   Req,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
-import { TagsService } from '../services/tags.service';
-import { AddTagDto } from '../dto/add-tag.dto';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { TagsService } from './tags.service';
+import { AddTagDto } from './dto/add-tag.dto';
 
 @Controller('artworks')
 export class TagsController {

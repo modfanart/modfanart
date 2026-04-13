@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { CollectionsController } from './controllers/collections.controller';
-import { CollectionsService } from './services/collections.service';
+import { CollectionsController } from './collections.controller';
+import { CollectionsService } from './collections.service';
 import { Collection } from './entities/collection.entity';
-import { CollectionItem } from './entities/collection-item.entity';
+import { CollectionItem } from './entities/collections-item.entity';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Collection, CollectionItem])],
