@@ -11,12 +11,12 @@ import {
   Req,
   HttpCode,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../../rbac/guards/roles.guard';
-import { Roles } from '../../rbac/decorators/roles.decorator';
-import { BrandAccessGuard } from '../guards/brand-access.guard';
-import { BrandsService } from '../services/brands.service';
-import { CreateBrandDto } from '../dto/create-brand.dto';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { RolesGuard } from '../rbac/guards/roles.guard';
+import { Roles } from 'src/common/decorators/role.decorator';
+import { BrandAccessGuard } from 'src/common/guards/brand-access.guard';
+import { BrandsService } from './brands.service';
+import { CreateBrandDto } from './dto/create-brand.dto';
 
 @Controller('brands')
 export class BrandsController {

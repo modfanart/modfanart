@@ -10,7 +10,7 @@ import { Artwork } from './entities/artwork.entity';
 import { ArtworkPricingTier } from './entities/artwork-pricing-tier.entity';
 import { ArtworkCategory } from './entities/artwork-category.entity';
 import { CreateArtworkDto } from './dto/create-artwork.dto';
-import { S3Service } from '../../common/services/s3.service'; // Create this
+import { S3Service } from 'src/common/services/s3.service';
 import { Favorite } from './entities/favorite.entity';
 @Injectable()
 export class ArtworksService {

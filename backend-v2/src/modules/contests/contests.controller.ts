@@ -11,11 +11,11 @@ import {
   Req,
   HttpCode,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../../rbac/guards/roles.guard';
-import { Roles } from '../../rbac/decorators/roles.decorator';
-import { ContestsService } from '../services/contests.service';
-import { CreateContestDto } from '../dto/create-contest.dto';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { RolesGuard } from '../rbac/guards/roles.guard';
+import { Roles } from 'src/common/decorators/role.decorator';
+import { ContestsService } from './contests.service';
+import { CreateContestDto } from './dto/create-contest.dto';
 
 @Controller('contests')
 export class ContestsController {

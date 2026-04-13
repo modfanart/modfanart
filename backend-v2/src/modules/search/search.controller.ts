@@ -5,8 +5,8 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
-import { SearchService } from '../services/search.service';
-import { GlobalSearchDto } from '../dto/global-search.dto';
+import { SearchService } from './search.service';
+import { GlobalSearchDto } from './dto/global-search.dto';
 
 @Controller('search')
 export class SearchController {

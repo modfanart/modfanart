@@ -6,8 +6,7 @@ import { Artwork } from './entities/artwork.entity';
 import { ArtworkPricingTier } from './entities/artwork-pricing-tier.entity';
 import { ArtworkCategory } from './entities/artwork-category.entity';
 import { Favorite } from './entities/favorite.entity'; // ← NEW
-import { S3Service } from '../../common/services/s3.service';
-
+import { S3Service } from 'src/common/services/s3.service';
 @Module({
   imports: [
     TypeOrmModule.forFeature([
