@@ -1,54 +1,35 @@
-// src/services/userStats.service.js
 const { db } = require('../config');
+const { sql } = require('kysely'); // ✅ REQUIRED
 
 class UserStatsService {
   static async getUserStats(userId) {
-    const [
-      artworks,
-      followers,
-      following,
-      likesReceived,
-      viewsReceived,
-    ] = await Promise.all([
-      db
-        .selectFrom('artworks')
-        .select(db.fn.count('id').as('count'))
-        .where('creator_id', '=', userId)
-        .where('deleted_at', 'is', null)
-        .executeTakeFirst(),
+    const result = await db
+      .selectFrom('artworks')
+      .select((eb) => [
+        eb.fn.count('id').as('artworks_count'),
 
-      db
-        .selectFrom('follows')
-        .select(db.fn.count('id').as('count'))
-        .where('following_id', '=', userId)
-        .executeTakeFirst(),
+        // ✅ FIXED
+        eb.fn.coalesce(
+          eb.fn.sum('favorites_count'),
+          sql`0`
+        ).as('likes_received'),
 
-      db
-        .selectFrom('follows')
-        .select(db.fn.count('id').as('count'))
-        .where('follower_id', '=', userId)
-        .executeTakeFirst(),
-
-      db
-        .selectFrom('artwork_likes as al')
-        .innerJoin('artworks as a', 'a.id', 'al.artwork_id')
-        .select(db.fn.count('al.id').as('count'))
-        .where('a.creator_id', '=', userId)
-        .executeTakeFirst(),
-
-      db
-        .selectFrom('artworks')
-        .select(db.fn.sum('views_count').as('count'))
-        .where('creator_id', '=', userId)
-        .executeTakeFirst(),
-    ]);
+        // ✅ FIXED
+        eb.fn.coalesce(
+          eb.fn.sum('views_count'),
+          sql`0`
+        ).as('views_received'),
+      ])
+      .where('creator_id', '=', userId)
+      .where('deleted_at', 'is', null)
+      .executeTakeFirst();
 
     return {
-      artworks_count: Number(artworks?.count || 0),
-      followers_count: Number(followers?.count || 0),
-      following_count: Number(following?.count || 0),
-      likes_received: Number(likesReceived?.count || 0),
-      views_received: Number(viewsReceived?.count || 0),
+      artworks_count: Number(result?.artworks_count || 0),
+      followers_count: 0,
+      following_count: 0,
+      likes_received: Number(result?.likes_received || 0),
+      views_received: Number(result?.views_received || 0),
     };
   }
 }

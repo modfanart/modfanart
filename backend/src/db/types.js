@@ -133,7 +133,13 @@
  * @property {string} updated_at
  * @property {string | null} deleted_at
  */
-
+/**
+ * @typedef {Object} ArtworkLikeRow
+ * @property {string} id
+ * @property {string} user_id
+ * @property {string} artwork_id
+ * @property {string} created_at
+ */
 /**
  * @typedef {Object} ArtworkPricingTierRow
  * @property {string} id
