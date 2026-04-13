@@ -9,10 +9,11 @@ import {
   FolderHeart,
   UserPlus,
   MessageSquare,
-  MoreHorizontal,
   Edit,
   Settings,
   Sparkles,
+  Eye,
+  Users,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -32,15 +33,17 @@ interface ProfileViewProps {
 
 export function ProfileView({ targetUsername }: ProfileViewProps) {
   const { data: currentData, isLoading: currentLoading } = useGetCurrentUserQuery();
-  const { data: profileData, isLoading: profileLoading } = useGetUserByUsernameQuery(
-    targetUsername,
-    {
-      skip: !targetUsername,
-    }
-  );
+
+  // Use the transformed response (now directly returns UserProfile)
+  const {
+    data: profileUser,
+    isLoading: profileLoading,
+    error: profileError,
+  } = useGetUserByUsernameQuery(targetUsername, {
+    skip: !targetUsername,
+  });
 
   const currentUser = currentData?.user;
-  const profileUser = profileData?.user;
 
   const isLoading = currentLoading || profileLoading;
 
@@ -48,21 +51,60 @@ export function ProfileView({ targetUsername }: ProfileViewProps) {
     return currentUser?.username?.toLowerCase() === targetUsername?.toLowerCase();
   }, [currentUser?.username, targetUsername]);
 
+  // Show loading state
   if (isLoading) {
     return <Skeleton className="h-[400px] w-full rounded-xl" />;
   }
 
-  if (!profileUser) {
+  // Show error or not found state
+  if (profileError || !profileUser) {
     return (
-      <div className="text-center py-20">
+      <div className="text-center py-20 space-y-4">
         <h2 className="text-2xl font-semibold text-muted-foreground">
           @{targetUsername} not found
         </h2>
+        {profileError && (
+          <p className="text-sm text-red-500 max-w-md mx-auto">
+            {(profileError as any)?.data?.message ||
+              (profileError as any)?.error ||
+              'Failed to load profile. Please try again.'}
+          </p>
+        )}
+        <Button onClick={() => window.location.reload()} variant="outline" className="mt-4">
+          Refresh Page
+        </Button>
       </div>
     );
   }
 
+  // ✅ SAFE PROFILE OBJECT
+  const profile = profileUser.profile ?? {};
+
   const initials = profileUser.username?.slice(0, 2).toUpperCase() || 'U';
+
+  // ✅ DYNAMIC STATS (REAL DATA)
+  const stats = [
+    {
+      label: 'Artworks',
+      value: profileUser.stats?.artworks_count ?? 0,
+      icon: Sparkles,
+    },
+    {
+      label: 'Followers',
+      value: profileUser.stats?.followers_count ?? 0,
+      icon: Users,
+    },
+    {
+      label: 'Likes',
+      value: profileUser.stats?.likes_received ?? 0,
+      icon: Heart,
+    },
+    {
+      label: 'Views',
+      value: profileUser.stats?.views_received ?? 0,
+      icon: Eye,
+    },
+  ];
 
   return (
     <div className="grid lg:grid-cols-[320px_1fr] gap-10 max-w-7xl mx-auto">
@@ -80,25 +122,26 @@ export function ProfileView({ targetUsername }: ProfileViewProps) {
           <h1 className="text-2xl font-bold">{profileUser.username}</h1>
           <p className="text-muted-foreground">@{profileUser.username}</p>
 
-          <Badge className="mt-3 px-3 py-1">{profileUser.role?.name}</Badge>
+          <Badge className="mt-3 px-3 py-1">{profileUser.role?.name || 'Artist'}</Badge>
         </div>
 
         {/* STATS */}
         <div className="grid grid-cols-2 gap-3">
-          {[
-            { label: 'Artworks', value: 248 },
-            { label: 'Licenses', value: 67 },
-            { label: 'Contests', value: 4 },
-            { label: 'Collections', value: 9 },
-          ].map((stat) => (
-            <div
-              key={stat.label}
-              className="p-4 rounded-xl bg-muted/40 border text-center hover:shadow-sm transition"
-            >
-              <div className="text-xl font-bold">{stat.value}</div>
-              <div className="text-xs text-muted-foreground">{stat.label}</div>
-            </div>
-          ))}
+          {stats.map((stat) => {
+            const Icon = stat.icon;
+            return (
+              <div
+                key={stat.label}
+                className="p-4 rounded-xl bg-muted/40 border text-center hover:shadow-sm transition"
+              >
+                <div className="flex justify-center mb-1">
+                  <Icon className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <div className="text-xl font-bold">{stat.value}</div>
+                <div className="text-xs text-muted-foreground">{stat.label}</div>
+              </div>
+            );
+          })}
         </div>
 
         {/* BIO */}
@@ -106,17 +149,18 @@ export function ProfileView({ targetUsername }: ProfileViewProps) {
           <div className="text-sm bg-muted/30 p-4 rounded-xl border">{profileUser.bio}</div>
         )}
 
-        {/* SOCIAL */}
+        {/* SOCIAL LINKS */}
         <div className="space-y-2">
-          {profileUser.profile?.twitter && (
-            <a href={profileUser.profile.twitter} target="_blank">
+          {profile.twitter && (
+            <a href={profile.twitter} target="_blank" rel="noopener noreferrer">
               <Button variant="ghost" className="w-full justify-start gap-2">
                 <Twitter className="h-4 w-4" /> Twitter
               </Button>
             </a>
           )}
-          {profileUser.profile?.instagram && (
-            <a href={profileUser.profile.instagram} target="_blank">
+
+          {profile.instagram && (
+            <a href={profile.instagram} target="_blank" rel="noopener noreferrer">
               <Button variant="ghost" className="w-full justify-start gap-2">
                 <Instagram className="h-4 w-4" /> Instagram
               </Button>
@@ -131,7 +175,7 @@ export function ProfileView({ targetUsername }: ProfileViewProps) {
               <Button asChild className="flex-1">
                 <Link href="/profile/edit">
                   <Edit className="mr-2 h-4 w-4" />
-                  Edit
+                  Edit Profile
                 </Link>
               </Button>
               <Button variant="outline" className="flex-1">
@@ -154,7 +198,7 @@ export function ProfileView({ targetUsername }: ProfileViewProps) {
         </div>
       </div>
 
-      {/* RIGHT PANEL */}
+      {/* RIGHT PANEL - Tabs */}
       <div>
         <Tabs defaultValue="favs">
           <TabsList className="mb-6">
@@ -174,7 +218,7 @@ export function ProfileView({ targetUsername }: ProfileViewProps) {
               {[1, 2].map((id) => (
                 <Card key={id} className="overflow-hidden hover:shadow-md transition">
                   <div className="relative h-48">
-                    <Image src="/placeholder.svg" alt="" fill className="object-cover" />
+                    <Image src="/placeholder.svg" alt="Artwork" fill className="object-cover" />
                   </div>
                   <CardContent className="p-4">
                     <h3 className="font-semibold mb-2">Artwork Title</h3>
@@ -194,13 +238,17 @@ export function ProfileView({ targetUsername }: ProfileViewProps) {
 
           <TabsContent value="contests">
             <Card>
-              <CardContent className="p-6 text-muted-foreground">No contests yet.</CardContent>
+              <CardContent className="p-6 text-muted-foreground text-center">
+                No contests yet.
+              </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="collections">
             <Card>
-              <CardContent className="p-6 text-muted-foreground">No collections yet.</CardContent>
+              <CardContent className="p-6 text-muted-foreground text-center">
+                No collections yet.
+              </CardContent>
             </Card>
           </TabsContent>
         </Tabs>

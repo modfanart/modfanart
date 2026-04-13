@@ -85,7 +85,7 @@ static async getUserByUsername(req, res) {
       // 🔥 ADD STATS HERE
       stats,
     };
-
+console.log(publicUser);
     return res.status(200).json({
       success: true,
       user: publicUser,

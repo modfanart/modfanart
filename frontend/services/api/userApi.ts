@@ -229,15 +229,25 @@ export const userApi = createApi({
       }),
       invalidatesTags: ['CurrentUser'],
     }),
-    getUserByUsername: builder.query<PublicUserResponse, string>({
+    getUserByUsername: builder.query<UserProfile, string>({
       query: (username) => `/by-username/${username}`,
 
       providesTags: (result, error, username) => [
         { type: 'PublicProfile', id: username.toLowerCase() },
       ],
 
-      transformResponse: (response: { success: boolean; user: any }) => {
+      // ✅ Fixed transformResponse - never return null
+      transformResponse: (response: { success: boolean; user: UserProfile }): UserProfile => {
+        if (!response?.success || !response?.user) {
+          console.warn('Invalid profile response from backend:', response);
+          // Instead of returning null, throw an error so RTK Query treats it as error state
+          throw new Error('Invalid profile response from server');
+        }
         return response.user;
+      },
+
+      extraOptions: {
+        refetchOnMountOrArgChange: true,
       },
     }),
     // PATCH /users/me/password
