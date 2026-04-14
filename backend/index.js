@@ -28,6 +28,7 @@ app.use("/api/collections", require("./src/routes/collection.route"))
 app.use("/api/search", require("./src/routes/search.routes"))
 app.use("/api/payout", require("./src/routes/payout.routes"))
 app.use("/api/webhook", require("./src/routes/webhooks"))
+app.use('/api/notifications', require('./src/routes/notification.routes'));
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', env: process.env.NODE_ENV || 'dev' });

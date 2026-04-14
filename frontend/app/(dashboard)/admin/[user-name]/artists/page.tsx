@@ -5,7 +5,7 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
-import { Search, UserPlus, Shield, MoreHorizontal, Users } from 'lucide-react';
+import { Search, UserPlus, Shield, MoreHorizontal, Users, Palette } from 'lucide-react';
 
 import {
   useGetAllUsersQuery,
@@ -40,7 +40,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-import { DashboardShell } from '@/components/dashboard-shell';
 import { useAuth } from '@/store/AuthContext';
 
 type UsersQueryArgs = {
@@ -50,7 +49,7 @@ type UsersQueryArgs = {
   status?: string;
 };
 
-export default function UsersAdminPage() {
+export default function ArtistsAdminPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -61,15 +60,11 @@ export default function UsersAdminPage() {
   const search = searchParams.get('search') ?? '';
   const status = searchParams.get('status') ?? 'all';
 
-  // ✅ SAFE ROLE HANDLING
   const roleName = currentUser?.role?.name;
   const roleSlug = roleName?.toLowerCase() ?? 'admin';
 
   const adminBase = useMemo(() => {
-    if (roleName === 'Admin') {
-      return `/admin/${roleSlug}`;
-    }
-    return '';
+    return roleName === 'Admin' ? `/admin/${roleSlug}` : '';
   }, [roleName, roleSlug]);
 
   const queryArgs = useMemo(() => {
@@ -78,9 +73,7 @@ export default function UsersAdminPage() {
       limit: 15,
     };
 
-    const trimmedSearch = search.trim();
-
-    if (trimmedSearch) args.search = trimmedSearch;
+    if (search.trim()) args.search = search.trim();
     if (status !== 'all') args.status = status;
 
     return args;
@@ -90,7 +83,11 @@ export default function UsersAdminPage() {
   const [updateUserStatus] = useUpdateUserStatusMutation();
   const [deleteUser] = useDeleteUserMutation();
 
-  const users = data?.users ?? [];
+  // ✅ Filter only ARTIST role users
+  const artists = useMemo(() => {
+    return (data?.users ?? []).filter((user) => user.role?.name?.toUpperCase() === 'ARTIST');
+  }, [data?.users]);
+
   const pagination = data?.pagination;
 
   const updateQuery = (updates: Record<string, string | null>) => {
@@ -124,12 +121,12 @@ export default function UsersAdminPage() {
   };
 
   const handleSuspend = async (id: string) => {
-    if (!confirm('Suspend this user?')) return;
+    if (!confirm('Suspend this artist?')) return;
     await updateUserStatus({ userId: id, status: 'suspended' });
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this user permanently?')) return;
+    if (!confirm('Delete this artist permanently?')) return;
     await deleteUser({ userId: id });
   };
 
@@ -139,18 +136,18 @@ export default function UsersAdminPage() {
       <div className="flex flex-col sm:flex-row justify-between gap-4 mb-8">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-xl bg-primary/10">
-            <Users className="h-6 w-6 text-primary" />
+            <Palette className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold">Users</h1>
-            <p className="text-sm text-muted-foreground">Manage users, roles and access</p>
+            <h1 className="text-3xl font-bold">Artists</h1>
+            <p className="text-sm text-muted-foreground">Manage all artists and their accounts</p>
           </div>
         </div>
 
         <Button asChild>
           <Link href={`${adminBase}/user/add`}>
             <UserPlus className="mr-2 h-4 w-4" />
-            Invite User
+            Invite Artist
           </Link>
         </Button>
       </div>
@@ -160,7 +157,7 @@ export default function UsersAdminPage() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search users..."
+            placeholder="Search artists..."
             className="pl-9 bg-background"
             value={search}
             onChange={(e) => updateQuery({ search: e.target.value || null })}
@@ -186,9 +183,8 @@ export default function UsersAdminPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>User</TableHead>
+              <TableHead>Artist</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Role</TableHead>
               <TableHead>Joined</TableHead>
               <TableHead />
             </TableRow>
@@ -198,77 +194,67 @@ export default function UsersAdminPage() {
             {isLoading ? (
               Array.from({ length: 6 }).map((_, i) => (
                 <TableRow key={i}>
-                  <TableCell colSpan={5}>
+                  <TableCell colSpan={4}>
                     <Skeleton className="h-10 w-full" />
                   </TableCell>
                 </TableRow>
               ))
-            ) : users.length === 0 ? (
+            ) : artists.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5}>
+                <TableCell colSpan={4}>
                   <div className="flex flex-col items-center py-16 text-center">
-                    <Users className="h-10 w-10 text-muted-foreground mb-3" />
-                    <p className="font-medium">No users found</p>
+                    <Palette className="h-10 w-10 text-muted-foreground mb-3" />
+                    <p className="font-medium">No artists found</p>
                     <p className="text-xs text-muted-foreground">Try adjusting filters</p>
                   </div>
                 </TableCell>
               </TableRow>
             ) : (
-              users.map((u: UserProfile) => (
-                <TableRow key={u.id} className="hover:bg-muted/40">
-                  {/* USER */}
+              artists.map((artist: UserProfile) => (
+                <TableRow key={artist.id} className="hover:bg-muted/40">
+                  {/* ARTIST INFO */}
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      {u.avatar_url ? (
+                      {artist.avatar_url ? (
                         <div className="relative h-10 w-10 ring-2 ring-muted">
                           <Image
-                            src={u.avatar_url}
-                            alt={u.username}
+                            src={artist.avatar_url}
+                            alt={artist.username}
                             fill
                             className="rounded-full object-cover"
                           />
                         </div>
                       ) : (
                         <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
-                          {u.username?.slice(0, 2).toUpperCase()}
+                          {artist.username?.slice(0, 2).toUpperCase()}
                         </div>
                       )}
 
                       <div>
                         <Link
-                          href={`/admin/${roleSlug}/user/${u.id}/stats`}
+                          href={`/admin/${roleSlug}/user/${artist.id}/stats`}
                           className="font-medium hover:underline"
                         >
-                          {u.username}
+                          {artist.username}
                         </Link>
-                        <p className="text-xs text-muted-foreground">{u.email || 'No email'}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {artist.email || 'No email'}
+                        </p>
                       </div>
                     </div>
                   </TableCell>
 
                   {/* STATUS */}
                   <TableCell>
-                    <Badge variant={statusVariant(u.status)} className="capitalize">
-                      {u.status?.replaceAll('_', ' ')}
+                    <Badge variant={statusVariant(artist.status)} className="capitalize">
+                      {artist.status?.replaceAll('_', ' ')}
                     </Badge>
                   </TableCell>
 
-                  {/* ROLE */}
-                  <TableCell>
-                    {u.role ? (
-                      <div className="flex items-center gap-2 bg-muted px-2 py-1 rounded-md text-xs w-fit">
-                        <Shield className="h-3.5 w-3.5 text-primary" />
-                        {u.role.name}
-                      </div>
-                    ) : (
-                      '—'
-                    )}
-                  </TableCell>
-
-                  {/* DATE */}
+                  {/* JOINED */}
                   <TableCell className="text-sm text-muted-foreground">
-                    {u.created_at
-                      ? formatDistanceToNow(new Date(u.created_at), {
+                    {artist.created_at
+                      ? formatDistanceToNow(new Date(artist.created_at), {
                           addSuffix: true,
                         })
                       : '—'}
@@ -285,18 +271,20 @@ export default function UsersAdminPage() {
 
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
-                          <Link href={`/admin/${roleSlug}/user/${u.id}/stats`}>📊 View Stats</Link>
+                          <Link href={`/admin/${roleSlug}/user/${artist.id}/stats`}>
+                            📊 View Stats
+                          </Link>
                         </DropdownMenuItem>
 
-                        <DropdownMenuItem onClick={() => handleSuspend(u.id)}>
-                          ⚠️ Suspend
+                        <DropdownMenuItem onClick={() => handleSuspend(artist.id)}>
+                          ⚠️ Suspend Artist
                         </DropdownMenuItem>
 
                         <DropdownMenuItem
                           className="text-destructive"
-                          onClick={() => handleDelete(u.id)}
+                          onClick={() => handleDelete(artist.id)}
                         >
-                          🗑 Delete
+                          🗑 Delete Artist
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
