@@ -18,7 +18,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { DashboardShell } from '@/components/dashboard-shell';
 
 import {
   useGetBrandPostsQuery,
@@ -47,56 +46,50 @@ export default function BrandPostsPage() {
   const drafts = posts.filter((p) => p.status === 'draft');
 
   if (isLoading) {
-    return (
-      <DashboardShell>
-        <div className="container py-8">Loading posts...</div>
-      </DashboardShell>
-    );
+    return <div className="container py-8">Loading posts...</div>;
   }
 
   return (
-    <DashboardShell>
-      <div className="container py-8 space-y-8">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Brand Posts</h1>
+    <div className="container py-8 space-y-8">
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Brand Posts</h1>
 
-          <Button asChild>
-            <Link href={`/dashboard/brand/${brandSlug}/${user?.id}/posts/new`}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              New Post
-            </Link>
-          </Button>
-        </div>
-
-        {/* STATS */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <StatCard icon={FileText} title="Total Posts" value={posts.length} />
-          <StatCard icon={CheckCircle} title="Published" value={published.length} />
-          <StatCard icon={Clock} title="Drafts" value={drafts.length} />
-        </div>
-
-        {/* TABS */}
-        <Tabs defaultValue="all">
-          <TabsList>
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="published">Published</TabsTrigger>
-            <TabsTrigger value="drafts">Drafts</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="all" className="mt-6">
-            <PostList posts={posts} brandSlug={brandSlug} managerId={user?.id} />
-          </TabsContent>
-
-          <TabsContent value="published">
-            <PostList posts={published} brandSlug={brandSlug} managerId={user?.id} />
-          </TabsContent>
-
-          <TabsContent value="drafts">
-            <PostList posts={drafts} brandSlug={brandSlug} managerId={user?.id} />
-          </TabsContent>
-        </Tabs>
+        <Button asChild>
+          <Link href={`/dashboard/brand/${brandSlug}/${user?.id}/posts/new`}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            New Post
+          </Link>
+        </Button>
       </div>
-    </DashboardShell>
+
+      {/* STATS */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <StatCard icon={FileText} title="Total Posts" value={posts.length} />
+        <StatCard icon={CheckCircle} title="Published" value={published.length} />
+        <StatCard icon={Clock} title="Drafts" value={drafts.length} />
+      </div>
+
+      {/* TABS */}
+      <Tabs defaultValue="all">
+        <TabsList>
+          <TabsTrigger value="all">All</TabsTrigger>
+          <TabsTrigger value="published">Published</TabsTrigger>
+          <TabsTrigger value="drafts">Drafts</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="all" className="mt-6">
+          <PostList posts={posts} brandSlug={brandSlug} managerId={user?.id} />
+        </TabsContent>
+
+        <TabsContent value="published">
+          <PostList posts={published} brandSlug={brandSlug} managerId={user?.id} />
+        </TabsContent>
+
+        <TabsContent value="drafts">
+          <PostList posts={drafts} brandSlug={brandSlug} managerId={user?.id} />
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }
 

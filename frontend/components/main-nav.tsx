@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Bell, Search } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -14,12 +15,17 @@ import {
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from '@/components/ui/navigation-menu';
+import { Badge } from '@/components/ui/badge';
 
 import { UserNav } from '@/components/user-nav';
 import { cn } from '@/lib/utils';
 
 import { SearchModal } from './search-modal';
 import { useAuth } from '@/store/AuthContext';
+
+// New: Notifications
+import { useGetNotificationsQuery, useGetUnreadCountQuery } from '@/services/api/notifyApi';
+import { NotificationDropdown } from './notification-dropdown';
 
 export function MainNav() {
   const pathname = usePathname();
@@ -29,8 +35,16 @@ export function MainNav() {
 
   const isActive = (path: string) => pathname.startsWith(path);
 
+  // Notifications
+  const { data: unreadData } = useGetUnreadCountQuery(undefined, {
+    skip: !isAuthenticated,
+    pollingInterval: 30000, // Poll every 30 seconds
+  });
+
+  const unreadCount = unreadData?.unreadCount ?? 0;
+
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur">
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5">
@@ -124,12 +138,31 @@ export function MainNav() {
           </NavigationMenuList>
         </NavigationMenu>
 
-        {/* RIGHT */}
-        <div className="flex items-center gap-4">
+        {/* RIGHT SIDE */}
+        <div className="flex items-center gap-3">
           <SearchModal />
 
+          {isAuthenticated && (
+            <>
+              {/* Notification Bell */}
+              <NotificationDropdown>
+                <Button variant="ghost" size="icon" className="relative h-9 w-9">
+                  <Bell className="h-5 w-5" />
+                  {unreadCount > 0 && (
+                    <Badge
+                      variant="destructive"
+                      className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center text-[10px] p-0"
+                    >
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </Badge>
+                  )}
+                </Button>
+              </NotificationDropdown>
+            </>
+          )}
+
           {loading ? (
-            <div className="h-9 w-24 animate-pulse rounded-md bg-muted" />
+            <div className="h-9 w-9 animate-pulse rounded-full bg-muted" />
           ) : isAuthenticated ? (
             <UserNav />
           ) : (
@@ -189,12 +222,7 @@ function NavDropdown({
     <NavigationMenuItem>
       <NavigationMenuTrigger>{label}</NavigationMenuTrigger>
       <NavigationMenuContent>
-        <ul
-          className={cn(
-            'grid gap-3 p-4 w-[400px] md:w-[500px] lg:w-[600px]',
-            cols === 2 && 'md:grid-cols-2'
-          )}
-        >
+        <ul className={cn('grid gap-3 p-4 w-[400px] md:w-[500px]', cols === 2 && 'md:grid-cols-2')}>
           {children}
         </ul>
       </NavigationMenuContent>

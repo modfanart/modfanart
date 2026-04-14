@@ -22,12 +22,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const role = user.role?.name?.toLowerCase();
 
     // Role protection
-    if (role === 'artist' && pathname.startsWith('/dashboard/brand')) {
-      redirect('/dashboard');
+    if (role === 'artist' && pathname.startsWith('/brand')) {
+      redirect('/');
     }
 
-    if (role === 'brand_manager' && pathname.startsWith('/dashboard/artist')) {
-      redirect('/dashboard/brand');
+    if (role === 'brand_manager' && pathname.startsWith('/artist')) {
+      redirect('/brand');
     }
   }, [user, loading, pathname]);
 
