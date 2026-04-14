@@ -2,7 +2,8 @@
 
 import { usePathname } from 'next/navigation';
 
-import { MainNav } from '@/components/main-nav';
+// import { MainNav } from '@/components/main-nav';
+import Navbar from '@/components/main-nav-new';
 import { SiteFooter } from '@/components/site-footer';
 
 import type React from 'react';
@@ -22,7 +23,7 @@ export function LayoutWrapper({ children }: LayoutWrapperProps) {
 
   return (
     <div className="flex min-h-screen flex-col">
-      {!isDashboardPath && <MainNav />}
+      {!isDashboardPath && <Navbar />}
       <main className="flex-1">{children}</main>
       {!isDashboardPath && <SiteFooter />}
     </div>
