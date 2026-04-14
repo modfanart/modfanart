@@ -3,10 +3,28 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
+import {
+  CalendarDays,
+  Trophy,
+  Users,
+  Clock,
+  Plus,
+  Search,
+  RefreshCcw,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  Eye,
+  Award,
+  Users as JudgesIcon,
+} from 'lucide-react';
 
-import { CalendarDays, Trophy, Users, Clock, Plus, Search, RefreshCcw, Pencil } from 'lucide-react';
-
-import { useGetContestsQuery, useUpdateContestMutation, Contest } from '@/services/api/contestsApi';
+import {
+  useGetContestsQuery,
+  useUpdateContestMutation,
+  useDeleteContestMutation,
+  type Contest,
+} from '@/services/api/contestsApi';
 
 import { useAuth } from '@/store/AuthContext';
 
@@ -14,7 +32,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
-import { DashboardShell } from '@/components/dashboard-shell';
 
 import {
   Table,
@@ -24,39 +41,57 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useToast } from '@/components/ui/use-toast';
 
 export default function ContestsPage() {
   const [search, setSearch] = useState('');
-  const [status, setStatus] = useState<string | undefined>(undefined);
-  const [page, setPage] = useState(1);
-  const [editingStatusId, setEditingStatusId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>('');
+  const { toast } = useToast();
 
   const { user: currentUser } = useAuth();
 
   const { data, isLoading, refetch } = useGetContestsQuery();
   const [updateContest] = useUpdateContestMutation();
+  const [deleteContest] = useDeleteContestMutation();
 
   const contests = data?.contests ?? [];
 
   const adminBase = useMemo(() => {
     if (currentUser?.role?.name === 'Admin') {
-      return `/dashboard/admin/${currentUser.role.name.toLowerCase()}/${currentUser.username}`;
+      return `/admin/${currentUser.role.name.toLowerCase()}`;
     }
     return '';
   }, [currentUser]);
 
-  const filtered = contests.filter((c) => {
+  const filteredContests = contests.filter((c) => {
     const matchSearch = c.title.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = status ? c.status === status : true;
+    const matchStatus = statusFilter ? c.status === statusFilter : true;
     return matchSearch && matchStatus;
   });
 
-  const changeStatus = async (id: string, newStatus: Contest['status']) => {
+  const handleStatusChange = async (id: string, newStatus: Contest['status']) => {
     try {
       await updateContest({ id, status: newStatus }).unwrap();
-      setEditingStatusId(null);
+      toast({ title: 'Status updated successfully' });
     } catch (err) {
-      console.error('Failed to update status', err);
+      toast({ title: 'Failed to update status', variant: 'destructive' });
+    }
+  };
+
+  const handleDelete = async (id: string, title: string) => {
+    if (!confirm(`Delete contest "${title}"? This action cannot be undone.`)) return;
+
+    try {
+      await deleteContest(id).unwrap();
+      toast({ title: 'Contest deleted successfully' });
+    } catch (err) {
+      toast({ title: 'Failed to delete contest', variant: 'destructive' });
     }
   };
 
@@ -80,7 +115,9 @@ export default function ContestsPage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold">Contests</h1>
-            <p className="text-sm text-muted-foreground">Manage contests, entries and lifecycle</p>
+            <p className="text-sm text-muted-foreground">
+              Manage contests, entries, judges & winners
+            </p>
           </div>
         </div>
 
@@ -112,20 +149,22 @@ export default function ContestsPage() {
         </div>
 
         <select
-          className="border rounded-md px-3 py-2 text-sm bg-background"
-          value={status ?? ''}
-          onChange={(e) => setStatus(e.target.value || undefined)}
+          className="border rounded-md px-3 py-2 text-sm bg-background w-full md:w-52"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
         >
           <option value="">All Status</option>
+          <option value="draft">Draft</option>
+          <option value="published">Published</option>
           <option value="live">Live</option>
           <option value="judging">Judging</option>
           <option value="completed">Completed</option>
-          <option value="draft">Draft</option>
+          <option value="archived">Archived</option>
         </select>
       </div>
 
-      {/* EMPTY STATE */}
-      {filtered.length === 0 ? (
+      {/* TABLE */}
+      {filteredContests.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <Trophy className="h-12 w-12 text-muted-foreground mb-3" />
           <h3 className="text-lg font-medium">No contests found</h3>
@@ -134,7 +173,6 @@ export default function ContestsPage() {
           </p>
         </div>
       ) : (
-        /* TABLE */
         <div className="rounded-2xl border shadow-sm overflow-hidden">
           <Table>
             <TableHeader>
@@ -143,22 +181,21 @@ export default function ContestsPage() {
                 <TableHead>Status</TableHead>
                 <TableHead>Dates</TableHead>
                 <TableHead>Entries</TableHead>
-                <TableHead>Top Prize</TableHead>
+                <TableHead>Prize</TableHead>
                 <TableHead>Visibility</TableHead>
-                <TableHead>Deadline</TableHead>
-                <TableHead />
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
 
             <TableBody>
-              {filtered.map((contest: Contest) => {
+              {filteredContests.map((contest: Contest) => {
                 const maxPrize = contest.prizes?.length
                   ? Math.max(...contest.prizes.map((p) => p.amount_inr || 0))
-                  : null;
+                  : 0;
 
                 return (
                   <TableRow key={contest.id} className="hover:bg-muted/40">
-                    {/* CONTEST */}
+                    {/* CONTEST INFO */}
                     <TableCell>
                       <div>
                         <div className="font-medium">{contest.title}</div>
@@ -170,73 +207,42 @@ export default function ContestsPage() {
 
                     {/* STATUS */}
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          variant={
-                            contest.status === 'live'
-                              ? 'default'
-                              : contest.status === 'completed'
-                                ? 'secondary'
-                                : 'outline'
-                          }
-                          className="capitalize"
-                        >
-                          {contest.status}
-                        </Badge>
-
-                        {editingStatusId === contest.id ? (
-                          <select
-                            autoFocus
-                            defaultValue={contest.status}
-                            className="border rounded px-2 py-1 text-xs"
-                            onChange={(e) =>
-                              changeStatus(contest.id, e.target.value as Contest['status'])
-                            }
-                            onBlur={() => setEditingStatusId(null)}
-                          >
-                            <option value="draft">Draft</option>
-                            <option value="published">Published</option>
-                            <option value="live">Live</option>
-                            <option value="judging">Judging</option>
-                            <option value="completed">Completed</option>
-                            <option value="archived">Archived</option>
-                          </select>
-                        ) : (
-                          <button
-                            onClick={() => setEditingStatusId(contest.id)}
-                            className="text-muted-foreground hover:text-foreground"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </button>
-                        )}
-                      </div>
+                      <Badge
+                        variant={
+                          contest.status === 'live'
+                            ? 'default'
+                            : contest.status === 'completed'
+                              ? 'secondary'
+                              : contest.status === 'judging'
+                                ? 'outline'
+                                : 'secondary'
+                        }
+                        className="capitalize"
+                      >
+                        {contest.status}
+                      </Badge>
                     </TableCell>
 
                     {/* DATES */}
                     <TableCell className="text-sm text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <CalendarDays className="h-4 w-4" />
-                        {format(new Date(contest.start_date), 'MMM d')} –{' '}
-                        {format(new Date(contest.submission_end_date), 'MMM d')}
-                      </div>
+                      {format(new Date(contest.start_date), 'MMM d')} –{' '}
+                      {format(new Date(contest.submission_end_date), 'MMM d')}
                     </TableCell>
 
                     {/* ENTRIES */}
-                    <TableCell className="text-sm">
+                    <TableCell>
                       <div className="flex items-center gap-2">
                         <Users className="h-4 w-4 text-muted-foreground" />
-                        Max {contest.max_entries_per_user}
+                        {contest.max_entries_per_user} max
                       </div>
                     </TableCell>
 
                     {/* PRIZE */}
                     <TableCell>
-                      {maxPrize ? (
-                        <div className="flex items-center gap-2 font-medium text-green-600">
-                          ₹{maxPrize}
-                        </div>
+                      {maxPrize > 0 ? (
+                        <span className="font-medium text-green-600">₹{maxPrize}</span>
                       ) : (
-                        <span className="text-muted-foreground text-sm">—</span>
+                        <span className="text-muted-foreground">—</span>
                       )}
                     </TableCell>
 
@@ -247,19 +253,55 @@ export default function ContestsPage() {
                       </Badge>
                     </TableCell>
 
-                    {/* DEADLINE */}
-                    <TableCell className="text-sm text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4" />
-                        {format(new Date(contest.submission_end_date), 'd MMM yyyy')}
-                      </div>
-                    </TableCell>
-
-                    {/* ACTION */}
+                    {/* ACTIONS */}
                     <TableCell>
-                      <Button variant="outline" size="sm" asChild>
-                        <Link href={`/contest/${contest.id}`}>View</Link>
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-56">
+                          <DropdownMenuItem asChild>
+                            <Link href={`/contest/${contest.id}`}>
+                              <Eye className="mr-2 h-4 w-4" /> View Contest
+                            </Link>
+                          </DropdownMenuItem>
+
+                          <DropdownMenuItem asChild>
+                            <Link href={`${adminBase}/contest/${contest.id}/edit`}>
+                              <Pencil className="mr-2 h-4 w-4" /> Edit Contest
+                            </Link>
+                          </DropdownMenuItem>
+
+                          <DropdownMenuItem asChild>
+                            <Link href={`${adminBase}/contest/${contest.id}/entries`}>
+                              <Users className="mr-2 h-4 w-4" /> View Entries
+                            </Link>
+                          </DropdownMenuItem>
+
+                          <DropdownMenuItem asChild>
+                            <Link href={`${adminBase}/contest/${contest.id}/judges`}>
+                              <JudgesIcon className="mr-2 h-4 w-4" /> Manage Judges
+                            </Link>
+                          </DropdownMenuItem>
+
+                          {contest.status === 'completed' && (
+                            <DropdownMenuItem asChild>
+                              <Link href={`${adminBase}/contest/${contest.id}/winners`}>
+                                <Award className="mr-2 h-4 w-4" /> Announce Winners
+                              </Link>
+                            </DropdownMenuItem>
+                          )}
+
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={() => handleDelete(contest.id, contest.title)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete Contest
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 );
@@ -268,17 +310,6 @@ export default function ContestsPage() {
           </Table>
         </div>
       )}
-
-      {/* PAGINATION */}
-      <div className="flex justify-end mt-6 gap-2">
-        <Button variant="outline" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
-          Previous
-        </Button>
-
-        <Button variant="outline" onClick={() => setPage((p) => p + 1)}>
-          Next
-        </Button>
-      </div>
     </div>
   );
 }

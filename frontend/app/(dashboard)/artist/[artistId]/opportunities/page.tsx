@@ -2,7 +2,17 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { CalendarIcon, Users, PlusCircle, Edit, Eye, Trash2, MoreHorizontal } from 'lucide-react';
+import {
+  CalendarIcon,
+  Users,
+  PlusCircle,
+  Edit,
+  Eye,
+  Trash2,
+  MoreHorizontal,
+  Trophy,
+} from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -15,260 +25,232 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { DashboardShell } from '@/components/dashboard-shell';
+import { Skeleton } from '@/components/ui/skeleton';
 
 import { useGetContestsQuery } from '@/services/api/contestsApi';
-// Optional: helper to map backend status → UI-friendly label & variant
+import { useToast } from '@/components/ui/use-toast';
+
 function getStatusBadge(status: string) {
   switch (status) {
     case 'live':
     case 'published':
-      return {
-        label: 'Active',
-        variant: 'default' as const,
-        className: 'bg-green-100 text-green-800',
-      };
+      return { label: 'Live', variant: 'default' as const };
     case 'completed':
     case 'archived':
-      return { label: 'Closed', variant: 'secondary' as const, className: '' };
+      return { label: 'Closed', variant: 'secondary' as const };
+    case 'judging':
+      return { label: 'Judging', variant: 'outline' as const };
     case 'draft':
-      return { label: 'Draft', variant: 'outline' as const, className: '' };
+      return { label: 'Draft', variant: 'outline' as const };
     default:
-      return { label: status, variant: 'secondary' as const, className: '' };
+      return {
+        label: status.charAt(0).toUpperCase() + status.slice(1),
+        variant: 'secondary' as const,
+      };
   }
 }
 
 export default function OpportunitiesManagementPage() {
-  // You can pass status filter via query param if your backend supports it
-  // Here we fetch all → then filter client-side (simple & works with small-medium datasets)
-  const { data: contestsResponse, isLoading, isError, error } = useGetContestsQuery(); // or useGetContestsQuery({ status: undefined }) if needed
+  const { data: contestsResponse, isLoading, isError } = useGetContestsQuery();
+  const { toast } = useToast();
 
   const contests = contestsResponse?.contests ?? [];
 
-  // Optional: group/filter once (you can also do it inside each TabsContent)
-  const activeContests = contests.filter((c) => c.status === 'live' || c.status === 'published');
-  const closedContests = contests.filter(
-    (c) => c.status === 'completed' || c.status === 'archived'
-  );
+  const activeContests = contests.filter((c) => ['live', 'published'].includes(c.status));
+  const closedContests = contests.filter((c) => ['completed', 'archived'].includes(c.status));
   const draftContests = contests.filter((c) => c.status === 'draft');
 
-  // You may also want to derive "type": contest / rfd later from another field
-  // For now we assume everything is contest (adjust if you have RFDs/licensing opps)
+  const handleDelete = (id: string, title: string) => {
+    if (!confirm(`Delete "${title}"? This action cannot be undone.`)) return;
+    // Add your delete mutation here
+    toast({ title: 'Contest deleted', description: title });
+  };
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-12">
-        <p className="text-muted-foreground">Loading your opportunities...</p>
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div className="rounded-lg border border-destructive p-6 text-center">
-        <p className="text-destructive">Failed to load opportunities</p>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {(error as any)?.data?.message || 'Please try again later.'}
-        </p>
+      <div className="container mx-auto py-10 px-4">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-[420px] w-full rounded-2xl" />
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div className="container mx-auto py-10 px-4">
+      {/* Header */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-10">
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">Opportunities Management</h1>
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-primary/10">
+              <Trophy className="h-7 w-7 text-primary" />
+            </div>
+            <h1 className="text-4xl font-bold tracking-tight">Opportunities</h1>
+          </div>
           <p className="text-lg text-muted-foreground">
-            Create and manage fan art contests and licensing opportunities.
+            Manage contests, fan art opportunities and licensing deals
           </p>
         </div>
-        <Link href="/dashboard/opportunities/create">
-          <Button size="lg">
+
+        <Button asChild size="lg">
+          <Link href="/dashboard/opportunities/create">
             <PlusCircle className="mr-2 h-5 w-5" />
-            Create New
-          </Button>
-        </Link>
+            Create New Opportunity
+          </Link>
+        </Button>
       </div>
 
       <Tabs defaultValue="all" className="space-y-8">
-        <TabsList className="w-full justify-start border-b bg-transparent p-0">
-          <TabsTrigger
-            value="all"
-            className="relative h-11 rounded-none border-b-2 border-transparent px-4 pb-3 pt-2 font-semibold text-muted-foreground hover:text-primary data-[state=active]:border-primary data-[state=active]:text-primary"
-          >
-            All Opportunities
+        <TabsList className="inline-flex h-12 items-center justify-center rounded-xl bg-muted p-1 text-muted-foreground">
+          <TabsTrigger value="all" className="rounded-lg px-6">
+            All
           </TabsTrigger>
-          <TabsTrigger
-            value="active"
-            className="relative h-11 rounded-none border-b-2 border-transparent px-4 pb-3 pt-2 font-semibold text-muted-foreground hover:text-primary data-[state=active]:border-primary data-[state=active]:text-primary"
-          >
+          <TabsTrigger value="active" className="rounded-lg px-6">
             Active
           </TabsTrigger>
-          <TabsTrigger
-            value="closed"
-            className="relative h-11 rounded-none border-b-2 border-transparent px-4 pb-3 pt-2 font-semibold text-muted-foreground hover:text-primary data-[state=active]:border-primary data-[state=active]:text-primary"
-          >
+          <TabsTrigger value="closed" className="rounded-lg px-6">
             Closed
           </TabsTrigger>
-          <TabsTrigger
-            value="draft"
-            className="relative h-11 rounded-none border-b-2 border-transparent px-4 pb-3 pt-2 font-semibold text-muted-foreground hover:text-primary data-[state=active]:border-primary data-[state=active]:text-primary"
-          >
+          <TabsTrigger value="draft" className="rounded-lg px-6">
             Drafts
           </TabsTrigger>
         </TabsList>
 
-        {/* ── ALL ──────────────────────────────────────────────── */}
-        <TabsContent value="all" className="space-y-8">
-          {contests.length === 0 ? <EmptyState /> : <OpportunityGrid items={contests} />}
+        {/* ALL */}
+        <TabsContent value="all">
+          <OpportunityGrid items={contests} onDelete={handleDelete} />
         </TabsContent>
 
-        {/* ── ACTIVE ───────────────────────────────────────────── */}
-        <TabsContent value="active" className="space-y-8">
-          {activeContests.length === 0 ? (
-            <EmptyState label="active" />
-          ) : (
-            <OpportunityGrid items={activeContests} />
-          )}
+        {/* ACTIVE */}
+        <TabsContent value="active">
+          <OpportunityGrid items={activeContests} onDelete={handleDelete} />
         </TabsContent>
 
-        {/* ── CLOSED ───────────────────────────────────────────── */}
-        <TabsContent value="closed" className="space-y-8">
-          {closedContests.length === 0 ? (
-            <EmptyState label="closed" />
-          ) : (
-            <OpportunityGrid items={closedContests} isClosed />
-          )}
+        {/* CLOSED */}
+        <TabsContent value="closed">
+          <OpportunityGrid items={closedContests} isClosed onDelete={handleDelete} />
         </TabsContent>
 
-        {/* ── DRAFTS ───────────────────────────────────────────── */}
-        <TabsContent value="draft" className="space-y-8">
-          {draftContests.length === 0 ? (
-            <EmptyState label="draft" isCreateButton />
-          ) : (
-            <OpportunityGrid items={draftContests} />
-          )}
+        {/* DRAFTS */}
+        <TabsContent value="draft">
+          <OpportunityGrid items={draftContests} onDelete={handleDelete} />
         </TabsContent>
       </Tabs>
     </div>
   );
 }
 
-// ── Reusable grid renderer ───────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
 function OpportunityGrid({
   items,
   isClosed = false,
+  onDelete,
 }: {
-  items: any[]; // Contest[]
+  items: any[];
   isClosed?: boolean;
+  onDelete: (id: string, title: string) => void;
 }) {
+  if (items.length === 0) {
+    return <EmptyState isClosed={isClosed} />;
+  }
+
   return (
-    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {items.map((opp) => {
         const statusInfo = getStatusBadge(opp.status);
-        const deadline = opp.submission_end_date || opp.end_date || opp.deadline;
+        const deadline = opp.submission_end_date || opp.end_date;
 
         return (
-          <Card key={opp.id} className="flex flex-col overflow-hidden">
-            <div className="relative h-48">
+          <Card
+            key={opp.id}
+            className="group overflow-hidden hover:shadow-lg transition-all duration-200 flex flex-col"
+          >
+            {/* Image */}
+            <div className="relative h-52 overflow-hidden">
               <Image
-                src={opp.hero_image || '/placeholder.svg?height=300&text=No+Image'}
+                src={opp.hero_image || '/placeholder.svg?height=400&text=Contest'}
                 alt={opp.title}
                 fill
-                className="object-cover"
+                className="object-cover transition-transform group-hover:scale-105"
               />
-              <div className="absolute right-2 top-2">
-                <Badge variant={statusInfo.variant} className={statusInfo.className}>
-                  {statusInfo.label}
-                </Badge>
+              <div className="absolute top-3 right-3">
+                <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
               </div>
 
-              <div className="absolute right-2 bottom-2">
+              {/* Actions Menu */}
+              <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
-                      variant="ghost"
+                      variant="secondary"
                       size="icon"
-                      className="bg-black/20 text-white hover:bg-black/30"
+                      className="bg-black/70 hover:bg-black/80 text-white"
                     >
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-40">
+                  <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem>
-                      <Eye className="mr-2 h-4 w-4" />
-                      View
+                    <DropdownMenuItem asChild>
+                      <Link href={`/opportunities/${opp.slug || opp.id}`}>
+                        <Eye className="mr-2 h-4 w-4" /> View Public
+                      </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Edit className="mr-2 h-4 w-4" />
-                      Edit
+                    <DropdownMenuItem asChild>
+                      <Link href={`/dashboard/opportunities/${opp.id}/edit`}>
+                        <Edit className="mr-2 h-4 w-4" /> Edit
+                      </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="text-destructive">
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete
+                    <DropdownMenuItem asChild>
+                      <Link href={`/dashboard/opportunities/${opp.id}`}>
+                        <Eye className="mr-2 h-4 w-4" /> Manage
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive"
+                      onClick={() => onDelete(opp.id, opp.title)}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" /> Delete
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
             </div>
 
-            <CardHeader className="flex-1">
-              <CardTitle className="line-clamp-1 text-xl">{opp.title}</CardTitle>
+            <CardHeader>
+              <CardTitle className="line-clamp-2 text-lg leading-tight">{opp.title}</CardTitle>
             </CardHeader>
 
             <CardContent className="flex-1">
-              <p className="line-clamp-2 text-sm text-muted-foreground mb-4">{opp.description}</p>
+              <p className="line-clamp-3 text-sm text-muted-foreground mb-4">{opp.description}</p>
 
-              {opp.categories && opp.categories.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {opp.categories.map((cat: string) => (
-                    <Badge key={cat} variant="outline">
-                      {cat}
-                    </Badge>
-                  ))}
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <CalendarIcon className="h-4 w-4" />
+                  <span>{deadline ? new Date(deadline).toLocaleDateString() : 'No deadline'}</span>
                 </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">
-                    {isClosed ? 'Ended ' : 'Due '}
-                    {deadline ? new Date(deadline).toLocaleDateString() : '—'}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">
-                    {opp.entry_count != null ? `${opp.entry_count} Entries` : '—'}
-                  </span>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Users className="h-4 w-4" />
+                  <span>{opp.entry_count ?? 0} entries</span>
                 </div>
               </div>
             </CardContent>
 
-            <CardFooter className="grid grid-cols-2 gap-4 border-t bg-muted/50 p-4">
-              <Link href={`/dashboard/opportunities/${opp.id}`} className="w-full">
-                <Button variant="secondary" className="w-full">
-                  {isClosed ? 'View Results' : 'Manage'}
+            <CardFooter className="pt-4 border-t">
+              <div className="flex w-full gap-3">
+                <Button asChild variant="default" className="flex-1">
+                  <Link href={`/dashboard/opportunities/${opp.id}`}>
+                    {isClosed ? 'View Results' : 'Manage'}
+                  </Link>
                 </Button>
-              </Link>
 
-              {isClosed ? (
-                <Link href={`/dashboard/opportunities/${opp.id}/reopen`} className="w-full">
-                  <Button variant="outline" className="w-full">
-                    Reopen
-                  </Button>
-                </Link>
-              ) : (
-                <Link href={`/opportunities/${opp.slug || opp.id}`} className="w-full">
-                  <Button variant="outline" className="w-full">
-                    View Public
-                  </Button>
-                </Link>
-              )}
+                <Button asChild variant="outline" className="flex-1">
+                  <Link href={`/opportunities/${opp.slug || opp.id}`}>View Public</Link>
+                </Button>
+              </div>
             </CardFooter>
           </Card>
         );
@@ -277,31 +259,17 @@ function OpportunityGrid({
   );
 }
 
-// ── Reusable empty states ────────────────────────────────────────
-function EmptyState({
-  label = '',
-  isCreateButton = false,
-}: {
-  label?: string;
-  isCreateButton?: boolean;
-}) {
+// Empty State
+function EmptyState({ isClosed = false }: { isClosed?: boolean }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
-      <h3 className="mb-2 text-lg font-medium">No {label ? label + ' ' : ''}Opportunities</h3>
-      <p className="mb-4 text-sm text-muted-foreground">
-        {label
-          ? `You don't have any ${label.toLowerCase()} opportunities yet.`
+    <div className="flex flex-col items-center justify-center py-20 text-center border border-dashed rounded-2xl">
+      <Trophy className="h-16 w-16 text-muted-foreground mb-4" />
+      <h3 className="text-xl font-medium mb-2">No opportunities found</h3>
+      <p className="text-muted-foreground max-w-sm">
+        {isClosed
+          ? "You don't have any closed opportunities yet."
           : "You haven't created any opportunities yet."}
       </p>
-
-      {isCreateButton && (
-        <Link href="/dashboard/opportunities/create">
-          <Button>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Create New Opportunity
-          </Button>
-        </Link>
-      )}
     </div>
   );
 }

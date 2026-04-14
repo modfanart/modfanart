@@ -469,6 +469,18 @@
  * @property {string} user_id
  * @property {string} followed_at
  */
+/**
+ * @typedef {Object} NotificationRow
+ * @property {string} id                  UUID primary key
+ * @property {string} user_id             References users.id
+ * @property {string} type                e.g. 'contest_winner', 'new_entry', 'account_suspended', 'brand_verified', etc.
+ * @property {string} title
+ * @property {string | null} body         Optional longer message
+ * @property {object | null} data         JSONB for extra context (e.g. { contestId, artworkId, link })
+ * @property {string | null} read_at      When user read the notification
+ * @property {string} created_at          timestamptz
+ * @property {string | null} deleted_at   Soft delete support
+ */
 module.exports = {};
 // This file is only for type documentation / IntelliSense
 // No runtime code is needed

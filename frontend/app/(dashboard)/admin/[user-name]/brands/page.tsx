@@ -27,7 +27,7 @@ export default function AdminBrandsPage() {
 
   let adminBase = '';
   if (role === 'Admin') {
-    adminBase = `/dashboard/admin/${user?.role?.name}/${user?.username}`;
+    adminBase = `/admin/${user?.role?.name}`;
   }
 
   const [deleteBrand] = useDeleteBrandMutation();
@@ -157,13 +157,13 @@ export default function AdminBrandsPage() {
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-2">
                       <Button size="icon" variant="ghost" asChild>
-                        <Link href={`/brand/${brand.id}`}>
+                        <Link href={`${adminBase}/brand/${brand.id}/stats`}>
                           <Eye className="h-4 w-4" />
                         </Link>
                       </Button>
 
                       <Button size="icon" variant="ghost" asChild>
-                        <Link href={`/admin/brands/${brand.id}/edit`}>
+                        <Link href={`${adminBase}/brand/${brand.id}/edit`}>
                           <Edit className="h-4 w-4" />
                         </Link>
                       </Button>

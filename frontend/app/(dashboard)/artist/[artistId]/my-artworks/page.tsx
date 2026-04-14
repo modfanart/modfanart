@@ -149,7 +149,7 @@ export default function ManageSubmissionsPage() {
 
   // ── Safe to use user here ───────────────────────────────────────
   const username = user?.username?.trim().toLowerCase() ?? 'anonymous';
-  const artistBase = `/dashboard/artist/${username}`;
+  const artistBase = `/artist/${username}`;
 
   const handleDeleteArtwork = async (id: string) => {
     try {
@@ -217,7 +217,7 @@ export default function ManageSubmissionsPage() {
     <div className="flex-1 space-y-6 p-6">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <h1 className="text-3xl font-bold tracking-tight">My Submissions</h1>
-        <Link href={`${artistBase}/artworks/new`}>
+        <Link href={`${artistBase}/my-artworks/new`}>
           <Button className="bg-[#9747ff] hover:bg-[#8035e0]">
             <PlusCircle className="mr-2 h-4 w-4" />
             New Artwork
