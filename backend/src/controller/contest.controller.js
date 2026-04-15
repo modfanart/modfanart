@@ -286,30 +286,35 @@ class ContestController {
   }
 
   // DELETE /contests/:id (soft delete or archive)
-  static async deleteContest(req, res) {
-    try {
-      const { id } = req.params;
-      const contest = await Contest.findById(id);
+static async deleteContest(req, res) {
+  try {
+    const { id } = req.params;
+    const contest = await Contest.findById(id);
 
-      if (!contest) return res.status(404).json({ error: 'Contest not found' });
-
-      if (contest.brand_id !== req.user.id && !req.user.permissions?.['contests.manage']) {
-        return res.status(403).json({ error: 'Not authorized' });
-      }
-
-      await db
-        .updateTable('contests')
-        .set({ deleted_at: sql`NOW()`, status: 'archived' })
-        .where('id', '=', id)
-        .execute();
-
-      res.status(204).send();
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ error: 'Failed to delete contest' });
+    if (!contest) {
+      return res.status(404).json({ error: 'Contest not found' });
     }
-  }
 
+    const isOwner = contest.brand_id === req.user.id;
+    const hasPermission = req.user.permissions?.['contests.manage'];
+    const isAdmin = req.user.role === 'Admin'; // 👈 add this
+
+    if (!isOwner && !hasPermission && !isAdmin) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+
+    await db
+      .updateTable('contests')
+      .set({ deleted_at: sql`NOW()`, status: 'archived' })
+      .where('id', '=', id)
+      .execute();
+
+    res.status(204).send();
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to delete contest' });
+  }
+}
     // PATCH /contests/:id/announce-winners (admin/brand)
   static async announceWinners(req, res) {
     try {
