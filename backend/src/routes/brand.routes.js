@@ -20,7 +20,20 @@ router.get('/:brandId/posts/:postId', brandController.getBrandPost);
 router.get('/:brandId/posts/:postId/comments', brandController.getBrandPostComments);
 
 router.post('/:id/view', brandController.incrementBrandView);
+router.get(
+  '/:brandId/managers',
+  authenticateToken,
+  ensureBrandAccessMiddleware(),           // allows owner, manager, editor
+  brandController.getBrandManagers
+);
 
+// Assign a new manager to the brand (owner or admin only)
+router.post(
+  '/:brandId/managers',
+  authenticateToken,
+  ensureBrandOwnerMiddleware(),            // stricter: only owner or higher
+  brandController.assignBrandManager
+);
 // ───────────────────────────────────────────────
 // Authenticated Routes (login required)
 // ───────────────────────────────────────────────

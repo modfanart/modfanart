@@ -15,8 +15,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/components/ui/use-toast';
 
-import { DashboardShell } from '@/components/dashboard-shell';
-
 import { useAuth } from '@/store/AuthContext';
 import { useUpdateBrandMutation } from '@/services/api/brands';
 
