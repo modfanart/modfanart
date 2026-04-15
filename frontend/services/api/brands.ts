@@ -102,6 +102,7 @@ export const brandApi = createApi({
     'BrandPostDetail',
     'BrandPostComments',
     'VerificationRequestList',
+    'BrandManagers',
   ],
 
   endpoints: (builder) => ({
@@ -139,7 +140,27 @@ export const brandApi = createApi({
         method: 'POST',
       }),
     }),
+getBrandManagers: builder.query<BrandManager[], string>({
+      query: (brandId) => `/${brandId}/managers`,
+      providesTags: (_, __, brandId) => [{ type: 'BrandManagers', id: brandId }],
+    }),
 
+    assignBrandManager: builder.mutation<
+      { success: true; manager: BrandManager },
+      { brandId: string; userId: string; role: 'owner' | 'manager' | 'editor' }
+    >({
+      query: ({ brandId, ...body }) => ({
+        url: `/${brandId}/managers`,
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: (_, __, { brandId }) => [
+        { type: 'BrandManagers', id: brandId },
+        { type: 'Brand', id: brandId },
+        { type: 'BrandDetail', id: brandId },
+        { type: 'MyBrands', id: 'LIST' },
+      ],
+    }),
     /* =========================
        FOLLOW
     ========================= */
@@ -407,7 +428,7 @@ export const {
   useGetMyBrandsQuery,
   useUpdateBrandMutation,
   useDeleteBrandMutation,
-
+useGetBrandManagersQuery, useAssignBrandManagerMutation, 
   useGetBrandArtworksQuery,
   useAddArtworkToBrandMutation,
   useRemoveArtworkFromBrandMutation,

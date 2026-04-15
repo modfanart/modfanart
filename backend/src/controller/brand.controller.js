@@ -697,7 +697,41 @@ async function adminCreateBrand(req, res) {
     return res.status(400).json({ error: err.message || 'Failed to create brand' });
   }
 }
+// In brand.controller.js
+async function getBrandManagers(req, res) {
+  try {
+    const managers = await BrandManager.findByBrand(req.params.brandId);
+    return res.json(managers);
+  } catch (err) {
+    return res.status(500).json({ error: 'Failed to fetch managers' });
+  }
+}
 
+async function assignBrandManager(req, res) {
+  try {
+    const { brandId } = req.params;
+    const { userId, role = 'manager' } = req.body;
+
+    // 1. Check if user already manages any brand
+    const existing = await BrandManager.findByUser(userId);
+    if (existing.length > 0) {
+      return res.status(400).json({ error: 'User already manages another brand' });
+    }
+
+    // 2. Ensure requester has permission (owner or admin)
+    await ensureBrandOwner(req); // or higher
+
+    const manager = await BrandManager.create({
+      brand_id: brandId,
+      user_id: userId,
+      role,
+    });
+
+    return res.status(201).json({ success: true, manager });
+  } catch (err) {
+    return res.status(400).json({ error: err.message || 'Failed to assign manager' });
+  }
+}
 // ───────────────────────────────────────────────
 // Exports
 // ───────────────────────────────────────────────
@@ -713,7 +747,8 @@ module.exports = {
   getMyBrands,
   updateBrand,
   deleteBrand,
-
+getBrandManagers, 
+assignBrandManager,
   addArtworkToBrand,
   getAllBrandArtworks,
   removeArtworkFromBrand,

@@ -21,6 +21,7 @@ import artworkTagsApi from '@/services/api/artworkTagsApi';
 import brandApi from '@/services/api/brands';
 import { collectionsApi } from '@/services/api/collectionApi';
 import { searchApi } from '@/services/api/searchApi';
+import notifyApi from '@/services/api/notifyApi';
 // ────────────────────────────────────────────────
 // Reducers (slices)
 // ────────────────────────────────────────────────
@@ -70,6 +71,7 @@ export const store = configureStore({
     [brandApi.reducerPath]: brandApi.reducer,
     [collectionsApi.reducerPath]: collectionsApi.reducer,
     [searchApi.reducerPath]: searchApi.reducer,
+    [notifyApi.reducerPath]: notifyApi.reducer,
   },
 
   middleware: (getDefaultMiddleware) =>
@@ -94,7 +96,8 @@ export const store = configureStore({
       artworkTagsApi.middleware,
       brandApi.middleware,
       collectionsApi.middleware,
-      searchApi.middleware
+      searchApi.middleware,
+      notifyApi.middleware
       // add more .middleware when you create new api slices
     ),
 
