@@ -4,8 +4,8 @@ import { useEffect } from 'react';
 import { usePathname, redirect } from 'next/navigation';
 
 import { useAuth } from '@/store/AuthContext';
-import Sidebar from '@/components/sidebar';
-import DashboardHeader from '@/components/dashboard-header';
+import Sidebar from '@/components/layouts/sidebar';
+import DashboardHeader from '@/components/dashboard/dashboard-header';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
