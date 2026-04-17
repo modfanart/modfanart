@@ -1,8 +1,7 @@
 // app/dashboard/artist/page.tsx
 'use client';
 
-import RoleGuard from '@/components/RoleGuard';
-import { DashboardShell } from '@/components/dashboard-shell';
+import RoleGuard from '@/components/layouts/RoleGuard';
 import { Suspense } from 'react';
 import DashboardContent from './DashboardContent'; // ← extract content to separate component
 

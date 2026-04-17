@@ -17,7 +17,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useGetContestsQuery } from '@/services/api/contestsApi'; // ← Your RTK Query API
 import isApiError from '@/lib/isApiError';
-import { LayoutWrapper } from '@/components/layout-wrapper';
+import { LayoutWrapper } from '@/components/layouts/layout-wrapper';
+
 export default function OpportunitiesPage() {
   const {
     data: contestsResponse,

@@ -1,4 +1,4 @@
-import { DashboardShell } from '@/components/dashboard-shell';
+import { DashboardShell } from '@/components/dashboard/dashboard-shell';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function SettingsLoading() {

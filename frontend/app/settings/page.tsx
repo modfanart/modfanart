@@ -5,8 +5,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useCallback } from 'react';
 
 import { cn } from '@/lib/utils';
-import { LayoutWrapper } from '@/components/layout-wrapper';
-
+import { LayoutWrapper } from '@/components/layouts/layout-wrapper';
 // Import your section components
 import AccountSection from '@/components/settings/AccountSection';
 import ApiSection from '@/components/settings/ApiSection';

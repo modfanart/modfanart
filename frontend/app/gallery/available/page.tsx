@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { LayoutWrapper } from '@/components/layout-wrapper';
+import { LayoutWrapper } from '@/components/layouts/layout-wrapper';
 import { Button } from '@/components/ui/button';
 import {
   Card,

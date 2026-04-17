@@ -1,10 +1,9 @@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
-import { DashboardShell } from '@/components/dashboard-shell';
 
 export default function OpportunitiesManagementLoading() {
   return (
-    <DashboardShell>
+    <>
       <div className="flex items-center justify-between">
         <div>
           <Skeleton className="h-8 w-[300px]" />
@@ -45,6 +44,6 @@ export default function OpportunitiesManagementLoading() {
             </Card>
           ))}
       </div>
-    </DashboardShell>
+    </>
   );
 }

@@ -1,4 +1,4 @@
-import { LayoutWrapper } from '@/components/layout-wrapper';
+import { LayoutWrapper } from '@/components/layouts/layout-wrapper';
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 

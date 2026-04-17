@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 
 import { ProductReviews } from '@/components/marketplace/product-reviews';
-import { ProductCard } from '@/components/product-card';
+import { ProductCard } from './product-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';

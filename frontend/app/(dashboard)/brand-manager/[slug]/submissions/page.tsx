@@ -40,7 +40,6 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { useGetMyArtworksQuery, useDeleteArtworkMutation } from '@/services/api/artworkApi'; // ← import your RTK Query hook
 import { ArtworkListItem } from '@/services/api/artworkApi'; // type
-import { DashboardShell } from '@/components/dashboard-shell';
 
 // Helper: map backend status to UI-friendly display
 const getStatusIcon = (status: string) => {

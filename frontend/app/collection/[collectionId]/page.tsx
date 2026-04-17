@@ -19,7 +19,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
-import { LayoutWrapper } from '@/components/layout-wrapper';
+import { LayoutWrapper } from '@/components/layouts/layout-wrapper';
 import {
   useGetCollectionQuery,
   useAddArtworkToCollectionMutation,

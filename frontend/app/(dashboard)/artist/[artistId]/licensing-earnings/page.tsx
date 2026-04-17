@@ -53,7 +53,6 @@ import {
   useRevokeLicenseMutation,
   type License,
 } from '@/services/api/licenseApi';
-import { DashboardShell } from '@/components/dashboard-shell';
 
 type LicenseStatus = 'active' | 'expired' | 'revoked' | 'pending';
 

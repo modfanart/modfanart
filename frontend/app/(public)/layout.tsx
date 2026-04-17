@@ -1,6 +1,6 @@
 import type React from 'react';
-import { MainNav } from '@/components/main-nav';
-import { SiteFooter } from '@/components/site-footer';
+import { MainNav } from '@/components/layouts/main-nav';
+import { SiteFooter } from '@/components/layouts/site-footer';
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (

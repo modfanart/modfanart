@@ -1,9 +1,8 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-
-import { MainNav } from '@/components/main-nav';
-import { SiteFooter } from '@/components/site-footer';
+import { MainNav } from './main-nav';
+import { SiteFooter } from './site-footer';
 
 import type React from 'react';
 

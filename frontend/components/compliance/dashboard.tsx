@@ -2,8 +2,7 @@
 
 import { Shield, FileText, Bot, Settings, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 import Link from 'next/link';
-
-import { DashboardShell } from '@/components/dashboard-shell';
+import { DashboardShell } from '../dashboard/dashboard-shell';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {

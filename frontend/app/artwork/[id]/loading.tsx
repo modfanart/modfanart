@@ -1,4 +1,4 @@
-import { LayoutWrapper } from '@/components/layout-wrapper';
+import { LayoutWrapper } from '@/components/layouts/layout-wrapper';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ArtworkLoading() {

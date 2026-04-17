@@ -48,7 +48,6 @@ import {
   Youtube,
   Trash2,
 } from 'lucide-react';
-import { DashboardShell } from '@/components/dashboard-shell';
 
 // ── Validation Schema ────────────────────────────────────────────────
 const formSchema = z.object({

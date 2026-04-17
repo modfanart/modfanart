@@ -1,8 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { LayoutWrapper } from '@/components/layout-wrapper';
-
+import { LayoutWrapper } from '@/components/layouts/layout-wrapper';
 export default function ForCreatorsPage() {
   return (
     <LayoutWrapper>

@@ -1,4 +1,3 @@
-import { DashboardShell } from '@/components/dashboard-shell';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 

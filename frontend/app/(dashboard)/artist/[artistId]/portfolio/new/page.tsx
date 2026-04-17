@@ -55,7 +55,6 @@ import { useCreateArtworkMutation } from '@/services/api/artworkApi';
 import { useGetAllCategoriesQuery } from '@/services/api/categoriesApi'; // assuming you have this
 import { useSearchTagsQuery, useAddTagToArtworkMutation } from '@/services/api/artworkTagsApi';
 import { useGetContestQuery, useSubmitEntryMutation } from '@/services/api/contestsApi';
-import { DashboardShell } from '@/components/dashboard-shell';
 
 // ────────────────────────────────────────────────
 // Zod Schema
