@@ -3,8 +3,7 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle2, Shield, Zap, ArrowRight, DollarSign } from 'lucide-react';
-import { LayoutWrapper } from '@/components/layout-wrapper';
-
+import { LayoutWrapper } from '@/components/layouts/layout-wrapper';
 // Featured artwork data (subset of the full gallery)
 const featuredArtwork = [
   {

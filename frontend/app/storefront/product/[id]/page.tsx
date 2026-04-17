@@ -15,8 +15,6 @@ import { useToast } from '@/components/ui/use-toast';
 // → Import your RTK Query hook
 import { useGetArtworkQuery } from '@/services/api/artworkApi';
 
-import { ProductCard } from '@/components/product-card';
-
 // You can keep or remove this type — we're moving toward Artwork shape
 interface RelatedProductCardProps {
   id: string;

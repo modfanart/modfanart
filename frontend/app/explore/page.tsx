@@ -21,8 +21,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useGetAllUsersQuery } from '@/services/api/userApi';
 import { useGetAllBrandsQuery } from '@/services/api/brands';
 import { useGetContestsQuery } from '@/services/api/contestsApi';
-import { LayoutWrapper } from '@/components/layout-wrapper';
-
+import { LayoutWrapper } from '@/components/layouts/layout-wrapper';
 const PREVIEW_LIMIT = 4;
 
 export default function ExplorePage() {

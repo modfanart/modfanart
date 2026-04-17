@@ -1,7 +1,6 @@
 'use client';
 
 import RoleGuard from '@/components/RoleGuard';
-import { DashboardShell } from '@/components/dashboard-shell';
 import { Suspense } from 'react';
 import AdminDashboardContent from './AdminDashboardContent';
 

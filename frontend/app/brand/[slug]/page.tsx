@@ -21,9 +21,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-
-import { ProductCard } from '@/components/product-card';
-import { LayoutWrapper } from '@/components/layout-wrapper';
+import { ProductCard } from '@/components/marketplace/product-card';
+import { LayoutWrapper } from '@/components/layouts/layout-wrapper';
 import { useGetBrandBySlugQuery } from '@/services/api/brands';
 
 // ── SAFE IMAGE HELPER ───────────────────────────────────────

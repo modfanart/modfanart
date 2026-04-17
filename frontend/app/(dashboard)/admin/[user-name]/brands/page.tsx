@@ -13,7 +13,6 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { DashboardShell } from '@/components/dashboard-shell';
 import { useAuth } from '@/store/AuthContext';
 
 import { Eye, Edit, Trash2, ShieldCheck, Plus, Building2 } from 'lucide-react';

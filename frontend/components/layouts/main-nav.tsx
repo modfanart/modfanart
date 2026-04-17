@@ -16,8 +16,7 @@ import {
   navigationMenuTriggerStyle,
 } from '@/components/ui/navigation-menu';
 import { Badge } from '@/components/ui/badge';
-
-import { UserNav } from '@/components/user-nav';
+import { UserNav } from '../users/user-nav';
 import { cn } from '@/lib/utils';
 
 import { SearchModal } from './search-modal';

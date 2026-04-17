@@ -3,7 +3,7 @@ import { Mona_Sans as FontSans } from 'next/font/google';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
 import '@/styles/globals.css';
-import { ThemeProvider } from '@/components/theme-provider';
+import { ThemeProvider } from '@/components/layouts/theme-provider';
 import { DevToolsWrapper } from '@/components/dev/dev-tools-wrapper';
 import { Providers } from '@/store/Providers';
 import { AuthProvider } from '@/store/AuthContext';

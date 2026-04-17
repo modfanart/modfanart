@@ -2,8 +2,7 @@
 
 import { useParams } from 'next/navigation';
 import { useGetCategoryBySlugQuery } from '@/services/api/categoriesApi';
-import { LayoutWrapper } from '@/components/layout-wrapper';
-
+import { LayoutWrapper } from '@/components/layouts/layout-wrapper';
 export default function CategoryPage() {
   const params = useParams<{ slug: string }>();
 

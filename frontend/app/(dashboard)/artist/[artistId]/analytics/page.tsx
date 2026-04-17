@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { DashboardShell } from '@/components/dashboard-shell';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart, LineChart, PieChart } from 'lucide-react';

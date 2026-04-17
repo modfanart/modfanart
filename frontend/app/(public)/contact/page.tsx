@@ -4,7 +4,6 @@ import type React from 'react';
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { SiteFooter } from '@/components/site-footer';
 import { Button } from '@/components/ui/button';
 import {
   Card,

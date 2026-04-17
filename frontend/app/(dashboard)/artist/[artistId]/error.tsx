@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { DashboardShell } from '@/components/dashboard-shell';
 import { AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
