@@ -12,7 +12,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 import { useToast } from '@/components/ui/use-toast';
-import { DashboardShell } from '@/components/dashboard-shell';
 
 import { useCreateUserMutation } from '@/services/api/userApi';
 

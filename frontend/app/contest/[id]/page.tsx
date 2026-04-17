@@ -26,7 +26,8 @@ import { cn } from '@/lib/utils';
 import { useGetContestQuery } from '@/services/api/contestsApi';
 import type { Contest } from '@/services/api/contestsApi';
 import type { ContestDetail } from '@/services/api/contestsApi';
-import { LayoutWrapper } from '@/components/layout-wrapper';
+import { LayoutWrapper } from '@/components/layouts/layout-wrapper';
+
 export default function ContestDetailPage() {
   const params = useParams<{ id: string }>();
   const contestId = params.id;

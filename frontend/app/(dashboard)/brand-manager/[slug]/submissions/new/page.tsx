@@ -1,6 +1,3 @@
-// app/contests/submissions/new/page.tsx
-// OR wherever your route is: app/submissions/new/page.tsx with contest query param
-
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';

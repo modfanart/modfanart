@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Overview } from '@/components/overview';
-import { RecentSubmissions } from '@/components/recent-submissions';
-import { SubscriptionInfo } from '@/components/subscription-info';
+import { RecentSubmissions } from '@/components/submissions/recent-submissions';
+import { SubscriptionInfo } from '@/components/submissions/subscription-info';
 import {
   PlusCircle,
   ArrowUpRight,
@@ -14,7 +14,6 @@ import {
   ImageIcon,
   AlertTriangle,
 } from 'lucide-react';
-import { DashboardShell } from '@/components/dashboard-shell';
 import { Suspense } from 'react';
 
 // Sample data for submissions with actual fan art

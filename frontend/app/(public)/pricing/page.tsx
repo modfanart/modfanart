@@ -16,7 +16,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, Loader2, Zap, Shield, CreditCard, Building2 } from 'lucide-react';
-import { LayoutWrapper } from '@/components/layout-wrapper';
 
 export default function PricingPage() {
   const router = useRouter();

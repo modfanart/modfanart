@@ -15,7 +15,6 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { DashboardShell } from '@/components/dashboard-shell';
 
 const OPPORTUNITY_ROUTES: Record<string, string> = {
   'the-librarians': '/opportunities/the-librarians',

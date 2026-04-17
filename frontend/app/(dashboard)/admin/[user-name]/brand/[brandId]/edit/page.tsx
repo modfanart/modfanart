@@ -28,7 +28,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Loader2, Save, Building2, Upload, X, Globe, Trash2 } from 'lucide-react';
-import { DashboardShell } from '@/components/dashboard-shell';
 
 // ── Validation Schema ────────────────────────────────────────────────
 const formSchema = z.object({

@@ -1,5 +1,4 @@
 import type React from 'react';
-import { DashboardShell } from '@/components/dashboard-shell';
 
 export default function LicenseRequestsLayout({ children }: { children: React.ReactNode }) {
   return <>{children}</>;

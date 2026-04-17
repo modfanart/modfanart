@@ -15,7 +15,6 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Trophy, Users, Clock, AlertCircle } from 'lucide-react';
-import { DashboardShell } from '@/components/dashboard-shell';
 
 export default function ContestMonitorPage() {
   const { id } = useParams<{ id: string }>();
