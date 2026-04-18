@@ -9,11 +9,20 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 import { useToast } from '@/components/ui/use-toast';
 
 import { useCreateUserMutation } from '@/services/api/userApi';
+import { useGetAllRolesQuery } from '@/services/api/rolesApi';
 
 export default function AddUserPage() {
   const router = useRouter();
@@ -21,11 +30,14 @@ export default function AddUserPage() {
 
   const [createUser, { isLoading }] = useCreateUserMutation();
 
+  // ✅ FETCH ROLES FROM API
+  const { data: roles = [], isLoading: rolesLoading } = useGetAllRolesQuery();
+
   const [form, setForm] = useState({
     username: '',
     email: '',
     password: '',
-    role: 'user',
+    role_id: '',
 
     bio: '',
     location: '',
@@ -36,40 +48,44 @@ export default function AddUserPage() {
 
     twitter: '',
     instagram: '',
-    facebook: '',
     linkedin: '',
-    youtube: '',
-    tiktok: '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!form.role_id) {
+      toast({
+        title: 'Please select a role',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     try {
       await createUser({
         username: form.username,
         email: form.email,
         password: form.password,
-        role: form.role,
-        bio: form.bio,
-        location: form.location,
-        website: form.website,
-        avatar_url: form.avatar_url,
-        banner_url: form.banner_url,
+
+        // ⚠️ Adjust based on backend:
+        role: form.role_id, // OR change to role_id if backend expects that
+
+        bio: form.bio || null,
+        location: form.location || null,
+        website: form.website || null,
+
+        avatar_url: form.avatar_url || null,
+        banner_url: form.banner_url || null,
+
         profile: {
-          twitter: form.twitter,
-          instagram: form.instagram,
-          facebook: form.facebook,
-          linkedin: form.linkedin,
-          youtube: form.youtube,
-          tiktok: form.tiktok,
+          twitter: form.twitter || null,
+          instagram: form.instagram || null,
+          linkedin: form.linkedin || null,
         },
       }).unwrap();
 
-      toast({
-        title: 'User created successfully',
-      });
-
+      toast({ title: 'User created successfully' });
       router.push('/users');
     } catch {
       toast({
@@ -87,14 +103,12 @@ export default function AddUserPage() {
             <UserPlus className="h-5 w-5" />
             Add User
           </CardTitle>
-          <CardDescription>
-            Create a new platform user with full profile information.
-          </CardDescription>
+          <CardDescription>Create a new platform user.</CardDescription>
         </CardHeader>
 
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* BASIC INFO */}
+            {/* BASIC */}
 
             <div className="space-y-2">
               <Label>Username</Label>
@@ -125,6 +139,29 @@ export default function AddUserPage() {
               />
             </div>
 
+            {/* ✅ DYNAMIC ROLE DROPDOWN */}
+
+            <div className="space-y-2">
+              <Label>Role</Label>
+
+              <Select
+                value={form.role_id}
+                onValueChange={(value) => setForm({ ...form, role_id: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={rolesLoading ? 'Loading roles...' : 'Select role'} />
+                </SelectTrigger>
+
+                <SelectContent>
+                  {roles.map((role) => (
+                    <SelectItem key={role.id} value={role.id}>
+                      {role.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* PROFILE */}
 
             <div className="space-y-2">
@@ -136,42 +173,20 @@ export default function AddUserPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Location</Label>
-                <Input
-                  value={form.location}
-                  onChange={(e) => setForm({ ...form, location: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Website</Label>
-                <Input
-                  value={form.website}
-                  onChange={(e) => setForm({ ...form, website: e.target.value })}
-                />
-              </div>
-            </div>
-
-            {/* IMAGES */}
-
-            <div className="space-y-2">
-              <Label>Avatar URL</Label>
               <Input
-                value={form.avatar_url}
-                onChange={(e) => setForm({ ...form, avatar_url: e.target.value })}
+                placeholder="Location"
+                value={form.location}
+                onChange={(e) => setForm({ ...form, location: e.target.value })}
+              />
+
+              <Input
+                placeholder="Website"
+                value={form.website}
+                onChange={(e) => setForm({ ...form, website: e.target.value })}
               />
             </div>
 
-            <div className="space-y-2">
-              <Label>Banner URL</Label>
-              <Input
-                value={form.banner_url}
-                onChange={(e) => setForm({ ...form, banner_url: e.target.value })}
-              />
-            </div>
-
-            {/* SOCIAL LINKS */}
+            {/* SOCIAL */}
 
             <div className="grid grid-cols-2 gap-4">
               <Input
@@ -187,29 +202,13 @@ export default function AddUserPage() {
               />
 
               <Input
-                placeholder="Facebook"
-                value={form.facebook}
-                onChange={(e) => setForm({ ...form, facebook: e.target.value })}
-              />
-
-              <Input
                 placeholder="LinkedIn"
                 value={form.linkedin}
                 onChange={(e) => setForm({ ...form, linkedin: e.target.value })}
               />
-
-              <Input
-                placeholder="YouTube"
-                value={form.youtube}
-                onChange={(e) => setForm({ ...form, youtube: e.target.value })}
-              />
-
-              <Input
-                placeholder="TikTok"
-                value={form.tiktok}
-                onChange={(e) => setForm({ ...form, tiktok: e.target.value })}
-              />
             </div>
+
+            {/* ACTIONS */}
 
             <div className="flex justify-end gap-4 pt-6">
               <Button type="button" variant="outline" onClick={() => router.back()}>

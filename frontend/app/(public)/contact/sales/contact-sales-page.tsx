@@ -592,13 +592,13 @@ export function ContactSalesPage() {
                 </div>
               </div>
 
-              <div className="flex items-start gap-3">
+              {/* <div className="flex items-start gap-3">
                 <Phone className="h-5 w-5 text-muted-foreground mt-0.5" />
                 <div>
                   <h4 className="font-medium">Phone / WhatsApp</h4>
                   <p className="text-sm text-muted-foreground">+91 11 4123 4567</p>
                 </div>
-              </div>
+              </div> */}
 
               <div className="flex items-start gap-3">
                 <Building className="h-5 w-5 text-muted-foreground mt-0.5" />
@@ -612,7 +612,7 @@ export function ContactSalesPage() {
             </CardContent>
 
             <CardFooter className="flex flex-col items-start gap-4 pt-6 border-t">
-              <div className="w-full p-4 bg-muted/40 rounded-lg">
+              {/* <div className="w-full p-4 bg-muted/40 rounded-lg">
                 <h4 className="font-medium mb-2">What brands are saying</h4>
                 <blockquote className="text-sm italic text-muted-foreground">
                   "The team was extremely helpful during onboarding. We now have full control over
@@ -621,7 +621,7 @@ export function ContactSalesPage() {
                 <p className="text-xs text-muted-foreground mt-2 font-medium">
                   — Head of Licensing, Global Media Brand
                 </p>
-              </div>
+              </div> */}
 
               <Link href="/" className="w-full">
                 <Button variant="outline" className="w-full flex items-center justify-center gap-2">

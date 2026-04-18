@@ -19,7 +19,14 @@ router.delete('/me/avatar', UserController.removeAvatar);
 router.get('/all', UserController.getAllUsers);
 router.get('/:id',  UserController.getUserById);
 router.patch('/:id/status', UserController.updateUserStatus);
-
+router.post('/create', UserController.createUser);
+router.delete('/:id', UserController.deleteUser);
+router.patch(
+  '/:id',
+  UserController.updateUser
+);
+// In your user router
+router.get('/by-role/:roleSlug', UserController.getAllUsersByRoleSlug);
 router.get('/me/brands', UserController.getMyBrands);
 // Future: router.patch('/me/banner', ...)
 // Future: router.post('/me/payout-setup', ...)

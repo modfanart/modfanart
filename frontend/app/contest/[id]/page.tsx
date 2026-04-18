@@ -21,6 +21,7 @@ import { Autoplay, Navigation } from 'swiper/modules';
 
 import 'swiper/css';
 import 'swiper/css/navigation';
+
 import { useAuth } from '@/store/AuthContext';
 import { cn } from '@/lib/utils';
 import { useGetContestQuery } from '@/services/api/contestsApi';
@@ -36,7 +37,7 @@ export default function ContestDetailPage() {
   let artistBase = '';
   if (role === 'Artist') {
     const username = user?.username?.trim().toLowerCase();
-    if (username) artistBase = `/dashboard/artist/${username}`;
+    if (username) artistBase = `/artist/${username}`;
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -504,7 +505,7 @@ export default function ContestDetailPage() {
             <CardContent className="p-10 md:p-16 text-center">
               {isActive ? (
                 <Button asChild size="lg" className="w-full max-w-md h-14 text-lg">
-                  <Link href={`${artistBase}/submissions/new?contest=${contest.id}`}>
+                  <Link href={`${artistBase}/my-artworks/new?contest=${contest.id}`}>
                     Submit Your Artwork
                     <ArrowRight className="ml-3 h-5 w-5" />
                   </Link>

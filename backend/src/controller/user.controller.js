@@ -586,7 +586,147 @@ static async getCurrentUser(req, res) {
       res.status(500).json({ error: 'Failed to update user status' });
     }
   }
+/**
+ * GET /users/by-role/:roleSlug
+ * Returns paginated list of users who have a specific role (by role slug/name)
+ * Useful for admin panels, brand manager listings, etc.
+ */
+/**
+ * GET /users/by-role/:roleName
+ * Returns paginated list of users by role name (e.g., 'artist', 'brand_manager', 'admin')
+ * Note: We use role.name since there is no slug column in roles table
+ */
+static async getAllUsersByRoleSlug(req, res) {
+  try {
+    let { roleSlug } = req.params;   // We still call it roleSlug in URL for consistency
+    if (!roleSlug || typeof roleSlug !== 'string') {
+      return res.status(400).json({
+        success: false,
+        message: 'Role name is required',
+      });
+    }
 
+    const cleanRoleName = roleSlug.trim();   // Keep original case for role.name comparison
+
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(Math.max(1, parseInt(req.query.limit) || 20), 100);
+    const offset = (page - 1) * limit;
+    const search = req.query.search?.trim();
+    const statusFilter = req.query.status;
+
+    // Base query with role join
+    let query = req.db
+      .selectFrom('users as u')
+      .innerJoin('roles as r', 'u.role_id', 'r.id')
+      .select([
+        'u.id',
+        'u.username',
+        'u.email',
+        'u.email_verified',
+        'u.status',
+        'u.avatar_url',
+        'u.banner_url',
+        'u.bio',
+        'u.location',
+        'u.website',
+        'u.created_at',
+        'u.updated_at',
+        'r.id as role_id',
+        'r.name as role_name',
+        'r.hierarchy_level',
+      ])
+      .where('r.name', '=', cleanRoleName)        // ← Changed to role.name
+      .where('u.deleted_at', 'is', null);
+
+    // Optional search
+    if (search) {
+      query = query.where((eb) =>
+        eb.or([
+          eb('u.username', 'ilike', `%${search}%`),
+          eb('u.email', 'ilike', `%${search}%`),
+          eb('u.bio', 'ilike', `%${search}%`),
+        ])
+      );
+    }
+
+    // Optional status filter
+    if (statusFilter) {
+      query = query.where('u.status', '=', statusFilter);
+    }
+
+    // Count query for pagination
+    let countQuery = req.db
+      .selectFrom('users as u')
+      .innerJoin('roles as r', 'u.role_id', 'r.id')
+      .select(req.db.fn.count('u.id').as('total'))
+      .where('r.name', '=', cleanRoleName)        // ← Changed to role.name
+      .where('u.deleted_at', 'is', null);
+
+    if (search) {
+      countQuery = countQuery.where((eb) =>
+        eb.or([
+          eb('u.username', 'ilike', `%${search}%`),
+          eb('u.email', 'ilike', `%${search}%`),
+        ])
+      );
+    }
+
+    if (statusFilter) {
+      countQuery = countQuery.where('u.status', '=', statusFilter);
+    }
+
+    const [{ total }] = await countQuery.execute();
+    const totalUsers = parseInt(total || 0);
+    const totalPages = Math.ceil(totalUsers / limit);
+
+    // Execute main query
+    const usersResult = await query
+      .orderBy('u.created_at', 'desc')
+      .limit(limit)
+      .offset(offset)
+      .execute();
+
+    const users = usersResult.map((user) => ({
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      email_verified: user.email_verified,
+      status: user.status,
+      avatar_url: user.avatar_url,
+      banner_url: user.banner_url,
+      bio: user.bio || null,
+      location: user.location || null,
+      website: user.website || null,
+      created_at: user.created_at,
+      updated_at: user.updated_at,
+      role: {
+        id: user.role_id,
+        name: user.role_name,
+        hierarchy_level: user.hierarchy_level ?? 0,
+      },
+    }));
+
+    return res.status(200).json({
+      success: true,
+      users,
+      pagination: {
+        page,
+        limit,
+        total: totalUsers,
+        total_pages: totalPages,
+        has_next: page < totalPages,
+        has_prev: page > 1,
+      },
+    });
+  } catch (error) {
+    console.error('[getAllUsersByRoleSlug] Error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch users by role',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+}
   /**
  * GET /users/me/brands
  * Returns all brands where the authenticated user is the brand manager
@@ -646,6 +786,184 @@ static async getMyBrands(req, res) {
       success: false,
       message: 'Failed to fetch brands for this manager',
     });
+  }
+}
+static async createUser(req, res) {
+  try {
+    const {
+      username,
+      email,
+      password,
+      role,
+      bio,
+      location,
+      website,
+      avatar_url,
+      banner_url,
+      profile
+    } = req.body;
+
+    if (!username || !email || !password) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    const password_hash = await hashPassword(password);
+
+    const newUser = await db
+      .insertInto('users')
+      .values({
+        username,
+        email,
+        password_hash,
+        role_id: role,
+        bio: bio || null,
+        location: location || null,
+        website: website || null,
+        avatar_url: avatar_url || null,
+        banner_url: banner_url || null,
+        profile: profile || {},
+        status: 'active',
+        created_at: sql`NOW()`,
+        updated_at: sql`NOW()`,
+      })
+      .returning(['id', 'username', 'email'])
+      .executeTakeFirst();
+
+    return res.status(201).json({
+      success: true,
+      user: newUser,
+    });
+
+  } catch (error) {
+    console.error('[createUser] Error:', error);
+    return res.status(500).json({ error: 'Failed to create user' });
+  }
+}
+/**
+ * PATCH /users/:id
+ * Admin: Update full user profile (status, role, bio, etc.)
+ */
+static async updateUser(req, res) {
+  try {
+    const { id } = req.params;
+
+    const {
+      username,
+      email,
+      status,
+      role_id,
+      bio,
+      location,
+      website,
+      profile,
+      avatar_url,
+      banner_url,
+    } = req.body;
+
+    // Optional: admin guard (uncomment if needed)
+    // const adminRole = await Role.findByName('admin');
+    // if (!adminRole || req.user.role_id !== adminRole.id) {
+    //   return res.status(403).json({ error: 'Access denied' });
+    // }
+
+    // Validate user exists
+    const existingUser = await db
+      .selectFrom('users')
+      .select(['id', 'profile'])
+      .where('id', '=', id)
+      .where('deleted_at', 'is', null)
+      .executeTakeFirst();
+
+    if (!existingUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Build update payload safely
+    const updateData = {};
+
+    if (username !== undefined) updateData.username = username;
+    if (email !== undefined) updateData.email = email;
+    if (status !== undefined) updateData.status = status;
+    if (role_id !== undefined) updateData.role_id = role_id;
+    if (bio !== undefined) updateData.bio = bio;
+    if (location !== undefined) updateData.location = location;
+    if (website !== undefined) updateData.website = website;
+    if (avatar_url !== undefined) updateData.avatar_url = avatar_url;
+    if (banner_url !== undefined) updateData.banner_url = banner_url;
+
+    // Merge profile JSON safely
+    if (profile && typeof profile === 'object') {
+      updateData.profile = {
+        ...(existingUser.profile || {}),
+        ...profile,
+      };
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ error: 'No valid fields to update' });
+    }
+
+    updateData.updated_at = sql`NOW()`;
+
+    const updated = await db
+      .updateTable('users')
+      .set(updateData)
+      .where('id', '=', id)
+      .where('deleted_at', 'is', null)
+      .returning([
+        'id',
+        'username',
+        'email',
+        'status',
+        'role_id',
+        'bio',
+        'location',
+        'website',
+        'avatar_url',
+        'banner_url',
+        'profile',
+        'updated_at',
+      ])
+      .executeTakeFirst();
+
+    return res.json({
+      success: true,
+      message: 'User updated successfully',
+      user: updated,
+    });
+  } catch (error) {
+    console.error('[updateUser] Error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to update user',
+    });
+  }
+}
+static async deleteUser(req, res) {
+  try {
+    const { id } = req.params;
+
+    const deleted = await db
+      .updateTable('users')
+      .set({
+        deleted_at: sql`NOW()`, // soft delete
+      })
+      .where('id', '=', id)
+      .where('deleted_at', 'is', null)
+      .returning(['id', 'username'])
+      .executeTakeFirst();
+
+    if (!deleted) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    return res.json({
+      message: 'User deleted successfully',
+      user: deleted,
+    });
+  } catch (error) {
+    console.error('[deleteUser] Error:', error);
+    return res.status(500).json({ error: 'Failed to delete user' });
   }
 }
 }
