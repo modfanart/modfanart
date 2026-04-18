@@ -286,33 +286,73 @@ class ContestController {
   }
 
   // DELETE /contests/:id (soft delete or archive)
+// src/controllers/contest.controller.js
 static async deleteContest(req, res) {
   try {
     const { id } = req.params;
-    const contest = await Contest.findById(id);
+
+    // Fetch contest
+    const contest = await db
+      .selectFrom('contests')
+      .select(['id', 'brand_id', 'status'])
+      .where('id', '=', id)
+      .where('deleted_at', 'is', null)
+      .executeTakeFirst();
 
     if (!contest) {
       return res.status(404).json({ error: 'Contest not found' });
     }
 
-    const isOwner = contest.brand_id === req.user.id;
-    const hasPermission = req.user.permissions?.['contests.manage'];
-    const isAdmin = req.user.role === 'Admin'; // 👈 add this
+    // ==================== AUTHORIZATION ====================
+    const isAdmin = req.user?.role === 'Admin' || 
+                    req.user?.permissions?.['contests.manage'] === true;
 
-    if (!isOwner && !hasPermission && !isAdmin) {
-      return res.status(403).json({ error: 'Not authorized' });
+    let isBrandOwner = false;
+
+    // Only check brand ownership if user is NOT admin
+    if (!isAdmin) {
+      const brand = await db
+        .selectFrom('brands')
+        .select('id')
+        .where('id', '=', contest.brand_id)
+        .where('user_id', '=', req.user.id)
+        .executeTakeFirst();
+
+      isBrandOwner = !!brand;
     }
 
+    if (!isAdmin && !isBrandOwner) {
+      return res.status(403).json({ 
+        error: 'Not authorized',
+        message: 'Only Admins or the brand owner can delete this contest'
+      });
+    }
+
+    // Optional: Prevent deletion of active contests (recommended)
+    if (['live', 'judging', 'completed'].includes(contest.status)) {
+      return res.status(400).json({
+        error: 'Cannot delete contests that are live, in judging, or completed'
+      });
+    }
+
+    // Soft delete
     await db
       .updateTable('contests')
-      .set({ deleted_at: sql`NOW()`, status: 'archived' })
+      .set({ 
+        deleted_at: sql`NOW()`, 
+        status: 'archived',
+        updated_at: sql`NOW()`
+      })
       .where('id', '=', id)
       .execute();
 
     res.status(204).send();
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to delete contest' });
+    console.error('DELETE CONTEST ERROR:', err);
+    res.status(500).json({ 
+      error: 'Failed to delete contest',
+      ...(process.env.NODE_ENV !== 'production' && { detail: err.message })
+    });
   }
 }
     // PATCH /contests/:id/announce-winners (admin/brand)

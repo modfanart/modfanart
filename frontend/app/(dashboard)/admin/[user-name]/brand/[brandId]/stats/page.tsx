@@ -22,7 +22,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -179,10 +185,30 @@ export default function BrandStatsPage() {
 
       {/* Stats Overview */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-10">
-        <StatCard icon={<Users className="h-6 w-6" />} title="Followers" value={brand.followers_count} trend="+12%" />
-        <StatCard icon={<Eye className="h-6 w-6" />} title="Profile Views" value={brand.views_count} trend="+28%" />
-        <StatCard icon={<ImageIcon className="h-6 w-6" />} title="Artworks" value={artworks.length} trend="+3" />
-        <StatCard icon={<FileText className="h-6 w-6" />} title="Posts" value={posts.length} trend="+5" />
+        <StatCard
+          icon={<Users className="h-6 w-6" />}
+          title="Followers"
+          value={brand.followers_count}
+          trend="+12%"
+        />
+        <StatCard
+          icon={<Eye className="h-6 w-6" />}
+          title="Profile Views"
+          value={brand.views_count}
+          trend="+28%"
+        />
+        <StatCard
+          icon={<ImageIcon className="h-6 w-6" />}
+          title="Artworks"
+          value={artworks.length}
+          trend="+3"
+        />
+        <StatCard
+          icon={<FileText className="h-6 w-6" />}
+          title="Posts"
+          value={posts.length}
+          trend="+5"
+        />
       </div>
 
       <Tabs defaultValue="overview" className="space-y-6">
@@ -236,12 +262,21 @@ export default function BrandStatsPage() {
                     <div key={art.id} className="border rounded-lg overflow-hidden">
                       {art.preview_url && (
                         <div className="aspect-video relative bg-muted">
-                          <Image src={art.preview_url} alt={art.title} fill className="object-cover" />
+                          <Image
+                            src={art.preview_url}
+                            alt={art.title}
+                            fill
+                            className="object-cover"
+                          />
                         </div>
                       )}
                       <div className="p-4">
                         <h4 className="font-medium line-clamp-1">{art.title}</h4>
-                        {art.is_featured && <Badge variant="secondary" className="mt-2">Featured</Badge>}
+                        {art.is_featured && (
+                          <Badge variant="secondary" className="mt-2">
+                            Featured
+                          </Badge>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -259,7 +294,9 @@ export default function BrandStatsPage() {
             </CardHeader>
             <CardContent>
               {posts.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">No posts published yet.</div>
+                <div className="text-center py-12 text-muted-foreground">
+                  No posts published yet.
+                </div>
               ) : (
                 <div className="space-y-4">
                   {posts.slice(0, 5).map((post: any) => (
@@ -294,7 +331,8 @@ export default function BrandStatsPage() {
                     Verification & Brand Managers
                   </CardTitle>
                   <CardDescription>
-                    Manage brand verification and assign managers. Each user can manage only one brand.
+                    Manage brand verification and assign managers. Each user can manage only one
+                    brand.
                   </CardDescription>
                 </div>
               </div>
@@ -305,7 +343,10 @@ export default function BrandStatsPage() {
               <div>
                 <h3 className="font-medium mb-3">Current Brand Status</h3>
                 <div className="flex items-center gap-4">
-                  <Badge variant={isActive ? 'default' : 'secondary'} className="text-base px-5 py-1.5">
+                  <Badge
+                    variant={isActive ? 'default' : 'secondary'}
+                    className="text-base px-5 py-1.5"
+                  >
                     {brand.status.toUpperCase()}
                   </Badge>
                   {brand.verification_request_id && (
@@ -331,7 +372,8 @@ export default function BrandStatsPage() {
                       <DialogHeader>
                         <DialogTitle>Assign Brand Manager</DialogTitle>
                         <DialogDescription>
-                          Search for a user and assign them a role. The user must not already manage another brand.
+                          Search for a user and assign them a role. The user must not already manage
+                          another brand.
                         </DialogDescription>
                       </DialogHeader>
 
@@ -346,18 +388,24 @@ export default function BrandStatsPage() {
                           />
                         </div>
 
-                        {isSearching && <p className="text-sm text-muted-foreground">Searching user...</p>}
+                        {isSearching && (
+                          <p className="text-sm text-muted-foreground">Searching user...</p>
+                        )}
 
                         {searchedUser && !selectedUser && (
                           <div className="border rounded-lg p-4 bg-muted/50">
                             <div className="flex items-center gap-3">
                               <Avatar className="h-10 w-10">
-                                <AvatarImage src={searchedUser.avatar_url} />
-                                <AvatarFallback>{searchedUser.username?.slice(0, 2).toUpperCase()}</AvatarFallback>
+                                <AvatarImage src={searchedUser.avatar_url ?? undefined} />
+                                <AvatarFallback>
+                                  {searchedUser.username?.slice(0, 2).toUpperCase()}
+                                </AvatarFallback>
                               </Avatar>
                               <div>
                                 <p className="font-medium">{searchedUser.username}</p>
-                                <p className="text-sm text-muted-foreground">{searchedUser.email}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {searchedUser.email}
+                                </p>
                               </div>
                             </div>
                             <Button
@@ -372,7 +420,10 @@ export default function BrandStatsPage() {
                         {selectedUser && (
                           <div>
                             <Label>Role</Label>
-                            <Select value={selectedRole} onValueChange={(val: any) => setSelectedRole(val)}>
+                            <Select
+                              value={selectedRole}
+                              onValueChange={(val: any) => setSelectedRole(val)}
+                            >
                               <SelectTrigger>
                                 <SelectValue />
                               </SelectTrigger>
@@ -387,11 +438,14 @@ export default function BrandStatsPage() {
                       </div>
 
                       <DialogFooter>
-                        <Button variant="outline" onClick={() => {
-                          setShowAssignDialog(false);
-                          setSelectedUser(null);
-                          setUsernameSearch('');
-                        }}>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setShowAssignDialog(false);
+                            setSelectedUser(null);
+                            setUsernameSearch('');
+                          }}
+                        >
                           Cancel
                         </Button>
                         <Button
@@ -420,7 +474,9 @@ export default function BrandStatsPage() {
                         <div className="flex items-center gap-4">
                           <Avatar>
                             <AvatarImage src={manager.avatar_url} />
-                            <AvatarFallback>{manager.username?.slice(0, 2).toUpperCase()}</AvatarFallback>
+                            <AvatarFallback>
+                              {manager.username?.slice(0, 2).toUpperCase()}
+                            </AvatarFallback>
                           </Avatar>
                           <div>
                             <p className="font-medium">{manager.username}</p>
@@ -440,7 +496,8 @@ export default function BrandStatsPage() {
 
               <div className="flex items-center gap-2 text-xs text-muted-foreground border-t pt-6">
                 <AlertTriangle className="h-3.5 w-3.5" />
-                Users can only be assigned as a manager to <strong>one brand</strong> at a time. This is enforced by the backend.
+                Users can only be assigned as a manager to <strong>one brand</strong> at a time.
+                This is enforced by the backend.
               </div>
             </CardContent>
           </Card>

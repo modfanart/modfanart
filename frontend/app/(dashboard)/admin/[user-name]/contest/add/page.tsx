@@ -3,19 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import {
-  ArrowLeft,
-  Trophy,
-  Image as ImageIcon,
-  FileText,
-  Calendar,
-  Sparkles,
-  Users,
-  ShieldCheck,
-} from 'lucide-react';
 
-import { useAuth } from '@/store/AuthContext';
+import { ArrowLeft, Trophy } from 'lucide-react';
+
 import { useCreateContestMutation } from '@/services/api/contestsApi';
+import { useGetAllBrandsQuery } from '@/services/api/brands';
 
 import { SingleDatePicker } from '@/components/ui/single-date-picker';
 import { Button } from '@/components/ui/button';
@@ -25,66 +17,121 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-/* ───────────────── HELPERS ───────────────── */
+/* ───────────────── TYPES ───────────────── */
 
-function toISODate(date: Date | undefined): string | undefined {
-  return date ? date.toISOString().split('T')[0] : undefined;
+type Visibility = 'public' | 'private' | 'unlisted';
+type Status = 'draft' | 'published' | 'live' | 'judging' | 'completed' | 'archived';
+
+export interface CreateContestRequest {
+  brand_id: string;
+  title: string;
+  slug: string;
+  description: string;
+
+  hero_image?: string | null;
+  gallery?: string[];
+
+  rules?: string | null;
+  prizes?: Array<{
+    rank: number;
+    type: string;
+    description?: string;
+    amount_inr?: number;
+  }> | null;
+
+  start_date: string;
+  submission_end_date: string;
+  voting_end_date?: string | null;
+  judging_end_date?: string | null;
+
+  entry_requirements?: Record<string, any> | null;
+  categories?: string[];
+
+  visibility: Visibility;
+  status: Status;
+
+  max_entries_per_user?: number;
 }
 
-function generateSlug(title: string): string {
-  return title
+/* ───────────────── HELPERS ───────────────── */
+
+const toISODate = (date: Date): string => {
+  return date.toISOString().split('T')[0] ?? '';
+};
+const generateSlug = (title: string): string =>
+  title
     .trim()
     .toLowerCase()
     .replace(/\s+/g, '-')
     .replace(/[^a-z0-9-]/g, '')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '');
-}
 
 /* ───────────────── PAGE ───────────────── */
 
 export default function CreateOpportunityPage() {
   const router = useRouter();
-  const { user } = useAuth();
 
-  const [brandId, setBrandId] = useState<string | null>(null);
-
-  const [title, setTitle] = useState('');
-  const [slug, setSlug] = useState('');
-  const [description, setDescription] = useState('');
-
-  const [heroImage, setHeroImage] = useState('');
-  const [gallery, setGallery] = useState(''); // comma separated URLs
-
-  const [rules, setRules] = useState('');
-  const [requirements, setRequirements] = useState('');
-
-  const [categories, setCategories] = useState('');
-
-  const [startDate, setStartDate] = useState<Date | undefined>(new Date());
-  const [submissionEnd, setSubmissionEnd] = useState<Date | undefined>();
-  const [votingEnd, setVotingEnd] = useState<Date | undefined>();
-  const [judgingEnd, setJudgingEnd] = useState<Date | undefined>();
-
-  const [prizeDetails, setPrizeDetails] = useState('');
-  const [formError, setFormError] = useState<string | null>(null);
+  const { data, isLoading: brandsLoading } = useGetAllBrandsQuery({});
+  const brands = data?.brands ?? [];
 
   const [createContest, { isLoading }] = useCreateContestMutation();
 
-  /* ───────────────── AUTH BRAND AUTO SET ───────────────── */
+  /* ───────────────── FORM STATE ───────────────── */
+
+  const [form, setForm] = useState<CreateContestRequest>({
+    brand_id: '',
+    title: '',
+    slug: '',
+    description: '',
+
+    hero_image: '',
+    gallery: [],
+
+    rules: null,
+    prizes: null,
+
+    start_date: '',
+    submission_end_date: '',
+    voting_end_date: null,
+    judging_end_date: null,
+
+    entry_requirements: null,
+    categories: [],
+
+    visibility: 'public',
+    status: 'draft',
+
+    max_entries_per_user: 3,
+  });
+
+  const [formError, setFormError] = useState<string | null>(null);
+
+  /* ───────────────── HELPERS ───────────────── */
+
+  const updateField = <K extends keyof CreateContestRequest>(
+    key: K,
+    value: CreateContestRequest[K]
+  ) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  /* ───────────────── AUTO BRAND ───────────────── */
 
   useEffect(() => {
-    const managedBrand = user?.brands?.[0];
-    if (managedBrand && !brandId) {
-      setBrandId(managedBrand.id);
+    if (brands.length === 1 && !form.brand_id) {
+      const brand = brands[0];
+      if (brand) updateField('brand_id', brand.id);
     }
-  }, [user, brandId]);
+  }, [brands, form.brand_id]);
 
   /* ───────────────── AUTO SLUG ───────────────── */
 
   useEffect(() => {
-    if (title && !slug) setSlug(generateSlug(title));
-  }, [title]);
+    if (form.title && !form.slug) {
+      updateField('slug', generateSlug(form.title));
+    }
+  }, [form.title, form.slug]);
 
   /* ───────────────── SUBMIT ───────────────── */
 
@@ -92,52 +139,21 @@ export default function CreateOpportunityPage() {
     e.preventDefault();
     setFormError(null);
 
-    if (!brandId) {
-      setFormError('No brand found for your account');
-      return;
-    }
+    if (!form.brand_id) return setFormError('Please select a brand');
 
-    if (!title || !slug || !description || !heroImage || !submissionEnd) {
-      setFormError('Please fill required fields');
-      return;
+    if (
+      !form.title ||
+      !form.slug ||
+      !form.description ||
+      !form.hero_image ||
+      !form.start_date ||
+      !form.submission_end_date
+    ) {
+      return setFormError('Please fill all required fields');
     }
 
     try {
-      await createContest({
-        brand_id: brandId,
-
-        title: title.trim(),
-        slug: slug.trim(),
-        description: description.trim(),
-
-        hero_image: heroImage.trim(),
-        gallery: gallery ? gallery.split(',').map((g) => g.trim()) : [],
-
-        rules: rules || null,
-        entry_requirements: requirements ? { instructions: requirements } : null,
-
-        categories: categories ? categories.split(',').map((c) => c.trim()) : [],
-
-        start_date: toISODate(startDate)!,
-        submission_end_date: toISODate(submissionEnd)!,
-        voting_end_date: toISODate(votingEnd) || null,
-        judging_end_date: toISODate(judgingEnd) || null,
-
-        prizes: prizeDetails
-          ? [
-              {
-                rank: 1,
-                type: 'custom',
-                description: prizeDetails,
-              },
-            ]
-          : null,
-
-        visibility: 'public',
-        status: 'draft',
-        max_entries_per_user: 3,
-      }).unwrap();
-
+      await createContest(form).unwrap();
       router.push('/dashboard/opportunities');
     } catch (err: any) {
       setFormError(err?.data?.message || 'Failed to create contest');
@@ -156,104 +172,142 @@ export default function CreateOpportunityPage() {
           </Button>
         </Link>
 
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Trophy className="h-6 w-6 text-primary" />
-            Create Opportunity
-          </h1>
-          <p className="text-muted-foreground">Launch a contest with full control</p>
-        </div>
+        <h1 className="text-3xl font-bold flex items-center gap-2">
+          <Trophy className="h-6 w-6 text-primary" />
+          Create Opportunity
+        </h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
         <Card>
           <CardContent className="space-y-6 pt-6">
-            {/* BASIC INFO */}
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <Sparkles className="h-4 w-4" /> Basic Info
-              </h2>
+            {/* BRAND */}
+            <div>
+              <Label>Select Brand *</Label>
+              <select
+                value={form.brand_id}
+                onChange={(e) => updateField('brand_id', e.target.value)}
+                className="w-full border rounded-md p-2"
+              >
+                <option value="">{brandsLoading ? 'Loading...' : 'Select a brand'}</option>
 
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <Label>Title *</Label>
-                  <Input value={title} onChange={(e) => setTitle(e.target.value)} />
-                </div>
-
-                <div>
-                  <Label>Slug *</Label>
-                  <Input value={slug} onChange={(e) => setSlug(e.target.value)} />
-                </div>
-              </div>
-
-              <div>
-                <Label>Description *</Label>
-                <Textarea value={description} onChange={(e) => setDescription(e.target.value)} />
-              </div>
+                {brands.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
             </div>
+
+            {/* BASIC */}
+            <Input
+              placeholder="Title *"
+              value={form.title}
+              onChange={(e) => updateField('title', e.target.value)}
+            />
+
+            <Input
+              placeholder="Slug *"
+              value={form.slug}
+              onChange={(e) => updateField('slug', e.target.value)}
+            />
+
+            <Textarea
+              placeholder="Description *"
+              value={form.description}
+              onChange={(e) => updateField('description', e.target.value)}
+            />
 
             {/* MEDIA */}
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <ImageIcon className="h-4 w-4" /> Media
-              </h2>
+            <Input
+              placeholder="Hero Image URL *"
+              value={form.hero_image || ''}
+              onChange={(e) => updateField('hero_image', e.target.value)}
+            />
 
-              <div>
-                <Label>Hero Image *</Label>
-                <Input value={heroImage} onChange={(e) => setHeroImage(e.target.value)} />
-              </div>
-
-              <div>
-                <Label>Gallery (comma separated URLs)</Label>
-                <Input value={gallery} onChange={(e) => setGallery(e.target.value)} />
-              </div>
-            </div>
+            <Input
+              placeholder="Gallery URLs (comma separated)"
+              onChange={(e) =>
+                updateField(
+                  'gallery',
+                  e.target.value
+                    .split(',')
+                    .map((g) => g.trim())
+                    .filter(Boolean)
+                )
+              }
+            />
 
             {/* DATES */}
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <Calendar className="h-4 w-4" /> Timeline
-              </h2>
+            <SingleDatePicker
+              onDateChange={(d) => {
+                if (!d) return;
+                updateField('start_date', toISODate(d));
+              }}
+            />
 
-              <div className="grid md:grid-cols-2 gap-4">
-                <SingleDatePicker date={startDate} onDateChange={setStartDate} />
-                <SingleDatePicker date={submissionEnd} onDateChange={setSubmissionEnd} />
-                <SingleDatePicker date={votingEnd} onDateChange={setVotingEnd} />
-                <SingleDatePicker date={judgingEnd} onDateChange={setJudgingEnd} />
-              </div>
-            </div>
+            <SingleDatePicker
+              onDateChange={(d) => {
+                if (!d) return;
+                updateField('submission_end_date', toISODate(d));
+              }}
+            />
 
-            {/* RULES + REQUIREMENTS */}
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4" /> Rules & Requirements
-              </h2>
+            <SingleDatePicker
+              onDateChange={(d) => updateField('voting_end_date', d ? toISODate(d) : null)}
+            />
 
-              <Textarea
-                placeholder="Rules"
-                value={rules}
-                onChange={(e) => setRules(e.target.value)}
-              />
+            <SingleDatePicker
+              onDateChange={(d) => updateField('judging_end_date', d ? toISODate(d) : null)}
+            />
 
-              <Textarea
-                placeholder="Entry requirements"
-                value={requirements}
-                onChange={(e) => setRequirements(e.target.value)}
-              />
-            </div>
+            {/* RULES */}
+            <Textarea
+              placeholder="Rules"
+              onChange={(e) => updateField('rules', e.target.value || null)}
+            />
 
-            {/* PRIZES */}
-            <div>
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <Users className="h-4 w-4" /> Prize
-              </h2>
+            <Textarea
+              placeholder="Entry Requirements"
+              onChange={(e) =>
+                updateField('entry_requirements', {
+                  instructions: e.target.value,
+                })
+              }
+            />
 
-              <Textarea
-                placeholder="Prize details"
-                value={prizeDetails}
-                onChange={(e) => setPrizeDetails(e.target.value)}
-              />
-            </div>
+            {/* CATEGORIES */}
+            <Input
+              placeholder="Categories (comma separated)"
+              onChange={(e) =>
+                updateField(
+                  'categories',
+                  e.target.value
+                    .split(',')
+                    .map((c) => c.trim())
+                    .filter(Boolean)
+                )
+              }
+            />
+
+            {/* PRIZE */}
+            <Textarea
+              placeholder="Prize Details"
+              onChange={(e) =>
+                updateField(
+                  'prizes',
+                  e.target.value
+                    ? [
+                        {
+                          rank: 1,
+                          type: 'custom',
+                          description: e.target.value,
+                        },
+                      ]
+                    : null
+                )
+              }
+            />
 
             {/* ERROR */}
             {formError && (
@@ -265,11 +319,11 @@ export default function CreateOpportunityPage() {
 
             {/* ACTIONS */}
             <div className="flex justify-end gap-3">
-              <Button type="button" variant="outline" onClick={() => router.back()}>
+              <Button type="button" onClick={() => router.back()}>
                 Cancel
               </Button>
 
-              <Button type="submit" disabled={isLoading}>
+              <Button type="submit" disabled={isLoading || !form.brand_id}>
                 {isLoading ? 'Creating...' : 'Create Contest'}
               </Button>
             </div>
