@@ -5,10 +5,10 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
-import { Search, UserPlus, Palette, MoreHorizontal } from 'lucide-react';
+import { Search, UserPlus, ShieldCheck, MoreHorizontal } from 'lucide-react';
 
 import {
-  useGetUsersByRoleSlugQuery, // ← NEW: Using role-based query
+  useGetUsersByRoleSlugQuery,
   useUpdateUserStatusMutation,
   useDeleteUserMutation,
   type UserProfile,
@@ -42,15 +42,7 @@ import {
 
 import { useAuth } from '@/store/AuthContext';
 
-type UsersByRoleQueryArgs = {
-  roleSlug: string;
-  page: number;
-  limit: number;
-  search?: string;
-  status?: string;
-};
-
-export default function ArtistsAdminPage() {
+export default function JudgesAdminPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -64,10 +56,9 @@ export default function ArtistsAdminPage() {
   const roleName = currentUser?.role?.name?.toLowerCase() ?? 'admin';
   const adminBase = roleName === 'admin' ? `/admin/${roleName}` : '';
 
-  // Query args for getUsersByRoleSlug
   const queryArgs = useMemo(
     () => ({
-      roleSlug: 'Artist', // ← We want only ARTIST role
+      roleSlug: 'judge', // ← Key change: Judge role
       page,
       limit: 15,
       ...(search.trim() && { search: search.trim() }),
@@ -76,13 +67,12 @@ export default function ArtistsAdminPage() {
     [page, search, status]
   );
 
-  // Use the new role-specific query
   const { data, isLoading, isFetching } = useGetUsersByRoleSlugQuery(queryArgs);
 
   const [updateUserStatus] = useUpdateUserStatusMutation();
   const [deleteUser] = useDeleteUserMutation();
 
-  const artists = data?.users ?? [];
+  const judges = data?.users ?? [];
   const pagination = data?.pagination;
 
   const updateQuery = (updates: Record<string, string | null>) => {
@@ -96,7 +86,6 @@ export default function ArtistsAdminPage() {
       }
     });
 
-    // Reset to page 1 when search or status changes
     if ('search' in updates || 'status' in updates) {
       params.set('page', '1');
     }
@@ -120,12 +109,12 @@ export default function ArtistsAdminPage() {
   };
 
   const handleSuspend = async (id: string) => {
-    if (!confirm('Suspend this artist?')) return;
+    if (!confirm('Suspend this judge?')) return;
     await updateUserStatus({ userId: id, status: 'suspended' });
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this artist permanently?')) return;
+    if (!confirm('Delete this judge permanently?')) return;
     await deleteUser({ userId: id });
   };
 
@@ -135,18 +124,18 @@ export default function ArtistsAdminPage() {
       <div className="flex flex-col sm:flex-row justify-between gap-4 mb-8">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-xl bg-primary/10">
-            <Palette className="h-6 w-6 text-primary" />
+            <ShieldCheck className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold">Artists</h1>
-            <p className="text-sm text-muted-foreground">Manage all artists and their accounts</p>
+            <h1 className="text-3xl font-bold">Judges</h1>
+            <p className="text-sm text-muted-foreground">Manage all contest judges</p>
           </div>
         </div>
 
         <Button asChild>
           <Link href={`${adminBase}/user/add`}>
             <UserPlus className="mr-2 h-4 w-4" />
-            Invite Artist
+            Invite Judge
           </Link>
         </Button>
       </div>
@@ -156,7 +145,7 @@ export default function ArtistsAdminPage() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search artists by username or email..."
+            placeholder="Search judges by username or email..."
             className="pl-9 bg-background"
             value={search}
             onChange={(e) => updateQuery({ search: e.target.value || null })}
@@ -171,7 +160,7 @@ export default function ArtistsAdminPage() {
             <SelectItem value="all">All Statuses</SelectItem>
             <SelectItem value="active">Active</SelectItem>
             <SelectItem value="suspended">Suspended</SelectItem>
-            <SelectItem value="pending_verification">Pending Verification</SelectItem>
+            <SelectItem value="pending_verification">Pending</SelectItem>
             <SelectItem value="deactivated">Deactivated</SelectItem>
           </SelectContent>
         </Select>
@@ -182,7 +171,7 @@ export default function ArtistsAdminPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Artist</TableHead>
+              <TableHead>Judge</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Joined</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -198,68 +187,64 @@ export default function ArtistsAdminPage() {
                   </TableCell>
                 </TableRow>
               ))
-            ) : artists.length === 0 ? (
+            ) : judges.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4}>
                   <div className="flex flex-col items-center py-16 text-center">
-                    <Palette className="h-10 w-10 text-muted-foreground mb-3" />
-                    <p className="font-medium">No artists found</p>
+                    <ShieldCheck className="h-10 w-10 text-muted-foreground mb-3" />
+                    <p className="font-medium">No judges found</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {search ? 'Try adjusting your search term' : 'No artists registered yet'}
+                      {search ? 'Try adjusting your search' : 'No judges registered yet'}
                     </p>
                   </div>
                 </TableCell>
               </TableRow>
             ) : (
-              artists.map((artist: UserProfile) => (
-                <TableRow key={artist.id} className="hover:bg-muted/40">
-                  {/* Artist Info */}
+              judges.map((judge: UserProfile) => (
+                <TableRow key={judge.id} className="hover:bg-muted/40">
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      {artist.avatar_url ? (
+                      {judge.avatar_url ? (
                         <div className="relative h-10 w-10 overflow-hidden rounded-full ring-2 ring-muted">
                           <Image
-                            src={artist.avatar_url}
-                            alt={artist.username}
+                            src={judge.avatar_url}
+                            alt={judge.username}
                             fill
                             className="object-cover"
                           />
                         </div>
                       ) : (
                         <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
-                          {artist.username?.slice(0, 2).toUpperCase()}
+                          {judge.username?.slice(0, 2).toUpperCase()}
                         </div>
                       )}
 
                       <div>
                         <Link
-                          href={`/admin/${roleName}/user/${artist.id}/stats`}
+                          href={`/admin/${roleName}/judge/${judge.id}/monitor`}
                           className="font-medium hover:underline"
                         >
-                          @{artist.username}
+                          @{judge.username}
                         </Link>
                         <p className="text-xs text-muted-foreground truncate max-w-[240px]">
-                          {artist.email || 'No email provided'}
+                          {judge.email || 'No email provided'}
                         </p>
                       </div>
                     </div>
                   </TableCell>
 
-                  {/* Status */}
                   <TableCell>
-                    <Badge variant={statusVariant(artist.status)} className="capitalize">
-                      {artist.status?.replace(/_/g, ' ')}
+                    <Badge variant={statusVariant(judge.status)} className="capitalize">
+                      {judge.status?.replace(/_/g, ' ')}
                     </Badge>
                   </TableCell>
 
-                  {/* Joined */}
                   <TableCell className="text-sm text-muted-foreground">
-                    {artist.created_at
-                      ? formatDistanceToNow(new Date(artist.created_at), { addSuffix: true })
+                    {judge.created_at
+                      ? formatDistanceToNow(new Date(judge.created_at), { addSuffix: true })
                       : '—'}
                   </TableCell>
 
-                  {/* Actions */}
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -270,24 +255,20 @@ export default function ArtistsAdminPage() {
 
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
-                          <Link href={`/admin/${roleName}/user/${artist.id}/stats`}>
-                            📊 View Statistics
+                          <Link href={`/admin/${roleName}/judge/${judge.id}/monitor`}>
+                            📋 Monitor Activity
                           </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href={`/admin/${roleName}/user/${artist.id}/edit`}>
-                            ✏️ Edit Artist
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleSuspend(artist.id)}>
-                          ⚠️ Suspend Artist
+
+                        <DropdownMenuItem onClick={() => handleSuspend(judge.id)}>
+                          ⚠️ Suspend Judge
                         </DropdownMenuItem>
 
                         <DropdownMenuItem
                           className="text-destructive focus:text-destructive"
-                          onClick={() => handleDelete(artist.id)}
+                          onClick={() => handleDelete(judge.id)}
                         >
-                          🗑️ Delete Artist
+                          🗑️ Delete Judge
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

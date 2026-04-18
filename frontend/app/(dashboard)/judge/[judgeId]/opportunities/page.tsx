@@ -3,21 +3,18 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useParams } from 'next/navigation';
+import { format } from 'date-fns';
 import {
   CalendarIcon,
+  Trophy,
   Users,
-  PlusCircle,
-  Edit,
-  Eye,
-  Trash2,
-  MoreHorizontal,
   Link as LinkIcon,
   Copy,
   Loader2,
+  ShieldCheck,
 } from 'lucide-react';
 
-import { useGetContestsQuery } from '@/services/api/contestsApi';
+import { useGetJudgeContestsQuery } from '@/services/api/contestsApi';
 import { useAuth } from '@/store/AuthContext';
 
 /* ShadCN UI */
@@ -26,327 +23,244 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
-/* ───────────────── STATUS ───────────────── */
-
+/* Status Helper */
 const getStatusBadge = (status: string = 'unknown') => {
   const s = status.toLowerCase();
 
   switch (s) {
-    case 'published':
     case 'live':
-      return { label: 'Live', variant: 'default' as const, className: 'bg-green-600' };
-
-    case 'draft':
+    case 'published':
       return {
-        label: 'Draft',
-        variant: 'secondary' as const,
-        className: 'bg-yellow-500/20 text-yellow-700',
+        label: 'Live',
+        variant: 'default' as const,
+        className: 'bg-green-600 hover:bg-green-700',
       };
 
+    case 'judging':
+      return { label: 'Judging', variant: 'default' as const, className: 'bg-blue-600' };
+
     case 'completed':
-      return { label: 'Completed', variant: 'secondary' as const, className: 'bg-gray-600' };
+      return { label: 'Completed', variant: 'secondary' as const };
 
     case 'archived':
-      return { label: 'Archived', variant: 'outline' as const, className: 'text-gray-500' };
+      return { label: 'Archived', variant: 'outline' as const };
 
     default:
-      return { label: 'Unknown', variant: 'secondary' as const, className: '' };
+      return { label: status, variant: 'secondary' as const };
   }
 };
 
-/* ───────────────── PAGE ───────────────── */
-
-export default function OpportunitiesManagementPage() {
-  const params = useParams();
+export default function JudgeOpportunitiesPage() {
   const { user } = useAuth();
 
-  let brandId: string | undefined;
-  let brandSlug: string | undefined;
-  let brandBase = '';
-
-  if (user?.role?.name === 'brand_manager') {
-    const managedBrand = user?.brands?.[0];
-
-    if (managedBrand) {
-      brandId = managedBrand.id;
-      brandSlug = managedBrand.slug;
-
-      if (brandSlug && user?.id) {
-        brandBase = `/brand-manager/${brandId}`;
-      }
-    }
-  }
-
-  if (!brandSlug) {
-    brandSlug = params['brand-slug'] as string | undefined;
-  }
-
-  const { data, isLoading, isError, error } = useGetContestsQuery(
-    brandId ? { brandId } : undefined,
-    { skip: !brandId }
-  );
+  const { data, isLoading, isError, error } = useGetJudgeContestsQuery(undefined, {
+    skip: !user,
+  });
 
   const contests = data?.contests ?? [];
 
   const activeContests = contests.filter((c: any) =>
-    ['live', 'published'].includes(c.status?.toLowerCase() ?? '')
+    ['live', 'published', 'judging'].includes(c.status?.toLowerCase() ?? '')
   );
 
-  const closedContests = contests.filter((c: any) =>
+  const completedContests = contests.filter((c: any) =>
     ['completed', 'archived'].includes(c.status?.toLowerCase() ?? '')
   );
 
-  const draftContests = contests.filter((c: any) => c.status?.toLowerCase() === 'draft');
-
-  if (isLoading) {
-    return <p className="text-center py-12 text-muted-foreground">Loading...</p>;
-  }
-
-  if (isError) {
-    return (
-      <div className="border border-destructive rounded-lg p-6 text-center">
-        <p className="text-destructive font-medium">Failed to load opportunities</p>
-        <p className="text-sm text-muted-foreground mt-2">
-          {(error as any)?.data?.message || 'Something went wrong.'}
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-8">
-      {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Opportunities Management</h1>
-          <p className="text-muted-foreground">
-            Create and manage contests and licensing opportunities.
-          </p>
-        </div>
-
-        {brandBase ? (
-          <Link href={`${brandBase}/opportunities/create`}>
-            <Button size="lg">
-              <PlusCircle className="mr-2 h-5 w-5" />
-              Create Opportunity
-            </Button>
-          </Link>
-        ) : (
-          <Button size="lg" disabled>
-            <PlusCircle className="mr-2 h-5 w-5" />
-            Create Opportunity
-          </Button>
-        )}
-      </div>
-
-      {/* TABS */}
-      <Tabs defaultValue="all" className="space-y-6">
-        <TabsList className="w-full justify-start">
-          <TabsTrigger value="all">All</TabsTrigger>
-          <TabsTrigger value="active">Active</TabsTrigger>
-          <TabsTrigger value="closed">Closed</TabsTrigger>
-          <TabsTrigger value="draft">Drafts</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="all">
-          <OpportunityGrid items={contests} brandBase={brandBase} />
-        </TabsContent>
-
-        <TabsContent value="active">
-          <OpportunityGrid items={activeContests} brandBase={brandBase} />
-        </TabsContent>
-
-        <TabsContent value="closed">
-          <OpportunityGrid items={closedContests} brandBase={brandBase} isClosed />
-        </TabsContent>
-
-        <TabsContent value="draft">
-          <OpportunityGrid items={draftContests} brandBase={brandBase} />
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
-}
-
-/* ───────────────── GRID + MODAL ───────────────── */
-
-function OpportunityGrid({ items, brandBase, isClosed = false }: any) {
   const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState<any>(null);
+  const [selectedContest, setSelectedContest] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [link, setLink] = useState('');
+  const [judgingLink, setJudgingLink] = useState('');
 
-  const generateLink = async (opp: any) => {
-    setSelected(opp);
+  const generateJudgingLink = async (contest: any) => {
+    setSelectedContest(contest);
     setOpen(true);
     setLoading(true);
-    setLink('');
+    setJudgingLink('');
 
     try {
-      await new Promise((r) => setTimeout(r, 700));
+      await new Promise((resolve) => setTimeout(resolve, 800));
 
-      const token = Math.random().toString(36).substring(2, 10);
-
-      setLink(`${window.location.origin}/judging/${opp.id}?token=${token}`);
+      const token = Math.random().toString(36).substring(2, 15);
+      setJudgingLink(`${window.location.origin}/judge/contest/${contest.id}?token=${token}`);
     } finally {
       setLoading(false);
     }
   };
 
-  const copy = async () => {
-    if (link) await navigator.clipboard.writeText(link);
+  const copyLink = async () => {
+    if (judgingLink) {
+      await navigator.clipboard.writeText(judgingLink);
+      alert('Link copied to clipboard!');
+    }
   };
 
+  if (isLoading) {
+    return <div className="text-center py-12">Loading your assigned contests...</div>;
+  }
+
+  if (isError) {
+    return (
+      <Alert variant="destructive">
+        <AlertDescription>
+          Failed to load contests. {(error as any)?.data?.message || 'Please try again later.'}
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   return (
-    <>
-      {/* GRID */}
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {items.map((opp: any) => {
-          const status = getStatusBadge(opp.status);
-          const deadline = opp.submission_end_date || opp.end_date || opp.deadline;
-
-          return (
-            <Card key={opp.id} className="overflow-hidden flex flex-col">
-              {/* IMAGE */}
-              <div className="relative h-48">
-                <Image
-                  src={opp.hero_image || '/placeholder.svg'}
-                  alt={opp.title}
-                  fill
-                  className="object-cover"
-                />
-
-                <div className="absolute top-2 right-2">
-                  <Badge variant={status.variant} className={status.className}>
-                    {status.label}
-                  </Badge>
-                </div>
-
-                {/* MENU */}
-                <div className="absolute bottom-2 right-2">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="bg-black/40 text-white">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-
-                      <DropdownMenuItem>
-                        <Eye className="mr-2 h-4 w-4" /> View
-                      </DropdownMenuItem>
-
-                      <DropdownMenuItem>
-                        <Edit className="mr-2 h-4 w-4" /> Edit
-                      </DropdownMenuItem>
-
-                      <DropdownMenuItem onClick={() => generateLink(opp)}>
-                        <LinkIcon className="mr-2 h-4 w-4" />
-                        Generate Judging Link
-                      </DropdownMenuItem>
-
-                      <DropdownMenuItem className="text-destructive">
-                        <Trash2 className="mr-2 h-4 w-4" /> Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </div>
-
-              {/* CONTENT */}
-              <CardHeader>
-                <CardTitle className="line-clamp-1">{opp.title}</CardTitle>
-              </CardHeader>
-
-              <CardContent>
-                <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
-                  {opp.description || 'No description'}
-                </p>
-
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div className="flex items-center gap-2">
-                    <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                    {deadline ? new Date(deadline).toLocaleDateString() : '—'}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    {opp.entry_count ?? 0} Entries
-                  </div>
-                </div>
-              </CardContent>
-
-              {/* FOOTER */}
-              <CardFooter className="grid grid-cols-2 gap-3 border-t p-4">
-                <Link href={`${brandBase}/contests/${opp.id}`}>
-                  <Button className="w-full">{isClosed ? 'Results' : 'Manage'}</Button>
-                </Link>
-
-                <Link
-                  href={
-                    isClosed
-                      ? `${brandBase}/contests/${opp.id}/reopen`
-                      : `/opportunities/${opp.slug || opp.id}`
-                  }
-                >
-                  <Button variant="outline" className="w-full">
-                    {isClosed ? 'Reopen' : 'View'}
-                  </Button>
-                </Link>
-              </CardFooter>
-            </Card>
-          );
-        })}
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex items-center gap-4">
+        <div className="p-3 bg-primary/10 rounded-2xl">
+          <ShieldCheck className="h-8 w-8 text-primary" />
+        </div>
+        <div>
+          <h1 className="text-3xl font-bold">My Judging Opportunities</h1>
+          <p className="text-muted-foreground">Contests where you are invited as a judge</p>
+        </div>
       </div>
 
-      {/* MODAL */}
+      {/* Tabs */}
+      <Tabs defaultValue="active" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="active">Active ({activeContests.length})</TabsTrigger>
+          <TabsTrigger value="completed">Completed ({completedContests.length})</TabsTrigger>
+          <TabsTrigger value="all">All Contests ({contests.length})</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="active">
+          <OpportunityGrid
+            items={activeContests}
+            isActive
+            user={user}
+            onGenerateLink={generateJudgingLink}
+          />
+        </TabsContent>
+
+        <TabsContent value="completed">
+          <OpportunityGrid
+            items={completedContests}
+            user={user}
+            onGenerateLink={generateJudgingLink}
+          />
+        </TabsContent>
+
+        <TabsContent value="all">
+          <OpportunityGrid items={contests} user={user} onGenerateLink={generateJudgingLink} />
+        </TabsContent>
+      </Tabs>
+
+      {/* Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Judging Link</DialogTitle>
+            <DialogTitle>Private Judging Link</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">{selected?.title}</p>
+            <p className="font-medium">{selectedContest?.title}</p>
 
-            <div className="p-3 border rounded-md text-sm break-all bg-muted/30">
+            <div className="p-3 bg-muted rounded text-sm break-all font-mono">
               {loading ? (
                 <div className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="animate-spin h-4 w-4" />
                   Generating...
                 </div>
               ) : (
-                link || 'No link generated'
+                judgingLink
               )}
             </div>
 
-            <div className="flex gap-2">
-              <Button onClick={copy} disabled={!link} className="flex-1">
-                <Copy className="mr-2 h-4 w-4" />
-                Copy
-              </Button>
-
-              <Button variant="outline" onClick={() => setOpen(false)}>
-                Close
-              </Button>
-            </div>
+            <Button onClick={copyLink} disabled={!judgingLink}>
+              <Copy className="mr-2 h-4 w-4" />
+              Copy Link
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
+  );
+}
+
+/* Grid Component */
+function OpportunityGrid({
+  items,
+  isActive = false,
+  onGenerateLink,
+  user,
+}: {
+  items: any[];
+  isActive?: boolean;
+  onGenerateLink: (contest: any) => void;
+  user: any;
+}) {
+  const judgeBase = user?.username ? `/judge/${user.username}` : '/judge';
+
+  if (items.length === 0) {
+    return (
+      <div className="text-center py-16 border rounded-xl">
+        <Trophy className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+        <p className="text-lg font-medium">No contests found</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      {items.map((contest) => {
+        const statusInfo = getStatusBadge(contest.status);
+        const deadline = contest.submission_end_date || contest.judging_end_date;
+
+        return (
+          <Card key={contest.id} className="flex flex-col">
+            <div className="relative h-40">
+              <Image
+                src={contest.hero_image || '/placeholder.jpg'}
+                alt={contest.title}
+                fill
+                className="object-cover"
+              />
+              <Badge className="absolute top-2 right-2">{statusInfo.label}</Badge>
+            </div>
+
+            <CardHeader>
+              <CardTitle>{contest.title}</CardTitle>
+            </CardHeader>
+
+            <CardContent>
+              {deadline && (
+                <p className="text-sm">
+                  <CalendarIcon className="inline h-4 w-4 mr-1" />
+                  {format(new Date(deadline), 'dd MMM yyyy')}
+                </p>
+              )}
+
+              <p className="text-sm">
+                <Users className="inline h-4 w-4 mr-1" />
+                {contest.entry_count ?? 0} entries
+              </p>
+            </CardContent>
+
+            <CardFooter className="grid grid-cols-2 gap-2">
+              <Button asChild>
+                <Link href={`${judgeBase}/contest/${contest.id}`}>
+                  {isActive ? 'Start' : 'View'}
+                </Link>
+              </Button>
+
+              <Button variant="outline" onClick={() => onGenerateLink(contest)}>
+                <LinkIcon className="h-4 w-4 mr-1" />
+                Link
+              </Button>
+            </CardFooter>
+          </Card>
+        );
+      })}
+    </div>
   );
 }

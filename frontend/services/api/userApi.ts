@@ -1,4 +1,3 @@
-// src/services/api/userApi.ts
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 /**
@@ -7,7 +6,6 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
  * ─────────────────────────────────────────────────────────────
  */
 
-// src/services/api/userApi.ts
 export interface UserStats {
   artworks_count: number;
   followers_count: number;
@@ -15,17 +13,19 @@ export interface UserStats {
   likes_received: number;
   views_received: number;
 }
+
 export interface UserProfile {
   id: string;
   username: string;
-  email: string;
-  email_verified: boolean;
+  email?: string;
+  email_verified?: boolean;
 
   status: 'active' | 'suspended' | 'pending_verification' | 'deactivated';
 
   role?: {
     id: string;
     name: string;
+    slug?: string;
     hierarchy_level?: number;
   };
 
@@ -49,11 +49,11 @@ export interface UserProfile {
 
   last_login_at?: string | null;
   created_at: string;
-  updated_at?: string;
+  updated_at?: string | null;
 
-  // 🔥 ADD THIS
   stats?: UserStats;
 }
+
 export interface CreateUserRequest {
   username: string;
   email: string;
@@ -76,6 +76,7 @@ export interface CreateUserRequest {
     linkedin?: string | null;
   };
 }
+
 export interface UpdateProfileRequest {
   bio?: string | null;
   location?: string | null;
@@ -83,21 +84,6 @@ export interface UpdateProfileRequest {
   profile?: Record<string, any>;
 }
 
-export interface ProfileUpdateData {
-  name: string;
-  bio?: string | null;
-  website?: string | null;
-  socialLinks?: {
-    twitter?: string | null;
-    instagram?: string | null;
-    facebook?: string | null;
-    tiktok?: string | null;
-    youtube?: string | null;
-    linkedin?: string | null;
-    [key: string]: string | null | undefined;
-  };
-  profileImageUrl?: string | null;
-}
 export interface ChangePasswordRequest {
   currentPassword: string;
   newPassword: string;
@@ -120,6 +106,11 @@ export interface UserListResponse {
   };
 }
 
+// NEW: Response type for getUsersByRoleSlug
+export interface UsersByRoleResponse extends UserListResponse {
+  // Same structure as UserListResponse, but we keep it explicit
+}
+
 export interface UserViolationResponse {
   id: string;
   violation_type: string;
@@ -133,6 +124,7 @@ export interface UserViolationResponse {
   resolved_at: string | null;
   created_at: string;
 }
+
 export interface Brand {
   id: string;
   name: string;
@@ -148,6 +140,7 @@ export interface UserBrandsResponse {
   success: boolean;
   brands: Brand[];
 }
+
 export interface UserViolationsResponse {
   user: {
     id: string;
@@ -156,21 +149,12 @@ export interface UserViolationsResponse {
   violations: UserViolationResponse[];
   total: number;
 }
-export interface PublicUserResponse {
-  success: boolean;
-  user: UserProfile; // same shape, but some fields may be missing/omitted
-}
+
 export interface AllViolationsResponse {
   violations: Array<{
     id: string;
-    target: {
-      id: string;
-      username: string;
-    };
-    reported_by: {
-      id: string;
-      username: string;
-    } | null;
+    target: { id: string; username: string };
+    reported_by: { id: string; username: string } | null;
     violation_type: string;
     description: string | null;
     entity_type: string | null;
@@ -190,10 +174,12 @@ export interface AllViolationsResponse {
     has_prev: boolean;
   };
 }
+
 export interface CurrentUserResponse {
   success: boolean;
   user: UserProfile;
 }
+
 // ─────────────────────────────────────────────────────────────
 
 export const userApi = createApi({
@@ -212,7 +198,8 @@ export const userApi = createApi({
     },
   }),
 
-  tagTypes: ['CurrentUser', 'UserList', 'UserViolations', 'PublicProfile'],
+  tagTypes: ['CurrentUser', 'UserList', 'UserViolations', 'PublicProfile', 'UsersByRole'],
+
   endpoints: (builder) => ({
     // GET /users/me
     getCurrentUser: builder.query<CurrentUserResponse, void>({
@@ -229,27 +216,23 @@ export const userApi = createApi({
       }),
       invalidatesTags: ['CurrentUser'],
     }),
+
     getUserByUsername: builder.query<UserProfile, string>({
       query: (username) => `/by-username/${username}`,
-
       providesTags: (result, error, username) => [
         { type: 'PublicProfile', id: username.toLowerCase() },
       ],
-
-      // ✅ Fixed transformResponse - never return null
       transformResponse: (response: { success: boolean; user: UserProfile }): UserProfile => {
         if (!response?.success || !response?.user) {
-          console.warn('Invalid profile response from backend:', response);
-          // Instead of returning null, throw an error so RTK Query treats it as error state
           throw new Error('Invalid profile response from server');
         }
         return response.user;
       },
-
       extraOptions: {
         refetchOnMountOrArgChange: true,
       },
     }),
+
     // PATCH /users/me/password
     changePassword: builder.mutation<{ message: string }, ChangePasswordRequest>({
       query: (body) => ({
@@ -258,6 +241,7 @@ export const userApi = createApi({
         body,
       }),
     }),
+
     createUser: builder.mutation<{ message: string; user: UserProfile }, CreateUserRequest>({
       query: (body) => ({
         url: '/create',
@@ -266,7 +250,7 @@ export const userApi = createApi({
       }),
       invalidatesTags: ['UserList'],
     }),
-    // POST /users/me/avatar
+
     uploadAvatar: builder.mutation<UploadAvatarResponse, File>({
       query: (file) => {
         const formData = new FormData();
@@ -280,7 +264,6 @@ export const userApi = createApi({
       invalidatesTags: ['CurrentUser'],
     }),
 
-    // DELETE /users/me/avatar
     removeAvatar: builder.mutation<{ message: string }, void>({
       query: () => ({
         url: '/me/avatar',
@@ -308,6 +291,27 @@ export const userApi = createApi({
       providesTags: ['UserList'],
     }),
 
+    // NEW: GET /users/by-role/:roleSlug
+    getUsersByRoleSlug: builder.query<
+      UsersByRoleResponse,
+      {
+        roleSlug: string;
+        page?: number;
+        limit?: number;
+        search?: string;
+        status?: string;
+      }
+    >({
+      query: ({ roleSlug, ...params }) => ({
+        url: `/by-role/${roleSlug}`,
+        params,
+      }),
+      providesTags: (result, error, { roleSlug }) => [
+        { type: 'UsersByRole', id: roleSlug },
+        'UserList',
+      ],
+    }),
+
     // GET /users/:id → Admin: Get user by ID
     getUserById: builder.query<UserProfile, string>({
       query: (id) => `/${id}`,
@@ -326,6 +330,7 @@ export const userApi = createApi({
       }),
       invalidatesTags: ['UserList', 'CurrentUser'],
     }),
+
     deleteUser: builder.mutation<{ message: string }, { userId: string }>({
       query: ({ userId }) => ({
         url: `/${userId}`,
@@ -333,7 +338,8 @@ export const userApi = createApi({
       }),
       invalidatesTags: ['UserList'],
     }),
-    // GET /users/:id/violations → Admin: Get violations for a user
+
+    // GET /users/:id/violations
     getUserViolations: builder.query<UserViolationsResponse, string>({
       query: (userId) => `/${userId}/violations`,
       providesTags: (result, error, userId) => [
@@ -341,12 +347,32 @@ export const userApi = createApi({
         { type: 'UserViolations', id: userId },
       ],
     }),
-    // GET /users/me/brands → Brand Manager: Get brands managed by the user
+
+    // GET /users/me/brands
     getMyBrands: builder.query<UserBrandsResponse, void>({
       query: () => '/me/brands',
       providesTags: ['CurrentUser'],
     }),
-    // GET /users/violations → Admin: Global violations list
+    updateUser: builder.mutation<
+      { message: string; user: UserProfile },
+      {
+        userId: string;
+        bio?: string | null;
+        location?: string | null;
+        website?: string | null;
+        status?: UserProfile['status'];
+        role_id?: string;
+        profile?: Record<string, any>;
+      }
+    >({
+      query: ({ userId, ...body }) => ({
+        url: `/${userId}`,
+        method: 'PATCH',
+        body,
+      }),
+      invalidatesTags: ['UserList', 'CurrentUser'],
+    }),
+    // GET /users/violations → Global violations
     getAllViolations: builder.query<
       AllViolationsResponse,
       {
@@ -376,12 +402,16 @@ export const {
   useGetMyBrandsQuery,
   useCreateUserMutation,
   useDeleteUserMutation,
+  useUpdateUserMutation,
   // Admin endpoints
   useGetAllUsersQuery,
   useGetUserByIdQuery,
   useUpdateUserStatusMutation,
   useGetUserViolationsQuery,
   useGetAllViolationsQuery,
+
+  // NEW HOOK
+  useGetUsersByRoleSlugQuery,
 } = userApi;
 
 export default userApi;
