@@ -1,5 +1,6 @@
 // src/routes/contest.routes.js
 const express = require('express');
+
 const ContestController = require('../controller/contest.controller');
 const ContestCategoryController = require('../controller/contestCategory.controller');
 const ContestEntryController = require('../controller/contestEntry.controller');
@@ -8,66 +9,64 @@ const ContestJudgeScoreController = require('../controller/contestJudgeScore.con
 const ContestVoteController = require('../controller/contestVote.controller');
 
 const { authenticateToken } = require('../middleware/auth.middleware');
-const { hasPermission } = require('../middleware/permission.middleware');
+// const { hasPermission } = require('../middleware/permission.middleware'); // Commented if not used
 
 const router = express.Router();
-router.use(authenticateToken); // All user routes require auth
 
-// Public
-router.get('/', ContestController.getContests);
-router.get('/:id', ContestController.getContest);
-router.get('/:contestId/leaderboard', ContestVoteController.getLeaderboard);
-// routes/contest.js  (or admin/contest.js)
-router.get('/by-status', ContestController.getContestsByStatus);
-// Auth required below
-// router.use(authenticateToken);
+// ====================== MIDDLEWARE ======================
+// Apply authentication to ALL routes in this router
+router.use(authenticateToken);
 
-// Contest management
-router.post('/',  ContestController.createContest);
-router.patch('/:id',  ContestController.updateContest);
-router.delete('/:id', ContestController.deleteContest);
-// In your router file
+// ====================== PUBLIC ROUTES ======================
+// These routes are protected by auth but data is publicly viewable
+router.get('/', ContestController.getContests);                    // GET /api/contest
+router.get('/:id', ContestController.getContest);                  // GET /api/contest/:id
+router.get('/by-status', ContestController.getContestsByStatus);   // GET /api/contest/by-status
+router.get('/:contestId/leaderboard', ContestVoteController.getLeaderboard); 
+
+// ====================== CONTEST MANAGEMENT ======================
+// Only brand owners and admins should access these
+router.post('/', ContestController.createContest);                 
+router.patch('/:id', ContestController.updateContest);            
+router.delete('/:id', ContestController.deleteContest);           
+
+router.patch('/:id/announce-winners', ContestController.announceWinners);   
+router.post('/:id/distribute-prizes', ContestController.distributePrizes);  
+
+// Brand-specific judges overview (if needed)
 router.get('/:brandId/contests/judges', ContestController.getAllContestJudgesByBrandId);
-router.post('/:id/judges', ContestController.assignUserAsJudgeByContestId);
-router.delete('/:id/judges/:userId', ContestController.removeUserAsJudgeByContestId);
-// Categories
+
+// ====================== JUDGES ROUTES ======================
+// Assigning & Managing Judges (Brand Owner / Admin only)
+router.post('/:contestId/judges', ContestJudgeController.assignJudge);           
+router.get('/:contestId/judges', ContestJudgeController.getJudges);              
+router.delete('/:contestId/judges/:judgeId', ContestJudgeController.removeJudge); 
+
+// Judge self-action: Accept invitation
+router.patch('/:contestId/judges/:judgeId/accept', ContestJudgeController.acceptInvitation);
+
+// Judge's personal dashboard - contests they are assigned to
+router.get('/judge/contests', ContestJudgeController.getAllContestsByJudgeId);   
+
+// ====================== CATEGORIES ======================
 router.post('/:contestId/categories', ContestCategoryController.addCategory);
-router.delete('/:contestId/categories/:categoryId',  ContestCategoryController.removeCategory);
+router.delete('/:contestId/categories/:categoryId', ContestCategoryController.removeCategory);
 router.get('/:contestId/categories', ContestCategoryController.getCategories);
 
-// Entries
-router.post('/:contestId/entries', ContestEntryController.submitEntry);
-router.get('/:contestId/entries', ContestEntryController.getEntries);
-router.patch('/:contestId/entries/:entryId/status',  ContestEntryController.updateEntryStatus);
-router.delete(
-  '/contests/:contestId/entries/:entryId',
+// ====================== ENTRIES ======================
+router.post('/:contestId/entries', ContestEntryController.submitEntry);                    
+router.get('/:contestId/entries', ContestEntryController.getEntries);                      
+router.patch('/:contestId/entries/:entryId/status', ContestEntryController.updateEntryStatus); 
+router.delete('/:contestId/entries/:entryId', ContestEntryController.deleteEntry);         
 
-  ContestEntryController.deleteEntry  
-);
-router.get(
-  '/judge/contests',
-  ContestJudgeController.getAllContestsByJudgeId
-);
-router.get(
-  '/me/contest-entries',
+// User's own contest entries
+router.get('/me/contest-entries', ContestEntryController.getAllMyEntries);
 
-  ContestEntryController.getAllMyEntries
-);
-// Judges
-router.post('/:contestId/judges', ContestJudgeController.inviteJudge);
-router.patch('/:contestId/judges/:judgeId/accept', ContestJudgeController.acceptInvitation);
-router.get('/:contestId/judges', ContestJudgeController.getJudges);
-router.delete('/:contestId/judges/:judgeId', ContestJudgeController.removeJudge);
+// ====================== JUDGE SCORING ======================
+router.post('/:contestId/entries/:entryId/score', ContestJudgeScoreController.submitScore);
+router.get('/:contestId/entries/:entryId/scores', ContestJudgeScoreController.getScoresForEntry);
 
-// Judge Scoring
-router.post('/:contestId/entries/:entryId/score',  ContestJudgeScoreController.submitScore);
-router.get('/:contestId/entries/:entryId/scores',  ContestJudgeScoreController.getScoresForEntry);
-
-// Voting
-router.post('/:contestId/entries/:entryId/vote',  ContestVoteController.vote);
-
-// Winner & Prizes
-router.patch('/:id/announce-winners',  ContestController.announceWinners);
-router.post('/:id/distribute-prizes', ContestController.distributePrizes);
+// ====================== PUBLIC VOTING ======================
+router.post('/:contestId/entries/:entryId/vote', ContestVoteController.vote);
 
 module.exports = router;

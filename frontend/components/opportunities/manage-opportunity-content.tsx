@@ -8,12 +8,12 @@ import {
   MoreHorizontal,
   Trash2,
   X,
-  Calendar,
-  Users,
-  Clock,
   Briefcase,
-  Award,
   Search,
+  UserPlus,
+  UserMinus,
+  Trophy,
+  Plus,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -53,7 +53,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 import {
   useGetContestQuery,
@@ -61,29 +63,53 @@ import {
   useDeleteContestMutation,
   useUpdateEntryStatusMutation,
   useDeleteContestEntryMutation,
-  ContestEntry,
+  useAssignJudgeMutation,
+  useRemoveJudgeMutation,
+  useGetContestJudgesQuery,
 } from '@/services/api/contestsApi';
+
+import { useGetUsersByRoleSlugQuery, useCreateUserMutation } from '@/services/api/userApi';
 
 interface ExtendedContestEntry extends ContestEntry {
   artwork_title?: string;
   artwork_thumbnail_url?: string;
   artwork_file_url?: string;
   creator_username?: string;
+  creator_avatar?: string;
   submitted_at?: string;
 }
 
 export function ManageOpportunityContent({ opportunityId }: { opportunityId: string }) {
   const router = useRouter();
 
+  // State
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedEntry, setSelectedEntry] = useState<ExtendedContestEntry | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [assignJudgeOpen, setAssignJudgeOpen] = useState(false);
+  const [judgeSearch, setJudgeSearch] = useState('');
+  const [showCreateJudgeForm, setShowCreateJudgeForm] = useState(false);
 
+  // New Judge Form State
+  const [newJudgeData, setNewJudgeData] = useState({
+    username: '',
+    email: '',
+    bio: '',
+  });
+
+  // Queries
   const { data: opportunity, isLoading: oppLoading } = useGetContestQuery(opportunityId);
   const { data: entriesResponse, isLoading: entriesLoading } = useGetContestEntriesQuery({
     contestId: opportunityId,
+  });
+  const { data: judgesData, isLoading: judgesLoading } = useGetContestJudgesQuery(opportunityId);
+
+  // Fetch users with 'judge' role
+  const { data: judgesPoolData, isLoading: judgesPoolLoading } = useGetUsersByRoleSlugQuery({
+    roleSlug: 'judge',
+    limit: 100,
   });
 
   const entries: ExtendedContestEntry[] = useMemo(
@@ -91,11 +117,22 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
     [entriesResponse]
   );
 
+  const judges = useMemo(() => judgesData?.judges || judgesData || [], [judgesData]);
+
+  const availableJudges = useMemo(() => {
+    const assignedIds = new Set(judges.map((j: any) => j.user_id || j.judge_id || j.id));
+    return (judgesPoolData?.users || []).filter((user: any) => !assignedIds.has(user.id));
+  }, [judgesPoolData, judges]);
+
+  // Mutations
   const [deleteContest] = useDeleteContestMutation();
   const [updateEntryStatus, { isLoading: isUpdatingStatus }] = useUpdateEntryStatusMutation();
   const [deleteEntry] = useDeleteContestEntryMutation();
+  const [assignJudge] = useAssignJudgeMutation();
+  const [removeJudge] = useRemoveJudgeMutation();
+  const [createUser] = useCreateUserMutation();
 
-  // ── Handlers ────────────────────────────────────────────────
+  // Handlers
   const handleDeleteOpportunity = async () => {
     try {
       await deleteContest(opportunityId).unwrap();
@@ -109,9 +146,7 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
     async (entryId: string, status: ContestEntry['status']) => {
       try {
         await updateEntryStatus({ contestId: opportunityId, entryId, status }).unwrap();
-        if (selectedEntry?.id === entryId) {
-          setViewDialogOpen(false);
-        }
+        if (selectedEntry?.id === entryId) setViewDialogOpen(false);
       } catch (err) {
         console.error('Failed to update entry status:', err);
       }
@@ -128,7 +163,56 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
     }
   };
 
-  // ── Helpers ─────────────────────────────────────────────────
+  const handleAssignJudge = async (userId: string) => {
+    try {
+      await assignJudge({ contestId: opportunityId, userId: userId.trim() }).unwrap();
+      setAssignJudgeOpen(false);
+      setJudgeSearch('');
+    } catch (err: any) {
+      console.error('Failed to assign judge:', err);
+      alert(err?.data?.message || 'Failed to assign judge');
+    }
+  };
+
+  const handleCreateAndAssignJudge = async () => {
+    if (!newJudgeData.username.trim() || !newJudgeData.email.trim()) {
+      alert('Username and Email are required');
+      return;
+    }
+
+    try {
+      const createdUser = await createUser({
+        username: newJudgeData.username.trim(),
+        email: newJudgeData.email.trim(),
+        bio: newJudgeData.bio.trim() || undefined,
+        role: 'judge',
+      }).unwrap();
+
+      // Auto assign the newly created judge
+      await assignJudge({
+        contestId: opportunityId,
+        userId: createdUser.user.id,
+      }).unwrap();
+
+      // Reset form
+      setNewJudgeData({ username: '', email: '', bio: '' });
+      setShowCreateJudgeForm(false);
+      setAssignJudgeOpen(false);
+    } catch (err: any) {
+      console.error('Failed to create and assign judge:', err);
+      alert(err?.data?.message || 'Failed to create judge');
+    }
+  };
+
+  const handleRemoveJudge = async (userId: string) => {
+    if (!confirm('Remove this judge from the contest?')) return;
+    try {
+      await removeJudge({ contestId: opportunityId, userId }).unwrap();
+    } catch (err) {
+      console.error('Failed to remove judge:', err);
+    }
+  };
+
   const formatRelative = (date?: string) =>
     date ? formatDistanceToNow(new Date(date), { addSuffix: true }) : '—';
 
@@ -139,7 +223,7 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
       case 'rejected':
         return 'border-l-4 border-l-red-500 bg-red-50/30';
       case 'winner':
-        return 'border-l-4 border-l-yellow-500 bg-yellow-50/50';
+        return 'border-l-4 border-l-amber-500 bg-amber-50/50';
       case 'pending':
       default:
         return 'border-l-4 border-l-gray-300';
@@ -147,21 +231,15 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
   };
 
   const getContestStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'live':
-      case 'published':
-        return 'bg-green-100 text-green-800 border-green-300';
-      case 'judging':
-        return 'bg-purple-100 text-purple-800 border-purple-300';
-      case 'completed':
-        return 'bg-blue-100 text-blue-800 border-blue-300';
-      case 'archived':
-        return 'bg-gray-100 text-gray-800 border-gray-300';
-      case 'draft':
-        return 'bg-amber-100 text-amber-800 border-amber-300';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-300';
-    }
+    const map: Record<string, string> = {
+      live: 'bg-green-100 text-green-800',
+      published: 'bg-green-100 text-green-800',
+      judging: 'bg-purple-100 text-purple-800',
+      completed: 'bg-blue-100 text-blue-800',
+      archived: 'bg-gray-100 text-gray-800',
+      draft: 'bg-amber-100 text-amber-800',
+    };
+    return map[status] || 'bg-gray-100 text-gray-800';
   };
 
   const filteredEntries = useMemo(() => {
@@ -170,16 +248,15 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
       const matchesSearch =
         !q ||
         e.artwork_title?.toLowerCase().includes(q) ||
-        e.artwork_id?.toLowerCase().includes(q) ||
         e.creator_username?.toLowerCase().includes(q) ||
-        e.creator_id?.toLowerCase().includes(q);
+        e.id?.toLowerCase().includes(q);
 
       const matchesStatus = statusFilter === 'all' || e.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
   }, [entries, searchQuery, statusFilter]);
 
-  if (oppLoading || entriesLoading) {
+  if (oppLoading || entriesLoading || judgesLoading) {
     return <LoadingSkeleton />;
   }
 
@@ -197,7 +274,7 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
   return (
     <TooltipProvider>
       <div className="space-y-6 pb-16">
-        {/* ── Header ────────────────────────────────────────────── */}
+        {/* Header */}
         <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" asChild className="-ml-2">
@@ -207,125 +284,93 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
             </Button>
             <div>
               <div className="flex items-center gap-3 flex-wrap">
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-                  {opportunity.title}
-                </h1>
+                <h1 className="text-3xl font-bold tracking-tight">{opportunity.title}</h1>
                 <Badge
                   variant="outline"
                   className={cn(
-                    'px-3 py-1 text-xs font-medium capitalize',
+                    'px-4 py-1 text-sm font-medium capitalize',
                     getContestStatusBadgeVariant(opportunity.status)
                   )}
                 >
                   {opportunity.status}
                 </Badge>
               </div>
-              <p className="text-muted-foreground text-sm mt-1">Manage submissions & decisions</p>
+              <p className="text-muted-foreground mt-1">Manage submissions and judges</p>
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex gap-2">
             <Button variant="outline" size="sm" asChild>
               <Link href={`/contests/${opportunityId}`} target="_blank" rel="noopener noreferrer">
                 <Eye className="mr-2 h-4 w-4" />
-                View public page
+                View Public Page
               </Link>
             </Button>
 
-            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem asChild>
-                    <Link href={`/dashboard/opportunities/${opportunityId}/edit`}>
-                      <Edit className="mr-2 h-4 w-4" />
-                      Edit contest
-                    </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link href={`/dashboard/opportunities/${opportunityId}/edit`}>
+                    <Edit className="mr-2 h-4 w-4" /> Edit Contest
+                  </Link>
+                </DropdownMenuItem>
+                <AlertDialogTrigger asChild>
+                  <DropdownMenuItem className="text-destructive">
+                    <Trash2 className="mr-2 h-4 w-4" /> Delete Contest
                   </DropdownMenuItem>
-
-                  <AlertDialogTrigger asChild>
-                    <DropdownMenuItem className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete contest…
-                    </DropdownMenuItem>
-                  </AlertDialogTrigger>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete this contest?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently remove the contest and all {entries.length} submissions.
-                    This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={handleDeleteOpportunity}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    Delete Contest
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                </AlertDialogTrigger>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
 
-        {/* ── Overview Card ─────────────────────────────────────── */}
-        <Card className="border shadow-sm">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Contest Overview</CardTitle>
+        {/* Overview Card */}
+        <Card className="shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Briefcase className="h-5 w-5" /> Contest Overview
+            </CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <CardContent className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
             <div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                <Briefcase className="h-4 w-4" />
-                Brand
-              </div>
-              <div className="font-medium">{opportunity.brand_name || '—'}</div>
+              <p className="text-sm text-muted-foreground">Brand</p>
+              <p className="font-medium mt-1">{opportunity.brand_name || '—'}</p>
             </div>
             <div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                <Calendar className="h-4 w-4" />
-                Deadline
-              </div>
-              <div className="font-medium">
+              <p className="text-sm text-muted-foreground">Submission Deadline</p>
+              <p className="font-medium mt-1">
                 {opportunity.submission_end_date
-                  ? new Date(opportunity.submission_end_date).toLocaleDateString()
+                  ? new Date(opportunity.submission_end_date).toLocaleDateString('en-IN')
                   : '—'}
-              </div>
+              </p>
             </div>
             <div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                <Clock className="h-4 w-4" />
-                Created
-              </div>
-              <div className="font-medium">{formatRelative(opportunity.created_at)}</div>
+              <p className="text-sm text-muted-foreground">Max Entries/User</p>
+              <p className="font-medium mt-1">{opportunity.max_entries_per_user || 1}</p>
             </div>
             <div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                <Users className="h-4 w-4" />
-                Entries
-              </div>
-              <div className="text-2xl font-bold">{entries.length}</div>
+              <p className="text-sm text-muted-foreground">Total Submissions</p>
+              <p className="text-2xl font-bold text-primary">{entries.length}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Judges Assigned</p>
+              <p className="text-2xl font-bold">{judges.length}</p>
             </div>
           </CardContent>
 
           {opportunity.description && (
             <>
-              <Separator className="my-6" />
-              <CardContent>
-                <h4 className="font-medium mb-3 text-sm uppercase tracking-wide text-muted-foreground">
+              <Separator />
+              <CardContent className="pt-6">
+                <h4 className="font-medium mb-2 text-sm uppercase tracking-widest text-muted-foreground">
                   Description
                 </h4>
-                <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
+                <p className="text-muted-foreground whitespace-pre-line">
                   {opportunity.description}
                 </p>
               </CardContent>
@@ -333,89 +378,145 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
           )}
         </Card>
 
-        {/* ── Entries Section ───────────────────────────────────── */}
-        <Card className="shadow-sm">
-          <CardHeader className="pb-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <CardTitle>
-                Submissions {filteredEntries.length > 0 && `(${filteredEntries.length})`}
-              </CardTitle>
+        {/* Tabs */}
+        <Tabs defaultValue="submissions" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="submissions">Submissions ({entries.length})</TabsTrigger>
+            <TabsTrigger value="judges">Judges ({judges.length})</TabsTrigger>
+          </TabsList>
 
-              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                <div className="relative w-full sm:w-72">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search title, creator, ID..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9"
-                  />
+          {/* Submissions Tab */}
+          <TabsContent value="submissions" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <CardTitle>Submissions</CardTitle>
+                  <div className="flex gap-3 w-full sm:w-auto">
+                    <div className="relative flex-1 sm:w-80">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search artwork, creator..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="h-10 rounded-md border px-3 text-sm bg-background"
+                    >
+                      <option value="all">All Status</option>
+                      <option value="pending">Pending</option>
+                      <option value="approved">Approved</option>
+                      <option value="rejected">Rejected</option>
+                      <option value="winner">Winner</option>
+                    </select>
+                  </div>
                 </div>
+              </CardHeader>
 
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className={cn(
-                    'h-10 rounded-md border border-input bg-background px-3 py-2 text-sm w-full sm:w-auto',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
-                  )}
-                >
-                  <option value="all">All statuses</option>
-                  <option value="pending">Pending</option>
-                  <option value="approved">Approved</option>
-                  <option value="rejected">Rejected</option>
-                  <option value="winner">Winner</option>
-                </select>
-              </div>
-            </div>
-          </CardHeader>
-
-          <CardContent>
-            {filteredEntries.length === 0 ? (
-              <div className="py-16">
-                <EmptyState
-                  title={
-                    searchQuery || statusFilter !== 'all'
-                      ? 'No matching entries'
-                      : 'No submissions yet'
-                  }
-                  description={
-                    searchQuery || statusFilter !== 'all'
-                      ? 'Try adjusting your search or filter.'
-                      : 'When artists submit, their entries will appear here.'
-                  }
-                />
-              </div>
-            ) : (
-              <div className="divide-y divide-border rounded-md border">
-                {filteredEntries.map((entry) => (
-                  <EntryRow
-                    key={entry.id}
-                    entry={entry}
-                    onView={() => {
-                      setSelectedEntry(entry);
-                      setViewDialogOpen(true);
-                    }}
-                    onStatusChange={handleStatusChange}
-                    onDelete={handleDeleteEntry}
-                    isUpdating={isUpdatingStatus}
-                    formatRelative={formatRelative}
-                    getEntryRowStyles={getEntryRowStyles}
+              <CardContent>
+                {filteredEntries.length === 0 ? (
+                  <EmptyState
+                    title={
+                      searchQuery || statusFilter !== 'all'
+                        ? 'No matching submissions'
+                        : 'No submissions yet'
+                    }
+                    description="When creators submit their artwork, they will appear here."
                   />
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                ) : (
+                  <div className="divide-y divide-border rounded-md border">
+                    {filteredEntries.map((entry) => (
+                      <EntryRow
+                        key={entry.id}
+                        entry={entry}
+                        onView={() => {
+                          setSelectedEntry(entry);
+                          setViewDialogOpen(true);
+                        }}
+                        onStatusChange={handleStatusChange}
+                        onDelete={handleDeleteEntry}
+                        isUpdating={isUpdatingStatus}
+                        formatRelative={formatRelative}
+                        getEntryRowStyles={getEntryRowStyles}
+                      />
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        {/* ── Delete Contest Dialog ────────────────────────────── */}
+          {/* Judges Tab */}
+          <TabsContent value="judges" className="space-y-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Assigned Judges</CardTitle>
+                <Button onClick={() => setAssignJudgeOpen(true)} className="gap-2">
+                  <UserPlus className="h-4 w-4" />
+                  Assign Judge
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {judges.length === 0 ? (
+                  <EmptyState
+                    title="No judges assigned yet"
+                    description="Assign judges to help evaluate and score submissions."
+                  />
+                ) : (
+                  <div className="space-y-3">
+                    {judges.map((judge: any) => (
+                      <div
+                        key={judge.user_id || judge.id}
+                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-4">
+                          <Avatar className="h-12 w-12">
+                            <AvatarImage src={judge.avatar_url} />
+                            <AvatarFallback>
+                              {(judge.name || judge.username || 'J')[0].toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-semibold">{judge.name || judge.username}</p>
+                            <p className="text-sm text-muted-foreground">@{judge.username}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Assigned {formatRelative(judge.assigned_at)}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <Badge variant={judge.accepted ? 'default' : 'secondary'}>
+                            {judge.accepted ? 'Accepted' : 'Invitation Pending'}
+                          </Badge>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleRemoveJudge(judge.user_id || judge.id)}
+                          >
+                            <UserMinus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        {/* Delete Contest Dialog */}
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Delete this contest?</AlertDialogTitle>
               <AlertDialogDescription>
-                This will permanently remove the contest and all {entries.length} submissions. This
-                action cannot be undone.
+                This action will permanently delete the contest and all {entries.length}{' '}
+                submissions. This cannot be undone.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -424,13 +525,123 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
                 onClick={handleDeleteOpportunity}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
-                Delete Contest
+                Yes, Delete Contest
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* ── Entry Detail Dialog ──────────────────────────────── */}
+        {/* Assign Judge Dialog */}
+        <Dialog open={assignJudgeOpen} onOpenChange={setAssignJudgeOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Assign Judge</DialogTitle>
+              <DialogDescription>
+                Choose an existing judge or create a new one for this contest.
+              </DialogDescription>
+            </DialogHeader>
+
+            {!showCreateJudgeForm ? (
+              <>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by username or email..."
+                    value={judgeSearch}
+                    onChange={(e) => setJudgeSearch(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+
+                <div className="max-h-96 overflow-y-auto mt-4 space-y-2 pr-2">
+                  {judgesPoolLoading ? (
+                    <p className="text-center py-12 text-muted-foreground">
+                      Loading available judges...
+                    </p>
+                  ) : availableJudges.length === 0 ? (
+                    <p className="text-center py-12 text-muted-foreground">
+                      No available judges found.
+                    </p>
+                  ) : (
+                    availableJudges
+                      .filter(
+                        (user: any) =>
+                          !judgeSearch ||
+                          user.username?.toLowerCase().includes(judgeSearch.toLowerCase()) ||
+                          user.email?.toLowerCase().includes(judgeSearch.toLowerCase())
+                      )
+                      .map((user: any) => (
+                        <div
+                          key={user.id}
+                          className="flex items-center justify-between p-4 hover:bg-muted rounded-xl cursor-pointer border"
+                          onClick={() => handleAssignJudge(user.id)}
+                        >
+                          <div className="flex items-center gap-4">
+                            <Avatar className="h-11 w-11">
+                              <AvatarImage src={user.avatar_url} />
+                              <AvatarFallback>{user.username?.[0]?.toUpperCase()}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium">@{user.username}</p>
+                              <p className="text-sm text-muted-foreground">{user.email}</p>
+                            </div>
+                          </div>
+                          <Button size="sm" variant="outline">
+                            Assign
+                          </Button>
+                        </div>
+                      ))
+                  )}
+                </div>
+
+                <div className="flex justify-center mt-6">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowCreateJudgeForm(true)}
+                    className="gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Create New Judge
+                  </Button>
+                </div>
+              </>
+            ) : (
+              /* Create New Judge Form */
+              <div className="space-y-4 py-2">
+                <Input
+                  placeholder="Username *"
+                  value={newJudgeData.username}
+                  onChange={(e) => setNewJudgeData({ ...newJudgeData, username: e.target.value })}
+                />
+                <Input
+                  type="email"
+                  placeholder="Email Address *"
+                  value={newJudgeData.email}
+                  onChange={(e) => setNewJudgeData({ ...newJudgeData, email: e.target.value })}
+                />
+                <Input
+                  placeholder="Bio (optional)"
+                  value={newJudgeData.bio}
+                  onChange={(e) => setNewJudgeData({ ...newJudgeData, bio: e.target.value })}
+                />
+
+                <DialogFooter className="mt-6">
+                  <Button variant="outline" onClick={() => setShowCreateJudgeForm(false)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleCreateAndAssignJudge}
+                    disabled={!newJudgeData.username.trim() || !newJudgeData.email.trim()}
+                  >
+                    Create & Assign Judge
+                  </Button>
+                </DialogFooter>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Entry Detail Dialog */}
         <EntryDetailDialog
           entry={selectedEntry}
           open={viewDialogOpen}
@@ -444,7 +655,7 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
   );
 }
 
-// ── Sub-components ────────────────────────────────────────────
+/* ====================== SUB COMPONENTS ====================== */
 
 function EntryRow({
   entry,
@@ -466,90 +677,83 @@ function EntryRow({
   return (
     <div
       className={cn(
-        'group relative flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 transition-colors',
-        'hover:bg-muted/60 cursor-pointer',
+        'group flex flex-col sm:flex-row gap-4 p-5 hover:bg-muted/60 transition-all cursor-pointer border-l-4',
         getEntryRowStyles(entry.status)
       )}
       onClick={onView}
     >
-      {/* Thumbnail */}
       <div className="flex-shrink-0">
-        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden border bg-muted shadow-sm">
+        <div className="w-24 h-24 rounded-xl overflow-hidden border bg-muted">
           {entry.artwork_thumbnail_url ? (
             <img
               src={entry.artwork_thumbnail_url}
-              alt={entry.artwork_title || 'Entry'}
-              className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-300"
+              alt={entry.artwork_title}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground/60 bg-gradient-to-br from-muted/50 to-muted/30">
-              No preview
+            <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
+              No Preview
             </div>
           )}
         </div>
       </div>
 
-      {/* Main content */}
-      <div className="flex-1 min-w-0 space-y-1">
-        <div className="flex items-start justify-between gap-4">
-          <div className="space-y-0.5 pr-20 sm:pr-0">
-            <p className="font-medium leading-tight truncate">
-              {entry.artwork_title || `Entry ${entry.artwork_id?.slice(0, 8) || '?'}`}
+      <div className="flex-1 min-w-0 space-y-2">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="font-semibold text-lg leading-tight line-clamp-2">
+              {entry.artwork_title || `Entry #${entry.id.slice(0, 8)}`}
             </p>
             <p className="text-sm text-muted-foreground">
               by @{entry.creator_username || entry.creator_id?.slice(0, 8)}
             </p>
-            {entry.submitted_at && (
-              <p className="text-xs text-muted-foreground/75">
-                {formatRelative(entry.submitted_at)}
-              </p>
-            )}
           </div>
-
-          {/* Quick actions */}
-          <div className="flex items-center gap-1 absolute right-4 top-4 sm:static sm:opacity-100 group-hover:opacity-100 opacity-70 sm:opacity-0 transition-opacity">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-100"
-                  disabled={entry.status === 'approved' || isUpdating}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onStatusChange(entry.id, 'approved');
-                  }}
-                >
-                  <Check className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Approve</TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-100"
-                  disabled={entry.status === 'rejected' || isUpdating}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onStatusChange(entry.id, 'rejected');
-                  }}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Reject</TooltipContent>
-            </Tooltip>
-          </div>
+          <StatusBadge status={entry.status} />
         </div>
+
+        {entry.submitted_at && (
+          <p className="text-xs text-muted-foreground">
+            Submitted {formatRelative(entry.submitted_at)}
+          </p>
+        )}
       </div>
 
-      {/* Status badge */}
-      <div className="sm:self-center mt-2 sm:mt-0">
-        <StatusBadge status={entry.status} />
+      <div className="flex gap-1 self-start sm:self-center opacity-70 group-hover:opacity-100 transition-opacity">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-green-600 hover:text-green-700"
+              disabled={entry.status === 'approved' || isUpdating}
+              onClick={(e) => {
+                e.stopPropagation();
+                onStatusChange(entry.id, 'approved');
+              }}
+            >
+              <Check className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Approve</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-red-600 hover:text-red-700"
+              disabled={entry.status === 'rejected' || isUpdating}
+              onClick={(e) => {
+                e.stopPropagation();
+                onStatusChange(entry.id, 'rejected');
+              }}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Reject</TooltipContent>
+        </Tooltip>
       </div>
     </div>
   );
@@ -558,13 +762,13 @@ function EntryRow({
 function StatusBadge({ status }: { status: string }) {
   switch (status) {
     case 'approved':
-      return <Badge className="bg-green-600 hover:bg-green-600">Approved</Badge>;
+      return <Badge className="bg-green-600">Approved</Badge>;
     case 'rejected':
       return <Badge variant="destructive">Rejected</Badge>;
     case 'winner':
       return (
-        <Badge className="bg-yellow-500 hover:bg-yellow-500 flex items-center gap-1">
-          <Award className="h-3.5 w-3.5" /> Winner
+        <Badge className="bg-amber-500 flex items-center gap-1">
+          <Trophy className="h-3.5 w-3.5" /> Winner
         </Badge>
       );
     case 'pending':
@@ -593,56 +797,48 @@ function EntryDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[95vh] p-0 gap-0 sm:rounded-2xl overflow-hidden">
+      <DialogContent className="max-w-5xl p-0 overflow-hidden max-h-[95vh]">
         <div className="flex flex-col lg:flex-row h-full">
-          {/* Preview */}
-          <div className="flex-1 bg-gradient-to-br from-black/5 to-transparent p-6 lg:p-10 flex items-center justify-center">
+          {/* Artwork Preview */}
+          <div className="flex-1 bg-black/5 p-8 flex items-center justify-center">
             {entry.artwork_file_url || entry.artwork_thumbnail_url ? (
               <img
                 src={entry.artwork_file_url || entry.artwork_thumbnail_url}
-                alt={entry.artwork_title || 'Artwork'}
-                className="max-h-[75vh] max-w-full object-contain rounded-xl shadow-2xl ring-1 ring-black/5"
+                alt={entry.artwork_title}
+                className="max-h-[80vh] max-w-full object-contain rounded-2xl shadow-2xl"
               />
             ) : (
-              <div className="text-muted-foreground text-lg">No preview available</div>
+              <p className="text-muted-foreground">No preview available</p>
             )}
           </div>
 
-          {/* Sidebar */}
+          {/* Sidebar Info */}
           <div className="w-full lg:w-96 border-l bg-card flex flex-col">
-            <div className="p-6 flex-1 overflow-y-auto">
-              <DialogHeader className="mb-6">
-                <DialogTitle className="text-xl font-semibold leading-tight">
-                  {entry.artwork_title || `Entry ${entry.artwork_id?.slice(0, 8)}`}
-                </DialogTitle>
-                <DialogDescription className="flex items-center gap-3 mt-2 flex-wrap">
-                  <span>by @{entry.creator_username || entry.creator_id?.slice(0, 8)}</span>
-                  <StatusBadge status={entry.status} />
+            <div className="p-6 flex-1 overflow-auto">
+              <DialogHeader>
+                <DialogTitle className="text-2xl">{entry.artwork_title}</DialogTitle>
+                <DialogDescription className="flex items-center gap-2 mt-2">
+                  by @{entry.creator_username} • {formatRelative(entry.submitted_at)}
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-muted-foreground">Submitted</p>
-                    <p className="font-medium">{formatRelative(entry.submitted_at)}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Entry ID</p>
-                    <p className="font-mono text-xs break-all">{entry.id}</p>
-                  </div>
-                  {entry.rank != null && (
-                    <div>
-                      <p className="text-muted-foreground">Rank</p>
-                      <p className="font-medium">#{entry.rank}</p>
-                    </div>
-                  )}
+              <div className="mt-8 space-y-6 text-sm">
+                <div>
+                  <p className="text-muted-foreground mb-1">Status</p>
+                  <StatusBadge status={entry.status} />
                 </div>
+
+                {entry.rank && (
+                  <div>
+                    <p className="text-muted-foreground mb-1">Rank</p>
+                    <p className="font-semibold text-lg">#{entry.rank}</p>
+                  </div>
+                )}
 
                 {entry.submission_notes && (
                   <div>
-                    <h4 className="text-sm font-medium mb-2">Creator Notes</h4>
-                    <p className="text-sm whitespace-pre-line leading-relaxed border-l-3 border-muted-foreground/30 pl-3">
+                    <p className="text-muted-foreground mb-2">Creator Notes</p>
+                    <p className="border-l-4 border-muted pl-4 italic text-muted-foreground">
                       {entry.submission_notes}
                     </p>
                   </div>
@@ -650,12 +846,12 @@ function EntryDetailDialog({
               </div>
             </div>
 
-            <div className="border-t p-4 flex gap-3 justify-end bg-muted/40">
+            <div className="border-t p-4 flex gap-3">
               {entry.status !== 'approved' && (
                 <Button
                   onClick={() => onStatusChange(entry.id, 'approved')}
                   disabled={isUpdating}
-                  className="bg-green-600 hover:bg-green-700"
+                  className="flex-1 bg-green-600 hover:bg-green-700"
                 >
                   <Check className="mr-2 h-4 w-4" />
                   Approve
@@ -666,6 +862,7 @@ function EntryDetailDialog({
                   variant="outline"
                   onClick={() => onStatusChange(entry.id, 'rejected')}
                   disabled={isUpdating}
+                  className="flex-1"
                 >
                   <X className="mr-2 h-4 w-4" />
                   Reject
@@ -685,45 +882,25 @@ function EntryDetailDialog({
 function LoadingSkeleton() {
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <Skeleton className="h-10 w-80" />
-        <div className="flex gap-2">
-          <Skeleton className="h-9 w-28" />
-          <Skeleton className="h-9 w-9" />
-        </div>
-      </div>
+      <Skeleton className="h-12 w-3/4" />
       <Card>
         <CardHeader>
-          <Skeleton className="h-7 w-48" />
+          <Skeleton className="h-8 w-48" />
         </CardHeader>
-        <CardContent>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i}>
-                <Skeleton className="h-4 w-20 mb-2" />
-                <Skeleton className="h-6 w-32" />
-              </div>
-            ))}
-          </div>
+        <CardContent className="grid grid-cols-5 gap-6">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-20" />
+          ))}
         </CardContent>
       </Card>
       <Card>
         <CardHeader>
-          <Skeleton className="h-7 w-40" />
+          <Skeleton className="h-8 w-40" />
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="flex gap-4 py-4 border-b last:border-0">
-                <Skeleton className="h-24 w-24 rounded-lg" />
-                <div className="flex-1 space-y-3">
-                  <Skeleton className="h-5 w-64" />
-                  <Skeleton className="h-4 w-48" />
-                  <Skeleton className="h-4 w-32" />
-                </div>
-              </div>
-            ))}
-          </div>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-24 mb-4" />
+          ))}
         </CardContent>
       </Card>
     </div>
