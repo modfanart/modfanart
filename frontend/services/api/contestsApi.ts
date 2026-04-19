@@ -394,11 +394,11 @@ const contestsApi = createApi({
       providesTags: (result, error, contestId) => [{ type: 'ContestJudges', id: contestId }],
     }),
 
-    inviteJudge: builder.mutation<ContestJudge, { contestId: string; judgeId: string }>({
-      query: ({ contestId, judgeId }) => ({
+    assignJudge: builder.mutation<any, { contestId: string; userId: string }>({
+      query: ({ contestId, userId }) => ({
         url: `/contest/${contestId}/judges`,
         method: 'POST',
-        body: { judgeId },
+        body: { judgeId: userId }, // ← Convert userId → judgeId for backend
       }),
       invalidatesTags: (result, error, { contestId }) => [{ type: 'ContestJudges', id: contestId }],
     }),
@@ -513,7 +513,7 @@ export const {
   useGetMyContestEntriesQuery,
   useDeleteContestEntryMutation,
   useGetContestJudgesQuery,
-  useInviteJudgeMutation,
+  useAssignJudgeMutation,
   useAcceptJudgeInvitationMutation,
   useRemoveJudgeMutation,
 
