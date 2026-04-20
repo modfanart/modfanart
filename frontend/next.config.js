@@ -34,7 +34,7 @@ const nextConfig = {
         destination:
           process.env.NODE_ENV === 'development'
             ? 'http://localhost:8080/api/:path*'
-            : 'https://modfanart.onrender.com/api/:path*',
+            : 'https://modfanart-9x6b.onrender.com/api/:path*',
       },
     ];
   },
