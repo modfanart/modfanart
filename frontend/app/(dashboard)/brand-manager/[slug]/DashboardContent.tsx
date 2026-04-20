@@ -62,8 +62,6 @@ export default function DashboardContent() {
   const activeContests = contestsData?.contests ?? [];
 
   const totalStats = {
-    followers: primaryBrand?.followers_count ?? 0,
-    views: primaryBrand?.views_count ?? 0,
     posts: posts.length,
     artworks: artworks.length,
     activeCampaigns: activeContests.length,
@@ -132,18 +130,6 @@ export default function DashboardContent() {
 
         {/* Stats Overview */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          <StatCard
-            icon={Users}
-            title="Followers"
-            value={totalStats.followers.toLocaleString()}
-            trend="+12 this month"
-          />
-          <StatCard
-            icon={Eye}
-            title="Profile Views"
-            value={totalStats.views.toLocaleString()}
-            trend="+28% vs last month"
-          />
           <StatCard
             icon={FileText}
             title="Posts"

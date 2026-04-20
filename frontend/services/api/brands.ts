@@ -140,7 +140,7 @@ export const brandApi = createApi({
         method: 'POST',
       }),
     }),
-getBrandManagers: builder.query<BrandManager[], string>({
+    getBrandManagers: builder.query<BrandManager[], string>({
       query: (brandId) => `/${brandId}/managers`,
       providesTags: (_, __, brandId) => [{ type: 'BrandManagers', id: brandId }],
     }),
@@ -428,7 +428,8 @@ export const {
   useGetMyBrandsQuery,
   useUpdateBrandMutation,
   useDeleteBrandMutation,
-useGetBrandManagersQuery, useAssignBrandManagerMutation, 
+  useGetBrandManagersQuery,
+  useAssignBrandManagerMutation,
   useGetBrandArtworksQuery,
   useAddArtworkToBrandMutation,
   useRemoveArtworkFromBrandMutation,

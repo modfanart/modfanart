@@ -69,7 +69,7 @@ import {
 } from '@/services/api/contestsApi';
 
 import { useGetUsersByRoleSlugQuery, useCreateUserMutation } from '@/services/api/userApi';
-
+import { ContestEntry } from '@/services/api/contestsApi';
 interface ExtendedContestEntry extends ContestEntry {
   artwork_title?: string;
   artwork_thumbnail_url?: string;
@@ -117,8 +117,16 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
     [entriesResponse]
   );
 
-  const judges = useMemo(() => judgesData?.judges || judgesData || [], [judgesData]);
+  const judges: any[] = useMemo(() => {
+    if (!judgesData) return [];
 
+    // Handle both possible shapes: array or { judges: [...] }
+    if (Array.isArray(judgesData)) {
+      return judgesData;
+    }
+
+    return judgesData?.judges || [];
+  }, [judgesData]);
   const availableJudges = useMemo(() => {
     const assignedIds = new Set(judges.map((j: any) => j.user_id || j.judge_id || j.id));
     return (judgesPoolData?.users || []).filter((user: any) => !assignedIds.has(user.id));
@@ -180,19 +188,35 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
       return;
     }
 
+    // Generate a temporary password
+    const tempPassword = `Judge@${Math.random().toString(36).slice(2, 11)}!`;
+
     try {
-      const createdUser = await createUser({
+      const createdUserResponse = await createUser({
         username: newJudgeData.username.trim(),
         email: newJudgeData.email.trim(),
-        bio: newJudgeData.bio.trim() || undefined,
+        password: tempPassword,
         role: 'judge',
+        bio: newJudgeData.bio.trim() ? newJudgeData.bio.trim() : null,
       }).unwrap();
 
-      // Auto assign the newly created judge
+      // Correct way: Access the nested user object
+      const newJudgeId = createdUserResponse.user?.id;
+
+      if (!newJudgeId) {
+        throw new Error('Failed to get created user ID');
+      }
+
+      // Auto-assign the newly created judge
       await assignJudge({
         contestId: opportunityId,
-        userId: createdUser.user.id,
+        userId: newJudgeId,
       }).unwrap();
+
+      alert(
+        `Judge "${newJudgeData.username}" created successfully!\n\n` +
+          `Temporary Password: ${tempPassword}\n\nPlease save and share this with the judge.`
+      );
 
       // Reset form
       setNewJudgeData({ username: '', email: '', bio: '' });
@@ -203,16 +227,30 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
       alert(err?.data?.message || 'Failed to create judge');
     }
   };
-
   const handleRemoveJudge = async (userId: string) => {
-    if (!confirm('Remove this judge from the contest?')) return;
+    if (!userId) {
+      alert('Invalid judge ID');
+      return;
+    }
+
+    if (!confirm('Remove this judge from the contest? This action cannot be undone.')) {
+      return;
+    }
+
     try {
-      await removeJudge({ contestId: opportunityId, userId }).unwrap();
-    } catch (err) {
+      await removeJudge({
+        contestId: opportunityId,
+        judgeId: userId.trim(), // ← Changed from userId to judgeId
+      }).unwrap();
+    } catch (err: any) {
       console.error('Failed to remove judge:', err);
+
+      const errorMessage =
+        err?.data?.message || err?.message || 'Failed to remove judge. Please try again.';
+
+      alert(errorMessage);
     }
   };
-
   const formatRelative = (date?: string) =>
     date ? formatDistanceToNow(new Date(date), { addSuffix: true }) : '—';
 

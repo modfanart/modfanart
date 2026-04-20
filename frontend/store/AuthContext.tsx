@@ -1,8 +1,11 @@
 'use client';
 
-import { createContext, useContext } from 'react';
-import { useGetCurrentUserQuery, useGetMyBrandsQuery } from '@/services/api/userApi';
+import React, { createContext, useContext } from 'react';
+import { useGetCurrentUserQuery, useGetMyBrandsQuery, Brand } from '@/services/api/userApi';
 
+/**
+ * Role shape (frontend safe)
+ */
 export interface RoleRow {
   id: string;
   name: string;
@@ -13,16 +16,16 @@ export interface RoleRow {
 }
 
 /**
- * Frontend-safe user shape
+ * Frontend-safe user
  */
 export interface AuthUser {
   id: string;
-  email: string;
+  email: string; // always normalized to string
   username: string | null;
   avatar_url: string | null;
 
   role?: RoleRow;
-  brands?: any[];
+  brands?: Brand[];
 }
 
 interface AuthContextType {
@@ -37,6 +40,9 @@ const AuthContext = createContext<AuthContextType>({
   logout: () => {},
 });
 
+/**
+ * Provider
+ */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { data, isLoading } = useGetCurrentUserQuery();
 
@@ -47,40 +53,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
 
   /**
-   * ✅ Logout handler (centralized auth control)
+   * Logout handler
    */
   const logout = () => {
-    localStorage.removeItem('token'); // remove JWT
-    window.location.href = '/login'; // full reset
+    localStorage.removeItem('token');
+    window.location.href = '/login';
   };
 
   /**
-   * Normalize backend user → frontend user
+   * Normalize backend → frontend
    */
   const user: AuthUser | null = data?.user
     ? {
         id: data.user.id,
-        email: data.user.email,
+
+        // ✅ FIX: always string
+        email: data.user.email ?? '',
+
         username: data.user.username ?? null,
         avatar_url: data.user.avatar_url ?? null,
 
+        /**
+         * Role normalization
+         */
         ...(data.user.role && {
           role: {
             id: data.user.role.id,
             name: data.user.role.name,
             hierarchy_level: data.user.role.hierarchy_level ?? 0,
-            is_system: false,
-            permissions: {},
-            created_at: '',
+            is_system: false, // fallback (backend not sending)
+            permissions: {}, // fallback
+            created_at: '', // fallback
           },
         }),
 
+        /**
+         * Brands (only for brand manager)
+         */
         ...(isBrandManager && {
           brands: brandsData?.brands ?? [],
         }),
       }
     : null;
-  console.log(user);
+
   return (
     <AuthContext.Provider
       value={{
