@@ -83,7 +83,24 @@ export interface UpdateProfileRequest {
   website?: string | null;
   profile?: Record<string, any>;
 }
+export interface ProfileUpdateData {
+  name?: string; // maps to username on backend (or handled in controller)
 
+  bio?: string | null;
+  location?: string | null;
+  website?: string | null;
+
+  profileImageUrl?: string | null;
+
+  socialLinks?: {
+    twitter?: string | null;
+    instagram?: string | null;
+    facebook?: string | null;
+    tiktok?: string | null;
+    youtube?: string | null;
+    linkedin?: string | null;
+  };
+}
 export interface ChangePasswordRequest {
   currentPassword: string;
   newPassword: string;
@@ -127,15 +144,28 @@ export interface UserViolationResponse {
 
 export interface Brand {
   id: string;
+  user_id?: string;
+
   name: string;
   slug: string;
-  description?: string | null;
-  logo_url?: string | null;
-  banner_url?: string | null;
-  created_at: string;
-  updated_at?: string | null;
-}
 
+  description: string | null;
+  logo_url: string | null;
+  banner_url: string | null;
+
+  website: string | null;
+  social_links: Record<string, string> | null;
+
+  status?: 'active' | 'suspended' | 'pending' | 'deactivated';
+
+  verification_request_id?: string | null;
+  followers_count?: number;
+  views_count?: number;
+
+  created_at: string;
+  updated_at?: string;
+  deleted_at?: string | null;
+}
 export interface UserBrandsResponse {
   success: boolean;
   brands: Brand[];

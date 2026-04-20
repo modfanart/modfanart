@@ -389,11 +389,10 @@ const contestsApi = createApi({
     }),
     // ── Judges ───────────────────────────────────────────────
 
-    getContestJudges: builder.query<ContestJudge[], string>({
+    getContestJudges: builder.query<{ judges: ContestJudge[] } | ContestJudge[], string>({
       query: (contestId) => `/contest/${contestId}/judges`,
       providesTags: (result, error, contestId) => [{ type: 'ContestJudges', id: contestId }],
     }),
-
     assignJudge: builder.mutation<any, { contestId: string; userId: string }>({
       query: ({ contestId, userId }) => ({
         url: `/contest/${contestId}/judges`,

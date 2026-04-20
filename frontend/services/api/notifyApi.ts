@@ -46,16 +46,20 @@ export const notifyApi = createApi({
     // GET /api/notifications - Get all notifications
     getNotifications: builder.query<
       NotificationsResponse,
-      { limit?: number; offset?: number; unreadOnly?: boolean } | void
+      { limit?: number; offset?: number; unreadOnly?: boolean } | undefined
     >({
-      query: (params = {}) => ({
-        url: '/',
-        params: {
-          limit: params.limit ?? 30,
-          offset: params.offset ?? 0,
-          unreadOnly: params.unreadOnly ?? false,
-        },
-      }),
+      query: (params) => {
+        const { limit = 30, offset = 0, unreadOnly = false } = params || {};
+
+        return {
+          url: '/',
+          params: {
+            limit,
+            offset,
+            unreadOnly,
+          },
+        };
+      },
       providesTags: ['Notifications'],
     }),
 

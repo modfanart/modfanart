@@ -1,4 +1,4 @@
-import Sidebar from '@/components/sidebar';
+import Sidebar from '../layouts/sidebar';
 import type React from 'react';
 
 interface DashboardShellProps {
