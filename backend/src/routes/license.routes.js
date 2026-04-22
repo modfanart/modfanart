@@ -12,6 +12,7 @@ router.post("/checkout", LicensePurchaseController.createCheckoutSession);
 // ────────────────────────────────────────────────
 // User (buyer) routes
 // ────────────────────────────────────────────────
+router.get('/issued', hasPermission('licenses.manage'), LicenseController.getIssuedLicenses);
 
 // GET /licenses/me → list all licenses owned by current user
 router.get('/me', LicenseController.getMyLicenses);
@@ -24,7 +25,6 @@ router.get('/:id', LicenseController.getLicense);
 // ────────────────────────────────────────────────
 
 // Example: GET /licenses/issued → list licenses issued by current user (seller)
-router.get('/issued', hasPermission('licenses.manage'), LicenseController.getIssuedLicenses);
 
 // Example: PATCH /licenses/:id/revoke → revoke a license (seller/admin only)
 router.patch('/:id/revoke', hasPermission('licenses.manage'), LicenseController.revokeLicense);

@@ -1,5 +1,16 @@
 // src/db/types.js
-
+/**
+ * @typedef {Object} ContactMessageRow
+ * @property {string} id                  UUID primary key
+ * @property {string} name
+ * @property {string} email               (citext)
+ * @property {string} subject
+ * @property {string} message
+ * @property {'unread' | 'read' | 'replied' | 'archived'} status
+ * @property {string} created_at          timestamptz ISO string
+ * @property {string} updated_at          timestamptz ISO string
+ * @property {string | null} deleted_at   timestamptz ISO string (soft delete)
+ */
 /**
  * @typedef {Object} UserRow
  * @property {string} id                  UUID

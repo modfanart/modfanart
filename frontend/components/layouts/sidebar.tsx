@@ -12,7 +12,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 
-export default function Sidebar() {
+export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
   const { user } = useAuth();
 
@@ -30,14 +30,18 @@ export default function Sidebar() {
   const navigation = sidebarConfig[role]?.(basePath) || [];
 
   return (
-    <aside className="hidden lg:flex flex-col w-72 border-r bg-background">
+    <aside className="flex flex-col h-full w-72 bg-background border-r">
       <ScrollArea className="flex-1 px-3 py-4">
         <div className="space-y-1">
           {navigation.map((item) => {
             const isActive = item.href !== '#' && pathname.startsWith(item.href);
 
             return (
-              <Link key={item.name} href={item.href}>
+              <Link
+                key={item.name}
+                href={item.href}
+                onClick={() => onClose?.()} // 🔥 CLOSE ON MOBILE CLICK
+              >
                 <Button
                   variant={isActive ? 'default' : 'ghost'}
                   className={cn(

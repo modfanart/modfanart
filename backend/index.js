@@ -18,6 +18,7 @@ app.use("/api/tags", require("./src/routes/tagging.routes"))
 app.use("/api/contest", require("./src/routes/contest.routes"))
 app.use("/api/order", require("./src/routes/order.routes"))
 app.use("/api/category", require("./src/routes/category.routes"))
+app.use('/api/contact', require('./src/routes/contact.routes'));
 app.use("/api/auth", require("./src/routes/auth.routes"))
 app.use("/api/roles", require("./src/routes/role.routes"))
 app.use("/api/artwork", require("./src/routes/artwork.routes"))
