@@ -71,7 +71,7 @@ export function MainNav() {
                     Contests
                   </NavItem>
 
-                  <NavItem href="/gallery/featured" active={pathname === '/gallery/featured'}>
+                  <NavItem href="/gallery/" active={pathname === '/gallery/'}>
                     Gallery
                   </NavItem>
 
