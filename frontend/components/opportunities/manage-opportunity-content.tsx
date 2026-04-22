@@ -376,10 +376,6 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
           </CardHeader>
           <CardContent className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
             <div>
-              <p className="text-sm text-muted-foreground">Brand</p>
-              <p className="font-medium mt-1">{opportunity.brand_name || '—'}</p>
-            </div>
-            <div>
               <p className="text-sm text-muted-foreground">Submission Deadline</p>
               <p className="font-medium mt-1">
                 {opportunity.submission_end_date
