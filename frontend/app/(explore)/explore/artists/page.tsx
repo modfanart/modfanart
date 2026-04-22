@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useGetAllUsersQuery } from '../../../services/api/userApi';
+import { useGetAllUsersQuery } from '../../../../services/api/userApi';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
