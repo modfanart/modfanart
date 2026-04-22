@@ -1,9 +1,11 @@
 'use client';
 
 import type React from 'react';
-
 import { useState } from 'react';
 import Link from 'next/link';
+
+import { useSendMessageMutation } from '@/services/api/contactApi';
+
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -26,7 +28,12 @@ export default function ContactPage() {
     subject: '',
     message: '',
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [sendMessage, { isLoading }] = useSendMessageMutation();
+
+  /* =========================================================
+     HANDLERS
+  ========================================================= */
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -35,29 +42,50 @@ export default function ContactPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
 
-    // Simulate form submission
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    // 🔒 Basic validation (optional but recommended)
+    if (!formState.name || !formState.email || !formState.subject || !formState.message) {
+      toast({
+        title: 'Missing fields',
+        description: 'Please fill all fields before submitting.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
-    toast({
-      title: 'Message sent!',
-      description: "We'll get back to you as soon as possible.",
-    });
+    try {
+      await sendMessage(formState).unwrap();
 
-    setFormState({
-      name: '',
-      email: '',
-      subject: '',
-      message: '',
-    });
-    setIsSubmitting(false);
+      toast({
+        title: 'Message sent!',
+        description: "We'll get back to you as soon as possible.",
+      });
+
+      // Reset form
+      setFormState({
+        name: '',
+        email: '',
+        subject: '',
+        message: '',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Something went wrong',
+        description: error?.data?.message || 'Failed to send message',
+        variant: 'destructive',
+      });
+    }
   };
+
+  /* =========================================================
+     UI
+  ========================================================= */
 
   return (
     <div className="flex min-h-screen flex-col">
       <div className="container flex-1 py-10">
         <div className="mx-auto max-w-2xl">
+          {/* HEADER */}
           <div className="mb-8 flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Contact Us</h1>
@@ -68,6 +96,7 @@ export default function ContactPage() {
             </Button>
           </div>
 
+          {/* CARD */}
           <Card>
             <CardHeader>
               <CardTitle>Send us a message</CardTitle>
@@ -75,8 +104,10 @@ export default function ContactPage() {
                 Fill out the form below and we'll get back to you as soon as possible.
               </CardDescription>
             </CardHeader>
+
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
+                {/* NAME + EMAIL */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">Name</Label>
@@ -89,6 +120,7 @@ export default function ContactPage() {
                       required
                     />
                   </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <Input
@@ -103,6 +135,7 @@ export default function ContactPage() {
                   </div>
                 </div>
 
+                {/* SUBJECT */}
                 <div className="space-y-2">
                   <Label htmlFor="subject">Subject</Label>
                   <Input
@@ -115,6 +148,7 @@ export default function ContactPage() {
                   />
                 </div>
 
+                {/* MESSAGE */}
                 <div className="space-y-2">
                   <Label htmlFor="message">Message</Label>
                   <Textarea
@@ -128,13 +162,17 @@ export default function ContactPage() {
                   />
                 </div>
 
-                <Button type="submit" className="w-full" disabled={isSubmitting}>
-                  {isSubmitting ? 'Sending...' : 'Send Message'}
+                {/* SUBMIT */}
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? 'Sending...' : 'Send Message'}
                 </Button>
               </form>
             </CardContent>
+
+            {/* FOOTER */}
             <CardFooter className="flex flex-col items-start border-t px-6 py-4">
               <h3 className="text-lg font-medium">Other ways to reach us</h3>
+
               <div className="mt-2 space-y-2">
                 <p className="text-sm">
                   <strong>Email:</strong> support@modplatform.com
@@ -150,6 +188,7 @@ export default function ContactPage() {
           </Card>
         </div>
       </div>
+
       <Toaster />
     </div>
   );

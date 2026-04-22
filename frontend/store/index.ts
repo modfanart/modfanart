@@ -22,6 +22,7 @@ import brandApi from '@/services/api/brands';
 import { collectionsApi } from '@/services/api/collectionApi';
 import { searchApi } from '@/services/api/searchApi';
 import notifyApi from '@/services/api/notifyApi';
+import { contactApi } from '@/services/api/contactApi';
 // ────────────────────────────────────────────────
 // Reducers (slices)
 // ────────────────────────────────────────────────
@@ -68,6 +69,7 @@ export const store = configureStore({
     [auditApi.reducerPath]: auditApi.reducer,
     [artworkApi.reducerPath]: artworkApi.reducer,
     [artworkTagsApi.reducerPath]: artworkTagsApi.reducer,
+    [contactApi.reducerPath]: contactApi.reducer,
     [brandApi.reducerPath]: brandApi.reducer,
     [collectionsApi.reducerPath]: collectionsApi.reducer,
     [searchApi.reducerPath]: searchApi.reducer,
@@ -84,6 +86,7 @@ export const store = configureStore({
       userApi.middleware,
       rolesApi.middleware,
       productsApi.middleware,
+      contactApi.middleware,
       adminApi.middleware,
       ordersApi.middleware,
       moderationApi.middleware,

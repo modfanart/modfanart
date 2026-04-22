@@ -3,32 +3,45 @@ const UserController = require('../controller/user.controller');
 const { authenticateToken } = require('../middleware/auth.middleware');
 const multer = require('multer');
 
-// Temporary in-memory storage — replace with real disk/s3 buffer storage
 const upload = multer({ storage: multer.memoryStorage() });
 
 const router = express.Router();
 
-router.use(authenticateToken); // All user routes require auth
+// All routes require authentication
+router.use(authenticateToken);
 
+// ────────────────────────────────────────────────
+// ✅ CURRENT USER ("me") ROUTES
+// ────────────────────────────────────────────────
 router.get('/me', UserController.getCurrentUser);
 router.patch('/me', UserController.updateProfile);
-router.get('/by-username/:username', UserController.getUserByUsername);
 router.patch('/me/password', UserController.changePassword);
+
 router.post('/me/avatar', upload.single('avatar'), UserController.uploadAvatar);
 router.delete('/me/avatar', UserController.removeAvatar);
-router.get('/all', UserController.getAllUsers);
-router.get('/:id',  UserController.getUserById);
-router.patch('/:id/status', UserController.updateUserStatus);
-router.post('/create', UserController.createUser);
-router.delete('/:id', UserController.deleteUser);
-router.patch(
-  '/:id',
-  UserController.updateUser
-);
-// In your user router
-router.get('/by-role/:roleSlug', UserController.getAllUsersByRoleSlug);
+
 router.get('/me/brands', UserController.getMyBrands);
-// Future: router.patch('/me/banner', ...)
-// Future: router.post('/me/payout-setup', ...)
+
+// ────────────────────────────────────────────────
+// ✅ FILTER / LOOKUP ROUTES
+// ────────────────────────────────────────────────
+router.get('/by-username/:username', UserController.getUserByUsername);
+router.get('/by-role/:roleSlug', UserController.getAllUsersByRoleSlug);
+
+// ────────────────────────────────────────────────
+// ✅ ADMIN / COLLECTION ROUTES
+// ────────────────────────────────────────────────
+router.get('/all', UserController.getAllUsers);
+router.post('/create', UserController.createUser);
+
+// ────────────────────────────────────────────────
+// ⚠️ DYNAMIC ROUTES (ALWAYS LAST)
+// ────────────────────────────────────────────────
+router.get('/:id', UserController.getUserById);
+router.patch('/:id/status', UserController.updateUserStatus);
+router.patch('/:id', UserController.updateUser);
+router.delete('/:id', UserController.deleteUser);
+
+// ────────────────────────────────────────────────
 
 module.exports = router;

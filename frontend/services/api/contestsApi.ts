@@ -149,6 +149,41 @@ export interface UserContestEntry {
   artwork_views_count: number;
   artwork_created_at: string;
 }
+// New interface for Artist's Opportunities (contests they submitted to)
+export interface ArtistContestEntry extends Contest {
+  my_entry: {
+    entry_id: string;
+    submitted_at: string;
+    entry_status: 'pending' | 'approved' | 'rejected' | 'disqualified' | 'winner';
+    rank?: number | null;
+  } | null;
+  entry_count?: number;
+}
+
+export interface GetMySubmittedContestsResponse {
+  contests: ArtistContestEntry[];
+  total?: number;
+}
+
+export interface UserContestEntry {
+  entry_id: string;
+  entry_status: 'pending' | 'approved' | 'rejected' | 'disqualified' | 'winner';
+  rank?: number | null;
+  submitted_at: string;
+  contest_id: string;
+  contest_title: string;
+  contest_slug?: string;
+  contest_status: string;
+  artwork_id: string;
+  artwork_title: string;
+  artwork_description?: string | null;
+  artwork_thumbnail_url?: string | null;
+  artwork_file_url?: string | null;
+  artwork_status: string;
+  artwork_views_count: number;
+  artwork_created_at: string;
+}
+
 // ────────────────────────────────────────────────
 // Add this interface
 export interface GetContestsResponse {
@@ -186,6 +221,7 @@ const contestsApi = createApi({
     'Leaderboard',
     'JudgeContests', // ✅ ADD THIS
     'MyContestEntries',
+    'MySubmittedContests',
     'MyContestEntry',
     'Artwork', // useful when entry links to artwork
   ],
@@ -387,6 +423,22 @@ const contestsApi = createApi({
         'Artwork', // if it affects artwork visibility/counts
       ],
     }),
+    getMySubmittedContests: builder.query<
+      GetMySubmittedContestsResponse,
+      { status?: string; limit?: number } | void
+    >({
+      query: (params) =>
+        params
+          ? {
+              url: '/contest/my-submitted',
+              params,
+            }
+          : {
+              url: '/contest/my-submitted',
+            },
+      providesTags: ['MySubmittedContests', 'Contests', 'MyContestEntries'],
+    }),
+
     // ── Judges ───────────────────────────────────────────────
 
     getContestJudges: builder.query<{ judges: ContestJudge[] } | ContestJudge[], string>({
@@ -501,7 +553,7 @@ export const {
   useCreateContestMutation,
   useUpdateContestMutation,
   useDeleteContestMutation,
-
+  useGetMySubmittedContestsQuery,
   useGetContestCategoriesQuery,
   useAddCategoryToContestMutation,
   useRemoveCategoryFromContestMutation,
