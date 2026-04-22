@@ -27,6 +27,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 import { useGetCurrentUserQuery, useGetUserByUsernameQuery } from '@/services/api/userApi';
 
+import { useGetMyArtworksQuery, useGetArtworksByCreatorQuery } from '@/services/api/artworkApi';
+
 interface ProfileViewProps {
   targetUsername: string;
 }
@@ -34,7 +36,6 @@ interface ProfileViewProps {
 export function ProfileView({ targetUsername }: ProfileViewProps) {
   const { data: currentData, isLoading: currentLoading } = useGetCurrentUserQuery();
 
-  // Use the transformed response (now directly returns UserProfile)
   const {
     data: profileUser,
     isLoading: profileLoading,
@@ -45,44 +46,59 @@ export function ProfileView({ targetUsername }: ProfileViewProps) {
 
   const currentUser = currentData?.user;
 
-  const isLoading = currentLoading || profileLoading;
-
   const isOwnProfile = useMemo(() => {
     return currentUser?.username?.toLowerCase() === targetUsername?.toLowerCase();
   }, [currentUser?.username, targetUsername]);
 
-  // Show loading state
+  // ────────────────────────────────────────────────
+  // ARTWORKS FETCH
+  // ────────────────────────────────────────────────
+
+  const { data: myArtworksData, isLoading: myArtworksLoading } = useGetMyArtworksQuery(undefined, {
+    skip: !isOwnProfile,
+  });
+
+  const { data: creatorArtworksData, isLoading: creatorArtworksLoading } =
+    useGetArtworksByCreatorQuery(
+      {
+        creatorId: profileUser?.id ?? '',
+        limit: 12,
+      },
+      {
+        skip: isOwnProfile || !profileUser?.id,
+      }
+    );
+
+  const artworks = (isOwnProfile ? myArtworksData?.artworks : creatorArtworksData?.artworks) ?? [];
+
+  const artworksLoading = isOwnProfile ? myArtworksLoading : creatorArtworksLoading;
+
+  const isLoading = currentLoading || profileLoading;
+
+  // ────────────────────────────────────────────────
+  // STATES
+  // ────────────────────────────────────────────────
+
   if (isLoading) {
     return <Skeleton className="h-[400px] w-full rounded-xl" />;
   }
 
-  // Show error or not found state
   if (profileError || !profileUser) {
     return (
       <div className="text-center py-20 space-y-4">
         <h2 className="text-2xl font-semibold text-muted-foreground">
           @{targetUsername} not found
         </h2>
-        {profileError && (
-          <p className="text-sm text-red-500 max-w-md mx-auto">
-            {(profileError as any)?.data?.message ||
-              (profileError as any)?.error ||
-              'Failed to load profile. Please try again.'}
-          </p>
-        )}
-        <Button onClick={() => window.location.reload()} variant="outline" className="mt-4">
+        <Button onClick={() => window.location.reload()} variant="outline">
           Refresh Page
         </Button>
       </div>
     );
   }
 
-  // ✅ SAFE PROFILE OBJECT
   const profile = profileUser.profile ?? {};
-
   const initials = profileUser.username?.slice(0, 2).toUpperCase() || 'U';
 
-  // ✅ DYNAMIC STATS (REAL DATA)
   const stats = [
     {
       label: 'Artworks',
@@ -110,7 +126,6 @@ export function ProfileView({ targetUsername }: ProfileViewProps) {
     <div className="grid lg:grid-cols-[320px_1fr] gap-10 max-w-7xl mx-auto">
       {/* LEFT PANEL */}
       <div className="space-y-6 lg:sticky lg:top-8">
-        {/* PROFILE CARD */}
         <div className="bg-gradient-to-br from-muted/40 to-muted/10 p-6 rounded-2xl border shadow-sm text-center lg:text-left">
           <Avatar className="h-28 w-28 mx-auto lg:mx-0 mb-4 ring-4 ring-background shadow-xl">
             <AvatarImage src={profileUser.avatar_url ?? undefined} />
@@ -121,8 +136,6 @@ export function ProfileView({ targetUsername }: ProfileViewProps) {
 
           <h1 className="text-2xl font-bold">{profileUser.username}</h1>
           <p className="text-muted-foreground">@{profileUser.username}</p>
-
-          <Badge className="mt-3 px-3 py-1">{profileUser.role?.name || 'Artist'}</Badge>
         </div>
 
         {/* STATS */}
@@ -130,13 +143,8 @@ export function ProfileView({ targetUsername }: ProfileViewProps) {
           {stats.map((stat) => {
             const Icon = stat.icon;
             return (
-              <div
-                key={stat.label}
-                className="p-4 rounded-xl bg-muted/40 border text-center hover:shadow-sm transition"
-              >
-                <div className="flex justify-center mb-1">
-                  <Icon className="h-4 w-4 text-muted-foreground" />
-                </div>
+              <div key={stat.label} className="p-4 rounded-xl bg-muted/40 border text-center">
+                <Icon className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
                 <div className="text-xl font-bold">{stat.value}</div>
                 <div className="text-xs text-muted-foreground">{stat.label}</div>
               </div>
@@ -149,10 +157,10 @@ export function ProfileView({ targetUsername }: ProfileViewProps) {
           <div className="text-sm bg-muted/30 p-4 rounded-xl border">{profileUser.bio}</div>
         )}
 
-        {/* SOCIAL LINKS */}
+        {/* SOCIAL */}
         <div className="space-y-2">
           {profile.twitter && (
-            <a href={profile.twitter} target="_blank" rel="noopener noreferrer">
+            <a href={profile.twitter} target="_blank">
               <Button variant="ghost" className="w-full justify-start gap-2">
                 <Twitter className="h-4 w-4" /> Twitter
               </Button>
@@ -160,7 +168,7 @@ export function ProfileView({ targetUsername }: ProfileViewProps) {
           )}
 
           {profile.instagram && (
-            <a href={profile.instagram} target="_blank" rel="noopener noreferrer">
+            <a href={profile.instagram} target="_blank">
               <Button variant="ghost" className="w-full justify-start gap-2">
                 <Instagram className="h-4 w-4" /> Instagram
               </Button>
@@ -175,7 +183,7 @@ export function ProfileView({ targetUsername }: ProfileViewProps) {
               <Button asChild className="flex-1">
                 <Link href="/profile/edit">
                   <Edit className="mr-2 h-4 w-4" />
-                  Edit Profile
+                  Edit
                 </Link>
               </Button>
               <Button variant="outline" className="flex-1">
@@ -198,55 +206,99 @@ export function ProfileView({ targetUsername }: ProfileViewProps) {
         </div>
       </div>
 
-      {/* RIGHT PANEL - Tabs */}
+      {/* RIGHT PANEL */}
       <div>
-        <Tabs defaultValue="favs">
+        <Tabs defaultValue="artworks">
           <TabsList className="mb-6">
-            <TabsTrigger value="favs">
-              <Heart className="mr-2 h-4 w-4" /> Favs
+            <TabsTrigger value="artworks">
+              <Sparkles className="mr-2 h-4 w-4" />
+              Artworks
             </TabsTrigger>
             <TabsTrigger value="contests">
-              <Trophy className="mr-2 h-4 w-4" /> Contests
+              <Trophy className="mr-2 h-4 w-4" />
+              Contests
             </TabsTrigger>
             <TabsTrigger value="collections">
-              <FolderHeart className="mr-2 h-4 w-4" /> Collections
+              <FolderHeart className="mr-2 h-4 w-4" />
+              Collections
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="favs">
-            <div className="grid sm:grid-cols-2 gap-6">
-              {[1, 2].map((id) => (
-                <Card key={id} className="overflow-hidden hover:shadow-md transition">
-                  <div className="relative h-48">
-                    <Image src="/placeholder.svg" alt="Artwork" fill className="object-cover" />
-                  </div>
-                  <CardContent className="p-4">
-                    <h3 className="font-semibold mb-2">Artwork Title</h3>
-                    <div className="flex justify-between text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Heart className="h-4 w-4 text-red-500" /> 23
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <MessageSquare className="h-4 w-4" /> 5
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+          {/* ARTWORKS */}
+          <TabsContent value="artworks">
+            {artworksLoading ? (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <Skeleton key={i} className="h-64 w-full rounded-xl" />
+                ))}
+              </div>
+            ) : artworks.length === 0 ? (
+              <Card>
+                <CardContent className="p-6 text-center text-muted-foreground">
+                  No artworks yet.
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {artworks.map((art) => (
+                  <Link key={art.id} href={`/artwork/${art.id}`}>
+                    <Card className="overflow-hidden group hover:shadow-lg transition cursor-pointer">
+                      <div className="relative h-48">
+                        <Image
+                          src={art.thumbnail_url || art.file_url}
+                          alt={art.title}
+                          fill
+                          className="object-cover group-hover:scale-105 transition"
+                        />
+
+                        {art.status !== 'published' && (
+                          <Badge className="absolute top-2 left-2 capitalize">
+                            {art.status.replace('_', ' ')}
+                          </Badge>
+                        )}
+                      </div>
+
+                      <CardContent className="p-4 space-y-2">
+                        <h3 className="font-semibold line-clamp-1">{art.title}</h3>
+
+                        {art.description && (
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {art.description}
+                          </p>
+                        )}
+
+                        <div className="flex justify-between text-sm text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Heart className="h-4 w-4 text-red-500" />
+                            {art.favorites_count}
+                          </span>
+
+                          <span className="flex items-center gap-1">
+                            <Eye className="h-4 w-4" />
+                            {art.views_count}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            )}
           </TabsContent>
 
+          {/* CONTESTS */}
           <TabsContent value="contests">
             <Card>
-              <CardContent className="p-6 text-muted-foreground text-center">
+              <CardContent className="p-6 text-center text-muted-foreground">
                 No contests yet.
               </CardContent>
             </Card>
           </TabsContent>
 
+          {/* COLLECTIONS */}
           <TabsContent value="collections">
             <Card>
-              <CardContent className="p-6 text-muted-foreground text-center">
+              <CardContent className="p-6 text-center text-muted-foreground">
                 No collections yet.
               </CardContent>
             </Card>

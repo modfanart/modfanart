@@ -327,6 +327,9 @@ export const {
   useGetMyArtworksQuery,
   useLazyGetMyArtworksQuery,
   usePublishArtworkMutation,
+  useGetArtworksByCreatorQuery,
+  useLazyGetArtworksByCreatorQuery,
+
   useDeleteArtworkMutation,
   useGetArtworkCategoriesQuery,
   useAddCategoryToArtworkMutation,

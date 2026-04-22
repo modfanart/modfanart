@@ -78,13 +78,6 @@ export default function ArtistOpportunitiesPage() {
             Contests and opportunities you have submitted entries to
           </p>
         </div>
-
-        <Button asChild size="lg">
-          <Link href="/opportunities">
-            <Trophy className="mr-2 h-5 w-5" />
-            Browse All Opportunities
-          </Link>
-        </Button>
       </div>
 
       <Tabs defaultValue="all" className="space-y-8">
