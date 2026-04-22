@@ -819,5 +819,82 @@ static async getContestsByStatus(req, res) {
     });
   }
 }
+// Add this method to ContestController
+static async getMySubmittedContests(req, res) {
+  try {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required',
+      });
+    }
+
+    const contests = await db
+      .selectFrom('contests as c')
+      .innerJoin('contest_entries as e', 'e.contest_id', 'c.id')
+
+      // 👇 join again for "my entry"
+      .leftJoin('contest_entries as me', (join) =>
+        join
+          .onRef('me.contest_id', '=', 'c.id')
+          .on('me.creator_id', '=', userId)
+      )
+
+      .select([
+        'c.id',
+        'c.title',
+        'c.slug',
+        'c.description',
+        'c.status',
+        'c.start_date',
+        'c.submission_end_date',
+        'c.created_at',
+
+        db.fn.count('e.id').as('entry_count'),
+
+        // 👇 my entry fields
+        'me.id as entry_id',
+        'me.status as entry_status',
+        'me.rank as entry_rank',
+      ])
+
+      .where('e.creator_id', '=', userId)
+      .where('c.deleted_at', 'is', null)
+
+      .groupBy([
+        'c.id',
+        'c.title',
+        'c.slug',
+        'c.description',
+        'c.status',
+        'c.start_date',
+        'c.submission_end_date',
+        'c.created_at',
+
+        // 👇 IMPORTANT: group these too
+        'me.id',
+        'me.status',
+        'me.rank',
+      ])
+
+      .orderBy('c.created_at', 'desc')
+      .execute();
+
+    return res.json({
+      success: true,
+      contests,
+    });
+
+  } catch (err) {
+    console.error('Get My Submitted Contests Error:', err);
+
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch your opportunities',
+    });
+  }
+}
 }
 module.exports = ContestController;

@@ -19,9 +19,11 @@ router.use(authenticateToken);
 
 // ====================== PUBLIC ROUTES ======================
 // These routes are protected by auth but data is publicly viewable
-router.get('/', ContestController.getContests);                    // GET /api/contest
-router.get('/:id', ContestController.getContest);                  // GET /api/contest/:id
+router.get('/', ContestController.getContests);   
 router.get('/by-status', ContestController.getContestsByStatus);   // GET /api/contest/by-status
+router.get('/my-submitted', ContestController.getMySubmittedContests);                 // GET /api/contest
+router.get('/:id', ContestController.getContest);                  // GET /api/contest/:id
+
 router.get('/:contestId/leaderboard', ContestVoteController.getLeaderboard); 
 
 // ====================== CONTEST MANAGEMENT ======================
