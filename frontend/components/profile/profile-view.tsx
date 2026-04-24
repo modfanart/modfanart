@@ -105,20 +105,15 @@ export function ProfileView({ targetUsername }: ProfileViewProps) {
       value: profileUser.stats?.artworks_count ?? 0,
       icon: Sparkles,
     },
-    {
-      label: 'Followers',
-      value: profileUser.stats?.followers_count ?? 0,
-      icon: Users,
-    },
+    // {
+    //   label: 'Followers',
+    //   value: profileUser.stats?.followers_count ?? 0,
+    //   icon: Users,
+    // },
     {
       label: 'Likes',
       value: profileUser.stats?.likes_received ?? 0,
       icon: Heart,
-    },
-    {
-      label: 'Views',
-      value: profileUser.stats?.views_received ?? 0,
-      icon: Eye,
     },
   ];
 
@@ -186,20 +181,12 @@ export function ProfileView({ targetUsername }: ProfileViewProps) {
                   Edit
                 </Link>
               </Button>
-              <Button variant="outline" className="flex-1">
-                <Settings className="mr-2 h-4 w-4" />
-                Settings
-              </Button>
             </>
           ) : (
             <>
               <Button className="flex-1">
                 <UserPlus className="mr-2 h-4 w-4" />
-                Follow
-              </Button>
-              <Button variant="outline" className="flex-1">
-                <MessageSquare className="mr-2 h-4 w-4" />
-                Message
+                Follow (COMING SOON)
               </Button>
             </>
           )}
@@ -218,10 +205,10 @@ export function ProfileView({ targetUsername }: ProfileViewProps) {
               <Trophy className="mr-2 h-4 w-4" />
               Contests
             </TabsTrigger>
-            <TabsTrigger value="collections">
+            {/* <TabsTrigger value="collections">
               <FolderHeart className="mr-2 h-4 w-4" />
               Collections
-            </TabsTrigger>
+            </TabsTrigger> */}
           </TabsList>
 
           {/* ARTWORKS */}

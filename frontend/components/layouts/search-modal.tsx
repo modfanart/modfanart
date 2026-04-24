@@ -19,8 +19,6 @@ const TABS: Array<{ label: string; value: SearchType }> = [
   { label: 'Users', value: 'user' },
   { label: 'Brands', value: 'brand' },
   { label: 'Contests', value: 'contest' },
-  { label: 'Categories', value: 'category' },
-  { label: 'Tags', value: 'tag' },
 ];
 
 const MAX_RECENT_SEARCHES = 8;

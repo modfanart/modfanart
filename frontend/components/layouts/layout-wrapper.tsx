@@ -13,7 +13,6 @@ interface LayoutWrapperProps {
 export function LayoutWrapper({ children }: LayoutWrapperProps) {
   const pathname = usePathname();
 
-  // Check if the current path is a dashboard path
   const isDashboardPath =
     pathname?.startsWith('/dashboard') ||
     pathname?.startsWith('/submissions') ||
@@ -22,7 +21,16 @@ export function LayoutWrapper({ children }: LayoutWrapperProps) {
   return (
     <div className="flex min-h-screen flex-col">
       {!isDashboardPath && <MainNav />}
-      <main className="flex-1">{children}</main>
+
+      <main
+        className={`
+          flex-1
+          ${!isDashboardPath ? 'pt-24 md:pt-28' : ''}
+        `}
+      >
+        {children}
+      </main>
+
       {!isDashboardPath && <SiteFooter />}
     </div>
   );

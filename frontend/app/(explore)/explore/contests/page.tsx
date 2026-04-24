@@ -1,23 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
-import { CalendarIcon, Award, Users, ArrowRight, Trophy } from 'lucide-react';
+import { useState } from 'react';
+import { Award, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useGetContestsQuery } from '@/services/api/contestsApi'; // ← Your RTK Query API
+import { useGetContestsQuery } from '@/services/api/contestsApi';
 import isApiError from '@/lib/isApiError';
 import { LayoutWrapper } from '@/components/layouts/layout-wrapper';
+import { cn } from '@/lib/utils';
 
 export default function OpportunitiesPage() {
   const {
@@ -30,9 +22,9 @@ export default function OpportunitiesPage() {
     limit: 20,
   });
 
-  // Extract the actual array from the response
   const contests = contestsResponse?.contests ?? [];
-  // Helper to format prize amount
+  const [activeTab, setActiveTab] = useState<'all' | 'active' | 'upcoming'>('all');
+
   const formatPrize = (prizes: any[] | null) => {
     if (!prizes || prizes.length === 0) return 'Prizes available';
     const totalINR = prizes.reduce((sum, p) => sum + (p.amount_inr || 0), 0);
@@ -40,251 +32,137 @@ export default function OpportunitiesPage() {
     return `₹${(totalINR / 100).toLocaleString('en-IN')}`;
   };
 
-  // Helper to get main prize rank 1
-  const getTopPrize = (prizes: any[] | null) => {
-    if (!prizes) return null;
-    const top = prizes.find((p) => p.rank === 1);
-    return top ? `1st: ₹${(top.amount_inr / 100).toLocaleString('en-IN')}` : null;
-  };
-
+  /* ---------------- LOADING ---------------- */
   if (isLoading) {
     return (
-      <div className="container py-10">
-        <div className="mb-10 text-center">
-          <h1 className="text-4xl font-bold tracking-tight">Fan Art Opportunities</h1>
-          <p className="mt-4 text-xl text-muted-foreground">
-            Discover contests and licensing opportunities for your fan art
-          </p>
+      <LayoutWrapper>
+        <div className="container py-10 lg:py-14">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            {/* Sidebar */}
+            <aside className="lg:col-span-3">
+              <div className="bg-white/70 backdrop-blur-xl border border-white/40 rounded-2xl shadow-lg p-4 space-y-3">
+                {[...Array(3)].map((_, i) => (
+                  <Skeleton key={i} className="h-12 w-full rounded-xl bg-muted" />
+                ))}
+              </div>
+            </aside>
+
+            {/* Content */}
+            <div className="lg:col-span-9 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {[...Array(6)].map((_, i) => (
+                <Skeleton key={i} className="h-64 rounded-2xl bg-muted" />
+              ))}
+            </div>
+          </div>
         </div>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {[...Array(6)].map((_, i) => (
-            <Card key={i} className="overflow-hidden">
-              <Skeleton className="h-48 w-full" />
-              <CardHeader>
-                <Skeleton className="h-6 w-3/4" />
-                <Skeleton className="h-4 w-1/2 mt-2" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-full mt-2" />
-                <Skeleton className="h-4 w-2/3 mt-2" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
+      </LayoutWrapper>
     );
   }
 
+  /* ---------------- ERROR ---------------- */
   if (isError) {
     return (
-      <div className="container py-10 text-center">
-        <h1 className="text-4xl font-bold mb-4">Fan Art Opportunities</h1>
-        <p className="text-red-600">Failed to load contests. Please try again later.</p>
+      <LayoutWrapper>
+        <div className="container py-20 text-center">
+          <p className="text-lg text-muted-foreground">Failed to load contests</p>
 
-        {isApiError(error) && error.data?.message && (
-          <p className="text-sm text-muted-foreground mt-2">{error.data.message}</p>
-        )}
-      </div>
+          {isApiError(error) && error.data?.message && (
+            <p className="text-sm mt-2 text-muted-foreground">{error.data.message}</p>
+          )}
+        </div>
+      </LayoutWrapper>
     );
   }
 
-  // const featuredContests = contests.filter((c) =>
-  //   ['Marvel Cinematic Universe Art Challenge', 'Anime Expo 2023 Fan Art Contest'].includes(c.title)
-  // );
-
-  // const regularContests = contests.filter((c) => !featuredContests.includes(c));
+  /* ---------------- FILTER ---------------- */
+  const filteredContests = activeTab === 'all' ? contests : activeTab === 'active' ? contests : []; // upcoming empty for now
 
   return (
     <LayoutWrapper>
-      <div className="container py-10">
-        <div className="mb-10 text-center">
-          <h1 className="text-4xl font-bold tracking-tight">Fan Art Opportunities</h1>
-          <p className="mt-4 text-xl text-muted-foreground">
-            Discover contests and licensing opportunities for your fan art
-          </p>
-        </div>
+      <div className="container py-10 lg:py-14">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* ---------------- SIDEBAR ---------------- */}
+          <aside className="lg:col-span-3">
+            <div className="sticky top-24">
+              <div className="bg-white/70 backdrop-blur-xl border border-white/40 rounded-2xl shadow-lg p-3 space-y-2">
+                {[
+                  { key: 'all', label: 'All Contests' },
+                  { key: 'active', label: 'Active' },
+                  { key: 'upcoming', label: 'Upcoming' },
+                ].map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key as any)}
+                    className={cn(
+                      'w-full px-4 py-3 rounded-xl text-left font-medium transition-all duration-200',
+                      activeTab === tab.key
+                        ? 'bg-primary/10 text-primary border border-primary/20'
+                        : 'text-muted-foreground hover:text-primary hover:bg-accent'
+                    )}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </aside>
 
-        <Tabs defaultValue="all" className="mb-10">
-          <div className="flex items-center justify-between mb-6">
-            <TabsList>
-              <TabsTrigger value="all">All Contests</TabsTrigger>
-              <TabsTrigger value="contests">Active Contests</TabsTrigger>
-              <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-            </TabsList>
-            {/* <Link href="/dashboard/contests/create">
-              <Button>
-                Create Contest
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link> */}
-          </div>
-
-          <TabsContent value="all" className="mt-6 space-y-12">
-            {/* Featured Contests */}
-            {/* {featuredContests.length > 0 && (
-            <section>
-              <h2 className="mb-6 text-2xl font-bold flex items-center gap-2">
-                <Trophy className="h-6 w-6 text-yellow-500" />
-                Featured Contests
-              </h2>
+          {/* ---------------- CONTENT ---------------- */}
+          <div className="lg:col-span-9">
+            {filteredContests.length === 0 ? (
+              <div className="text-center py-32 text-muted-foreground">No contests available.</div>
+            ) : (
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {featuredContests.map((contest) => (
+                {filteredContests.map((contest) => (
                   <Card
                     key={contest.id}
-                    className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow"
+                    className="rounded-2xl bg-white/70 backdrop-blur-xl border border-white/40 shadow-lg overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
                   >
-                    <div className="relative h-48 w-full bg-gradient-to-br from-purple-600 to-pink-600">
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <Trophy className="h-20 w-20 text-white/30" />
-                      </div>
-                      <div className="absolute right-2 top-2">
-                        <Badge className="bg-black/70 text-white">Featured</Badge>
+                    {/* Banner */}
+                    <div className="relative h-40 bg-gradient-to-br from-primary/80 to-indigo-500">
+                      <div className="absolute inset-0 bg-black/20" />
+
+                      <div className="absolute bottom-3 left-4 text-white">
+                        <p className="text-xs opacity-80">Prize Pool</p>
+                        <p className="text-xl font-bold">{formatPrize(contest.prizes)}</p>
                       </div>
                     </div>
+
                     <CardHeader>
-                      <CardTitle className="line-clamp-1 text-lg">{contest.title}</CardTitle>
-                      <CardDescription>
-                        Ends{' '}
-                        {new Date(contest.submission_end_date).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        })}
-                      </CardDescription>
+                      <CardTitle className="line-clamp-1">{contest.title}</CardTitle>
                     </CardHeader>
+
                     <CardContent>
-                      <p className="line-clamp-2 text-sm text-muted-foreground mb-4">
+                      <p className="line-clamp-2 text-sm text-muted-foreground">
                         {contest.description}
                       </p>
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">Top Prize</span>
-                          <span className="text-lg font-bold text-green-600">
-                            {getTopPrize(contest.prizes) || formatPrize(contest.prizes)}
-                          </span>
+
+                      <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Users className="h-4 w-4" />
+                          <span>{contest.max_entries_per_user} entries</span>
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <CalendarIcon className="h-4 w-4" />
-                          <span>
-                            Submissions close in{' '}
-                            {Math.ceil(
-                              (new Date(contest.submission_end_date).getTime() - Date.now()) /
-                                (1000 * 60 * 60 * 24)
-                            )}{' '}
-                            days
-                          </span>
+
+                        <div className="flex items-center gap-1">
+                          <Award className="h-4 w-4" />
+                          <span>{contest.prizes?.length || 0} prizes</span>
                         </div>
                       </div>
                     </CardContent>
+
                     <CardFooter>
-                      <Link href={`/contests/${contest.id}`} className="w-full">
-                        <Button className="w-full">Enter Contest</Button>
+                      <Link href={`/contest/${contest.id}`} className="w-full">
+                        <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
+                          View & Enter
+                        </Button>
                       </Link>
                     </CardFooter>
                   </Card>
                 ))}
               </div>
-            </section>
-          )} */}
-
-            {/* All Contests */}
-            <section>
-              <h2 className="mb-6 text-2xl font-bold">All Active Contests</h2>
-              {/* {regularContests.length === 0 && featuredContests.length === 0 ? ( */}
-              {contests.length === 0 ? (
-                <p className="text-center text-muted-foreground py-12">
-                  No active contests at the moment. Check back soon!
-                </p>
-              ) : (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {contests.map((contest) => (
-                    <Card
-                      key={contest.id}
-                      className="overflow-hidden hover:shadow-md transition-shadow"
-                    >
-                      <div className="relative h-48 w-full bg-gradient-to-r from-blue-500 to-indigo-600">
-                        <div className="absolute inset-0 bg-black/20" />
-                        <div className="absolute bottom-4 left-4 text-white">
-                          <p className="text-sm font-medium">Total Prize Pool</p>
-                          <p className="text-2xl font-bold">{formatPrize(contest.prizes)}</p>
-                        </div>
-                      </div>
-                      <CardHeader>
-                        <CardTitle className="line-clamp-1">{contest.title}</CardTitle>
-                        <CardDescription>
-                          Ends {new Date(contest.submission_end_date).toLocaleDateString()}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="line-clamp-2 text-sm text-muted-foreground">
-                          {contest.description}
-                        </p>
-                        <div className="mt-4 flex items-center justify-between text-sm">
-                          <div className="flex items-center gap-1">
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                            <span>Max {contest.max_entries_per_user} entries</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Award className="h-4 w-4 text-muted-foreground" />
-                            <span>{contest.prizes?.length || 0} prizes</span>
-                          </div>
-                        </div>
-                      </CardContent>
-                      <CardFooter>
-                        <Link href={`/contest/${contest.id}`} className="w-full">
-                          <Button variant="outline" className="w-full">
-                            View & Enter
-                          </Button>
-                        </Link>
-                      </CardFooter>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </section>
-          </TabsContent>
-
-          <TabsContent value="contests" className="mt-6">
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {contests.map((contest) => (
-                <Card key={contest.id} className="overflow-hidden">
-                  <div className="relative h-48 w-full bg-gradient-to-br from-purple-600 to-indigo-700">
-                    <div className="absolute bottom-4 left-4 text-white">
-                      <p className="text-2xl font-bold">{formatPrize(contest.prizes)}</p>
-                    </div>
-                  </div>
-                  <CardHeader>
-                    <CardTitle className="line-clamp-1">{contest.title}</CardTitle>
-                    <CardDescription>
-                      Due {new Date(contest.submission_end_date).toLocaleDateString()}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="line-clamp-2 text-sm text-muted-foreground">
-                      {contest.description}
-                    </p>
-                    <div className="mt-4 flex items-center gap-2 text-sm">
-                      <Award className="h-4 w-4 text-muted-foreground" />
-                      <span>{contest.prizes?.length || 1} prize(s)</span>
-                    </div>
-                  </CardContent>
-                  <CardFooter>
-                    <Link href={`/contests/${contest.id}`} className="w-full">
-                      <Button className="w-full">Enter Now</Button>
-                    </Link>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="upcoming" className="mt-6">
-            <p className="text-center text-muted-foreground py-12">
-              Upcoming contests will appear here when announced.
-            </p>
-          </TabsContent>
-        </Tabs>
+            )}
+          </div>
+        </div>
       </div>
     </LayoutWrapper>
   );
