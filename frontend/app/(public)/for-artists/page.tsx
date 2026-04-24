@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-
+import { useRouter } from 'next/navigation';
 import {
   UserCircle,
   Upload,
@@ -14,6 +14,7 @@ import {
   Star,
   CheckCircle2,
 } from 'lucide-react';
+import Link from 'next/link';
 
 // ── SafeImage ──────────────────────────────────────────────────────────────────
 function SafeImage({ src, alt = '', fill = false, className = '', ...rest }: any) {
@@ -87,6 +88,8 @@ const artistCards = [
 
 // ── Main Page ──────────────────────────────────────────────────────────────────
 export default function ForArtistsPage() {
+  const router = useRouter();
+
   return (
     <main className="w-full overflow-x-hidden">
       {/* ═══════════════════════════ HERO ═══════════════════════════ */}
@@ -124,12 +127,17 @@ export default function ForArtistsPage() {
           </p>
 
           <div className="mt-8 flex flex-col items-center gap-3">
-            <Button className="bg-purple-600 hover:bg-purple-700 rounded-full px-8 text-sm flex items-center gap-2">
+            <Button
+              onClick={() => router.push('/login')}
+              className="bg-purple-600 hover:bg-purple-700 rounded-full px-8 text-sm flex items-center gap-2"
+            >
               <Upload size={15} /> Submit Your Art
             </Button>
-            <span className="text-sm text-gray-300 underline underline-offset-2 cursor-pointer hover:text-white transition-colors">
-              Join the Community
-            </span>
+            <Link href="/signup">
+              <span className="text-sm text-gray-300 underline underline-offset-2 cursor-pointer hover:text-white transition-colors">
+                Join the Community
+              </span>
+            </Link>
           </div>
         </div>
       </section>
@@ -398,12 +406,17 @@ export default function ForArtistsPage() {
               </div>
 
               <div className="mt-7 flex flex-col items-center gap-3">
-                <Button className="bg-purple-600 hover:bg-purple-700 rounded-full px-8 flex items-center gap-2">
+                <Button
+                  onClick={() => router.push('/login')}
+                  className="bg-purple-600 hover:bg-purple-700 rounded-full px-8 flex items-center gap-2"
+                >
                   <Upload size={15} /> Submit Your Art
                 </Button>
-                <span className="text-sm text-gray-300 underline underline-offset-2 cursor-pointer hover:text-white transition-colors">
-                  Join the Community
-                </span>
+                <Link href="/signup">
+                  <span className="text-sm text-gray-300 underline underline-offset-2 cursor-pointer hover:text-white transition-colors">
+                    Join the Community
+                  </span>
+                </Link>
               </div>
             </div>
           </div>

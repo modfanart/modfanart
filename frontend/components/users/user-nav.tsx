@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -17,11 +18,40 @@ import {
 import { useLogoutMutation } from '@/services/api/authApi';
 import { useAuth } from '@/store/AuthContext';
 
+import { Sun, Moon } from 'lucide-react';
+
 export function UserNav() {
   const router = useRouter();
 
   const [logout, { isLoading: isLoggingOut }] = useLogoutMutation();
   const { user, loading: isUserLoading } = useAuth();
+
+  // 🌙 DARK MODE STATE
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('theme');
+    const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+    if (stored === 'dark' || (!stored && systemDark)) {
+      document.documentElement.classList.add('dark');
+      setIsDark(true);
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const root = document.documentElement;
+
+    if (isDark) {
+      root.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    } else {
+      root.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    }
+
+    setIsDark(!isDark);
+  };
 
   if (isUserLoading || !user) return null;
 
@@ -30,30 +60,15 @@ export function UserNav() {
   const avatarSrc = user.avatar_url || '/default-avatar.png';
   const initials = displayName.slice(0, 2).toUpperCase();
 
-  // Dashboard Path
   let dashboardPath = '/';
 
-  if (roleName === 'artist') {
-    dashboardPath = `/artist/${user.username}`;
-  }
-
+  if (roleName === 'artist') dashboardPath = `/artist/${user.username}`;
   if (roleName === 'brand_manager') {
     const brand = user?.brands?.[0];
-    const slug = brand?.id;
-
-    if (slug) {
-      dashboardPath = `/brand-manager/${slug}`;
-    }
+    if (brand?.id) dashboardPath = `/brand-manager/${brand.id}`;
   }
-
-  if (roleName === 'judge') {
-    dashboardPath = `/judge/${user.username}`;
-  }
-
-  // Admin role
-  if (roleName === 'admin') {
-    dashboardPath = `/admin/${user.role?.name}`;
-  }
+  if (roleName === 'judge') dashboardPath = `/judge/${user.username}`;
+  if (roleName === 'admin') dashboardPath = `/admin/${user.role?.name}`;
 
   const isEligibleForDashboard =
     roleName === 'artist' ||
@@ -79,7 +94,7 @@ export function UserNav() {
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="relative h-9 w-9 rounded-full" disabled={isLoggingOut}>
+          <Button variant="ghost" className="relative h-9 w-9 rounded-full">
             <Avatar className="h-9 w-9">
               <AvatarImage src={avatarSrc} alt={displayName} />
               <AvatarFallback>{initials}</AvatarFallback>
@@ -87,11 +102,15 @@ export function UserNav() {
           </Button>
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent className="w-56" align="end" forceMount>
+        <DropdownMenuContent
+          className="w-56 bg-card/80 backdrop-blur-xl border border-border"
+          align="end"
+          forceMount
+        >
           <DropdownMenuLabel className="font-normal">
             <div className="flex flex-col space-y-1">
-              <p className="text-sm font-medium leading-none">{displayName}</p>
-              <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+              <p className="text-sm font-medium">{displayName}</p>
+              <p className="text-xs text-muted-foreground">{user.email}</p>
             </div>
           </DropdownMenuLabel>
 
@@ -112,6 +131,14 @@ export function UserNav() {
           </DropdownMenuGroup>
 
           <DropdownMenuSeparator />
+
+          {/* 🌙 DARK MODE TOGGLE */}
+          {/* <DropdownMenuItem onClick={toggleTheme} className="flex items-center justify-between">
+            <span>Theme</span>
+            {isDark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+          </DropdownMenuItem>
+
+          <DropdownMenuSeparator /> */}
 
           <DropdownMenuItem
             className="text-destructive focus:bg-destructive/10 focus:text-destructive"

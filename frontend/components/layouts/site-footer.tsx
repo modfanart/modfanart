@@ -34,7 +34,13 @@ export function SiteFooter() {
             href="/contact"
             className="text-sm text-muted-foreground underline underline-offset-4"
           >
-            Contact
+            Contact Us
+          </Link>
+          <Link
+            href="/resources/guidelines"
+            className="text-sm text-muted-foreground underline underline-offset-4"
+          >
+            Brand Guidelines
           </Link>
         </div>
       </div>
