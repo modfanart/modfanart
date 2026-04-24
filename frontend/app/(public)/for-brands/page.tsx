@@ -16,6 +16,7 @@ import {
   ChevronDown,
   CalendarCheck,
 } from "lucide-react";
+import Link from 'next/link';
 
 // ── SafeImage (same pattern as homepage) ──────────────────────────────────────
 function SafeImage({ src, alt = "", fill = false, className = "", ...rest }: any) {
@@ -90,9 +91,11 @@ export default function ForBrandsPage() {
 
             <div className="mt-8 flex items-center gap-4">
               <span className="text-white font-bold tracking-widest text-sm">LAUNCH A CAMPAIGN</span>
-              <Button className="bg-purple-600 hover:bg-purple-700 rounded-full px-6 text-sm flex items-center gap-2">
-                <CalendarCheck size={15} /> Book a Demo
-              </Button>
+              <Link href="/contact/sales">
+                <Button className="bg-purple-600 hover:bg-purple-700 rounded-full px-6 text-sm flex items-center gap-2">
+                  <CalendarCheck size={15} /> Book a Demo
+                </Button>
+              </Link>
             </div>
           </div>
         </section>
@@ -350,9 +353,11 @@ export default function ForBrandsPage() {
                   MOD helps you activate it safely, legally, and on your terms.
                 </p>
                 <p className="mt-5 font-bold tracking-widest text-sm">LAUNCH A CAMPAIGN</p>
-                <Button className="mt-4 bg-purple-600 hover:bg-purple-700 rounded-full px-8 flex items-center gap-2 mx-auto">
-                  <CalendarCheck size={15} /> Book a Demo
-                </Button>
+                <Link href="/contact/sales">
+                  <Button className="mt-4 bg-purple-600 hover:bg-purple-700 rounded-full px-8 flex items-center gap-2 mx-auto">
+                    <CalendarCheck size={15} /> Book a Demo
+                  </Button>
+                </Link>
               </div>
             </div>
           </div>

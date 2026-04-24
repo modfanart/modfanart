@@ -3,6 +3,10 @@
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import {LayoutWrapper} from "@/components/layout-wrapper"
+import { Link } from "react-router-dom";
+import { useRouter } from 'next/navigation';
+
+
 
 // SafeImage: renders a real Next/Image when src exists, otherwise a placeholder div
 function SafeImage({ src, alt = "", fill = false, className = "", ...rest }) {
@@ -28,6 +32,7 @@ function SafeImage({ src, alt = "", fill = false, className = "", ...rest }) {
 }
 
 export default function HomePage() {
+  const router = useRouter();
 
   const images = [
       "https://res.cloudinary.com/dbsdj2f2l/image/upload/f_auto,q_auto/2331c71fb8e497567176ade34ff7b72c0b0d3594_f2s2gp", // top-left
@@ -76,10 +81,12 @@ export default function HomePage() {
       {
         src: "https://res.cloudinary.com/dbsdj2f2l/image/upload/f_auto,q_auto/homepage-2_buiw8t",
         label: "For Artists",
+        href: "/for-artists",
       },
       {
         src: "https://res.cloudinary.com/dbsdj2f2l/image/upload/f_auto,q_auto/homepage-3_jarrp0",
         label: "For Brands",
+        href: "/for-brands",
       },
     ].map((card, i) => (
       <div
@@ -93,7 +100,10 @@ export default function HomePage() {
           className="object-cover"
         />
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2">
-          <Button className="rounded-full bg-white text-black text-xs px-5 py-2 transition-all transform group-hover:scale-105">
+          <Button
+            onClick={() => router.push(card.href)}
+            className="rounded-full bg-white text-black text-xs px-5 py-2 transition-all transform group-hover:scale-105"
+          >
             ✔ {card.label}
           </Button>
         </div>
@@ -102,7 +112,9 @@ export default function HomePage() {
   </div>
 
   {/* CTA below cards, in normal flow */}
-  <Button className="rounded-full bg-black text-white text-sm px-6 py-2 hover:bg-white hover:text-black transition-colors duration-200">
+  <Button 
+    onClick={() => document.getElementById("featured")?.scrollIntoView({ behavior: "smooth" })}
+    className="rounded-full bg-black text-white text-sm px-6 py-2 hover:bg-white hover:text-black transition-colors duration-200">
     👁 View Active Contests
   </Button>
 </section>
@@ -195,7 +207,7 @@ export default function HomePage() {
       </section>
 
       {/* ================= FEATURED ================= */}
-      <section className="bg-white py-24 px-6 text-center" aria-label="Featured campaigns">
+      <section id="featured" className="bg-white py-24 px-6 text-center" aria-label="Featured campaigns">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-3xl font-semibold">FEATURED CAMPAIGNS</h2>
           <p className="mt-3 text-sm text-gray-600">
@@ -301,7 +313,10 @@ export default function HomePage() {
 
           {/* Button */}
           <div className="mt-12 flex justify-center">
-            <Button className="rounded-full px-8 py-2 bg-gray-900 text-white text-sm flex items-center gap-2 hover:bg-gray-700">
+            <Button
+              onClick={() => router.push("/about")}
+              className="rounded-full px-8 py-2 bg-gray-900 text-white text-sm flex items-center gap-2 hover:bg-gray-700"
+            >
               <span className="text-base">ℹ</span> About Us
             </Button>
           </div>
@@ -336,10 +351,15 @@ export default function HomePage() {
             </p>
 
             <div className="mt-6 flex justify-center gap-4">
-              <Button className="bg-purple-600 rounded-full px-6">
+              <Button 
+                onClick={() => router.push("/signup")}
+                className="bg-purple-600 rounded-full px-6">
                 Sign Up Now
               </Button>
-              <Button variant="outline" className="text-black rounded-full px-6">
+              <Button 
+              onClick={() => router.push("/contact/sales")}
+              variant="outline" 
+              className="text-black rounded-full px-6">
                 Contact Sales
               </Button>
             </div>

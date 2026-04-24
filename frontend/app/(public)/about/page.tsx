@@ -43,7 +43,6 @@ const avatars = ["", "", "", "", ""];
 // ── Main Page ──────────────────────────────────────────────────────────────────
 export default function AboutPage() {
   return (
-    <LayoutWrapper>
       <main className="w-full overflow-x-hidden">
 
         {/* ═══════════════════════════ HERO ═══════════════════════════ */}
@@ -356,6 +355,5 @@ export default function AboutPage() {
         </section>
 
       </main>
-    </LayoutWrapper>
   );
 }
