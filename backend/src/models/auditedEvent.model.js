@@ -1,9 +1,18 @@
 // src/models/auditedEvent.model.js
-const { db } = require('../config');           // ← only db
-const { sql } = require('kysely');             // ← ADD THIS LINE
+const { db } = require('../config'); // ← only db
+const { sql } = require('kysely'); // ← ADD THIS LINE
 
 class AuditedEvent {
-  static async log(actorId, action, entityType = null, entityId = null, oldValues = null, newValues = null, ip = null, userAgent = null) {
+  static async log(
+    actorId,
+    action,
+    entityType = null,
+    entityId = null,
+    oldValues = null,
+    newValues = null,
+    ip = null,
+    userAgent = null
+  ) {
     return db
       .insertInto('audited_events')
       .values({

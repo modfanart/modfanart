@@ -4,7 +4,13 @@ const { logger } = require('../utils/logger');
 const { dbCache, createCacheKey } = require('../cache'); // copy this from frontend/lib/cache
 
 // Zod & types (copy from frontend if needed)
-const SubmissionStatusEnum = ['pending', 'review', 'approved', 'rejected', 'licensed'];
+const SubmissionStatusEnum = [
+  'pending',
+  'review',
+  'approved',
+  'rejected',
+  'licensed',
+];
 
 // ─────────────────────────────────────────────
 //              Repository Class
@@ -13,9 +19,9 @@ const SubmissionStatusEnum = ['pending', 'review', 'approved', 'rejected', 'lice
 class SubmissionRepository {
   // Cache TTLs (in ms)
   CACHE_TTL = {
-    SINGLE_SUBMISSION: 60_000,      // 1 min
-    USER_SUBMISSIONS: 300_000,      // 5 min
-    STATUS_SUBMISSIONS: 120_000,    // 2 min
+    SINGLE_SUBMISSION: 60_000, // 1 min
+    USER_SUBMISSIONS: 300_000, // 5 min
+    STATUS_SUBMISSIONS: 120_000, // 2 min
   };
 
   /**
@@ -50,7 +56,11 @@ class SubmissionRepository {
    * @returns {Promise<{ submissions: Submission[]; total: number }>}
    */
   async getByUserId(userId, limit = 50, offset = 0) {
-    const cacheKey = createCacheKey('user_submissions', { userId, limit, offset });
+    const cacheKey = createCacheKey('user_submissions', {
+      userId,
+      limit,
+      offset,
+    });
 
     return dbCache.getOrSet(
       cacheKey,
@@ -75,7 +85,7 @@ class SubmissionRepository {
           .execute();
 
         return {
-          submissions: rows.map(row => this.mapRowToSubmission(row)),
+          submissions: rows.map((row) => this.mapRowToSubmission(row)),
           total,
         };
       },
@@ -91,7 +101,11 @@ class SubmissionRepository {
    * @returns {Promise<{ submissions: Submission[]; total: number }>}
    */
   async getByStatus(status, limit = 50, offset = 0) {
-    const cacheKey = createCacheKey('status_submissions', { status, limit, offset });
+    const cacheKey = createCacheKey('status_submissions', {
+      status,
+      limit,
+      offset,
+    });
 
     return dbCache.getOrSet(
       cacheKey,
@@ -116,7 +130,7 @@ class SubmissionRepository {
           .execute();
 
         return {
-          submissions: rows.map(row => this.mapRowToSubmission(row)),
+          submissions: rows.map((row) => this.mapRowToSubmission(row)),
           total,
         };
       },
@@ -154,7 +168,7 @@ class SubmissionRepository {
 
       if (searchTerm) {
         const likeTerm = `%${searchTerm}%`;
-        query = query.where(eb =>
+        query = query.where((eb) =>
           eb.or([
             eb('title', 'ilike', likeTerm),
             eb('description', 'ilike', likeTerm),
@@ -179,7 +193,7 @@ class SubmissionRepository {
         .execute();
 
       return {
-        submissions: rows.map(row => this.mapRowToSubmission(row)),
+        submissions: rows.map((row) => this.mapRowToSubmission(row)),
         total,
       };
     } catch (error) {
@@ -203,7 +217,9 @@ class SubmissionRepository {
     if (userId) {
       // Clear common pagination keys (adjust range as needed)
       for (let offset = 0; offset < 1000; offset += 50) {
-        dbCache.delete(createCacheKey('user_submissions', { userId, limit: 50, offset }));
+        dbCache.delete(
+          createCacheKey('user_submissions', { userId, limit: 50, offset })
+        );
       }
     }
 
@@ -211,7 +227,9 @@ class SubmissionRepository {
     const statuses = ['pending', 'review', 'approved', 'rejected', 'licensed'];
     for (const status of statuses) {
       for (let offset = 0; offset < 1000; offset += 50) {
-        dbCache.delete(createCacheKey('status_submissions', { status, limit: 50, offset }));
+        dbCache.delete(
+          createCacheKey('status_submissions', { status, limit: 50, offset })
+        );
       }
     }
   }

@@ -4,7 +4,10 @@ const router = express.Router();
 const { stripe } = require('../config/stripe');
 const { db } = require('../config');
 const { randomUUID } = require('crypto');
-const { generateLicensePDF, generateInvoicePDF } = require('../utils/pdfGenerators'); // from previous message
+const {
+  generateLicensePDF,
+  generateInvoicePDF,
+} = require('../utils/pdfGenerators'); // from previous message
 
 router.post(
   '/stripe',
@@ -39,7 +42,9 @@ router.post(
         const orderId = pi.metadata?.order_id;
 
         if (!orderId) {
-          console.warn('Payment intent succeeded but missing order_id in metadata');
+          console.warn(
+            'Payment intent succeeded but missing order_id in metadata'
+          );
           break;
         }
 
@@ -102,18 +107,21 @@ router.post(
           // ─── 3. Create license record ───
           const licenseId = randomUUID();
 
-          await db.insertInto('licenses').values({
-            id: licenseId,
-            order_item_id: orderItem.id,
-            artwork_id: orderItem.artwork_id,
-            buyer_id: pi.metadata.buyer_id,
-            seller_id: artwork.creator_id,
-            license_type: orderItem.license_type,
-            contract_pdf_url: null, // will be updated below
-            is_active: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          }).execute();
+          await db
+            .insertInto('licenses')
+            .values({
+              id: licenseId,
+              order_item_id: orderItem.id,
+              artwork_id: orderItem.artwork_id,
+              buyer_id: pi.metadata.buyer_id,
+              seller_id: artwork.creator_id,
+              license_type: orderItem.license_type,
+              contract_pdf_url: null, // will be updated below
+              is_active: true,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .execute();
 
           // ─── 4. Generate PDFs (these can throw → catch below) ───
           let contractUrl = null;
@@ -122,7 +130,11 @@ router.post(
           try {
             [contractUrl, invoiceUrl] = await Promise.all([
               generateLicensePDF(
-                { id: licenseId, license_type: orderItem.license_type, created_at: new Date().toISOString() },
+                {
+                  id: licenseId,
+                  license_type: orderItem.license_type,
+                  created_at: new Date().toISOString(),
+                },
                 order,
                 buyer,
                 seller,
@@ -160,7 +172,9 @@ router.post(
               .execute(),
           ]);
 
-          console.log(`Successfully fulfilled order ${orderId} → license ${licenseId}`);
+          console.log(
+            `Successfully fulfilled order ${orderId} → license ${licenseId}`
+          );
 
           // TODO (recommended next steps):
           // - Send email to buyer with license PDF link

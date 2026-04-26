@@ -16,8 +16,13 @@ class ArtworkCategoryController {
       }
 
       // Optional: ownership check
-      if (artwork.creator_id !== req.user.id && !req.user.permissions?.['artworks.manage']) {
-        return res.status(403).json({ error: 'Not authorized to modify this artwork' });
+      if (
+        artwork.creator_id !== req.user.id &&
+        !req.user.permissions?.['artworks.manage']
+      ) {
+        return res
+          .status(403)
+          .json({ error: 'Not authorized to modify this artwork' });
       }
 
       const category = await Category.findById(categoryId);
@@ -48,7 +53,10 @@ class ArtworkCategoryController {
         return res.status(404).json({ error: 'Artwork not found' });
       }
 
-      if (artwork.creator_id !== req.user.id && !req.user.permissions?.['artworks.manage']) {
+      if (
+        artwork.creator_id !== req.user.id &&
+        !req.user.permissions?.['artworks.manage']
+      ) {
         return res.status(403).json({ error: 'Not authorized' });
       }
 
@@ -66,7 +74,8 @@ class ArtworkCategoryController {
     try {
       const { artworkId } = req.params;
 
-      const categoryIds = await ArtworkCategory.getCategoryIdsForArtwork(artworkId);
+      const categoryIds =
+        await ArtworkCategory.getCategoryIdsForArtwork(artworkId);
       if (categoryIds.length === 0) {
         return res.json({ categories: [] });
       }

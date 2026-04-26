@@ -1,6 +1,6 @@
 // src/models/contest.model.js
-const { db } = require('../config');           // ← only db
-const { sql } = require('kysely');             // ← ADD THIS LINE
+const { db } = require('../config'); // ← only db
+const { sql } = require('kysely'); // ← ADD THIS LINE
 
 /** @typedef {import('../db/types').ContestRow} ContestRow */
 

@@ -1,4 +1,4 @@
-const { db } = require('../config');  
+const { db } = require('../config');
 
 const NotificationModel = {
   /**
@@ -18,7 +18,10 @@ const NotificationModel = {
   /**
    * Get all notifications for a user
    */
-  getByUser: async (user_id, { limit = 50, offset = 0, unreadOnly = false } = {}) => {
+  getByUser: async (
+    user_id,
+    { limit = 50, offset = 0, unreadOnly = false } = {}
+  ) => {
     let query = `
       SELECT * FROM notifications 
       WHERE user_id = $1 AND deleted_at IS NULL
@@ -87,7 +90,7 @@ const NotificationModel = {
     `;
     const result = await db.query(query, [user_id]);
     return parseInt(result.rows[0].count);
-  }
+  },
 };
 
 module.exports = NotificationModel;

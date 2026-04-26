@@ -1,6 +1,6 @@
 // src/models/orderItem.model.js
-const { db } = require('../config');           // ← only db
-const { sql } = require('kysely');             // ← ADD THIS LINE
+const { db } = require('../config'); // ← only db
+const { sql } = require('kysely'); // ← ADD THIS LINE
 
 class OrderItem {
   static async create(orderId, data) {

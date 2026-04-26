@@ -1,6 +1,6 @@
 // src/models/moderationQueue.model.js
-const { db } = require('../config');           // ← only db
-const { sql } = require('kysely');             // ← ADD THIS LINE
+const { db } = require('../config'); // ← only db
+const { sql } = require('kysely'); // ← ADD THIS LINE
 
 class ModerationQueue {
   static async enqueue(entityType, entityId, priority = 0) {

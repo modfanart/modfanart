@@ -56,7 +56,7 @@ class BrandPostComment {
         updated_at: now,
       })
       .where('id', '=', commentId)
-      .where('user_id', '=', userId)           // only author can delete
+      .where('user_id', '=', userId) // only author can delete
       .where('deleted_at', 'is', null)
       .returning('post_id')
       .executeTakeFirst();

@@ -29,7 +29,12 @@ class BrandPost {
   }
 
   static async findByBrand(brandId, options = {}) {
-    const { limit = 12, offset = 0, onlyPublished = true, includePinnedFirst = true } = options;
+    const {
+      limit = 12,
+      offset = 0,
+      onlyPublished = true,
+      includePinnedFirst = true,
+    } = options;
 
     let query = db
       .selectFrom('brand_posts')
@@ -45,10 +50,7 @@ class BrandPost {
       query = query.orderBy('is_pinned', 'desc');
     }
 
-    query = query
-      .orderBy('created_at', 'desc')
-      .limit(limit)
-      .offset(offset);
+    query = query.orderBy('created_at', 'desc').limit(limit).offset(offset);
 
     return query.execute();
   }

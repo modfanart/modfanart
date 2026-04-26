@@ -18,7 +18,10 @@ class LicensePurchaseController {
         .where('is_active', '=', true)
         .executeTakeFirst();
 
-      if (!tier) return res.status(404).json({ error: 'Pricing tier not found or inactive' });
+      if (!tier)
+        return res
+          .status(404)
+          .json({ error: 'Pricing tier not found or inactive' });
 
       const artwork = await db
         .selectFrom('artworks')
@@ -33,7 +36,9 @@ class LicensePurchaseController {
         .executeTakeFirstOrThrow();
 
       if (!seller.stripe_connect_id) {
-        return res.status(400).json({ error: 'Creator has not connected Stripe account yet' });
+        return res
+          .status(400)
+          .json({ error: 'Creator has not connected Stripe account yet' });
       }
 
       // ─── 2. Currency & tax logic (India-focused) ───
@@ -43,11 +48,12 @@ class LicensePurchaseController {
         .where('id', '=', buyerId)
         .executeTakeFirst();
 
-      const useINR = (buyer?.location?.includes('IN') || false) && tier.price_inr_cents > 0;
+      const useINR =
+        (buyer?.location?.includes('IN') || false) && tier.price_inr_cents > 0;
       const amountCents = useINR ? tier.price_inr_cents : tier.price_usd_cents;
       const currency = useINR ? 'inr' : 'usd';
 
-      const platformFeePercent = 0.10; // 10%
+      const platformFeePercent = 0.1; // 10%
       const platformFeeCents = Math.floor(amountCents * platformFeePercent);
 
       // GST 18% example for India (simplified – real tax logic is more complex)
@@ -59,33 +65,39 @@ class LicensePurchaseController {
       const orderId = randomUUID();
       const orderItemId = randomUUID();
 
-      await db.insertInto('orders').values({
-        id: orderId,
-        order_number: `LIC-${Date.now().toString().slice(-8)}`,
-        buyer_id: buyerId,
-        seller_id: artwork.creator_id,
-        source_type: 'license_purchase',
-        source_id: artwork_id,
-        status: 'pending',
-        currency,
-        subtotal_cents: amountCents,
-        platform_fee_cents: platformFeeCents,
-        tax_cents: taxCents,
-        total_cents: totalCents,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }).execute();
+      await db
+        .insertInto('orders')
+        .values({
+          id: orderId,
+          order_number: `LIC-${Date.now().toString().slice(-8)}`,
+          buyer_id: buyerId,
+          seller_id: artwork.creator_id,
+          source_type: 'license_purchase',
+          source_id: artwork_id,
+          status: 'pending',
+          currency,
+          subtotal_cents: amountCents,
+          platform_fee_cents: platformFeeCents,
+          tax_cents: taxCents,
+          total_cents: totalCents,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .execute();
 
-      await db.insertInto('order_items').values({
-        id: orderItemId,
-        order_id: orderId,
-        artwork_id,
-        license_type: tier.license_type,
-        unit_price_cents: amountCents,
-        quantity: 1,
-        description: `${tier.license_type} license for "${artwork.title || 'Artwork'}"`,
-        metadata: { pricing_tier_id },
-      }).execute();
+      await db
+        .insertInto('order_items')
+        .values({
+          id: orderItemId,
+          order_id: orderId,
+          artwork_id,
+          license_type: tier.license_type,
+          unit_price_cents: amountCents,
+          quantity: 1,
+          description: `${tier.license_type} license for "${artwork.title || 'Artwork'}"`,
+          metadata: { pricing_tier_id },
+        })
+        .execute();
 
       // ─── 4. Create Stripe PaymentIntent (Destination Charge) ───
       const paymentIntent = await stripe.paymentIntents.create({

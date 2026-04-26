@@ -7,12 +7,14 @@ function escapeLike(value) {
 
 function toTsQueryPrefix(text) {
   if (!text?.trim()) return '';
-  return text
-    .trim()
-    .split(/\s+/)
-    .filter(w => w.length > 0)
-    .map(word => `${word}:*`)
-    .join(' & ') || '';
+  return (
+    text
+      .trim()
+      .split(/\s+/)
+      .filter((w) => w.length > 0)
+      .map((word) => `${word}:*`)
+      .join(' & ') || ''
+  );
 }
 
 module.exports = {

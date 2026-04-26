@@ -88,7 +88,7 @@
  * @property {string} created_at
  * @property {string} updated_at
  */
- 
+
 /**
  * @typedef {Object} CategoryRow
  * @property {string} id

@@ -26,11 +26,29 @@ async function getPlatformStats(req, res) {
       openReportsCount,
       activeJudgesCount,
     ] = await Promise.all([
-      db.selectFrom('users').select(db.fn.countAll().as('count')).executeTakeFirst(),
-      db.selectFrom('brands').where('status', '=', 'active').select(db.fn.countAll().as('count')).executeTakeFirst(),
-      db.selectFrom('contests').select(db.fn.countAll().as('count')).executeTakeFirst(),
-      db.selectFrom('moderation_queue').where('status', '=', 'pending').select(db.fn.countAll().as('count')).executeTakeFirst(),
-      db.selectFrom('user_violations').where('status', '=', 'open').select(db.fn.countAll().as('count')).executeTakeFirst(),
+      db
+        .selectFrom('users')
+        .select(db.fn.countAll().as('count'))
+        .executeTakeFirst(),
+      db
+        .selectFrom('brands')
+        .where('status', '=', 'active')
+        .select(db.fn.countAll().as('count'))
+        .executeTakeFirst(),
+      db
+        .selectFrom('contests')
+        .select(db.fn.countAll().as('count'))
+        .executeTakeFirst(),
+      db
+        .selectFrom('moderation_queue')
+        .where('status', '=', 'pending')
+        .select(db.fn.countAll().as('count'))
+        .executeTakeFirst(),
+      db
+        .selectFrom('user_violations')
+        .where('status', '=', 'open')
+        .select(db.fn.countAll().as('count'))
+        .executeTakeFirst(),
       db
         .selectFrom('users')
         .innerJoin('roles', 'users.role_id', 'roles.id')
@@ -51,8 +69,13 @@ async function getPlatformStats(req, res) {
       },
     });
   } catch (err) {
-    logger.error('getPlatformStats failed', { error: err.message, stack: err.stack });
-    res.status(500).json({ success: false, error: 'Failed to load platform statistics' });
+    logger.error('getPlatformStats failed', {
+      error: err.message,
+      stack: err.stack,
+    });
+    res
+      .status(500)
+      .json({ success: false, error: 'Failed to load platform statistics' });
   }
 }
 
@@ -107,7 +130,12 @@ async function getUsers(req, res) {
     if (status) query = query.where('u.status', '=', status);
     if (role) query = query.where('r.name', '=', role);
 
-    const allowedSortFields = ['created_at', 'username', 'last_login_at', 'status'];
+    const allowedSortFields = [
+      'created_at',
+      'username',
+      'last_login_at',
+      'status',
+    ];
     const sortField = allowedSortFields.includes(sort) ? sort : 'created_at';
     const sortDirection = order.toLowerCase() === 'asc' ? 'asc' : 'desc';
 
@@ -155,13 +183,23 @@ async function updateUserStatus(req, res) {
     const { id } = req.params;
     const { status } = req.body;
 
-    const allowedStatuses = ['active', 'suspended', 'pending_verification', 'deactivated'];
+    const allowedStatuses = [
+      'active',
+      'suspended',
+      'pending_verification',
+      'deactivated',
+    ];
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({ success: false, error: 'Invalid status' });
     }
 
     if (id === req.user.id) {
-      return res.status(403).json({ success: false, error: 'Cannot change your own status this way' });
+      return res
+        .status(403)
+        .json({
+          success: false,
+          error: 'Cannot change your own status this way',
+        });
     }
 
     const updated = await db
@@ -182,7 +220,9 @@ async function updateUserStatus(req, res) {
     res.json({ success: true, data: updated });
   } catch (err) {
     logger.error('updateUserStatus failed', { error: err.message });
-    res.status(500).json({ success: false, error: 'Failed to update user status' });
+    res
+      .status(500)
+      .json({ success: false, error: 'Failed to update user status' });
   }
 }
 
@@ -194,7 +234,9 @@ async function deleteUser(req, res) {
     const { id } = req.params;
 
     if (id === req.user.id) {
-      return res.status(403).json({ success: false, error: 'Cannot delete yourself' });
+      return res
+        .status(403)
+        .json({ success: false, error: 'Cannot delete yourself' });
     }
 
     const user = await db
@@ -237,7 +279,11 @@ async function getPendingBrandVerifications(req, res) {
 
     const brands = await db
       .selectFrom('brands as b')
-      .innerJoin('brand_verification_requests as vr', 'b.verification_request_id', 'vr.id')
+      .innerJoin(
+        'brand_verification_requests as vr',
+        'b.verification_request_id',
+        'vr.id'
+      )
       .select([
         'b.id',
         'b.name',
@@ -256,7 +302,9 @@ async function getPendingBrandVerifications(req, res) {
     res.json({ success: true, data: brands });
   } catch (err) {
     logger.error('getPendingBrandVerifications failed', err);
-    res.status(500).json({ success: false, error: 'Failed to load pending verifications' });
+    res
+      .status(500)
+      .json({ success: false, error: 'Failed to load pending verifications' });
   }
 }
 
@@ -280,7 +328,12 @@ async function verifyBrand(req, res) {
       .executeTakeFirst();
 
     if (!request || request.status !== 'pending') {
-      return res.status(400).json({ success: false, error: 'No pending verification request found' });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          error: 'No pending verification request found',
+        });
     }
 
     const newRequestStatus = action === 'approve' ? 'approved' : 'rejected';
@@ -309,7 +362,9 @@ async function verifyBrand(req, res) {
     res.json({ success: true, message: `Brand verification ${action}d` });
   } catch (err) {
     logger.error('verifyBrand failed', err);
-    res.status(500).json({ success: false, error: 'Failed to process verification' });
+    res
+      .status(500)
+      .json({ success: false, error: 'Failed to process verification' });
   }
 }
 
@@ -339,7 +394,9 @@ async function getModerationQueue(req, res) {
     res.json({ success: true, data: items });
   } catch (err) {
     logger.error('getModerationQueue failed', err);
-    res.status(500).json({ success: false, error: 'Failed to load moderation queue' });
+    res
+      .status(500)
+      .json({ success: false, error: 'Failed to load moderation queue' });
   }
 }
 

@@ -1,6 +1,6 @@
 // src/models/contestCategory.model.js
-const { db } = require('../config');           // ← only db
-const { sql } = require('kysely');             // ← ADD THIS LINE
+const { db } = require('../config'); // ← only db
+const { sql } = require('kysely'); // ← ADD THIS LINE
 
 class ContestCategory {
   static async assign(contestId, categoryId) {
@@ -21,7 +21,7 @@ class ContestCategory {
       .select('category_id')
       .where('contest_id', '=', contestId)
       .execute()
-      .then(rows => rows.map(r => r.category_id));
+      .then((rows) => rows.map((r) => r.category_id));
   }
 }
 

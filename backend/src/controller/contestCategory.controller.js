@@ -12,8 +12,13 @@ class ContestCategoryController {
       const contest = await Contest.findById(contestId);
       if (!contest) return res.status(404).json({ error: 'Contest not found' });
 
-      if (contest.brand_id !== req.user.id && !req.user.permissions?.['contests.manage']) {
-        return res.status(403).json({ error: 'Not authorized to modify categories' });
+      if (
+        contest.brand_id !== req.user.id &&
+        !req.user.permissions?.['contests.manage']
+      ) {
+        return res
+          .status(403)
+          .json({ error: 'Not authorized to modify categories' });
       }
 
       await ContestCategory.assign(contestId, categoryId);
@@ -21,7 +26,11 @@ class ContestCategoryController {
       const category = await Category.findById(categoryId);
       res.status(201).json({
         message: 'Category added to contest',
-        category: { id: categoryId, name: category?.name, slug: category?.slug },
+        category: {
+          id: categoryId,
+          name: category?.name,
+          slug: category?.slug,
+        },
       });
     } catch (err) {
       console.error(err);
@@ -36,7 +45,10 @@ class ContestCategoryController {
       const contest = await Contest.findById(contestId);
       if (!contest) return res.status(404).json({ error: 'Contest not found' });
 
-      if (contest.brand_id !== req.user.id && !req.user.permissions?.['contests.manage']) {
+      if (
+        contest.brand_id !== req.user.id &&
+        !req.user.permissions?.['contests.manage']
+      ) {
         return res.status(403).json({ error: 'Not authorized' });
       }
 
@@ -53,7 +65,8 @@ class ContestCategoryController {
     try {
       const { contestId } = req.params;
 
-      const categoryIds = await ContestCategory.getCategoryIdsForContest(contestId);
+      const categoryIds =
+        await ContestCategory.getCategoryIdsForContest(contestId);
 
       if (categoryIds.length === 0) {
         return res.json({ categories: [] });

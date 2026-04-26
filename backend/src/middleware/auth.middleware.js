@@ -24,7 +24,7 @@ async function authenticateToken(req, res, next) {
         'u.avatar_url',
         'u.status',
         'u.role_id',
-        'r.name as role',                    // e.g. "brand_manager"
+        'r.name as role', // e.g. "brand_manager"
         'r.permissions as role_permissions', // ← Correct column
       ])
       .where('u.id', '=', decoded.userId)
@@ -54,8 +54,8 @@ async function authenticateToken(req, res, next) {
         ])
         .where((eb) =>
           eb.or([
-            eb('b.user_id', '=', user.id),        // Brand owner
-            eb('bm.user_id', '=', user.id),       // Brand manager
+            eb('b.user_id', '=', user.id), // Brand owner
+            eb('bm.user_id', '=', user.id), // Brand manager
           ])
         )
         .execute();
@@ -80,7 +80,6 @@ async function authenticateToken(req, res, next) {
 
     req.user = user;
     next();
-
   } catch (err) {
     console.error('Auth error:', err);
     return res.status(403).json({ error: 'Invalid or expired token' });

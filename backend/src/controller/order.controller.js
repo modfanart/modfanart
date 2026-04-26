@@ -25,7 +25,8 @@ class OrderController {
         .where('is_active', '=', true)
         .executeTakeFirst();
 
-      if (!tier) return res.status(404).json({ error: 'Pricing tier not found' });
+      if (!tier)
+        return res.status(404).json({ error: 'Pricing tier not found' });
 
       const amountCents = tier.price_inr_cents; // or USD logic
 
@@ -38,8 +39,8 @@ class OrderController {
         status: 'pending',
         currency: 'INR',
         subtotal_cents: amountCents,
-        platform_fee_cents: Math.round(amountCents * 0.10), // 10% example
-        total_cents: amountCents + Math.round(amountCents * 0.10),
+        platform_fee_cents: Math.round(amountCents * 0.1), // 10% example
+        total_cents: amountCents + Math.round(amountCents * 0.1),
       });
 
       await OrderItem.create(order.id, {
@@ -79,12 +80,17 @@ class OrderController {
         return res.status(400).json({ error: 'Order not pending' });
       }
 
-      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+      const paymentIntent =
+        await stripe.paymentIntents.retrieve(paymentIntentId);
       if (paymentIntent.status !== 'succeeded') {
         return res.status(400).json({ error: 'Payment not successful' });
       }
 
-      await Order.markAsPaid(order.id, paymentIntentId, paymentIntent.charges.data[0]?.id);
+      await Order.markAsPaid(
+        order.id,
+        paymentIntentId,
+        paymentIntent.charges.data[0]?.id
+      );
 
       // Issue license
       const item = await OrderItem.findByOrderId(order.id)[0];
@@ -105,7 +111,7 @@ class OrderController {
         const seller = await User.findById(order.seller_id);
         if (seller.stripe_connect_id) {
           await stripe.transfers.create({
-            amount: Math.round(order.subtotal_cents * 0.90), // after 10% fee
+            amount: Math.round(order.subtotal_cents * 0.9), // after 10% fee
             currency: 'inr',
             destination: seller.stripe_connect_id,
             description: `Payout for order ${order.order_number}`,

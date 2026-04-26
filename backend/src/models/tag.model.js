@@ -1,6 +1,6 @@
 // src/models/tag.model.js
-const { db } = require('../config');           // ← only db
-const { sql } = require('kysely');             // ← ADD THIS LINE
+const { db } = require('../config'); // ← only db
+const { sql } = require('kysely'); // ← ADD THIS LINE
 
 /** @typedef {import('../db/types').TagRow} TagRow */
 
@@ -9,10 +9,7 @@ class Tag {
     return db
       .selectFrom('tags')
       .selectAll()
-      .where((eb) => eb.or([
-        eb('name', '=', value),
-        eb('slug', '=', value),
-      ]))
+      .where((eb) => eb.or([eb('name', '=', value), eb('slug', '=', value)]))
       .executeTakeFirst();
   }
 

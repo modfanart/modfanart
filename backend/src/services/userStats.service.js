@@ -9,16 +9,12 @@ class UserStatsService {
         eb.fn.count('id').as('artworks_count'),
 
         // ✅ FIXED
-        eb.fn.coalesce(
-          eb.fn.sum('favorites_count'),
-          sql`0`
-        ).as('likes_received'),
+        eb.fn
+          .coalesce(eb.fn.sum('favorites_count'), sql`0`)
+          .as('likes_received'),
 
         // ✅ FIXED
-        eb.fn.coalesce(
-          eb.fn.sum('views_count'),
-          sql`0`
-        ).as('views_received'),
+        eb.fn.coalesce(eb.fn.sum('views_count'), sql`0`).as('views_received'),
       ])
       .where('creator_id', '=', userId)
       .where('deleted_at', 'is', null)

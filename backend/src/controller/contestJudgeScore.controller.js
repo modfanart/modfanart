@@ -16,7 +16,9 @@ class ContestJudgeScoreController {
 
       // Validate input
       if (typeof score !== 'number' || score < 0 || score > 100) {
-        return res.status(400).json({ error: 'Score must be a number between 0 and 100' });
+        return res
+          .status(400)
+          .json({ error: 'Score must be a number between 0 and 100' });
       }
 
       // Verify the user is an assigned and accepted judge for this contest
@@ -29,7 +31,9 @@ class ContestJudgeScoreController {
         .executeTakeFirst();
 
       if (!judgeAssignment) {
-        return res.status(403).json({ error: 'You are not an assigned judge for this contest' });
+        return res
+          .status(403)
+          .json({ error: 'You are not an assigned judge for this contest' });
       }
 
       // Verify the entry exists and belongs to this contest
@@ -41,17 +45,26 @@ class ContestJudgeScoreController {
         .executeTakeFirst();
 
       if (!entry) {
-        return res.status(404).json({ error: 'Entry not found in this contest' });
+        return res
+          .status(404)
+          .json({ error: 'Entry not found in this contest' });
       }
 
       // Optional: check if contest is in judging phase
       const contest = await Contest.findById(contestId);
       if (contest.status !== 'judging') {
-        return res.status(403).json({ error: 'Scoring is only allowed during the judging phase' });
+        return res
+          .status(403)
+          .json({ error: 'Scoring is only allowed during the judging phase' });
       }
 
       // Submit / update score (upsert behavior via onConflict)
-      await ContestJudgeScore.submit(entryId, req.user.id, score, comments || null);
+      await ContestJudgeScore.submit(
+        entryId,
+        req.user.id,
+        score,
+        comments || null
+      );
 
       res.status(201).json({
         message: 'Score submitted successfully',
@@ -102,7 +115,9 @@ class ContestJudgeScoreController {
           .executeTakeFirst());
 
       if (!isAuthorized) {
-        return res.status(403).json({ error: 'Not authorized to view scores for this entry' });
+        return res
+          .status(403)
+          .json({ error: 'Not authorized to view scores for this entry' });
       }
 
       // Fetch all scores
@@ -123,9 +138,14 @@ class ContestJudgeScoreController {
         .execute();
 
       // Optional: calculate average judge score
-      const averageScore = scores.length > 0
-        ? Number((scores.reduce((sum, s) => sum + s.score, 0) / scores.length).toFixed(2))
-        : null;
+      const averageScore =
+        scores.length > 0
+          ? Number(
+              (
+                scores.reduce((sum, s) => sum + s.score, 0) / scores.length
+              ).toFixed(2)
+            )
+          : null;
 
       res.json({
         entryId,
