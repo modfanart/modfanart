@@ -246,14 +246,17 @@ function OpportunityGrid({ items, brandBase, isClosed = false }: any) {
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
                       <DropdownMenuSeparator />
 
-                      <DropdownMenuItem>
-                        <Eye className="mr-2 h-4 w-4" /> View
+                      <DropdownMenuItem asChild>
+                        <Link href={`${brandBase}/opportunities/${opp.id}/edit`}>
+                          <Edit className="mr-2 h-4 w-4" /> Edit
+                        </Link>
                       </DropdownMenuItem>
 
-                      <DropdownMenuItem>
-                        <Edit className="mr-2 h-4 w-4" /> Edit
+                      <DropdownMenuItem asChild>
+                        <Link href={`/opportunities/${opp.id}/monitor`}>
+                          <Users className="mr-2 h-4 w-4" /> Monitor
+                        </Link>
                       </DropdownMenuItem>
-
                       <DropdownMenuItem onClick={() => generateLink(opp)}>
                         <LinkIcon className="mr-2 h-4 w-4" />
                         Generate Judging Link
