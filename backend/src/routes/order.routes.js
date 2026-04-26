@@ -10,8 +10,16 @@ const router = express.Router();
 // router.use(authenticateToken);
 
 // Orders
-router.post('/', hasPermission('orders.create'), OrderController.createLicenseOrder);
-router.post('/:id/confirm', hasPermission('orders.confirm'), OrderController.confirmOrder);
+router.post(
+  '/',
+  hasPermission('orders.create'),
+  OrderController.createLicenseOrder
+);
+router.post(
+  '/:id/confirm',
+  hasPermission('orders.confirm'),
+  OrderController.confirmOrder
+);
 router.get('/me', OrderController.getMyOrders);
 
 // Licenses

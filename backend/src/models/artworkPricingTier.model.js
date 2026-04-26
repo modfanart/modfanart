@@ -1,6 +1,6 @@
 // src/models/artworkPricingTier.model.js
-const { db } = require('../config');           // ← only db
-const { sql } = require('kysely');             // ← ADD THIS LINE
+const { db } = require('../config'); // ← only db
+const { sql } = require('kysely'); // ← ADD THIS LINE
 
 class ArtworkPricingTier {
   static async create(artworkId, data) {

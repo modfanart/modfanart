@@ -10,22 +10,37 @@ class TaggingController {
       const { artworkId } = req.params;
       const { tagName } = req.body;
 
-      if (!tagName || typeof tagName !== 'string' || tagName.trim().length < 2) {
-        return res.status(400).json({ error: 'Valid tag name required (min 2 characters)' });
+      if (
+        !tagName ||
+        typeof tagName !== 'string' ||
+        tagName.trim().length < 2
+      ) {
+        return res
+          .status(400)
+          .json({ error: 'Valid tag name required (min 2 characters)' });
       }
 
       const artwork = await Artwork.findById(artworkId);
       if (!artwork) return res.status(404).json({ error: 'Artwork not found' });
 
       // Ownership or permission check
-      if (artwork.creator_id !== req.user.id && !req.user.permissions?.['tags.manage']) {
-        return res.status(403).json({ error: 'Not authorized to tag this artwork' });
+      if (
+        artwork.creator_id !== req.user.id &&
+        !req.user.permissions?.['tags.manage']
+      ) {
+        return res
+          .status(403)
+          .json({ error: 'Not authorized to tag this artwork' });
       }
 
       let tag = await Tag.findByNameOrSlug(tagName.trim());
 
       if (!tag) {
-        const slug = tagName.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+        const slug = tagName
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, '-')
+          .replace(/[^a-z0-9-]/g, '');
         tag = await Tag.create(tagName.trim(), slug, req.user.id);
       } else {
         // Optional: only increment if new usage
@@ -57,7 +72,10 @@ class TaggingController {
       const artwork = await Artwork.findById(artworkId);
       if (!artwork) return res.status(404).json({ error: 'Artwork not found' });
 
-      if (artwork.creator_id !== req.user.id && !req.user.permissions?.['tags.manage']) {
+      if (
+        artwork.creator_id !== req.user.id &&
+        !req.user.permissions?.['tags.manage']
+      ) {
         return res.status(403).json({ error: 'Not authorized' });
       }
 
