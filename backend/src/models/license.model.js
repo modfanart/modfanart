@@ -1,9 +1,17 @@
 // src/models/license.model.js
-const { db } = require('../config');           // ← only db
-const { sql } = require('kysely');             // ← ADD THIS LINE
+const { db } = require('../config'); // ← only db
+const { sql } = require('kysely'); // ← ADD THIS LINE
 
 class License {
-  static async issue(orderItemId, artworkId, buyerId, sellerId, licenseType, contractPdfUrl, expiresAt = null) {
+  static async issue(
+    orderItemId,
+    artworkId,
+    buyerId,
+    sellerId,
+    licenseType,
+    contractPdfUrl,
+    expiresAt = null
+  ) {
     return db
       .insertInto('licenses')
       .values({
@@ -27,10 +35,9 @@ class License {
       .selectAll()
       .where('id', '=', id)
       .where('is_active', '=', true)
-      .where((eb) => eb.or([
-        eb('expires_at', 'is', null),
-        eb('expires_at', '>', sql`NOW()`),
-      ]))
+      .where((eb) =>
+        eb.or([eb('expires_at', 'is', null), eb('expires_at', '>', sql`NOW()`)])
+      )
       .executeTakeFirst();
   }
 
@@ -50,11 +57,7 @@ class License {
     return db
       .selectFrom('licenses')
       .innerJoin('artworks', 'artworks.id', 'licenses.artwork_id')
-      .select([
-        'licenses.*',
-        'artworks.title',
-        'artworks.thumbnail_url',
-      ])
+      .select(['licenses.*', 'artworks.title', 'artworks.thumbnail_url'])
       .where('licenses.buyer_id', '=', buyerId)
       .where('licenses.is_active', '=', true)
       .orderBy('licenses.created_at', 'desc')

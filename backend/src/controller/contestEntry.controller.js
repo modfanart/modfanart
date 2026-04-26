@@ -19,7 +19,9 @@ class ContestEntryController {
       if (!contest) return res.status(404).json({ error: 'Contest not found' });
 
       if (contest.status !== 'live') {
-        return res.status(403).json({ error: 'Contest is not accepting submissions' });
+        return res
+          .status(403)
+          .json({ error: 'Contest is not accepting submissions' });
       }
 
       const now = new Date();
@@ -29,13 +31,17 @@ class ContestEntryController {
 
       const artwork = await Artwork.findById(artworkId);
       if (!artwork || artwork.creator_id !== req.user.id) {
-        return res.status(403).json({ error: 'Not your artwork or artwork not found' });
+        return res
+          .status(403)
+          .json({ error: 'Not your artwork or artwork not found' });
       }
 
- // Temporarily relax the check
-if (artwork.status !== 'published' && artwork.status !== 'draft') {
-  return res.status(403).json({ error: 'Artwork must be published or in draft to submit' });
-}
+      // Temporarily relax the check
+      if (artwork.status !== 'published' && artwork.status !== 'draft') {
+        return res
+          .status(403)
+          .json({ error: 'Artwork must be published or in draft to submit' });
+      }
       // Check max entries per user
       const existing = await db
         .selectFrom('contest_entries')
@@ -59,10 +65,17 @@ if (artwork.status !== 'published' && artwork.status !== 'draft') {
         .executeTakeFirst();
 
       if (duplicate) {
-        return res.status(409).json({ error: 'This artwork is already submitted to this contest' });
+        return res
+          .status(409)
+          .json({ error: 'This artwork is already submitted to this contest' });
       }
 
-      const entry = await ContestEntry.create(contestId, artworkId, req.user.id, submission_notes || null);
+      const entry = await ContestEntry.create(
+        contestId,
+        artworkId,
+        req.user.id,
+        submission_notes || null
+      );
 
       // Optional: notify brand/moderators of new submission
       // await Notification.create(contest.brand_id, 'new_entry', { contestId, entryId: entry.id });
@@ -120,7 +133,10 @@ if (artwork.status !== 'published' && artwork.status !== 'draft') {
           req.user.permissions?.['contests.judge']);
 
       if (!isAuthorized) {
-        query = query.where('contest_entries.status', 'in', ['approved', 'winner']);
+        query = query.where('contest_entries.status', 'in', [
+          'approved',
+          'winner',
+        ]);
       } else if (status) {
         // Moderators/judges/brands can filter by status
         query = query.where('contest_entries.status', '=', status);
@@ -145,7 +161,11 @@ if (artwork.status !== 'published' && artwork.status !== 'draft') {
       const { status, notes } = req.body; // status: 'approved' | 'rejected' | 'disqualified'
 
       if (!['approved', 'rejected', 'disqualified'].includes(status)) {
-        return res.status(400).json({ error: 'Invalid status. Allowed: approved, rejected, disqualified' });
+        return res
+          .status(400)
+          .json({
+            error: 'Invalid status. Allowed: approved, rejected, disqualified',
+          });
       }
 
       const contest = await Contest.findById(contestId);
@@ -172,7 +192,9 @@ if (artwork.status !== 'published' && artwork.status !== 'draft') {
           .executeTakeFirst());
 
       if (!isAuthorized) {
-        return res.status(403).json({ error: 'Not authorized to moderate this entry' });
+        return res
+          .status(403)
+          .json({ error: 'Not authorized to moderate this entry' });
       }
 
       // Update entry
@@ -206,7 +228,7 @@ if (artwork.status !== 'published' && artwork.status !== 'draft') {
       res.status(500).json({ error: 'Failed to update entry status' });
     }
   }
-    /**
+  /**
    * DELETE /contests/:contestId/entries/:entryId
    * Withdraw / delete own contest entry (creator only)
    * Only allowed while the contest is in 'live' state and before submission deadline
@@ -229,7 +251,9 @@ if (artwork.status !== 'published' && artwork.status !== 'draft') {
 
       // 2. Authorization – must be the creator
       if (entry.creator_id !== req.user.id) {
-        return res.status(403).json({ error: 'You can only delete your own entries' });
+        return res
+          .status(403)
+          .json({ error: 'You can only delete your own entries' });
       }
 
       // 3. Check contest state
@@ -239,9 +263,13 @@ if (artwork.status !== 'published' && artwork.status !== 'draft') {
       }
 
       const now = new Date();
-      if (contest.status !== 'live' || new Date(contest.submission_end_date) < now) {
+      if (
+        contest.status !== 'live' ||
+        new Date(contest.submission_end_date) < now
+      ) {
         return res.status(403).json({
-          error: 'Cannot delete entries after submission period has ended or contest is no longer live',
+          error:
+            'Cannot delete entries after submission period has ended or contest is no longer live',
         });
       }
 

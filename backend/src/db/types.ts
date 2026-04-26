@@ -12,7 +12,7 @@ export interface UserRow {
   profile: Record<string, any>;
   avatar_url: string | null;
   banner_url: string | null;
-  bio: string | null; 
+  bio: string | null;
   location: string | null;
   website: string | null;
   payout_method: object | null;
@@ -113,7 +113,12 @@ export interface ArtworkRow {
   file_url: string;
   thumbnail_url: string | null;
   source_file_url: string | null;
-  status: 'draft' | 'published' | 'archived' | 'moderation_pending' | 'rejected';
+  status:
+    | 'draft'
+    | 'published'
+    | 'archived'
+    | 'moderation_pending'
+    | 'rejected';
   moderation_status: string;
   moderation_notes: string | null;
   moderated_by: string | null;
@@ -402,60 +407,58 @@ export interface BrandFollowerRow {
 }
 export interface Collections {
   id: string;
-    owner_type: 'user' | 'brand';
-    owner_id: string;
-    name: string;
-    slug: string;
-    description: string | null;
-    is_public: boolean;
-    cover_image_url: string | null;
-    sort_order: number;
-    created_at: string;
-    updated_at: string;
-    deleted_at: string | null;
+  owner_type: 'user' | 'brand';
+  owner_id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  is_public: boolean;
+  cover_image_url: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
 }
 
 export interface CollectionItem {
-    id: string;
-    collection_id: string;
-    artwork_id: string;
-    sort_order: number;
-    added_at: string;
+  id: string;
+  collection_id: string;
+  artwork_id: string;
+  sort_order: number;
+  added_at: string;
 }
 
-
-
 export interface DB {
-  users:                    UserRow;
-  roles:                    RoleRow;
-  user_roles:               UserRoleRow;
-  refresh_tokens:           RefreshTokenRow;
-  auth_tokens:              AuthTokenRow;
+  users: UserRow;
+  roles: RoleRow;
+  user_roles: UserRoleRow;
+  refresh_tokens: RefreshTokenRow;
+  auth_tokens: AuthTokenRow;
   brand_verification_requests: BrandVerificationRequestRow;
-  categories:               CategoryRow;
-  tags:                     TagRow;
-  collections: Collections,
-  collection_items: CollectionItem,
-  taggings:                 TaggingRow;
-  artwork:                  ArtworkRow;
-  artwork_pricing_tiers:    ArtworkPricingTierRow;
-  artwork_categories:       ArtworkCategoryRow;
-  contests:                 ContestRow;
-  contest_categories:       ContestCategoryRow;
-  contest_entries:          ContestEntryRow;
-  contest_votes:            ContestVoteRow;
-  contest_judges:           ContestJudgeRow;
-  contest_judge_scores:     ContestJudgeScoreRow;
-  orders:                   OrderRow;
-  order_items:              OrderItemRow;
-  refunds:                  RefundRow;
-  licenses:                 LicenseRow;
-  moderation_queue:         ModerationQueueRow;
-  user_violations:          UserViolationRow;
-  favorites:                FavoriteRow;
-  notifications:            NotificationRow;
-  audited_events:           AuditedEventRow;
-brands: BrandRow;
+  categories: CategoryRow;
+  tags: TagRow;
+  collections: Collections;
+  collection_items: CollectionItem;
+  taggings: TaggingRow;
+  artwork: ArtworkRow;
+  artwork_pricing_tiers: ArtworkPricingTierRow;
+  artwork_categories: ArtworkCategoryRow;
+  contests: ContestRow;
+  contest_categories: ContestCategoryRow;
+  contest_entries: ContestEntryRow;
+  contest_votes: ContestVoteRow;
+  contest_judges: ContestJudgeRow;
+  contest_judge_scores: ContestJudgeScoreRow;
+  orders: OrderRow;
+  order_items: OrderItemRow;
+  refunds: RefundRow;
+  licenses: LicenseRow;
+  moderation_queue: ModerationQueueRow;
+  user_violations: UserViolationRow;
+  favorites: FavoriteRow;
+  notifications: NotificationRow;
+  audited_events: AuditedEventRow;
+  brands: BrandRow;
   brand_artworks: BrandArtworkRow;
   brand_posts: BrandPostRow;
   brand_post_likes: BrandPostLikeRow;

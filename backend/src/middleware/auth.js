@@ -38,7 +38,8 @@ async function isAuthenticated(req, res, next) {
     const status = err.name === 'TokenExpiredError' ? 401 : 403;
     return res.status(status).json({
       success: false,
-      error: err.name === 'TokenExpiredError' ? 'Token expired' : 'Invalid token',
+      error:
+        err.name === 'TokenExpiredError' ? 'Token expired' : 'Invalid token',
     });
   }
 }

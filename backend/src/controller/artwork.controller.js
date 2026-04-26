@@ -33,7 +33,15 @@ class ArtworkController {
       }
 
       const ext = path.extname(req.file.originalname).toLowerCase();
-      const allowed = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.mp4'];
+      const allowed = [
+        '.jpg',
+        '.jpeg',
+        '.png',
+        '.gif',
+        '.webp',
+        '.svg',
+        '.mp4',
+      ];
       if (!allowed.includes(ext)) {
         return res.status(400).json({ error: 'Invalid file type' });
       }
@@ -49,7 +57,7 @@ class ArtworkController {
         })
       );
 
-const fileUrl = `https://amzn-artwork-images.s3.eu-north-1.amazonaws.com/${fileKey}`;
+      const fileUrl = `https://amzn-artwork-images.s3.eu-north-1.amazonaws.com/${fileKey}`;
       // Create draft artwork
       const artwork = await Artwork.create(userId, {
         title: title.trim(),
@@ -62,7 +70,9 @@ const fileUrl = `https://amzn-artwork-images.s3.eu-north-1.amazonaws.com/${fileK
       });
 
       if (!artwork) {
-        return res.status(500).json({ error: 'Failed to create artwork record' });
+        return res
+          .status(500)
+          .json({ error: 'Failed to create artwork record' });
       }
 
       // Assign categories
@@ -77,7 +87,9 @@ const fileUrl = `https://amzn-artwork-images.s3.eu-north-1.amazonaws.com/${fileK
       // Create pricing tiers
       if (Array.isArray(pricing_tiers) && pricing_tiers.length > 0) {
         for (const tier of pricing_tiers) {
-          if (['personal', 'commercial', 'exclusive'].includes(tier.license_type)) {
+          if (
+            ['personal', 'commercial', 'exclusive'].includes(tier.license_type)
+          ) {
             await ArtworkPricingTier.create(artwork.id, {
               license_type: tier.license_type,
               price_inr_cents: parseInt(tier.price_inr_cents) || 0,
@@ -101,25 +113,25 @@ const fileUrl = `https://amzn-artwork-images.s3.eu-north-1.amazonaws.com/${fileK
           created_at: artwork.created_at,
         },
       });
- } catch (error) {
-  console.error('Create artwork error:', {
-    message: error.message,
-    stack: error.stack,
-    name: error.name,
-    code: error.code,          // AWS errors have .code
-    bucket: process.env.S3_BUCKET_NAME,
-    region: process.env.AWS_REGION || 'unknown',
-    hasCredentials: !!process.env.AWS_ACCESS_KEY_ID,
-    file: req.file ? 'present' : 'missing',
-    body: req.body,
-  });
+    } catch (error) {
+      console.error('Create artwork error:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+        code: error.code, // AWS errors have .code
+        bucket: process.env.S3_BUCKET_NAME,
+        region: process.env.AWS_REGION || 'unknown',
+        hasCredentials: !!process.env.AWS_ACCESS_KEY_ID,
+        file: req.file ? 'present' : 'missing',
+        body: req.body,
+      });
 
-  res.status(500).json({
-    error: 'Failed to create artwork',
-    message: error.message || 'Internal server error',
-    code: error.code || undefined,
-  });
-}
+      res.status(500).json({
+        error: 'Failed to create artwork',
+        message: error.message || 'Internal server error',
+        code: error.code || undefined,
+      });
+    }
   }
 
   /**
@@ -177,16 +189,23 @@ const fileUrl = `https://amzn-artwork-images.s3.eu-north-1.amazonaws.com/${fileK
       }
 
       if (artwork.creator_id !== req.user.id) {
-        return res.status(403).json({ error: 'You can only publish your own artwork' });
+        return res
+          .status(403)
+          .json({ error: 'You can only publish your own artwork' });
       }
 
       if (artwork.status !== 'draft') {
-        return res.status(400).json({ error: 'Only draft artworks can be published' });
+        return res
+          .status(400)
+          .json({ error: 'Only draft artworks can be published' });
       }
 
       await Artwork.publish(id);
 
-      res.json({ message: 'Artwork published successfully', status: 'published' });
+      res.json({
+        message: 'Artwork published successfully',
+        status: 'published',
+      });
     } catch (error) {
       console.error('Publish artwork error:', error);
       res.status(500).json({ error: 'Failed to publish artwork' });
@@ -207,7 +226,9 @@ const fileUrl = `https://amzn-artwork-images.s3.eu-north-1.amazonaws.com/${fileK
       }
 
       if (artwork.creator_id !== req.user.id) {
-        return res.status(403).json({ error: 'You can only delete your own artwork' });
+        return res
+          .status(403)
+          .json({ error: 'You can only delete your own artwork' });
       }
 
       await Artwork.softDelete(id);
@@ -233,17 +254,17 @@ const fileUrl = `https://amzn-artwork-images.s3.eu-north-1.amazonaws.com/${fileK
 
       let query = db
         .selectFrom('artworks')
-       .select([
-  'id',
-  'title',
-  'description',
-  'thumbnail_url',
-  'views_count',
-  'favorites_count',
-  'creator_id',
-  'status', // ✅ ADD THIS
-  'created_at',
-])
+        .select([
+          'id',
+          'title',
+          'description',
+          'thumbnail_url',
+          'views_count',
+          'favorites_count',
+          'creator_id',
+          'status', // ✅ ADD THIS
+          'created_at',
+        ])
         .where('status', '=', 'published')
         .where('deleted_at', 'is', null)
         .orderBy('created_at', 'desc');
@@ -259,7 +280,11 @@ const fileUrl = `https://amzn-artwork-images.s3.eu-north-1.amazonaws.com/${fileK
 
       if (categoryId) {
         query = query
-          .innerJoin('artwork_categories', 'artwork_categories.artwork_id', 'artworks.id')
+          .innerJoin(
+            'artwork_categories',
+            'artwork_categories.artwork_id',
+            'artworks.id'
+          )
           .where('artwork_categories.category_id', '=', categoryId);
       }
 
@@ -279,7 +304,11 @@ const fileUrl = `https://amzn-artwork-images.s3.eu-north-1.amazonaws.com/${fileK
 
       if (categoryId) {
         countQuery = countQuery
-          .innerJoin('artwork_categories', 'artwork_categories.artwork_id', 'artworks.id')
+          .innerJoin(
+            'artwork_categories',
+            'artwork_categories.artwork_id',
+            'artworks.id'
+          )
           .where('artwork_categories.category_id', '=', categoryId);
       }
 
@@ -344,7 +373,7 @@ const fileUrl = `https://amzn-artwork-images.s3.eu-north-1.amazonaws.com/${fileK
         .orderBy('created_at', 'desc');
 
       if (statusFilter) {
-        const statuses = statusFilter.split(',').map(s => s.trim());
+        const statuses = statusFilter.split(',').map((s) => s.trim());
         query = query.where('status', 'in', statuses);
       }
 
@@ -355,7 +384,7 @@ const fileUrl = `https://amzn-artwork-images.s3.eu-north-1.amazonaws.com/${fileK
         .where('deleted_at', 'is', null);
 
       if (statusFilter) {
-        const statuses = statusFilter.split(',').map(s => s.trim());
+        const statuses = statusFilter.split(',').map((s) => s.trim());
         countQuery = countQuery.where('status', 'in', statuses);
       }
 
@@ -389,116 +418,116 @@ const fileUrl = `https://amzn-artwork-images.s3.eu-north-1.amazonaws.com/${fileK
    * GET /artworks/by-creator/:creatorId
    * Public: Get published artworks by a specific creator
    */
-/**
- * GET /artworks/by-creator/:creatorId
- * Public: Get ONLY published artworks by a specific creator
- * No joins, no extra context — pure artwork list
- */
-static async getArtworksByCreator(req, res) {
-  try {
-    const { creatorId } = req.params;
+  /**
+   * GET /artworks/by-creator/:creatorId
+   * Public: Get ONLY published artworks by a specific creator
+   * No joins, no extra context — pure artwork list
+   */
+  static async getArtworksByCreator(req, res) {
+    try {
+      const { creatorId } = req.params;
 
-    if (!creatorId || typeof creatorId !== 'string') {
-      return res.status(400).json({ error: 'Valid creator ID required' });
-    }
+      if (!creatorId || typeof creatorId !== 'string') {
+        return res.status(400).json({ error: 'Valid creator ID required' });
+      }
 
-    const page = Math.max(1, parseInt(req.query.page) || 1);
-    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 20));
-    const offset = (page - 1) * limit;
-    const search = req.query.search?.trim();
+      const page = Math.max(1, parseInt(req.query.page) || 1);
+      const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 20));
+      const offset = (page - 1) * limit;
+      const search = req.query.search?.trim();
 
-    // ────────────────────────────────────────────────
-    // MAIN QUERY (STRICT: published only)
-    // ────────────────────────────────────────────────
+      // ────────────────────────────────────────────────
+      // MAIN QUERY (STRICT: published only)
+      // ────────────────────────────────────────────────
 
-    let query = db
-      .selectFrom('artworks')
-      .select([
-        'id',
-        'creator_id',
-        'title',
-        'description',
+      let query = db
+        .selectFrom('artworks')
+        .select([
+          'id',
+          'creator_id',
+          'title',
+          'description',
 
-        // ✅ IMPORTANT (frontend needs these)
-        'file_url',
-        'thumbnail_url',
-        'source_file_url',
+          // ✅ IMPORTANT (frontend needs these)
+          'file_url',
+          'thumbnail_url',
+          'source_file_url',
 
-        'status',
-        'moderation_status',
+          'status',
+          'moderation_status',
 
-        'views_count',
-        'favorites_count',
+          'views_count',
+          'favorites_count',
 
-        'created_at',
-        'updated_at',
-      ])
-      .where('creator_id', '=', creatorId)
-      .where('status', '=', 'published') // 🔥 STRICT FILTER
-      .where('deleted_at', 'is', null)
-      .orderBy('created_at', 'desc');
-
-    if (search) {
-      query = query.where((eb) =>
-        eb.or([
-          eb('title', 'ilike', `%${search}%`),
-          eb('description', 'ilike', `%${search}%`),
+          'created_at',
+          'updated_at',
         ])
-      );
+        .where('creator_id', '=', creatorId)
+        .where('status', '=', 'published') // 🔥 STRICT FILTER
+        .where('deleted_at', 'is', null)
+        .orderBy('created_at', 'desc');
+
+      if (search) {
+        query = query.where((eb) =>
+          eb.or([
+            eb('title', 'ilike', `%${search}%`),
+            eb('description', 'ilike', `%${search}%`),
+          ])
+        );
+      }
+
+      // ────────────────────────────────────────────────
+      // COUNT QUERY
+      // ────────────────────────────────────────────────
+
+      let countQuery = db
+        .selectFrom('artworks')
+        .where('creator_id', '=', creatorId)
+        .where('status', '=', 'published')
+        .where('deleted_at', 'is', null);
+
+      if (search) {
+        countQuery = countQuery.where((eb) =>
+          eb.or([
+            eb('title', 'ilike', `%${search}%`),
+            eb('description', 'ilike', `%${search}%`),
+          ])
+        );
+      }
+
+      const countResult = await countQuery
+        .select(db.fn.count('id').as('total'))
+        .executeTakeFirst();
+
+      const total = parseInt(countResult?.total || '0');
+      const totalPages = Math.ceil(total / limit);
+
+      // ────────────────────────────────────────────────
+      // EXECUTE
+      // ────────────────────────────────────────────────
+
+      const artworks = await query.limit(limit).offset(offset).execute();
+
+      // ────────────────────────────────────────────────
+      // RESPONSE
+      // ────────────────────────────────────────────────
+
+      return res.json({
+        artworks,
+        pagination: {
+          page,
+          limit,
+          total,
+          total_pages: totalPages,
+          has_next: page < totalPages,
+          has_prev: page > 1,
+        },
+      });
+    } catch (error) {
+      console.error('Get artworks by creator error:', error);
+      res.status(500).json({ error: 'Failed to fetch creator artworks' });
     }
-
-    // ────────────────────────────────────────────────
-    // COUNT QUERY
-    // ────────────────────────────────────────────────
-
-    let countQuery = db
-      .selectFrom('artworks')
-      .where('creator_id', '=', creatorId)
-      .where('status', '=', 'published')
-      .where('deleted_at', 'is', null);
-
-    if (search) {
-      countQuery = countQuery.where((eb) =>
-        eb.or([
-          eb('title', 'ilike', `%${search}%`),
-          eb('description', 'ilike', `%${search}%`),
-        ])
-      );
-    }
-
-    const countResult = await countQuery
-      .select(db.fn.count('id').as('total'))
-      .executeTakeFirst();
-
-    const total = parseInt(countResult?.total || '0');
-    const totalPages = Math.ceil(total / limit);
-
-    // ────────────────────────────────────────────────
-    // EXECUTE
-    // ────────────────────────────────────────────────
-
-    const artworks = await query.limit(limit).offset(offset).execute();
-
-    // ────────────────────────────────────────────────
-    // RESPONSE
-    // ────────────────────────────────────────────────
-
-    return res.json({
-      artworks,
-      pagination: {
-        page,
-        limit,
-        total,
-        total_pages: totalPages,
-        has_next: page < totalPages,
-        has_prev: page > 1,
-      },
-    });
-  } catch (error) {
-    console.error('Get artworks by creator error:', error);
-    res.status(500).json({ error: 'Failed to fetch creator artworks' });
   }
-}
 }
 
 module.exports = ArtworkController;

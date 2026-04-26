@@ -51,7 +51,10 @@ async function findOrCreateUserGoogle(profile) {
     .executeTakeFirst();
 
   if (user) {
-    logger.info('Existing user authenticated via Google', { email, userId: user.id });
+    logger.info('Existing user authenticated via Google', {
+      email,
+      userId: user.id,
+    });
     return mapRowToUser(user);
   }
 
@@ -99,9 +102,14 @@ async function findUserByEmailForAuth(email) {
   return row || null;
 }
 
-async function createUserWithPassword({ email, name, password, role = 'user' }) {
+async function createUserWithPassword({
+  email,
+  name,
+  password,
+  role = 'user',
+}) {
   const emailClean = email.toLowerCase().trim();
-  
+
   // Double-check (controller should do this, but defense in depth)
   const exists = await findUserByEmailForAuth(emailClean);
   if (exists) {
@@ -149,14 +157,14 @@ async function verifyPassword(userRow, password) {
 
 function generateToken(user) {
   const payload = {
-    sub: user.id,           // more standard than just "id"
+    sub: user.id, // more standard than just "id"
     email: user.email,
     role: user.role,
     iat: Math.floor(Date.now() / 1000),
   };
 
   return jwt.sign(payload, JWT_SECRET, {
-    expiresIn: '30d',       // consider shorter + refresh token in production
+    expiresIn: '30d', // consider shorter + refresh token in production
   });
 }
 

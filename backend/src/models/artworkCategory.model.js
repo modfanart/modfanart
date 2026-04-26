@@ -1,6 +1,6 @@
 // src/models/artworkCategory.model.js
-const { db } = require('../config');           // ← only db
-const { sql } = require('kysely');             // ← ADD THIS LINE
+const { db } = require('../config'); // ← only db
+const { sql } = require('kysely'); // ← ADD THIS LINE
 
 class ArtworkCategory {
   static async assign(artworkId, categoryId) {
@@ -29,7 +29,7 @@ class ArtworkCategory {
       .select('category_id')
       .where('artwork_id', '=', artworkId)
       .execute()
-      .then(rows => rows.map(r => r.category_id));
+      .then((rows) => rows.map((r) => r.category_id));
   }
 }
 

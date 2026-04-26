@@ -16,11 +16,15 @@ const { db } = require('../config');
 // Helpers (you can move to utils/email.util.js later)
 async function sendVerificationEmail(user, token) {
   // TODO: implement real email sending (nodemailer, resend, etc.)
-  console.log(`Verification link: http://localhost:3000/auth/verify-email?token=${token}`);
+  console.log(
+    `Verification link: http://localhost:3000/auth/verify-email?token=${token}`
+  );
 }
 
 async function sendPasswordResetEmail(user, token) {
-  console.log(`Reset password link: http://localhost:3000/auth/reset-password?token=${token}`);
+  console.log(
+    `Reset password link: http://localhost:3000/auth/reset-password?token=${token}`
+  );
 }
 
 class AuthController {
@@ -96,13 +100,19 @@ class AuthController {
       }
 
       const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-      const authToken = await AuthToken.findValid(tokenHash, 'email_verification');
+      const authToken = await AuthToken.findValid(
+        tokenHash,
+        'email_verification'
+      );
 
       if (!authToken) {
         return res.status(400).json({ error: 'Invalid or expired token' });
       }
 
-      await User.update(authToken.user_id, { email_verified: true, status: 'active' });
+      await User.update(authToken.user_id, {
+        email_verified: true,
+        status: 'active',
+      });
       await AuthToken.markAsUsed(authToken.id);
 
       res.json({ message: 'Email verified successfully. You can now log in.' });
@@ -116,12 +126,12 @@ class AuthController {
   static async login(req, res) {
     try {
       const { email, password } = req.body;
-console.log(req.body)
+      console.log(req.body);
       const user = await User.findByEmail(email);
       if (!user || !user.password_hash) {
         return res.status(401).json({ error: 'Invalid credentials' });
       }
-console.log(user)
+      console.log(user);
       if (user.status !== 'active') {
         return res.status(403).json({ error: `Account is ${user.status}` });
       }
@@ -138,8 +148,15 @@ console.log(user)
       const refreshToken = generateRefreshToken({ userId: user.id });
 
       // Store refresh token hash
-      const refreshHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
-      await RefreshToken.create(user.id, refreshHash, new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString());
+      const refreshHash = crypto
+        .createHash('sha256')
+        .update(refreshToken)
+        .digest('hex');
+      await RefreshToken.create(
+        user.id,
+        refreshHash,
+        new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+      );
 
       res.json({
         accessToken,
@@ -166,7 +183,10 @@ console.log(user)
         return res.status(401).json({ error: 'Refresh token required' });
       }
 
-      const refreshHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
+      const refreshHash = crypto
+        .createHash('sha256')
+        .update(refreshToken)
+        .digest('hex');
       const storedToken = await db
         .selectFrom('refresh_tokens')
         .selectAll()
@@ -176,7 +196,9 @@ console.log(user)
         .executeTakeFirst();
 
       if (!storedToken) {
-        return res.status(403).json({ error: 'Invalid or expired refresh token' });
+        return res
+          .status(403)
+          .json({ error: 'Invalid or expired refresh token' });
       }
 
       const decoded = verifyRefreshToken(refreshToken);
@@ -203,7 +225,9 @@ console.log(user)
       const user = await User.findByEmail(email);
       if (!user) {
         // Security: don't reveal if email exists
-        return res.json({ message: 'If the email exists, a reset link has been sent.' });
+        return res.json({
+          message: 'If the email exists, a reset link has been sent.',
+        });
       }
 
       const token = crypto.randomBytes(32).toString('hex');
@@ -231,7 +255,9 @@ console.log(user)
       const { token, newPassword } = req.body;
 
       if (!token || !newPassword) {
-        return res.status(400).json({ error: 'Token and new password required' });
+        return res
+          .status(400)
+          .json({ error: 'Token and new password required' });
       }
 
       const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
@@ -260,32 +286,37 @@ console.log(user)
   }
 
   // POST /auth/logout
-// POST /auth/logout
-static async logout(req, res) {
-  try {
-    const { refreshToken } = req.body; // optional
+  // POST /auth/logout
+  static async logout(req, res) {
+    try {
+      const { refreshToken } = req.body; // optional
 
-    if (refreshToken) {
-      const refreshHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
+      if (refreshToken) {
+        const refreshHash = crypto
+          .createHash('sha256')
+          .update(refreshToken)
+          .digest('hex');
 
-      // Revoke specific token if provided and valid
-      const tokenRecord = await db
-        .selectFrom('refresh_tokens')
-        .select('id')
-        .where('token_hash', '=', refreshHash)
-        .where('revoked_at', 'is', null)
-        .executeTakeFirst();
+        // Revoke specific token if provided and valid
+        const tokenRecord = await db
+          .selectFrom('refresh_tokens')
+          .select('id')
+          .where('token_hash', '=', refreshHash)
+          .where('revoked_at', 'is', null)
+          .executeTakeFirst();
 
-      if (tokenRecord) {
-        await RefreshToken.revoke(tokenRecord.id);
-        console.log(`Refresh token revoked for logout: ${refreshHash.substring(0, 8)}...`);
+        if (tokenRecord) {
+          await RefreshToken.revoke(tokenRecord.id);
+          console.log(
+            `Refresh token revoked for logout: ${refreshHash.substring(0, 8)}...`
+          );
+        }
       }
-    }
 
-    // You could also revoke ALL refresh tokens for the user (more aggressive)
-    // But requires authenticated request → needs access token validation first
-    // Example (if you want this behavior):
-    /*
+      // You could also revoke ALL refresh tokens for the user (more aggressive)
+      // But requires authenticated request → needs access token validation first
+      // Example (if you want this behavior):
+      /*
     const authHeader = req.headers.authorization;
     if (authHeader?.startsWith('Bearer ')) {
       const token = authHeader.split(' ')[1];
@@ -296,20 +327,20 @@ static async logout(req, res) {
     }
     */
 
-    // Always return success — client clears local state anyway
-    res.status(200).json({
-      success: true,
-      message: 'Logged out successfully',
-    });
-  } catch (error) {
-    console.error('Logout error:', error);
-    // Still return 200 — client should clear tokens regardless
-    res.status(200).json({
-      success: true,
-      message: 'Logged out (partial server cleanup)',
-    });
+      // Always return success — client clears local state anyway
+      res.status(200).json({
+        success: true,
+        message: 'Logged out successfully',
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Still return 200 — client should clear tokens regardless
+      res.status(200).json({
+        success: true,
+        message: 'Logged out (partial server cleanup)',
+      });
+    }
   }
-}
 }
 
 module.exports = AuthController;

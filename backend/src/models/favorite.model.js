@@ -1,6 +1,6 @@
 // src/models/favorite.model.js
-const { db } = require('../config');           // ← only db
-const { sql } = require('kysely');             // ← ADD THIS LINE
+const { db } = require('../config'); // ← only db
+const { sql } = require('kysely'); // ← ADD THIS LINE
 
 class Favorite {
   static async toggle(userId, favoritableType, favoritableId) {
@@ -45,7 +45,12 @@ class Favorite {
       .then(Boolean);
   }
 
-  static async getFavoritesForUser(userId, type = null, limit = 20, offset = 0) {
+  static async getFavoritesForUser(
+    userId,
+    type = null,
+    limit = 20,
+    offset = 0
+  ) {
     let q = db
       .selectFrom('favorites')
       .selectAll()
