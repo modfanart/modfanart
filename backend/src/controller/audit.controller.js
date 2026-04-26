@@ -22,7 +22,9 @@ async function getAuditLogByIdHandler(req, res, next) {
   try {
     const log = await getAuditLogById(req.params.id);
     if (!log) {
-      return res.status(404).json({ success: false, error: 'Audit log not found' });
+      return res
+        .status(404)
+        .json({ success: false, error: 'Audit log not found' });
     }
     res.json({ success: true, data: log });
   } catch (error) {
@@ -32,7 +34,10 @@ async function getAuditLogByIdHandler(req, res, next) {
 
 async function getAuditLogsByUserIdHandler(req, res, next) {
   try {
-    const logs = await getAuditLogsByUserId(req.params.userId, req.query.limit || 100);
+    const logs = await getAuditLogsByUserId(
+      req.params.userId,
+      req.query.limit || 100
+    );
     res.json({ success: true, data: logs });
   } catch (error) {
     next(error);
@@ -46,7 +51,9 @@ async function searchAuditLogsHandler(req, res, next) {
       entityType: req.query.entityType,
       entityId: req.query.entityId,
       userId: req.query.userId,
-      startDate: req.query.startDate ? new Date(req.query.startDate) : undefined,
+      startDate: req.query.startDate
+        ? new Date(req.query.startDate)
+        : undefined,
       endDate: req.query.endDate ? new Date(req.query.endDate) : undefined,
       limit: Number(req.query.limit) || 50,
       offset: Number(req.query.offset) || 0,

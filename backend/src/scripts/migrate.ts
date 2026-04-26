@@ -58,8 +58,12 @@ async function migrateToLatest(): Promise<void> {
   }
 
   if (failed) {
-    console.error('\n❌ One or more migrations failed → check the error output above.');
-    console.error('   Kysely rolled back to the last successful migration automatically.');
+    console.error(
+      '\n❌ One or more migrations failed → check the error output above.'
+    );
+    console.error(
+      '   Kysely rolled back to the last successful migration automatically.'
+    );
     process.exit(1);
   }
 

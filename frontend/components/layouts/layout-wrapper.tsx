@@ -22,14 +22,7 @@ export function LayoutWrapper({ children }: LayoutWrapperProps) {
     <div className="flex min-h-screen flex-col">
       {!isDashboardPath && <MainNav />}
 
-      <main
-        className={`
-          flex-1
-          ${!isDashboardPath ? 'pt-24 md:pt-28' : ''}
-        `}
-      >
-        {children}
-      </main>
+      <main className="flex-1">{children}</main>
 
       {!isDashboardPath && <SiteFooter />}
     </div>

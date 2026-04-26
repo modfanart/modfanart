@@ -14,7 +14,9 @@ class PayoutController {
         .executeTakeFirstOrThrow();
 
       if (user.stripe_connect_id) {
-        return res.status(400).json({ error: 'Stripe account already connected' });
+        return res
+          .status(400)
+          .json({ error: 'Stripe account already connected' });
       }
 
       const account = await stripe.accounts.create({
@@ -43,7 +45,9 @@ class PayoutController {
       res.json({ url: accountLink.url });
     } catch (err) {
       console.error('Stripe connect error:', err);
-      res.status(500).json({ error: 'Failed to create Stripe Connect account' });
+      res
+        .status(500)
+        .json({ error: 'Failed to create Stripe Connect account' });
     }
   }
 

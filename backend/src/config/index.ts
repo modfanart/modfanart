@@ -5,18 +5,21 @@ import { Kysely, PostgresDialect } from 'kysely';
 import { Pool } from 'pg';
 import { S3Client } from '@aws-sdk/client-s3';
 import type { DB } from '../db/types'; // We'll create this next
- 
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   max: 10,
-  ssl: process.env.NODE_ENV === 'production'
-    ? { rejectUnauthorized: true }
-    : { rejectUnauthorized: false },   
+  ssl:
+    process.env.NODE_ENV === 'production'
+      ? { rejectUnauthorized: true }
+      : { rejectUnauthorized: false },
 });
 
 // Connection logs...
 pool.on('connect', () => console.log('✅ New database client connected'));
-pool.on('acquire', () => console.log('🔗 Database connection acquired from pool'));
+pool.on('acquire', () =>
+  console.log('🔗 Database connection acquired from pool')
+);
 pool.on('error', (err) => {
   console.error('❌ Database pool error:', err.message);
 });
@@ -36,7 +39,8 @@ pool.on('error', (err) => {
   }
 })();
 
-const db = new Kysely<DB>({  // <-- This gives full type safety!
+const db = new Kysely<DB>({
+  // <-- This gives full type safety!
   dialect: new PostgresDialect({ pool }),
 });
 
@@ -44,7 +48,7 @@ const db = new Kysely<DB>({  // <-- This gives full type safety!
 let s3Client: S3Client | null = null;
 try {
   s3Client = new S3Client({
-  region: process.env.AWS_REGION || 'eu-north-1', 
+    region: process.env.AWS_REGION || 'eu-north-1',
     credentials: {
       accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
       secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,

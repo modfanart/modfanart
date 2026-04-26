@@ -21,7 +21,9 @@ class LicenseController {
       const license = await License.findById(id);
 
       if (!license || license.buyer_id !== req.user.id) {
-        return res.status(403).json({ error: 'Not authorized to view this license' });
+        return res
+          .status(403)
+          .json({ error: 'Not authorized to view this license' });
       }
 
       // TODO: in production, generate a signed S3 URL instead of exposing public URL
@@ -74,8 +76,13 @@ class LicenseController {
       if (!license) return res.status(404).json({ error: 'License not found' });
 
       // Only seller or admin can revoke
-      if (license.seller_id !== req.user.id && !req.user.permissions?.['licenses.manage']) {
-        return res.status(403).json({ error: 'Not authorized to revoke this license' });
+      if (
+        license.seller_id !== req.user.id &&
+        !req.user.permissions?.['licenses.manage']
+      ) {
+        return res
+          .status(403)
+          .json({ error: 'Not authorized to revoke this license' });
       }
 
       if (!license.is_active) {
