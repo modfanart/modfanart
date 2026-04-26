@@ -2,10 +2,13 @@ const express = require('express');
 const router = express.Router();
 
 const brandController = require('../controller/brand.controller');
-const { ensureBrandAccessMiddleware, ensureBrandOwnerMiddleware } = require('../middleware/brand.middleware');
+const {
+  ensureBrandAccessMiddleware,
+  ensureBrandOwnerMiddleware,
+} = require('../middleware/brand.middleware');
 const { authenticateToken } = require('../middleware/auth.middleware');
-const { authorize } = require('../middleware/auth.middleware');           
-const { hasPermission } = require('../middleware/permission.middleware'); 
+const { authorize } = require('../middleware/auth.middleware');
+const { hasPermission } = require('../middleware/permission.middleware');
 
 // ───────────────────────────────────────────────
 // Public Routes (no authentication required)
@@ -17,13 +20,16 @@ router.get('/slug/:slug', brandController.getBrandBySlug);
 router.get('/:brandId/artworks', brandController.getAllBrandArtworks);
 router.get('/:brandId/posts', brandController.getBrandPosts);
 router.get('/:brandId/posts/:postId', brandController.getBrandPost);
-router.get('/:brandId/posts/:postId/comments', brandController.getBrandPostComments);
+router.get(
+  '/:brandId/posts/:postId/comments',
+  brandController.getBrandPostComments
+);
 
 router.post('/:id/view', brandController.incrementBrandView);
 router.get(
   '/:brandId/managers',
   authenticateToken,
-  ensureBrandAccessMiddleware(),           // allows owner, manager, editor
+  ensureBrandAccessMiddleware(), // allows owner, manager, editor
   brandController.getBrandManagers
 );
 
@@ -31,7 +37,7 @@ router.get(
 router.post(
   '/:brandId/managers',
   authenticateToken,
-  ensureBrandOwnerMiddleware(),            // stricter: only owner or higher
+  ensureBrandOwnerMiddleware(), // stricter: only owner or higher
   brandController.assignBrandManager
 );
 // ───────────────────────────────────────────────
@@ -48,13 +54,29 @@ router.post(
 // Follow / unfollow
 router.post('/:id/follow', authenticateToken, brandController.followBrand);
 router.delete('/:id/follow', authenticateToken, brandController.unfollowBrand);
-router.get('/:id/is-following', authenticateToken, brandController.checkIfFollowing);
+router.get(
+  '/:id/is-following',
+  authenticateToken,
+  brandController.checkIfFollowing
+);
 
 // Likes & Comments
-router.post('/:brandId/posts/:postId/like', authenticateToken, brandController.likeBrandPost);
-router.delete('/:brandId/posts/:postId/like', authenticateToken, brandController.unlikeBrandPost);
+router.post(
+  '/:brandId/posts/:postId/like',
+  authenticateToken,
+  brandController.likeBrandPost
+);
+router.delete(
+  '/:brandId/posts/:postId/like',
+  authenticateToken,
+  brandController.unlikeBrandPost
+);
 
-router.post('/:brandId/posts/:postId/comments', authenticateToken, brandController.createBrandPostComment);
+router.post(
+  '/:brandId/posts/:postId/comments',
+  authenticateToken,
+  brandController.createBrandPostComment
+);
 
 router.post(
   '/:brandId/posts/:postId/comments/:commentId/like',
@@ -70,25 +92,69 @@ router.post(
 router.get('/my', authenticateToken, brandController.getMyBrands);
 
 // Update brand (owner, manager, editor)
-router.patch('/:id', authenticateToken, ensureBrandAccessMiddleware(), brandController.updateBrand);
+router.patch(
+  '/:id',
+  authenticateToken,
+  ensureBrandAccessMiddleware(),
+  brandController.updateBrand
+);
 
 // Delete brand (owner only)
-router.delete('/:id', authenticateToken, ensureBrandOwnerMiddleware(), brandController.deleteBrand);
+router.delete(
+  '/:id',
+  authenticateToken,
+  ensureBrandOwnerMiddleware(),
+  brandController.deleteBrand
+);
 
 // Manage artworks (owner, manager, editor)
-router.post('/:brandId/artworks', authenticateToken, ensureBrandAccessMiddleware(), brandController.addArtworkToBrand);
-router.delete('/:brandId/artworks/:artworkId', authenticateToken, ensureBrandAccessMiddleware(), brandController.removeArtworkFromBrand);
+router.post(
+  '/:brandId/artworks',
+  authenticateToken,
+  ensureBrandAccessMiddleware(),
+  brandController.addArtworkToBrand
+);
+router.delete(
+  '/:brandId/artworks/:artworkId',
+  authenticateToken,
+  ensureBrandAccessMiddleware(),
+  brandController.removeArtworkFromBrand
+);
 
 // Create / update posts (owner, manager, editor)
-router.post('/:brandId/posts', authenticateToken, ensureBrandAccessMiddleware(), brandController.createBrandPost);
-router.patch('/:brandId/posts/:postId', authenticateToken, ensureBrandAccessMiddleware(), brandController.updateBrandPost);
+router.post(
+  '/:brandId/posts',
+  authenticateToken,
+  ensureBrandAccessMiddleware(),
+  brandController.createBrandPost
+);
+router.patch(
+  '/:brandId/posts/:postId',
+  authenticateToken,
+  ensureBrandAccessMiddleware(),
+  brandController.updateBrandPost
+);
 
 // Delete / pin posts (owner, manager)
-router.delete('/:brandId/posts/:postId', authenticateToken, ensureBrandAccessMiddleware(['owner', 'manager']), brandController.deleteBrandPost);
-router.patch('/:brandId/posts/:postId/pin', authenticateToken, ensureBrandAccessMiddleware(['owner', 'manager']), brandController.togglePinBrandPost);
+router.delete(
+  '/:brandId/posts/:postId',
+  authenticateToken,
+  ensureBrandAccessMiddleware(['owner', 'manager']),
+  brandController.deleteBrandPost
+);
+router.patch(
+  '/:brandId/posts/:postId/pin',
+  authenticateToken,
+  ensureBrandAccessMiddleware(['owner', 'manager']),
+  brandController.togglePinBrandPost
+);
 
 // Delete own comment (any authenticated user)
-router.delete('/:brandId/posts/:postId/comments/:commentId', authenticateToken, brandController.deleteBrandPostComment);
+router.delete(
+  '/:brandId/posts/:postId/comments/:commentId',
+  authenticateToken,
+  brandController.deleteBrandPostComment
+);
 
 // ───────────────────────────────────────────────
 // Admin / Internal Team Only Routes

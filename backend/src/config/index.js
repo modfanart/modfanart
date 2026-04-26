@@ -15,9 +15,7 @@ const pool = new Pool({
 });
 
 // Connection logs
-pool.on('connect', () =>
-  console.log('✅ New database client connected')
-);
+pool.on('connect', () => console.log('✅ New database client connected'));
 
 pool.on('acquire', () =>
   console.log('🔗 Database connection acquired from pool')
@@ -32,14 +30,10 @@ pool.on('error', (err) => {
   try {
     const client = await pool.connect();
     console.log('🎉 Successfully connected to PostgreSQL database!');
-    const res = await client.query(
-      'SELECT current_database(), version()'
-    );
+    const res = await client.query('SELECT current_database(), version()');
 
     console.log(`📍 Connected to: ${res.rows[0].current_database}`);
-    console.log(
-      `🐘 Version: ${res.rows[0].version.split(',')[0]}`
-    );
+    console.log(`🐘 Version: ${res.rows[0].version.split(',')[0]}`);
 
     client.release();
   } catch (err) {
@@ -58,7 +52,7 @@ let s3Client = null;
 
 try {
   s3Client = new S3Client({
-    region: process.env.AWS_REGION || 'eu-north-1',  // or your actual region
+    region: process.env.AWS_REGION || 'eu-north-1', // or your actual region
 
     credentials: {
       accessKeyId: process.env.AWS_ACCESS_KEY_ID,

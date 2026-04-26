@@ -28,10 +28,17 @@ class RoleController {
   // POST /roles
   static async createRole(req, res) {
     try {
-      const { name, hierarchy_level, permissions = {}, is_system = false } = req.body;
+      const {
+        name,
+        hierarchy_level,
+        permissions = {},
+        is_system = false,
+      } = req.body;
 
       if (!name || typeof hierarchy_level !== 'number') {
-        return res.status(400).json({ error: 'name and hierarchy_level are required' });
+        return res
+          .status(400)
+          .json({ error: 'name and hierarchy_level are required' });
       }
 
       // Prevent duplicate name
@@ -72,12 +79,15 @@ class RoleController {
       }
 
       if (existing.is_system && req.body.is_system === false) {
-        return res.status(403).json({ error: 'Cannot change system role flag' });
+        return res
+          .status(403)
+          .json({ error: 'Cannot change system role flag' });
       }
 
       const updateData = {};
       if (name !== undefined) updateData.name = name;
-      if (hierarchy_level !== undefined) updateData.hierarchy_level = hierarchy_level;
+      if (hierarchy_level !== undefined)
+        updateData.hierarchy_level = hierarchy_level;
       if (permissions !== undefined) updateData.permissions = permissions;
       if (is_system !== undefined) updateData.is_system = !!is_system;
 
@@ -122,7 +132,11 @@ class RoleController {
         .execute();
 
       if (usersWithRole.length > 0) {
-        return res.status(409).json({ error: 'Cannot delete role — users are still assigned to it' });
+        return res
+          .status(409)
+          .json({
+            error: 'Cannot delete role — users are still assigned to it',
+          });
       }
 
       await db.deleteFrom('roles').where('id', '=', id).execute();
@@ -151,7 +165,9 @@ class RoleController {
       // Optional: prevent downgrading higher hierarchy roles (safety)
       const currentRole = await Role.findById(user.role_id);
       if (currentRole && currentRole.hierarchy_level > role.hierarchy_level) {
-        return res.status(403).json({ error: 'Cannot assign lower hierarchy role' });
+        return res
+          .status(403)
+          .json({ error: 'Cannot assign lower hierarchy role' });
       }
 
       // Simple version: replace single role

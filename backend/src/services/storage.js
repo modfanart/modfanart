@@ -54,7 +54,12 @@ function validateFile(buffer, contentType, maxSizeBytes) {
  * @returns {Promise<StoredFile>}
  */
 async function uploadFile(buffer, options) {
-  const { filename, contentType, maxSizeBytes, folder = 'submissions' } = options;
+  const {
+    filename,
+    contentType,
+    maxSizeBytes,
+    folder = 'submissions',
+  } = options;
 
   // Validate file
   const validation = validateFile(buffer, contentType, maxSizeBytes);
@@ -101,7 +106,9 @@ async function uploadFile(buffer, options) {
  */
 async function deleteFile(pathname) {
   try {
-    logger.info(`Deleting file from Vercel Blob: ${pathname}`, { context: 'storage' });
+    logger.info(`Deleting file from Vercel Blob: ${pathname}`, {
+      context: 'storage',
+    });
     await del(pathname);
     return true;
   } catch (error) {
@@ -124,7 +131,7 @@ async function listFiles(folder = 'submissions') {
     const prefix = folder.endsWith('/') ? folder : `${folder}/`;
     const { blobs } = await list({ prefix });
 
-    return blobs.map(blob => ({
+    return blobs.map((blob) => ({
       url: blob.url,
       pathname: blob.pathname,
       contentType: 'application/octet-stream', // fallback (head() can get real type if needed)
@@ -159,7 +166,10 @@ async function getFileMetadata(pathname) {
       uploadedAt: new Date(blob.uploadedAt),
     };
   } catch (error) {
-    logger.warn('Failed to get file metadata', { pathname, error: error.message });
+    logger.warn('Failed to get file metadata', {
+      pathname,
+      error: error.message,
+    });
     return null;
   }
 }

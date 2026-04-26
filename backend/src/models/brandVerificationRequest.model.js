@@ -26,7 +26,9 @@ class BrandVerificationRequest {
         user_id: data.user_id || null,
         company_name: data.company_name,
         website: data.website || null,
-        documents: data.documents ? sql`ARRAY[${data.documents.map(d => sql.lit(d))}]::text[]` : null,
+        documents: data.documents
+          ? sql`ARRAY[${data.documents.map((d) => sql.lit(d))}]::text[]`
+          : null,
         status: data.status || 'pending',
         reviewed_by: data.reviewed_by || null,
         reviewed_at: data.reviewed_at || null,
@@ -70,7 +72,7 @@ class BrandVerificationRequest {
     // Handle documents array specially if provided
     if (data.documents !== undefined) {
       updateData.documents = data.documents
-        ? sql`ARRAY[${data.documents.map(d => sql.lit(d))}]::text[]`
+        ? sql`ARRAY[${data.documents.map((d) => sql.lit(d))}]::text[]`
         : null;
     }
 
@@ -98,7 +100,9 @@ class BrandVerificationRequest {
         status: 'rejected',
         reviewed_by: reviewedBy,
         reviewed_at: sql`NOW()`,
-        notes: notes ? sql`COALESCE(notes || '\n' || ${notes}, ${notes})` : sql`notes`,
+        notes: notes
+          ? sql`COALESCE(notes || '\n' || ${notes}, ${notes})`
+          : sql`notes`,
         updated_at: sql`NOW()`,
       })
       .where('id', '=', id)
@@ -122,7 +126,9 @@ class BrandVerificationRequest {
         status: 'approved',
         reviewed_by: reviewedBy,
         reviewed_at: sql`NOW()`,
-        notes: notes ? sql`COALESCE(notes || '\n' || ${notes}, ${notes})` : sql`notes`,
+        notes: notes
+          ? sql`COALESCE(notes || '\n' || ${notes}, ${notes})`
+          : sql`notes`,
         updated_at: sql`NOW()`,
       })
       .where('id', '=', id)
@@ -146,7 +152,9 @@ class BrandVerificationRequest {
         status: 'interview_scheduled',
         reviewed_by: reviewedBy,
         reviewed_at: sql`NOW()`,
-        notes: notes ? sql`COALESCE(notes || '\n' || ${notes}, ${notes})` : sql`notes`,
+        notes: notes
+          ? sql`COALESCE(notes || '\n' || ${notes}, ${notes})`
+          : sql`notes`,
         updated_at: sql`NOW()`,
       })
       .where('id', '=', id)

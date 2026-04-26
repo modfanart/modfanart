@@ -22,7 +22,11 @@ class Role {
 
   // You can cache system roles in memory after startup
   static async getSystemRoles() {
-    return db.selectFrom('roles').selectAll().where('is_system', '=', true).execute();
+    return db
+      .selectFrom('roles')
+      .selectAll()
+      .where('is_system', '=', true)
+      .execute();
   }
 }
 

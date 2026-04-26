@@ -13,7 +13,15 @@ class CategoryController {
 
       let query = db
         .selectFrom('categories')
-        .select(['id', 'name', 'slug', 'parent_id', 'description', 'icon_url', 'sort_order'])
+        .select([
+          'id',
+          'name',
+          'slug',
+          'parent_id',
+          'description',
+          'icon_url',
+          'sort_order',
+        ])
         .where('is_active', '=', true)
         .orderBy('sort_order', 'asc')
         .orderBy('name', 'asc');
@@ -33,17 +41,17 @@ class CategoryController {
 
       // Build simple tree (only one level deep for simplicity)
       // You can make this recursive if you need deeper nesting
-      const tree = categories.filter(c => !c.parent_id);
+      const tree = categories.filter((c) => !c.parent_id);
       const subMap = new Map();
 
-      categories.forEach(cat => {
+      categories.forEach((cat) => {
         if (cat.parent_id) {
           if (!subMap.has(cat.parent_id)) subMap.set(cat.parent_id, []);
           subMap.get(cat.parent_id).push(cat);
         }
       });
 
-      const enriched = tree.map(parent => ({
+      const enriched = tree.map((parent) => ({
         ...parent,
         children: subMap.get(parent.id) || [],
       }));
@@ -91,18 +99,27 @@ class CategoryController {
         return res.status(403).json({ error: 'Permission denied' });
       }
 
-      const { name, slug, parent_id, description, icon_url, sort_order = 0 } = req.body;
+      const {
+        name,
+        slug,
+        parent_id,
+        description,
+        icon_url,
+        sort_order = 0,
+      } = req.body;
 
       if (!name || !slug) {
         return res.status(400).json({ error: 'name and slug are required' });
       }
 
       // Optional: validate slug uniqueness
-      if (await db
-        .selectFrom('categories')
-        .select('id')
-        .where('slug', '=', slug)
-        .executeTakeFirst()) {
+      if (
+        await db
+          .selectFrom('categories')
+          .select('id')
+          .where('slug', '=', slug)
+          .executeTakeFirst()
+      ) {
         return res.status(409).json({ error: 'Slug already in use' });
       }
 
@@ -133,7 +150,15 @@ class CategoryController {
       }
 
       const { id } = req.params;
-      const { name, slug, parent_id, description, icon_url, sort_order, is_active } = req.body;
+      const {
+        name,
+        slug,
+        parent_id,
+        description,
+        icon_url,
+        sort_order,
+        is_active,
+      } = req.body;
 
       const existing = await Category.findById(id);
       if (!existing) {
@@ -198,87 +223,108 @@ class CategoryController {
     }
   }
 
-static async getCategoryBySlug(req, res) {
-  try {
-    const { slug } = req.params;
-    const { page = '1', limit = '12' } = req.query;
+  static async getCategoryBySlug(req, res) {
+    try {
+      const { slug } = req.params;
+      const { page = '1', limit = '12' } = req.query;
 
-    if (!slug || typeof slug !== 'string') {
-      return res.status(400).json({ error: 'Valid slug is required' });
+      if (!slug || typeof slug !== 'string') {
+        return res.status(400).json({ error: 'Valid slug is required' });
+      }
+
+      const pageNum = parseInt(page, 10);
+      const limitNum = parseInt(limit, 10);
+
+      if (
+        isNaN(pageNum) ||
+        pageNum < 1 ||
+        isNaN(limitNum) ||
+        limitNum < 1 ||
+        limitNum > 100
+      ) {
+        return res.status(400).json({ error: 'Invalid pagination parameters' });
+      }
+
+      const normalizedSlug = slug.trim().toLowerCase();
+
+      const category = await Category.findBySlug(normalizedSlug);
+
+      if (!category) {
+        return res.status(404).json({ error: 'Category not found' });
+      }
+
+      const offset = (pageNum - 1) * limitNum;
+
+      const artworksQuery = db
+        .selectFrom('artworks')
+        .innerJoin(
+          'artwork_categories',
+          'artworks.id',
+          'artwork_categories.artwork_id'
+        )
+        .innerJoin(
+          'categories',
+          'artwork_categories.category_id',
+          'categories.id'
+        )
+        .select([
+          'artworks.id',
+          'artworks.title',
+          'artworks.description',
+          'artworks.file_url',
+          'artworks.thumbnail_url',
+          'artworks.views_count',
+          'artworks.favorites_count',
+          'artworks.created_at',
+        ])
+        .where('categories.slug', '=', normalizedSlug)
+        .where('artworks.status', '=', 'published')
+        .where('artworks.deleted_at', 'is', null)
+        .orderBy('artworks.created_at', 'desc')
+        .limit(limitNum)
+        .offset(offset);
+
+      const artworks = await artworksQuery.execute();
+
+      // Fixed count query
+      const countResult = await db
+        .selectFrom('artworks')
+        .innerJoin(
+          'artwork_categories',
+          'artworks.id',
+          'artwork_categories.artwork_id'
+        )
+        .innerJoin(
+          'categories',
+          'artwork_categories.category_id',
+          'categories.id'
+        )
+        .select(({ fn }) => [fn.countAll().as('total')])
+        .where('categories.slug', '=', normalizedSlug)
+        .where('artworks.status', '=', 'published')
+        .where('artworks.deleted_at', 'is', null)
+        .executeTakeFirst();
+
+      const total = Number(countResult?.total ?? 0);
+      const totalPages = Math.ceil(total / limitNum);
+
+      res.json({
+        category,
+        artworks,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          totalPages,
+          hasNext: pageNum < totalPages,
+          hasPrev: pageNum > 1,
+        },
+      });
+    } catch (error) {
+      console.error('Get category by slug error:', error);
+      res.status(500).json({ error: 'Failed to fetch category data' });
     }
-
-    const pageNum = parseInt(page, 10);
-    const limitNum = parseInt(limit, 10);
-
-    if (isNaN(pageNum) || pageNum < 1 || isNaN(limitNum) || limitNum < 1 || limitNum > 100) {
-      return res.status(400).json({ error: 'Invalid pagination parameters' });
-    }
-
-    const normalizedSlug = slug.trim().toLowerCase();
-
-    const category = await Category.findBySlug(normalizedSlug);
-
-    if (!category) {
-      return res.status(404).json({ error: 'Category not found' });
-    }
-
-    const offset = (pageNum - 1) * limitNum;
-
-    const artworksQuery = db
-      .selectFrom('artworks')
-      .innerJoin('artwork_categories', 'artworks.id', 'artwork_categories.artwork_id')
-      .innerJoin('categories', 'artwork_categories.category_id', 'categories.id')
-      .select([
-        'artworks.id',
-        'artworks.title',
-        'artworks.description',
-        'artworks.file_url',
-        'artworks.thumbnail_url',
-        'artworks.views_count',
-        'artworks.favorites_count',
-        'artworks.created_at',
-      ])
-      .where('categories.slug', '=', normalizedSlug)
-      .where('artworks.status', '=', 'published')
-      .where('artworks.deleted_at', 'is', null)
-      .orderBy('artworks.created_at', 'desc')
-      .limit(limitNum)
-      .offset(offset);
-
-    const artworks = await artworksQuery.execute();
-
-    // Fixed count query
-    const countResult = await db
-      .selectFrom('artworks')
-      .innerJoin('artwork_categories', 'artworks.id', 'artwork_categories.artwork_id')
-      .innerJoin('categories', 'artwork_categories.category_id', 'categories.id')
-      .select(({ fn }) => [fn.countAll().as('total')])
-      .where('categories.slug', '=', normalizedSlug)
-      .where('artworks.status', '=', 'published')
-      .where('artworks.deleted_at', 'is', null)
-      .executeTakeFirst();
-
-    const total = Number(countResult?.total ?? 0);
-    const totalPages = Math.ceil(total / limitNum);
-
-    res.json({
-      category,
-      artworks,
-      pagination: {
-        page: pageNum,
-        limit: limitNum,
-        total,
-        totalPages,
-        hasNext: pageNum < totalPages,
-        hasPrev: pageNum > 1,
-      },
-    });
-  } catch (error) {
-    console.error('Get category by slug error:', error);
-    res.status(500).json({ error: 'Failed to fetch category data' });
   }
-}
-
 }
 
 module.exports = CategoryController;

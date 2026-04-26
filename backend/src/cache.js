@@ -13,7 +13,7 @@ function getOrSet(key, fetchFn, ttlMs) {
     }
   }
 
-  return fetchFn().then(value => {
+  return fetchFn().then((value) => {
     cache.set(key, {
       value,
       expiry: Date.now() + ttlMs,
