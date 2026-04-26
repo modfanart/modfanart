@@ -1,7 +1,6 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -18,40 +17,11 @@ import {
 import { useLogoutMutation } from '@/services/api/authApi';
 import { useAuth } from '@/store/AuthContext';
 
-import { Sun, Moon } from 'lucide-react';
-
 export function UserNav() {
   const router = useRouter();
 
   const [logout, { isLoading: isLoggingOut }] = useLogoutMutation();
   const { user, loading: isUserLoading } = useAuth();
-
-  // 🌙 DARK MODE STATE
-  const [isDark, setIsDark] = useState(false);
-
-  useEffect(() => {
-    const stored = localStorage.getItem('theme');
-    const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-    if (stored === 'dark' || (!stored && systemDark)) {
-      document.documentElement.classList.add('dark');
-      setIsDark(true);
-    }
-  }, []);
-
-  const toggleTheme = () => {
-    const root = document.documentElement;
-
-    if (isDark) {
-      root.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    } else {
-      root.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    }
-
-    setIsDark(!isDark);
-  };
 
   if (isUserLoading || !user) return null;
 
@@ -87,11 +57,13 @@ export function UserNav() {
 
   return (
     <div className="flex items-center gap-3">
+      {/* USER INFO */}
       <div className="hidden md:block text-right">
-        <p className="text-sm font-medium leading-none">{displayName}</p>
-        <p className="text-xs text-muted-foreground">{user.role?.name || 'Member'}</p>
+        <p className="text-sm font-medium leading-none text-gray-900">{displayName}</p>
+        <p className="text-xs text-gray-500">{user.role?.name || 'Member'}</p>
       </div>
 
+      {/* DROPDOWN */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="relative h-9 w-9 rounded-full">
@@ -103,19 +75,21 @@ export function UserNav() {
         </DropdownMenuTrigger>
 
         <DropdownMenuContent
-          className="w-56 bg-card/80 backdrop-blur-xl border border-border"
+          className="w-56 bg-white backdrop-blur-xl border border-gray-200 rounded-xl shadow-lg"
           align="end"
           forceMount
         >
+          {/* HEADER */}
           <DropdownMenuLabel className="font-normal">
             <div className="flex flex-col space-y-1">
-              <p className="text-sm font-medium">{displayName}</p>
-              <p className="text-xs text-muted-foreground">{user.email}</p>
+              <p className="text-sm font-medium text-gray-900">{displayName}</p>
+              <p className="text-xs text-gray-500">{user.email}</p>
             </div>
           </DropdownMenuLabel>
 
           <DropdownMenuSeparator />
 
+          {/* LINKS */}
           <DropdownMenuGroup>
             {isEligibleForDashboard && (
               <DropdownMenuItem onClick={() => router.push(dashboardPath)}>
@@ -132,16 +106,9 @@ export function UserNav() {
 
           <DropdownMenuSeparator />
 
-          {/* 🌙 DARK MODE TOGGLE */}
-          {/* <DropdownMenuItem onClick={toggleTheme} className="flex items-center justify-between">
-            <span>Theme</span>
-            {isDark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-          </DropdownMenuItem>
-
-          <DropdownMenuSeparator /> */}
-
+          {/* LOGOUT */}
           <DropdownMenuItem
-            className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+            className="text-red-600 focus:bg-red-50 focus:text-red-600"
             onClick={handleLogout}
             disabled={isLoggingOut}
           >

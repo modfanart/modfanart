@@ -2,8 +2,10 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 // ────────────────────────────────────────────────
-// Core types aligned with your db/types.js
+// Core Types
 // ────────────────────────────────────────────────
+export type Visibility = 'public' | 'private' | 'unlisted';
+export type Status = 'draft' | 'published' | 'live' | 'judging' | 'completed' | 'archived';
 
 export interface Contest {
   id: string;
@@ -12,51 +14,64 @@ export interface Contest {
   slug: string;
   description: string;
   rules?: string | null;
-  prizes: Array<{ rank: number; amount_inr?: number; type: string; [key: string]: any }> | null;
+
+  // Visual Fields
+  hero_image?: string | null;
+  gallery?: string[];
+
+  // Prizes (USD only)
+  prizes: Array<{
+    rank: number;
+    type: string;
+    description?: string;
+    amount_usd?: number;
+  }> | null;
+
   start_date: string;
   submission_end_date: string;
   voting_end_date?: string | null;
   judging_end_date?: string | null;
-  status: 'draft' | 'published' | 'live' | 'judging' | 'completed' | 'archived';
-  visibility: 'public' | 'private' | 'unlisted';
+
+  status: Status;
+  visibility: Visibility;
+
   max_entries_per_user: number;
-  entry_requirements: Record<string, any> | null;
-  judging_criteria: Record<string, any> | null;
   winner_announced: boolean;
+
+  entry_requirements: { instructions?: string } | null;
+  judging_criteria: { criteria: string[] } | null;
+  categories?: string[];
+
+  // Brand Info (populated)
+  brand_name?: string | null;
+  brand_logo?: string | null;
+  brand_slug?: string | null;
+
+  // Stats
+  view_count?: number;
+  entry_count?: number;
+  judges_count?: number;
+
   created_at: string;
   updated_at: string;
   deleted_at?: string | null;
 }
+
 export interface ContestDetail extends Contest {
-  // Hero / visual
-  hero_image?: string | null; // main banner/cover image
-  gallery?: string[]; // optional multiple images (for Swiper)
-
-  // Brand info (likely populated via ?populate=brand or join)
-  brand_name?: string | null;
-  brand_logo?: string | null;
-  brand_slug?: string | null; // if you want direct link to brand page
-
-  // Stats / engagement
-  view_count?: number;
-  entry_count?: number; // optional – number of submissions
-  // vote_count?: number;              // if public voting is shown
-
-  // Optional extras you might add later
-  categories?: string[]; // if you populate categories
-  judges_count?: number;
+  // Additional populated fields if needed
 }
 
 export interface GetContestsResponse {
-  contests: Contest[]; // list uses minimal Contest
+  contests: Contest[];
   total?: number;
   page?: number;
   limit?: number;
 }
+
 export interface ContestEntry {
   id: string;
   contest_id: string;
-  artwork_id: string; // link to ArtworkRow
+  artwork_id: string;
   creator_id: string;
   submission_notes?: string | null;
   status: 'pending' | 'approved' | 'rejected' | 'disqualified' | 'winner';
@@ -69,34 +84,85 @@ export interface ContestEntry {
   created_at: string;
   updated_at: string;
 }
+
+// ────────────────────────────────────────────────
+// API Request Types
+// ────────────────────────────────────────────────
+
 export interface CreateContestRequest {
   brand_id: string;
   title: string;
   slug: string;
   description: string;
 
+  // Visual Fields
   hero_image?: string | null;
   gallery?: string[];
 
   rules?: string | null;
-  prizes?: Contest['prizes'];
+
+  // Prizes
+  prizes?: Array<{
+    rank: number;
+    type: string;
+    description?: string;
+    amount_usd?: number;
+  }> | null;
 
   start_date: string;
   submission_end_date: string;
   voting_end_date?: string | null;
   judging_end_date?: string | null;
 
-  entry_requirements?: Record<string, any> | null;
+  entry_requirements?: { instructions?: string } | null;
+  judging_criteria?: { criteria: string[] } | null;
   categories?: string[];
 
-  visibility: 'public' | 'private' | 'unlisted';
-  status: 'draft' | 'published' | 'live' | 'judging' | 'completed' | 'archived';
+  visibility: Visibility;
+  status: Status;
 
   max_entries_per_user?: number;
+  winner_announced?: boolean;
+}
+
+export interface UpdateContestRequest {
+  id: string;
+  title?: string;
+  slug?: string;
+  description?: string;
+
+  // Visual Fields
+  hero_image?: string | null;
+  gallery?: string[];
+
+  rules?: string | null;
+
+  // Prizes
+  prizes?: Array<{
+    rank: number;
+    type: string;
+    description?: string;
+    amount_usd?: number;
+  }> | null;
+
+  start_date?: string;
+  submission_end_date?: string;
+  voting_end_date?: string | null;
+  judging_end_date?: string | null;
+
+  entry_requirements?: { instructions?: string } | null;
+  judging_criteria?: { criteria: string[] } | null;
+  categories?: string[];
+
+  visibility?: Visibility;
+  status?: Status;
+
+  max_entries_per_user?: number;
+  winner_announced?: boolean;
 }
 export interface ContestJudge {
   contest_id: string;
-  judge_id: string; // user id
+  judge_id: string;
   invited_by?: string | null;
   accepted: boolean;
 }
@@ -109,14 +175,6 @@ export interface ContestJudgeScore {
   created_at: string;
 }
 
-export interface ContestVote {
-  entry_id: string;
-  user_id: string;
-  vote_weight: number;
-  created_at: string;
-}
-
-// For leaderboard / winners view (aggregated)
 export interface LeaderboardEntry {
   entry_id: string;
   artwork_title?: string;
@@ -126,30 +184,9 @@ export interface LeaderboardEntry {
   score_public: number;
   score_judge: number;
   vote_count: number;
-  // optional joined fields
   thumbnail_url?: string | null;
 }
-// Define this near the other interfaces
-export interface UserContestEntry {
-  // better name than MyContestEntry
-  entry_id: string;
-  entry_status: 'pending' | 'approved' | 'rejected' | 'disqualified' | 'winner';
-  rank?: number | null;
-  submitted_at: string;
-  contest_id: string;
-  contest_title: string;
-  contest_slug?: string;
-  contest_status: string;
-  artwork_id: string;
-  artwork_title: string;
-  artwork_description?: string | null;
-  artwork_thumbnail_url?: string | null;
-  artwork_file_url?: string | null;
-  artwork_status: string;
-  artwork_views_count: number;
-  artwork_created_at: string;
-}
-// New interface for Artist's Opportunities (contests they submitted to)
+
 export interface ArtistContestEntry extends Contest {
   my_entry: {
     entry_id: string;
@@ -165,34 +202,10 @@ export interface GetMySubmittedContestsResponse {
   total?: number;
 }
 
-export interface UserContestEntry {
-  entry_id: string;
-  entry_status: 'pending' | 'approved' | 'rejected' | 'disqualified' | 'winner';
-  rank?: number | null;
-  submitted_at: string;
-  contest_id: string;
-  contest_title: string;
-  contest_slug?: string;
-  contest_status: string;
-  artwork_id: string;
-  artwork_title: string;
-  artwork_description?: string | null;
-  artwork_thumbnail_url?: string | null;
-  artwork_file_url?: string | null;
-  artwork_status: string;
-  artwork_views_count: number;
-  artwork_created_at: string;
-}
-
 // ────────────────────────────────────────────────
-// Add this interface
-export interface GetContestsResponse {
-  contests: Contest[];
-  // Add more if you plan to support pagination later, e.g.:
-  // total?: number;
-  // page?: number;
-  // limit?: number;
-}
+// RTK Query API
+// ────────────────────────────────────────────────
+
 const contestsApi = createApi({
   reducerPath: 'contestsApi',
 
@@ -219,70 +232,54 @@ const contestsApi = createApi({
     'ContestScores',
     'ContestVotes',
     'Leaderboard',
-    'JudgeContests', // ✅ ADD THIS
+    'JudgeContests',
     'MyContestEntries',
     'MySubmittedContests',
-    'MyContestEntry',
-    'Artwork', // useful when entry links to artwork
+    'Artwork',
   ],
 
   endpoints: (builder) => ({
-    // ── Listing & Detail ─────────────────────────────────────
-
+    // Listing & Detail
     getContests: builder.query<
-      GetContestsResponse, // ← Now matches actual response
-      {
-        status?: string;
-        brandId?: string;
-        activeOnly?: boolean;
-        page?: number;
-        limit?: number;
-      } | void
+      GetContestsResponse,
+      { status?: string; brandId?: string; activeOnly?: boolean; limit?: number } | void
     >({
-      query: (params) =>
-        params
-          ? {
-              url: '/contest',
-              params,
-            }
-          : {
-              url: '/contest',
-            },
+      query: (params) => ({
+        url: '/contest',
+        params: params || {},
+      }),
       providesTags: ['Contests'],
     }),
 
     getContest: builder.query<ContestDetail, string>({
-      query: (id) => `/contest/${id}`, // ← add ?populate=brand if your backend needs it
+      query: (id) => `/contest/${id}`,
       providesTags: (result, error, id) => [{ type: 'Contest', id }, 'Contests'],
     }),
+
     getContestsByStatus: builder.query<
       GetContestsResponse,
       {
-        status?: string; // e.g. 'live', 'judging', 'completed'
+        status?: string;
         visibility?: 'public' | 'private' | 'unlisted';
         brand_id?: string;
         page?: number;
         limit?: number;
-        sort?: 'created_at' | 'start_date' | 'submission_end_date' | 'updated_at';
+        sort?: string;
         order?: 'asc' | 'desc';
       }
     >({
       query: (params) => ({
         url: '/contests/by-status',
         params: {
-          status: params.status,
+          ...params,
           visibility: params.visibility ?? 'public',
-          brand_id: params.brand_id,
-          page: params.page ?? 1,
           limit: params.limit ?? 20,
-          sort: params.sort ?? 'start_date',
-          order: params.order ?? 'desc',
         },
       }),
       providesTags: ['Contests'],
     }),
-    // ── CRUD ─────────────────────────────────────────────────
 
+    // CRUD
     createContest: builder.mutation<Contest, CreateContestRequest>({
       query: (body) => ({
         url: '/contest',
@@ -292,7 +289,7 @@ const contestsApi = createApi({
       invalidatesTags: ['Contests'],
     }),
 
-    updateContest: builder.mutation<Contest, { id: string } & Partial<Contest>>({
+    updateContest: builder.mutation<Contest, UpdateContestRequest>({
       query: ({ id, ...patch }) => ({
         url: `/contest/${id}`,
         method: 'PATCH',
@@ -308,9 +305,7 @@ const contestsApi = createApi({
       }),
       invalidatesTags: (result, error, id) => ['Contests', { type: 'Contest', id }],
     }),
-
-    // ── Categories ───────────────────────────────────────────
-
+    // Categories
     getContestCategories: builder.query<string[], string>({
       query: (contestId) => `/contest/${contestId}/categories`,
       providesTags: (result, error, contestId) => [{ type: 'ContestCategories', id: contestId }],
@@ -345,15 +340,10 @@ const contestsApi = createApi({
       ],
     }),
 
-    // ── Entries ──────────────────────────────────────────────
-
+    // Entries
     submitEntry: builder.mutation<
       ContestEntry,
-      {
-        contestId: string;
-        artworkId: string;
-        submissionNotes?: string | null | undefined;
-      }
+      { contestId: string; artworkId: string; submissionNotes?: string | null }
     >({
       query: ({ contestId, artworkId, submissionNotes }) => ({
         url: `/contest/${contestId}/entries`,
@@ -367,8 +357,8 @@ const contestsApi = createApi({
     }),
 
     getContestEntries: builder.query<
-      { entries: ContestEntry[]; total?: number; [key: string]: any }, // ← real shape
-      { contestId: string; status?: string; moderatedOnly?: boolean }
+      { entries: ContestEntry[] },
+      { contestId: string; status?: string }
     >({
       query: ({ contestId, ...params }) => ({
         url: `/contest/${contestId}/entries`,
@@ -376,12 +366,7 @@ const contestsApi = createApi({
       }),
       providesTags: (result, error, { contestId }) => [{ type: 'ContestEntries', id: contestId }],
     }),
-    getJudgeContests: builder.query<{ contests: Contest[] }, void>({
-      query: () => ({
-        url: '/contest/judge/contests',
-      }),
-      providesTags: ['JudgeContests', 'Contests'],
-    }),
+
     updateEntryStatus: builder.mutation<
       ContestEntry,
       { contestId: string; entryId: string; status: ContestEntry['status'] }
@@ -397,16 +382,18 @@ const contestsApi = createApi({
         { type: 'Contest', id: contestId },
       ],
     }),
-    // ── NEW: Get all contest entries submitted by the current user ──
+
     getMyContestEntries: builder.query<
-      { entries: UserContestEntry[]; total?: number },
-      { status?: ContestEntry['status']; limit?: number; offset?: number } | void
+      { entries: any[]; total?: number },
+      { status?: string; limit?: number; offset?: number } | void
     >({
-      query: (params) =>
-        params ? { url: '/me/contest-entries', params } : { url: '/me/contest-entries' },
-      providesTags: ['MyContestEntries', 'ContestEntries', 'Contests'],
+      query: (params) => ({
+        url: '/me/contest-entries',
+        params: params || {},
+      }),
+      providesTags: ['MyContestEntries'],
     }),
-    // ── NEW: Delete / withdraw your own contest entry ──
+
     deleteContestEntry: builder.mutation<
       { success: boolean; message?: string },
       { contestId: string; entryId: string }
@@ -415,46 +402,36 @@ const contestsApi = createApi({
         url: `/contest/${contestId}/entries/${entryId}`,
         method: 'DELETE',
       }),
-      invalidatesTags: (result, error, { contestId, entryId }) => [
-        'ContestEntries',
-        { type: 'ContestEntry', id: entryId },
-        { type: 'Contest', id: contestId },
-        'MyContestEntries', // important – refresh personal list
-        'Artwork', // if it affects artwork visibility/counts
-      ],
+      invalidatesTags: ['ContestEntries', 'MyContestEntries', 'Contest'],
     }),
+
     getMySubmittedContests: builder.query<
       GetMySubmittedContestsResponse,
       { status?: string; limit?: number } | void
     >({
-      query: (params) =>
-        params
-          ? {
-              url: '/contest/my-submitted',
-              params,
-            }
-          : {
-              url: '/contest/my-submitted',
-            },
-      providesTags: ['MySubmittedContests', 'Contests', 'MyContestEntries'],
+      query: (params) => ({
+        url: '/contest/my-submitted',
+        params: params || {},
+      }),
+      providesTags: ['MySubmittedContests', 'Contests'],
     }),
 
-    // ── Judges ───────────────────────────────────────────────
-
-    getContestJudges: builder.query<{ judges: ContestJudge[] } | ContestJudge[], string>({
+    // Judges
+    getContestJudges: builder.query<any, string>({
       query: (contestId) => `/contest/${contestId}/judges`,
       providesTags: (result, error, contestId) => [{ type: 'ContestJudges', id: contestId }],
     }),
+
     assignJudge: builder.mutation<any, { contestId: string; userId: string }>({
       query: ({ contestId, userId }) => ({
         url: `/contest/${contestId}/judges`,
         method: 'POST',
-        body: { judgeId: userId }, // ← Convert userId → judgeId for backend
+        body: { userId },
       }),
       invalidatesTags: (result, error, { contestId }) => [{ type: 'ContestJudges', id: contestId }],
     }),
 
-    acceptJudgeInvitation: builder.mutation<ContestJudge, { contestId: string; judgeId: string }>({
+    acceptJudgeInvitation: builder.mutation<any, { contestId: string; judgeId: string }>({
       query: ({ contestId, judgeId }) => ({
         url: `/contest/${contestId}/judges/${judgeId}/accept`,
         method: 'PATCH',
@@ -470,8 +447,7 @@ const contestsApi = createApi({
       invalidatesTags: (result, error, { contestId }) => [{ type: 'ContestJudges', id: contestId }],
     }),
 
-    // ── Judging ──────────────────────────────────────────────
-
+    // Judging
     submitJudgeScore: builder.mutation<
       ContestJudgeScore,
       { contestId: string; entryId: string; score: number; comments?: string }
@@ -495,8 +471,7 @@ const contestsApi = createApi({
       ],
     }),
 
-    // ── Public Voting ────────────────────────────────────────
-
+    // Voting
     voteForEntry: builder.mutation<{ success: boolean }, { contestId: string; entryId: string }>({
       query: ({ contestId, entryId }) => ({
         url: `/contest/${contestId}/entries/${entryId}/vote`,
@@ -505,28 +480,18 @@ const contestsApi = createApi({
       invalidatesTags: (result, error, { contestId }) => [
         { type: 'ContestVotes', id: contestId },
         { type: 'Leaderboard', id: contestId },
-        { type: 'ContestEntry', id: contestId }, // if entry shows vote count
       ],
     }),
 
-    // ── Winners & Completion ─────────────────────────────────
-
-    announceWinners: builder.mutation<
-      Contest,
-      { contestId: string; winners: Array<{ entryId: string; rank: number }> }
-    >({
-      query: ({ contestId, winners }) => ({
+    // Winners & Prizes
+    announceWinners: builder.mutation<Contest, string>({
+      query: (contestId) => ({
         url: `/contest/${contestId}/announce-winners`,
         method: 'PATCH',
-        body: { winners },
       }),
-      invalidatesTags: (result, error, { contestId }) => [
-        { type: 'Contest', id: contestId },
-        'Leaderboard',
-      ],
+      invalidatesTags: (result, error, contestId) => [{ type: 'Contest', id: contestId }],
     }),
 
-    // Optional: if you have a separate prize distribution step
     distributePrizes: builder.mutation<{ success: boolean; message?: string }, string>({
       query: (contestId) => ({
         url: `/contest/${contestId}/distribute-prizes`,
@@ -535,11 +500,15 @@ const contestsApi = createApi({
       invalidatesTags: (result, error, contestId) => [{ type: 'Contest', id: contestId }],
     }),
 
-    // ── Leaderboard ──────────────────────────────────────────
-
+    // Leaderboard
     getLeaderboard: builder.query<LeaderboardEntry[], string>({
       query: (contestId) => `/contest/${contestId}/leaderboard`,
       providesTags: (result, error, contestId) => [{ type: 'Leaderboard', id: contestId }],
+    }),
+
+    getJudgeContests: builder.query<{ contests: Contest[] }, void>({
+      query: () => '/contest/judge/contests',
+      providesTags: ['JudgeContests', 'Contests'],
     }),
   }),
 });
@@ -548,33 +517,29 @@ export const {
   useGetContestsQuery,
   useGetContestQuery,
   useGetContestsByStatusQuery,
-  useGetLeaderboardQuery,
-  useGetJudgeContestsQuery,
   useCreateContestMutation,
   useUpdateContestMutation,
   useDeleteContestMutation,
+  useGetContestEntriesQuery,
+  useSubmitEntryMutation,
+  useUpdateEntryStatusMutation,
+  useGetMyContestEntriesQuery,
+  useDeleteContestEntryMutation,
   useGetMySubmittedContestsQuery,
   useGetContestCategoriesQuery,
   useAddCategoryToContestMutation,
   useRemoveCategoryFromContestMutation,
-
-  useSubmitEntryMutation,
-  useGetContestEntriesQuery,
-  useUpdateEntryStatusMutation,
-  useGetMyContestEntriesQuery,
-  useDeleteContestEntryMutation,
   useGetContestJudgesQuery,
   useAssignJudgeMutation,
   useAcceptJudgeInvitationMutation,
   useRemoveJudgeMutation,
-
   useSubmitJudgeScoreMutation,
   useGetEntryScoresQuery,
-
   useVoteForEntryMutation,
-
   useAnnounceWinnersMutation,
   useDistributePrizesMutation,
+  useGetLeaderboardQuery,
+  useGetJudgeContestsQuery,
 } = contestsApi;
 
 export default contestsApi;
