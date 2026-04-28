@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { format } from 'date-fns';
+
 import {
   CalendarIcon,
   Trophy,
@@ -14,15 +15,19 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 
-import { useGetJudgeContestsQuery } from '@/services/api/contestsApi';
+import {
+  useGetJudgeContestsQuery,
+  useGetJudgeInvitationsQuery,
+  useAcceptJudgeInvitationMutation,
+} from '@/services/api/contestsApi';
+
 import { useAuth } from '@/store/AuthContext';
 
-/* ShadCN UI */
+/* UI */
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -33,35 +38,41 @@ const getStatusBadge = (status: string = 'unknown') => {
   switch (s) {
     case 'live':
     case 'published':
-      return {
-        label: 'Live',
-        variant: 'default' as const,
-        className: 'bg-green-600 hover:bg-green-700',
-      };
+      return { label: 'Live', className: 'bg-green-600' };
 
     case 'judging':
-      return { label: 'Judging', variant: 'default' as const, className: 'bg-blue-600' };
+      return { label: 'Judging', className: 'bg-blue-600' };
 
     case 'completed':
-      return { label: 'Completed', variant: 'secondary' as const };
+      return { label: 'Completed' };
 
     case 'archived':
-      return { label: 'Archived', variant: 'outline' as const };
+      return { label: 'Archived' };
 
     default:
-      return { label: status, variant: 'secondary' as const };
+      return { label: status };
   }
 };
 
 export default function JudgeOpportunitiesPage() {
   const { user } = useAuth();
 
-  const { data, isLoading, isError, error } = useGetJudgeContestsQuery(undefined, {
+  /* ✅ Accepted contests */
+  const { data, isLoading, isError, error, refetch } = useGetJudgeContestsQuery(undefined, {
     skip: !user,
   });
 
-  const contests = data?.contests ?? [];
+  /* 🆕 Invitations */
+  const { data: inviteData, refetch: refetchInvites } = useGetJudgeInvitationsQuery(undefined, {
+    skip: !user,
+  });
 
+  const [acceptInvitation] = useAcceptJudgeInvitationMutation();
+
+  const contests = data?.contests ?? [];
+  const invitations = inviteData?.contests ?? [];
+
+  /* Filters */
   const activeContests = contests.filter((c: any) =>
     ['live', 'published', 'judging'].includes(c.status?.toLowerCase() ?? '')
   );
@@ -70,43 +81,61 @@ export default function JudgeOpportunitiesPage() {
     ['completed', 'archived'].includes(c.status?.toLowerCase() ?? '')
   );
 
+  /* Dialog state */
   const [open, setOpen] = useState(false);
   const [selectedContest, setSelectedContest] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [judgingLink, setJudgingLink] = useState('');
 
+  /* Accept handler */
+  const handleAccept = async (contestId: string) => {
+    if (!user) return; // ✅ guard
+
+    try {
+      await acceptInvitation({
+        contestId,
+        judgeId: user.id,
+      }).unwrap();
+      refetch();
+      refetchInvites();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  /* Link generator */
   const generateJudgingLink = async (contest: any) => {
     setSelectedContest(contest);
     setOpen(true);
     setLoading(true);
     setJudgingLink('');
 
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 800));
+    await new Promise((r) => setTimeout(r, 800));
 
-      const token = Math.random().toString(36).substring(2, 15);
-      setJudgingLink(`${window.location.origin}/judge/contest/${contest.id}?token=${token}`);
-    } finally {
-      setLoading(false);
-    }
+    const token = Math.random().toString(36).substring(2);
+    setJudgingLink(`${window.location.origin}/judge/contest/${contest.id}?token=${token}`);
+
+    setLoading(false);
   };
 
   const copyLink = async () => {
     if (judgingLink) {
       await navigator.clipboard.writeText(judgingLink);
-      alert('Link copied to clipboard!');
+      alert('Copied!');
     }
   };
 
+  /* Loading */
   if (isLoading) {
-    return <div className="text-center py-12">Loading your assigned contests...</div>;
+    return <div className="text-center py-12">Loading...</div>;
   }
 
+  /* Error */
   if (isError) {
     return (
       <Alert variant="destructive">
         <AlertDescription>
-          Failed to load contests. {(error as any)?.data?.message || 'Please try again later.'}
+          Failed to load contests. {(error as any)?.data?.message}
         </AlertDescription>
       </Alert>
     );
@@ -126,13 +155,43 @@ export default function JudgeOpportunitiesPage() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="active" className="space-y-6">
+      <Tabs defaultValue="invites" className="space-y-6">
         <TabsList>
+          <TabsTrigger value="invites">Invitations ({invitations.length})</TabsTrigger>
           <TabsTrigger value="active">Active ({activeContests.length})</TabsTrigger>
           <TabsTrigger value="completed">Completed ({completedContests.length})</TabsTrigger>
-          <TabsTrigger value="all">All Contests ({contests.length})</TabsTrigger>
+          <TabsTrigger value="all">All ({contests.length})</TabsTrigger>
         </TabsList>
 
+        {/* 🔥 Invitations */}
+        <TabsContent value="invites">
+          {invitations.length === 0 ? (
+            <EmptyState text="No pending invitations" />
+          ) : (
+            <Grid>
+              {invitations.map((contest) => (
+                <Card key={contest.id}>
+                  <CardHeader>
+                    <CardTitle>{contest.title}</CardTitle>
+                  </CardHeader>
+
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground">{contest.description}</p>
+                  </CardContent>
+
+                  <CardFooter className="flex gap-2">
+                    <Button onClick={() => handleAccept(contest.id)}>Accept</Button>
+                    <Button variant="outline" disabled>
+                      Ignore
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))}
+            </Grid>
+          )}
+        </TabsContent>
+
+        {/* Active */}
         <TabsContent value="active">
           <OpportunityGrid
             items={activeContests}
@@ -142,6 +201,7 @@ export default function JudgeOpportunitiesPage() {
           />
         </TabsContent>
 
+        {/* Completed */}
         <TabsContent value="completed">
           <OpportunityGrid
             items={completedContests}
@@ -150,6 +210,7 @@ export default function JudgeOpportunitiesPage() {
           />
         </TabsContent>
 
+        {/* All */}
         <TabsContent value="all">
           <OpportunityGrid items={contests} user={user} onGenerateLink={generateJudgingLink} />
         </TabsContent>
@@ -163,22 +224,15 @@ export default function JudgeOpportunitiesPage() {
           </DialogHeader>
 
           <div className="space-y-4">
-            <p className="font-medium">{selectedContest?.title}</p>
+            <p>{selectedContest?.title}</p>
 
-            <div className="p-3 bg-muted rounded text-sm break-all font-mono">
-              {loading ? (
-                <div className="flex items-center gap-2">
-                  <Loader2 className="animate-spin h-4 w-4" />
-                  Generating...
-                </div>
-              ) : (
-                judgingLink
-              )}
+            <div className="p-3 bg-muted rounded font-mono text-sm">
+              {loading ? <Loader2 className="animate-spin" /> : judgingLink}
             </div>
 
-            <Button onClick={copyLink} disabled={!judgingLink}>
+            <Button onClick={copyLink}>
               <Copy className="mr-2 h-4 w-4" />
-              Copy Link
+              Copy
             </Button>
           </div>
         </DialogContent>
@@ -187,37 +241,34 @@ export default function JudgeOpportunitiesPage() {
   );
 }
 
-/* Grid Component */
-function OpportunityGrid({
-  items,
-  isActive = false,
-  onGenerateLink,
-  user,
-}: {
-  items: any[];
-  isActive?: boolean;
-  onGenerateLink: (contest: any) => void;
-  user: any;
-}) {
-  const judgeBase = user?.username ? `/judge/${user.username}` : '/judge';
+/* Grid */
+function Grid({ children }: any) {
+  return <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">{children}</div>;
+}
 
-  if (items.length === 0) {
-    return (
-      <div className="text-center py-16 border rounded-xl">
-        <Trophy className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-        <p className="text-lg font-medium">No contests found</p>
-      </div>
-    );
-  }
+/* Empty */
+function EmptyState({ text }: { text: string }) {
+  return (
+    <div className="text-center py-16 border rounded-xl">
+      <Trophy className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+      <p className="text-lg font-medium">{text}</p>
+    </div>
+  );
+}
+
+/* Cards */
+function OpportunityGrid({ items, isActive = false, onGenerateLink, user }: any) {
+  const base = user?.username ? `/judge/${user.username}` : '/judge';
+
+  if (!items.length) return <EmptyState text="No contests found" />;
 
   return (
     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      {items.map((contest) => {
-        const statusInfo = getStatusBadge(contest.status);
-        const deadline = contest.submission_end_date || contest.judging_end_date;
+      {items.map((contest: any) => {
+        const status = getStatusBadge(contest.status);
 
         return (
-          <Card key={contest.id} className="flex flex-col">
+          <Card key={contest.id}>
             <div className="relative h-40">
               <Image
                 src={contest.hero_image || '/placeholder.jpg'}
@@ -225,7 +276,7 @@ function OpportunityGrid({
                 fill
                 className="object-cover"
               />
-              <Badge className="absolute top-2 right-2">{statusInfo.label}</Badge>
+              <Badge className="absolute top-2 right-2">{status.label}</Badge>
             </div>
 
             <CardHeader>
@@ -233,12 +284,10 @@ function OpportunityGrid({
             </CardHeader>
 
             <CardContent>
-              {deadline && (
-                <p className="text-sm">
-                  <CalendarIcon className="inline h-4 w-4 mr-1" />
-                  {format(new Date(deadline), 'dd MMM yyyy')}
-                </p>
-              )}
+              <p className="text-sm">
+                <CalendarIcon className="inline h-4 w-4 mr-1" />
+                {format(new Date(contest.submission_end_date), 'dd MMM yyyy')}
+              </p>
 
               <p className="text-sm">
                 <Users className="inline h-4 w-4 mr-1" />
@@ -248,9 +297,7 @@ function OpportunityGrid({
 
             <CardFooter className="grid grid-cols-2 gap-2">
               <Button asChild>
-                <Link href={`${judgeBase}/contest/${contest.id}`}>
-                  {isActive ? 'Start' : 'View'}
-                </Link>
+                <Link href={`${base}/contest/${contest.id}`}>{isActive ? 'Start' : 'View'}</Link>
               </Button>
 
               <Button variant="outline" onClick={() => onGenerateLink(contest)}>

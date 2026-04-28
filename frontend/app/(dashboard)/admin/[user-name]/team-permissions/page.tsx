@@ -138,7 +138,7 @@ export default function RolesPermissionsPage() {
   };
 
   const handleAssignRole = async (userId: string, roleId: string) => {
-    await assignRoleToUser({ user_id: userId, role_id: roleId });
+    await assignRoleToUser({ roleId, userId });
     toast({ title: 'Role assigned successfully' });
     setSelectedUserForRole(null);
   };

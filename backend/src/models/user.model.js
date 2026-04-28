@@ -60,7 +60,16 @@ class User {
       .returningAll()
       .executeTakeFirst();
   }
-
+  static async updateById(id, data) {
+    return db
+      .updateTable('users')
+      .set({
+        ...data,
+        updated_at: sql`NOW()`,
+      })
+      .where('id', '=', id)
+      .execute();
+  }
   /**
    * Soft delete
    * @param {string} id
