@@ -583,11 +583,13 @@ class UserController {
    */
   static async updateUserStatus(req, res) {
     try {
-      const adminRole = await Role.findByName('admin');
-      if (!adminRole || req.user.role_id !== adminRole.id) {
+      console.log('REQ.USER:', req.user);
+
+      const currentRole = await Role.findById(req.user.role_id);
+      console.log('CURRENT ROLE:', currentRole);
+      if (!currentRole || currentRole.hierarchy_level < 90) {
         return res.status(403).json({ error: 'Access denied' });
       }
-
       const { status } = req.body;
       const allowedStatuses = [
         'active',

@@ -1,7 +1,8 @@
 export function getBasePath(user: any) {
-  const role = user?.role?.name;
+  const roleRaw = user?.role?.name;
+  const role = roleRaw?.toLowerCase();
 
-  if (role === 'Artist') {
+  if (role === 'artist') {
     const username = user?.username?.trim().toLowerCase();
     return username ? `/artist/${username}` : null;
   }
@@ -12,11 +13,13 @@ export function getBasePath(user: any) {
   }
 
   if (role === 'judge') {
-    return `/judge/${user?.username}`;
+    const username = user?.username?.trim().toLowerCase();
+    return username ? `/judge/${username}` : null;
   }
 
-  if (role === 'Admin') {
-    return `/admin/${role}`;
+  // ✅ KEEP YOUR EXISTING NAV STRUCTURE
+  if (role === 'admin' || role === 'super_admin' || role === 'developer') {
+    return `/admin/${roleRaw}`; // ← IMPORTANT: keep original role casing
   }
 
   return null;

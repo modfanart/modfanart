@@ -153,6 +153,8 @@ async function getBrandBySlug(req, res) {
 // 2. Brand Verification & Onboarding
 // ───────────────────────────────────────────────
 
+// src/controllers/brand.controller.js
+
 async function submitBrandVerificationRequest(req, res) {
   try {
     const {
@@ -161,50 +163,52 @@ async function submitBrandVerificationRequest(req, res) {
       contact_email,
       contact_phone,
       description,
+      team_size,
+      how_heard,
       documents = [],
     } = req.body;
 
-    if (!company_name || !contact_email) {
-      return res
-        .status(400)
-        .json({ error: 'company_name and contact_email are required' });
+    if (!company_name?.trim()) {
+      return res.status(400).json({ error: 'Company name is required' });
+    }
+    if (!contact_email?.trim()) {
+      return res.status(400).json({ error: 'Contact email is required' });
     }
 
     const requestData = {
-      user_id: req.user?.id || null,
-      company_name,
-      website: website || null,
-      contact_email,
-      contact_phone: contact_phone || null,
-      description: description || null,
-      documents,
+      user_id: req.user?.id || null, // Will be null during signup flow
+      company_name: company_name.trim(),
+      website: website ? website.trim() : null,
+      contact_email: contact_email.trim(),
+      contact_phone: contact_phone ? contact_phone.trim() : null,
+      description: description ? description.trim() : null,
+      documents: documents || [],
+      team_size: team_size || null,
+      how_heard: how_heard || 'search',
       status: 'pending',
     };
 
     const request = await BrandVerificationRequest.create(requestData);
 
-    sendInternalNotification('new_brand_verification', {
-      requestId: request.id,
-      company: company_name,
-      email: contact_email,
-    }).catch(console.error);
-
     return res.status(201).json({
+      success: true,
       message:
         'Verification request received. Our team will review and get back to you.',
       requestId: request.id,
     });
   } catch (err) {
     console.error('submitBrandVerificationRequest error:', err);
-    return res
-      .status(400)
-      .json({ error: err.message || 'Failed to submit request' });
+    return res.status(400).json({
+      error: err.message || 'Failed to submit verification request',
+    });
   }
 }
 
+// Keep getBrandVerificationRequests and approveBrandVerificationRequest as you had in the last message
+// (they look good)
+
 async function getBrandVerificationRequests(req, res) {
   try {
-    // Protected by middleware: admin/moderator only
     const { status, limit = 20, offset = 0 } = req.query;
 
     let query = db
@@ -237,10 +241,9 @@ async function approveBrandVerificationRequest(req, res) {
     if (request.status !== 'pending') {
       return res
         .status(400)
-        .json({ error: `Request already ${request.status}` });
+        .json({ error: `Request is already ${request.status}` });
     }
 
-    // 1. Create brand manager user account
     const manager = await User.create({
       username:
         manager_username || generateBrandManagerUsername(request.company_name),
@@ -253,9 +256,8 @@ async function approveBrandVerificationRequest(req, res) {
       status: 'pending_verification',
     });
 
-    // 2. Create the brand
     const brand = await Brand.create({
-      user_id: manager.id, // legacy field – keep for backward compatibility if needed
+      user_id: manager.id,
       name: request.company_name,
       slug: await generateUniqueSlug(request.company_name),
       description: request.description,
@@ -264,14 +266,12 @@ async function approveBrandVerificationRequest(req, res) {
       verification_request_id: request.id,
     });
 
-    // 3. Create brand manager relation (owner)
     await BrandManager.create({
       brand_id: brand.id,
       user_id: manager.id,
       role: 'owner',
     });
 
-    // 4. Mark request approved
     await BrandVerificationRequest.update(requestId, {
       status: 'approved',
       reviewed_by: req.user.id,
@@ -279,7 +279,6 @@ async function approveBrandVerificationRequest(req, res) {
       notes: notes ? `${request.notes || ''}\n${notes}` : request.notes,
     });
 
-    // 5. Notify
     sendBrandOnboardingEmail({
       to: request.contact_email,
       brandName: brand.name,
@@ -298,7 +297,6 @@ async function approveBrandVerificationRequest(req, res) {
     return res.status(400).json({ error: err.message || 'Approval failed' });
   }
 }
-
 // ───────────────────────────────────────────────
 // 3. Brand Management
 // ───────────────────────────────────────────────

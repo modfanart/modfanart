@@ -10,7 +10,7 @@ import { Loader2, ShieldAlert } from 'lucide-react';
 export default function AdminDashboard() {
   return (
     <RoleGuard
-      allowedRoles={['Admin']}
+      allowedRoles={['Admin', 'admin', 'super_admin', 'developer']}
       redirectTo="/dashboard"
       fallback={
         <div className="min-h-screen flex items-center justify-center p-6">

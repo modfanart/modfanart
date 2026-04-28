@@ -10,14 +10,6 @@ class ContestJudgeController {
    * POST /contest/:contestId/judges
    * Assign / Invite a user as judge
    */
-  /**
-   * POST /contest/:contestId/judges
-   * Assign / Invite a user as judge
-   */
-  /**
-   * POST /contest/:contestId/judges
-   * Assign / Invite a user as judge
-   */
   static async assignJudge(req, res) {
     try {
       const { contestId } = req.params;
@@ -71,7 +63,19 @@ class ContestJudgeController {
       }
 
       // === Rest of the logic ===
-      const judge = await User.findById(judgeId);
+      const judge = await db
+        .selectFrom('users as u')
+        .leftJoin('roles as r', 'r.id', 'u.role_id')
+        .select([
+          'u.id',
+          'u.username',
+          'u.avatar_url',
+          'u.profile',
+          'r.name as role',
+          'r.permissions as permissions',
+        ])
+        .where('u.id', '=', judgeId)
+        .executeTakeFirst();
       if (!judge) {
         return res.status(404).json({ error: 'User not found' });
       }
@@ -138,6 +142,39 @@ class ContestJudgeController {
           code: err.code,
         }),
       });
+    }
+  }
+  static async getPendingInvitations(req, res) {
+    try {
+      const judgeId = req.user.id;
+
+      const contests = await db
+        .selectFrom('contest_judges as cj')
+        .innerJoin('contests as c', 'c.id', 'cj.contest_id')
+        .select([
+          'c.id',
+          'c.title',
+          'c.slug',
+          'c.description',
+          'c.status',
+          'c.start_date',
+          'c.submission_end_date',
+          'c.judging_end_date',
+          'cj.created_at as invited_at',
+        ])
+        .where('cj.judge_id', '=', judgeId)
+        .where('cj.accepted', '=', false)
+        .where('c.deleted_at', 'is', null)
+        .orderBy('cj.created_at', 'desc')
+        .execute();
+
+      res.json({
+        success: true,
+        contests,
+      });
+    } catch (err) {
+      console.error('GET PENDING INVITES ERROR:', err);
+      res.status(500).json({ error: 'Failed to fetch invitations' });
     }
   }
   /**
