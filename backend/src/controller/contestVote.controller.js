@@ -11,8 +11,14 @@ class ContestVoteController {
       const contest = await Contest.findById(contestId);
       if (!contest) return res.status(404).json({ error: 'Contest not found' });
 
-      if (contest.status !== 'live' || !contest.voting_end_date || new Date(contest.voting_end_date) < new Date()) {
-        return res.status(403).json({ error: 'Voting is not active for this contest' });
+      if (
+        contest.status !== 'live' ||
+        !contest.voting_end_date ||
+        new Date(contest.voting_end_date) < new Date()
+      ) {
+        return res
+          .status(403)
+          .json({ error: 'Voting is not active for this contest' });
       }
 
       const entry = await db
@@ -23,11 +29,16 @@ class ContestVoteController {
         .where('status', '=', 'approved')
         .executeTakeFirst();
 
-      if (!entry) return res.status(404).json({ error: 'Entry not found or not approved' });
+      if (!entry)
+        return res
+          .status(404)
+          .json({ error: 'Entry not found or not approved' });
 
       // Prevent self-voting (optional but common)
       if (entry.creator_id === req.user.id) {
-        return res.status(403).json({ error: 'Cannot vote for your own entry' });
+        return res
+          .status(403)
+          .json({ error: 'Cannot vote for your own entry' });
       }
 
       // Check if user already voted for this entry
@@ -39,7 +50,9 @@ class ContestVoteController {
         .executeTakeFirst();
 
       if (existingVote) {
-        return res.status(403).json({ error: 'You have already voted for this entry' });
+        return res
+          .status(403)
+          .json({ error: 'You have already voted for this entry' });
       }
 
       // Future: premium users could have vote_weight > 1

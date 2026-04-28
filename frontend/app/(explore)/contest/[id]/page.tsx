@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { ArrowRight, Share2, BookmarkPlus, Eye, Trophy, Calendar, Users } from 'lucide-react';
+import { ArrowRight, Share2, BookmarkPlus, Eye, Trophy, Image as ImageIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,10 +23,8 @@ import 'swiper/css';
 import 'swiper/css/navigation';
 
 import { useAuth } from '@/store/AuthContext';
-import { cn } from '@/lib/utils';
 import { useGetContestQuery } from '@/services/api/contestsApi';
 import type { Contest } from '@/services/api/contestsApi';
-import type { ContestDetail } from '@/services/api/contestsApi';
 import { LayoutWrapper } from '@/components/layouts/layout-wrapper';
 
 export default function ContestDetailPage() {
@@ -34,6 +32,7 @@ export default function ContestDetailPage() {
   const contestId = params.id;
   const { user } = useAuth();
   const role = user?.role?.name;
+
   let artistBase = '';
   if (role === 'Artist') {
     const username = user?.username?.trim().toLowerCase();
@@ -41,30 +40,39 @@ export default function ContestDetailPage() {
   }
 
   // ─────────────────────────────────────────────────────────────
-  // ALL HOOKS MUST BE CALLED HERE – BEFORE ANY RETURN
+  // HOOKS
   // ─────────────────────────────────────────────────────────────
-
   const { data, isLoading, isError } = useGetContestQuery(contestId!, {
     skip: !contestId,
   });
 
   const contest = data ?? null;
-  // Prize helpers – safe now
-  const prizes = contest?.prizes ?? [];
+
+  // Safe parsing for gallery and prizes
+  const galleryImages: string[] = Array.isArray(contest?.gallery)
+    ? contest.gallery
+    : typeof contest?.gallery === 'string'
+      ? JSON.parse(contest.gallery || '[]')
+      : [];
+
+  const prizes = Array.isArray(contest?.prizes)
+    ? contest.prizes
+    : typeof contest?.prizes === 'string'
+      ? JSON.parse(contest.prizes || '[]')
+      : [];
+
   const deadline = contest?.submission_end_date
     ? new Date(contest.submission_end_date)
     : new Date();
 
   const now = new Date();
-  const isActive = contest ? contest.status === 'live' && deadline > now : false;
 
-  const [timeLeft, setTimeLeft] = useState<{
-    days: string;
-    hours: string;
-    minutes: string;
-    seconds: string;
-    done: boolean;
-  }>({
+  // FIXED: Better isActive logic
+  // A contest is active for submissions if status is 'live' or 'published' AND deadline hasn't passed
+  const isActive =
+    contest && (contest.status === 'live' || contest.status === 'published') && deadline > now;
+
+  const [timeLeft, setTimeLeft] = useState({
     days: '00',
     hours: '00',
     minutes: '00',
@@ -72,6 +80,7 @@ export default function ContestDetailPage() {
     done: !isActive,
   });
 
+  // Countdown Timer
   useEffect(() => {
     if (!isActive || !contest) return;
 
@@ -101,28 +110,23 @@ export default function ContestDetailPage() {
     return () => clearInterval(interval);
   }, [isActive, deadline, contest]);
 
-  // Prize formatting helpers (safe to define unconditionally)
-  // Replace the current formatPrize with this version:
-  const formatPrize = (prizesInput: ContestDetail['prizes'] = []) => {
-    // Normalize null/undefined → empty array
-    const prizes = prizesInput ?? [];
-
-    if (!prizes.length) return 'TBA';
-
-    const total = prizes.reduce((sum, p) => sum + (Number(p.amount_inr) || 0), 0);
-    return total > 0 ? `₹${(total / 100).toLocaleString('en-IN')}` : 'TBA';
+  // Prize formatting (USD only)
+  const formatPrizePool = (prizeList: any[] = []) => {
+    if (!prizeList.length) return 'TBA';
+    const total = prizeList.reduce((sum, p) => sum + (Number(p.amount_usd) || 0), 0);
+    return total > 0 ? `$${total.toLocaleString('en-US')}` : 'TBA';
   };
 
-  const topPrize = prizes.find((p) => p.rank === 1);
-  const topPrizeText = topPrize?.amount_inr
-    ? `₹${(Number(topPrize.amount_inr) / 100).toLocaleString('en-IN')}`
-    : formatPrize();
+  const topPrize = prizes.find((p: any) => p.rank === 1);
+  const topPrizeText = topPrize?.amount_usd
+    ? `$${Number(topPrize.amount_usd).toLocaleString('en-US')}`
+    : 'TBA';
+
   const storefrontUrl = contest?.brand_id ? `/marketplace/storefront/${contest.brand_id}` : '#';
 
   // ─────────────────────────────────────────────────────────────
-  // EARLY RETURNS COME ONLY AFTER ALL HOOKS
+  // LOADING & ERROR STATES
   // ─────────────────────────────────────────────────────────────
-
   if (isLoading) {
     return (
       <div className="container py-20 flex flex-col items-center justify-center gap-4 min-h-[60vh]">
@@ -147,13 +151,12 @@ export default function ContestDetailPage() {
   }
 
   // ─────────────────────────────────────────────────────────────
-  // HAPPY PATH – FULL RENDER
+  // MAIN RENDER
   // ─────────────────────────────────────────────────────────────
-
   return (
     <LayoutWrapper>
       <div className="min-h-screen bg-background">
-        {/* Hero Carousel */}
+        {/* Hero Section with Gallery Support */}
         <div className="relative w-full overflow-hidden aspect-[21/7] md:aspect-[21/6]">
           <Swiper
             modules={[Autoplay, Navigation]}
@@ -162,6 +165,7 @@ export default function ContestDetailPage() {
             navigation
             className="h-full"
           >
+            {/* Hero Image */}
             <SwiperSlide>
               <img
                 loading="lazy"
@@ -173,7 +177,19 @@ export default function ContestDetailPage() {
                 className="w-full h-full object-cover"
               />
             </SwiperSlide>
-            {/* Add more <SwiperSlide> if contest has gallery array */}
+
+            {/* Gallery Images */}
+            {galleryImages.length > 0 &&
+              galleryImages.map((url: string, index: number) => (
+                <SwiperSlide key={index}>
+                  <img
+                    loading="lazy"
+                    alt={`Gallery ${index + 1}`}
+                    src={url}
+                    className="w-full h-full object-cover"
+                  />
+                </SwiperSlide>
+              ))}
           </Swiper>
         </div>
 
@@ -235,19 +251,15 @@ export default function ContestDetailPage() {
 
               <div className="grid md:grid-cols-3 gap-6">
                 <div className="bg-primary/10 rounded-xl p-6 text-center">
-                  <div className="text-4xl font-black text-primary">
-                    {contest.prizes?.length || '?'}
-                  </div>
+                  <div className="text-4xl font-black text-primary">{prizes.length || '?'}</div>
                   <p className="mt-2 text-sm uppercase tracking-wide text-muted-foreground">
                     Winners Selected
                   </p>
                 </div>
                 <div className="bg-primary/10 rounded-xl p-6 text-center">
-                  <div className="text-4xl font-black text-primary">
-                    {formatPrize(contest?.prizes)}
-                  </div>
+                  <div className="text-4xl font-black text-primary">{formatPrizePool(prizes)}</div>
                   <p className="mt-2 text-sm uppercase tracking-wide text-muted-foreground">
-                    Prize Pool
+                    Prize Pool (USD)
                   </p>
                 </div>
                 <div className="bg-muted/50 rounded-xl p-6">
@@ -262,27 +274,30 @@ export default function ContestDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Tabs Navigation (pill style – currently static; add state if needed) */}
-          <div className="mb-10">
-            <div className="flex flex-wrap justify-center gap-2 bg-muted/40 p-3 rounded-2xl border">
-              {[
-                { id: 'overview', label: 'Overview' },
-                { id: 'how', label: 'How It Works' },
-                { id: 'prizes', label: 'Prizes' },
-                { id: 'rules', label: 'Rules' },
-                { id: 'timeline', label: 'Timeline' },
-              ].map((tab) => (
-                <Button
-                  key={tab.id}
-                  variant="ghost"
-                  size="sm"
-                  className={cn('rounded-full px-5 py-2 text-sm font-medium')}
-                >
-                  {tab.label}
-                </Button>
-              ))}
+          {/* Gallery Section */}
+          {galleryImages.length > 0 && (
+            <div className="mb-12">
+              <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                <ImageIcon className="h-6 w-6" />
+                Contest Gallery
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {galleryImages.map((url: string, index: number) => (
+                  <div
+                    key={index}
+                    className="relative aspect-video rounded-xl overflow-hidden border"
+                  >
+                    <Image
+                      src={url}
+                      alt={`Gallery image ${index + 1}`}
+                      fill
+                      className="object-cover hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Content Sections */}
           <div className="space-y-12">
@@ -296,110 +311,21 @@ export default function ContestDetailPage() {
               {(!contest.description || contest.description.trim() === '') && (
                 <p className="text-muted-foreground italic">Detailed description coming soon.</p>
               )}
-
-              <div className="grid md:grid-cols-3 gap-6">
-                <Card className="bg-green-50/50 border-green-200">
-                  <CardContent className="p-6">
-                    <div className="inline-block px-4 py-1.5 rounded-full bg-green-100 text-green-800 font-bold text-sm mb-4">
-                      ALLOWED
-                    </div>
-                    <ul className="space-y-2 text-sm">
-                      <li>100% original artwork</li>
-                      <li>Theme-relevant creative interpretations</li>
-                      <li>Print-friendly designs</li>
-                    </ul>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-red-50/50 border-red-200">
-                  <CardContent className="p-6">
-                    <div className="inline-block px-4 py-1.5 rounded-full bg-red-100 text-red-800 font-bold text-sm mb-4">
-                      NOT ALLOWED
-                    </div>
-                    <ul className="space-y-2 text-sm">
-                      <li>AI-generated content</li>
-                      <li>Traced / copied official artwork</li>
-                      <li>NSFW, hateful or harmful content</li>
-                    </ul>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-amber-50/50 border-amber-200">
-                  <CardContent className="p-6">
-                    <div className="inline-block px-4 py-1.5 rounded-full bg-amber-100 text-amber-800 font-bold text-sm mb-4">
-                      REMEMBER
-                    </div>
-                    <ul className="space-y-2 text-sm">
-                      <li>Max {contest.max_entries_per_user ?? '—'} entries per person</li>
-                      <li>Follow brand guidelines (if provided)</li>
-                      <li>Be respectful of IP</li>
-                    </ul>
-                  </CardContent>
-                </Card>
-              </div>
             </div>
 
-            {/* How It Works */}
+            {/* Prizes Section */}
             <div className="space-y-6">
-              <h3 className="text-2xl font-bold">How It Works</h3>
-              <Accordion type="single" collapsible className="w-full">
-                {[
-                  {
-                    value: '1',
-                    title: 'Submit your entry',
-                    content: 'Upload your original artwork via the submission form.',
-                  },
-                  {
-                    value: '2',
-                    title: 'Judging & Selection',
-                    content:
-                      'Our team reviews entries based on creativity, quality, and theme fit.',
-                  },
-                  {
-                    value: '3',
-                    title: 'Winners Announced',
-                    content: `Announced on or shortly after ${deadline.toLocaleDateString('en-IN')}.`,
-                  },
-                  {
-                    value: '4',
-                    title: 'Licensing & Production',
-                    content:
-                      'Selected designs may be licensed and turned into official merchandise.',
-                  },
-                  {
-                    value: '5',
-                    title: 'Get Paid',
-                    content: 'Winners receive cash prizes + potential royalties / credit.',
-                  },
-                ].map((step) => (
-                  <AccordionItem key={step.value} value={step.value}>
-                    <AccordionTrigger className="text-left hover:no-underline">
-                      <div className="flex items-center gap-4">
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-lg">
-                          {step.value}
-                        </span>
-                        <span className="font-semibold">{step.title}</span>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="text-muted-foreground pl-14">
-                      {step.content}
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            </div>
-
-            {/* Prizes */}
-            <div className="space-y-6">
-              <h3 className="text-2xl font-bold">Prizes</h3>
-              {contest.prizes?.length ? (
+              <h3 className="text-2xl font-bold flex items-center gap-2">
+                <Trophy className="h-6 w-6" /> Prizes
+              </h3>
+              {prizes.length > 0 ? (
                 <div className="space-y-4">
-                  {[...contest.prizes]
-                    .sort((a, b) => a.rank - b.rank)
-                    .map((prize) => (
+                  {[...prizes]
+                    .sort((a: any, b: any) => a.rank - b.rank)
+                    .map((prize: any) => (
                       <div
                         key={prize.rank}
-                        className="flex items-center justify-between rounded-lg border p-5 bg-card"
+                        className="flex items-center justify-between rounded-lg border p-6 bg-card"
                       >
                         <div className="flex items-center gap-4">
                           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-xl">
@@ -411,12 +337,15 @@ export default function ContestDetailPage() {
                                 ? 'Grand Prize'
                                 : `${prize.rank}${['st', 'nd', 'rd'][prize.rank - 2] || 'th'} Place`}
                             </p>
-                            <p className="text-sm text-muted-foreground">{prize.type || 'Cash'}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {prize.description || prize.type}
+                            </p>
                           </div>
                         </div>
-                        {prize.amount_inr && (
-                          <p className="text-2xl font-bold text-green-600">
-                            ₹{(Number(prize.amount_inr) / 100).toLocaleString('en-IN')}
+
+                        {prize.amount_usd && (
+                          <p className="text-3xl font-bold text-green-600">
+                            ${Number(prize.amount_usd).toLocaleString('en-US')}
                           </p>
                         )}
                       </div>
@@ -440,7 +369,7 @@ export default function ContestDetailPage() {
                     <li>No NSFW, violent, hateful, or brand-damaging content</li>
                     <li>
                       Submissions close on{' '}
-                      {deadline.toLocaleDateString('en-IN', { dateStyle: 'long' })}
+                      {deadline.toLocaleDateString('en-US', { dateStyle: 'long' })}
                     </li>
                   </ul>
                 )}
@@ -459,7 +388,7 @@ export default function ContestDetailPage() {
                     </li>
                     <li className="flex justify-between">
                       <span className="font-medium">Submission Deadline</span>
-                      <span>{deadline.toLocaleDateString('en-IN', { dateStyle: 'long' })}</span>
+                      <span>{deadline.toLocaleDateString('en-US', { dateStyle: 'long' })}</span>
                     </li>
                     <li className="flex justify-between">
                       <span className="font-medium">Winners Announced</span>
@@ -476,7 +405,7 @@ export default function ContestDetailPage() {
             <h3 className="text-2xl md:text-3xl font-bold mb-3">Submission Deadline</h3>
             <p className="text-lg text-muted-foreground mb-8">
               Entries close on{' '}
-              <strong>{deadline.toLocaleDateString('en-IN', { dateStyle: 'long' })}</strong>
+              <strong>{deadline.toLocaleDateString('en-US', { dateStyle: 'long' })}</strong>
             </p>
 
             {!timeLeft.done ? (
@@ -500,7 +429,7 @@ export default function ContestDetailPage() {
             )}
           </div>
 
-          {/* Submit CTA */}
+          {/* Submit CTA - Now correctly respects isActive */}
           <Card className="mt-16 border-2 border-primary/30 bg-primary/5">
             <CardContent className="p-10 md:p-16 text-center">
               {isActive ? (
@@ -516,7 +445,9 @@ export default function ContestDetailPage() {
                 </Button>
               )}
               <p className="mt-4 text-sm text-muted-foreground">
-                {isActive ? 'You must be logged in to submit' : 'The submission period has ended.'}
+                {isActive
+                  ? 'You must be logged in as an Artist to submit'
+                  : 'The submission period has ended.'}
               </p>
             </CardContent>
           </Card>

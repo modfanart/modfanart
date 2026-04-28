@@ -9,7 +9,10 @@ module.exports = function rateLimit(options = {}) {
     const key = `rate:${ip}`;
     const now = Date.now();
 
-    let entry = rateLimitMap.get(key) || { count: 0, resetTime: now + windowMs };
+    let entry = rateLimitMap.get(key) || {
+      count: 0,
+      resetTime: now + windowMs,
+    };
 
     // Reset if window expired
     if (now > entry.resetTime) {

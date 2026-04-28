@@ -74,7 +74,7 @@ export const sidebarConfig: Record<Role, (base: string) => NavItem[]> = {
     { name: 'Licensing', href: `${base}/licensing`, icon: FileText },
     { name: 'Storefront', href: `#`, icon: ShoppingBag },
     { name: 'Content', href: `#`, icon: Newspaper },
-    { name: 'Review Automation', href: `${base}/review-automation`, icon: Bot },
+    { name: 'Review Automation', href: `#`, icon: Bot },
     { name: 'Team & Permissions', href: `${base}/team-permissions`, icon: UserCog },
     { name: 'Queries', icon: UserCog, href: `${base}/queries` },
   ],

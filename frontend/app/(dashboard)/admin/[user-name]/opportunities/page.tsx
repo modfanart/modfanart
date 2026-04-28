@@ -267,9 +267,8 @@ export default function ContestsPage() {
             <TableBody>
               {filteredContests.map((contest) => {
                 const maxPrize = contest.prizes?.length
-                  ? Math.max(...contest.prizes.map((p) => p.amount_inr || 0))
+                  ? Math.max(...contest.prizes.map((p) => p.amount_usd || 0))
                   : 0;
-
                 return (
                   <TableRow key={contest.id}>
                     <TableCell>

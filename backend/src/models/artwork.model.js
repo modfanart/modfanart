@@ -10,10 +10,7 @@ class Artwork {
   static async findById(id, options = {}) {
     const { includeDeleted = false, withPricing = false } = options;
 
-    let query = db
-      .selectFrom('artworks')
-      .selectAll()
-      .where('id', '=', id);
+    let query = db.selectFrom('artworks').selectAll().where('id', '=', id);
 
     if (!includeDeleted) {
       query = query.where('deleted_at', 'is', null);
@@ -107,7 +104,11 @@ class Artwork {
   static async findWithPricing(id) {
     return db
       .selectFrom('artworks')
-      .leftJoin('artwork_pricing_tiers', 'artwork_pricing_tiers.artwork_id', 'artworks.id')
+      .leftJoin(
+        'artwork_pricing_tiers',
+        'artwork_pricing_tiers.artwork_id',
+        'artworks.id'
+      )
       .select([
         'artworks.*',
         'artwork_pricing_tiers.id as pricing_id',

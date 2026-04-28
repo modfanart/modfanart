@@ -1,9 +1,16 @@
 // src/models/userViolation.model.js
-const { db } = require('../config');           // ← only db
-const { sql } = require('kysely');             // ← ADD THIS LINE
+const { db } = require('../config'); // ← only db
+const { sql } = require('kysely'); // ← ADD THIS LINE
 
 class UserViolation {
-  static async report(userId, reportedBy, violationType, description, entityType = null, entityId = null) {
+  static async report(
+    userId,
+    reportedBy,
+    violationType,
+    description,
+    entityType = null,
+    entityId = null
+  ) {
     return db
       .insertInto('user_violations')
       .values({
