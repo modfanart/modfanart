@@ -8,10 +8,10 @@ import { S3Client } from '@aws-sdk/client-s3';
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   max: 10,
-  ssl:
-    process.env.NODE_ENV === 'production'
-      ? { rejectUnauthorized: true }
-      : { rejectUnauthorized: false },
+ssl:
+  process.env.NODE_ENV === 'production'
+    ? { rejectUnauthorized: true }
+    : false,
 });
 
 // Connection logs
