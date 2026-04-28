@@ -16,7 +16,14 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
   const { user } = useAuth();
 
-  const role = user?.role?.name?.toLowerCase() as keyof typeof sidebarConfig;
+  const rawRole = user?.role?.name?.toLowerCase();
+
+  const ADMIN_ROLES = ['admin', 'super_admin', 'developer'];
+
+  // ✅ normalize role
+  const role = (
+    ADMIN_ROLES.includes(rawRole || '') ? 'admin' : rawRole
+  ) as keyof typeof sidebarConfig;
   const basePath = getBasePath(user);
 
   if (!role || !basePath) {

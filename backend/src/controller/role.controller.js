@@ -132,11 +132,9 @@ class RoleController {
         .execute();
 
       if (usersWithRole.length > 0) {
-        return res
-          .status(409)
-          .json({
-            error: 'Cannot delete role — users are still assigned to it',
-          });
+        return res.status(409).json({
+          error: 'Cannot delete role — users are still assigned to it',
+        });
       }
 
       await db.deleteFrom('roles').where('id', '=', id).execute();
@@ -171,9 +169,8 @@ class RoleController {
       }
 
       // Simple version: replace single role
-      await User.update(userId, {
+      await User.updateById(userId, {
         role_id: roleId,
-        updated_at: sql`NOW()`,
       });
 
       // Future multi-role version would insert into user_roles instead
