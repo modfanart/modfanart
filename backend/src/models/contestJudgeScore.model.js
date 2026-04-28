@@ -1,6 +1,6 @@
 // src/models/contestJudgeScore.model.js
-const { db } = require('../config');           // ← only db
-const { sql } = require('kysely');             // ← ADD THIS LINE
+const { db } = require('../config'); // ← only db
+const { sql } = require('kysely'); // ← ADD THIS LINE
 
 class ContestJudgeScore {
   static async submit(entryId, judgeId, score, comments = null) {
@@ -37,7 +37,7 @@ class ContestJudgeScore {
       .select((eb) => eb.fn.avg('score').as('avg_score'))
       .where('entry_id', '=', entryId)
       .executeTakeFirst()
-      .then(r => r?.avg_score ? Number(r.avg_score) : 0);
+      .then((r) => (r?.avg_score ? Number(r.avg_score) : 0));
   }
 
   static async hasJudgeScored(entryId, judgeId) {

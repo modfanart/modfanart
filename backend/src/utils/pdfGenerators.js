@@ -18,11 +18,11 @@ const { format } = require('date-fns'); // npm install date-fns
 async function generateLicensePDF(license, order, buyer, seller, artwork) {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ margin: 50, size: 'A4' });
-    
+
     // For production: stream to S3 or temp file
     const fileName = `license_${license.id}_${Date.now()}.pdf`;
     const filePath = path.join(__dirname, '../../storage/licenses', fileName);
-    
+
     // Make sure directory exists
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
 
@@ -45,42 +45,54 @@ async function generateLicensePDF(license, order, buyer, seller, artwork) {
 
     // ─── Parties ───
     doc.fontSize(14).font('Helvetica-Bold').text('Parties:').moveDown(0.5);
-    doc.font('Helvetica').text(`Licensor (Seller): ${seller.username || seller.email}`);
+    doc
+      .font('Helvetica')
+      .text(`Licensor (Seller): ${seller.username || seller.email}`);
     doc.text(`Licensee (Buyer): ${buyer.username || buyer.email}`);
     doc.moveDown();
 
     // ─── Artwork details ───
-    doc.fontSize(14).font('Helvetica-Bold').text('Licensed Work:').moveDown(0.5);
+    doc
+      .fontSize(14)
+      .font('Helvetica-Bold')
+      .text('Licensed Work:')
+      .moveDown(0.5);
     doc.font('Helvetica').text(`Title: ${artwork.title || 'Untitled Artwork'}`);
     doc.text(`Artwork ID: ${artwork.id}`);
     doc.text(`License Type: ${license.license_type.toUpperCase()}`);
     doc.moveDown();
 
     // ─── License terms (customize heavily based on your legal needs) ───
-    doc.fontSize(14).font('Helvetica-Bold').text('Grant of License').moveDown(0.5);
-    doc.font('Helvetica').text(
-      `The Licensor hereby grants to the Licensee a ${license.license_type} license to use the Artwork subject to the following terms:`,
-      { continued: true }
-    );
+    doc
+      .fontSize(14)
+      .font('Helvetica-Bold')
+      .text('Grant of License')
+      .moveDown(0.5);
+    doc
+      .font('Helvetica')
+      .text(
+        `The Licensor hereby grants to the Licensee a ${license.license_type} license to use the Artwork subject to the following terms:`,
+        { continued: true }
+      );
 
     const terms = {
       personal: [
-        "• For non-commercial, personal use only",
-        "• No resale, distribution, or public display",
-        "• Attribution required where feasible",
-        "• Non-transferable",
+        '• For non-commercial, personal use only',
+        '• No resale, distribution, or public display',
+        '• Attribution required where feasible',
+        '• Non-transferable',
       ],
       commercial: [
-        "• For commercial purposes including advertising, products, websites",
-        "• Worldwide, non-exclusive",
-        "• No resale of the raw artwork file",
-        "• Attribution optional",
+        '• For commercial purposes including advertising, products, websites',
+        '• Worldwide, non-exclusive',
+        '• No resale of the raw artwork file',
+        '• Attribution optional',
       ],
       exclusive: [
-        "• Exclusive worldwide rights",
-        "• Licensor may not license or use the work further",
-        "• Full transfer of copyright (if agreed)",
-        "• High-value transaction – consult legal counsel",
+        '• Exclusive worldwide rights',
+        '• Licensor may not license or use the work further',
+        '• Full transfer of copyright (if agreed)',
+        '• High-value transaction – consult legal counsel',
       ],
     };
 
@@ -91,7 +103,9 @@ async function generateLicensePDF(license, order, buyer, seller, artwork) {
     doc.moveDown(1);
 
     // ─── Payment & validity ───
-    doc.text(`Payment: ${order.currency.toUpperCase()} ${(order.total_cents / 100).toFixed(2)}`);
+    doc.text(
+      `Payment: ${order.currency.toUpperCase()} ${(order.total_cents / 100).toFixed(2)}`
+    );
     doc.text(`Order ID: ${order.order_number || order.id}`);
 
     if (license.expires_at) {
@@ -105,7 +119,7 @@ async function generateLicensePDF(license, order, buyer, seller, artwork) {
     // ─── Signatures (placeholder) ───
     doc.fontSize(12).text('___________________________', 50, doc.y);
     doc.text('Licensor Signature (Digital)', 50, doc.y + 5);
-    
+
     doc.moveDown(2);
     doc.text('___________________________', 300, doc.y - 40);
     doc.text('Licensee Acknowledgement', 300, doc.y - 35);
@@ -131,7 +145,7 @@ async function generateInvoicePDF(order) {
     const doc = new PDFDocument({ margin: 50, size: 'A4' });
     const fileName = `invoice_${order.id}_${Date.now()}.pdf`;
     const filePath = path.join(__dirname, '../../storage/invoices', fileName);
-    
+
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
 
     const stream = fs.createWriteStream(filePath);
@@ -146,8 +160,12 @@ async function generateInvoicePDF(order) {
 
     doc
       .fontSize(12)
-      .text(`Invoice # ${order.invoice_number || `INV-${order.id.slice(0,8)}`}`)
-      .text(`Date: ${format(new Date(order.paid_at || order.created_at), 'PPP')}`)
+      .text(
+        `Invoice # ${order.invoice_number || `INV-${order.id.slice(0, 8)}`}`
+      )
+      .text(
+        `Date: ${format(new Date(order.paid_at || order.created_at), 'PPP')}`
+      )
       .moveDown();
 
     // Platform name
@@ -167,7 +185,10 @@ async function generateInvoicePDF(order) {
     doc.text('Description', 50, tableTop);
     doc.text('Amount', 450, tableTop, { width: 100, align: 'right' });
 
-    doc.moveTo(50, tableTop + 15).lineTo(550, tableTop + 15).stroke();
+    doc
+      .moveTo(50, tableTop + 15)
+      .lineTo(550, tableTop + 15)
+      .stroke();
 
     // ─── Line items ───
     let y = tableTop + 35;
@@ -175,23 +196,43 @@ async function generateInvoicePDF(order) {
 
     // Assuming one item for simplicity
     doc.text('Artwork License Purchase', 50, y);
-    doc.text(`${(order.subtotal_cents / 100).toFixed(2)} ${order.currency.toUpperCase()}`, 450, y, { width: 100, align: 'right' });
+    doc.text(
+      `${(order.subtotal_cents / 100).toFixed(2)} ${order.currency.toUpperCase()}`,
+      450,
+      y,
+      { width: 100, align: 'right' }
+    );
 
     y += 20;
     doc.text('Platform Fee (10%)', 50, y);
-    doc.text(`-${(order.platform_fee_cents / 100).toFixed(2)} ${order.currency.toUpperCase()}`, 450, y, { width: 100, align: 'right' });
+    doc.text(
+      `-${(order.platform_fee_cents / 100).toFixed(2)} ${order.currency.toUpperCase()}`,
+      450,
+      y,
+      { width: 100, align: 'right' }
+    );
 
     if (order.tax_cents > 0) {
       y += 20;
       doc.text('GST (18%)', 50, y);
-      doc.text(`${(order.tax_cents / 100).toFixed(2)} ${order.currency.toUpperCase()}`, 450, y, { width: 100, align: 'right' });
+      doc.text(
+        `${(order.tax_cents / 100).toFixed(2)} ${order.currency.toUpperCase()}`,
+        450,
+        y,
+        { width: 100, align: 'right' }
+      );
     }
 
     // Total
     y += 30;
     doc.font('Helvetica-Bold').fontSize(14);
     doc.text('Total Paid:', 350, y);
-    doc.text(`${(order.total_cents / 100).toFixed(2)} ${order.currency.toUpperCase()}`, 450, y, { width: 100, align: 'right' });
+    doc.text(
+      `${(order.total_cents / 100).toFixed(2)} ${order.currency.toUpperCase()}`,
+      450,
+      y,
+      { width: 100, align: 'right' }
+    );
 
     doc.end();
 

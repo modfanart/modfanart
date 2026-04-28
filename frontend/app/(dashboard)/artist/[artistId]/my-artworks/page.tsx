@@ -14,7 +14,7 @@ import { PlusCircle, Edit, Trash2, Eye, CheckCircle, XCircle, Clock, Trophy } fr
 
 import { useAuth } from '@/store/AuthContext';
 import { useGetMyArtworksQuery, useDeleteArtworkMutation } from '@/services/api/artworkApi';
-import { useGetMyContestEntriesQuery, type UserContestEntry } from '@/services/api/contestsApi';
+import { useGetMyContestEntriesQuery } from '@/services/api/contestsApi';
 
 import type { ArtworkListItem } from '@/services/api/artworkApi';
 

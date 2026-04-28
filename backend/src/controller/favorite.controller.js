@@ -13,7 +13,11 @@ class FavoriteController {
         return res.status(404).json({ error: 'Artwork not found' });
       }
 
-      const wasFavorited = await Favorite.isFavorited(req.user.id, 'artwork', artworkId);
+      const wasFavorited = await Favorite.isFavorited(
+        req.user.id,
+        'artwork',
+        artworkId
+      );
 
       await Favorite.toggle(req.user.id, 'artwork', artworkId);
 
@@ -27,7 +31,9 @@ class FavoriteController {
       } else {
         await db
           .updateTable('artworks')
-          .set((eb) => ({ favorites_count: eb.ref('favorites_count').minus(1) }))
+          .set((eb) => ({
+            favorites_count: eb.ref('favorites_count').minus(1),
+          }))
           .where('id', '=', artworkId)
           .where('favorites_count', '>', 0)
           .execute();
@@ -46,17 +52,28 @@ class FavoriteController {
   // GET /users/me/favorites/artworks
   static async getMyFavoriteArtworks(req, res) {
     try {
-      const favorites = await Favorite.getFavoritesForUser(req.user.id, 'artwork', 50, 0);
+      const favorites = await Favorite.getFavoritesForUser(
+        req.user.id,
+        'artwork',
+        50,
+        0
+      );
 
       if (favorites.length === 0) {
         return res.json({ artworks: [] });
       }
 
-      const artworkIds = favorites.map(f => f.favoritable_id);
+      const artworkIds = favorites.map((f) => f.favoritable_id);
 
       const artworks = await db
         .selectFrom('artworks')
-        .select(['id', 'title', 'thumbnail_url', 'creator_id', 'favorites_count'])
+        .select([
+          'id',
+          'title',
+          'thumbnail_url',
+          'creator_id',
+          'favorites_count',
+        ])
         .where('id', 'in', artworkIds)
         .where('status', '=', 'published')
         .where('deleted_at', 'is', null)

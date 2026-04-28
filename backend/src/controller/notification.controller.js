@@ -10,7 +10,7 @@ const NotificationController = {
       const notifications = await NotificationModel.getByUser(user_id, {
         limit: parseInt(limit),
         offset: parseInt(offset),
-        unreadOnly: unreadOnly === 'true'
+        unreadOnly: unreadOnly === 'true',
       });
 
       const unreadCount = await NotificationModel.getUnreadCount(user_id);
@@ -19,11 +19,13 @@ const NotificationController = {
         success: true,
         notifications,
         unreadCount,
-        pagination: { limit, offset }
+        pagination: { limit, offset },
       });
     } catch (error) {
       console.error('getNotifications error:', error);
-      res.status(500).json({ success: false, message: 'Internal server error' });
+      res
+        .status(500)
+        .json({ success: false, message: 'Internal server error' });
     }
   },
 
@@ -34,7 +36,9 @@ const NotificationController = {
       res.json({ success: true, unreadCount: count });
     } catch (error) {
       console.error('getUnreadCount error:', error);
-      res.status(500).json({ success: false, message: 'Internal server error' });
+      res
+        .status(500)
+        .json({ success: false, message: 'Internal server error' });
     }
   },
 
@@ -47,14 +51,16 @@ const NotificationController = {
       if (!notification) {
         return res.status(404).json({
           success: false,
-          message: 'Notification not found'
+          message: 'Notification not found',
         });
       }
 
       res.json({ success: true, message: 'Notification marked as read' });
     } catch (error) {
       console.error('markAsRead error:', error);
-      res.status(500).json({ success: false, message: 'Internal server error' });
+      res
+        .status(500)
+        .json({ success: false, message: 'Internal server error' });
     }
   },
 
@@ -64,32 +70,39 @@ const NotificationController = {
       const count = await NotificationModel.markAllAsRead(req.user.id);
       res.json({
         success: true,
-        message: `${count} notifications marked as read`
+        message: `${count} notifications marked as read`,
       });
     } catch (error) {
       console.error('markAllAsRead error:', error);
-      res.status(500).json({ success: false, message: 'Internal server error' });
+      res
+        .status(500)
+        .json({ success: false, message: 'Internal server error' });
     }
   },
 
   // DELETE /api/notifications/:id
   deleteNotification: async (req, res) => {
     try {
-      const success = await NotificationModel.softDelete(req.params.id, req.user.id);
+      const success = await NotificationModel.softDelete(
+        req.params.id,
+        req.user.id
+      );
 
       if (!success) {
         return res.status(404).json({
           success: false,
-          message: 'Notification not found'
+          message: 'Notification not found',
         });
       }
 
       res.json({ success: true, message: 'Notification deleted' });
     } catch (error) {
       console.error('deleteNotification error:', error);
-      res.status(500).json({ success: false, message: 'Internal server error' });
+      res
+        .status(500)
+        .json({ success: false, message: 'Internal server error' });
     }
-  }
+  },
 };
 
 module.exports = NotificationController;

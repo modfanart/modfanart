@@ -6,8 +6,6 @@ const ArtworkController = require('../controller/artwork.controller');
 const router = express.Router({ mergeParams: true });
 const { singleUpload } = require('../middleware/upload');
 
-
-
 // ────────────────────────────────────────────────
 // Specific/static routes FIRST
 // ────────────────────────────────────────────────
@@ -19,8 +17,16 @@ router.get('/by-creator/:creatorId', ArtworkController.getArtworksByCreator);
 
 // Category routes (specific patterns)
 router.get('/:artworkId/categories', ArtworkCategoryController.getCategories);
-router.post('/:artworkId/categories',  authenticateToken, ArtworkCategoryController.addCategory);
-router.delete('/:artworkId/categories/:categoryId', authenticateToken, ArtworkCategoryController.removeCategory);
+router.post(
+  '/:artworkId/categories',
+  authenticateToken,
+  ArtworkCategoryController.addCategory
+);
+router.delete(
+  '/:artworkId/categories/:categoryId',
+  authenticateToken,
+  ArtworkCategoryController.removeCategory
+);
 
 // ────────────────────────────────────────────────
 // Generic/dynamic routes LAST
@@ -33,10 +39,19 @@ router.get('/', ArtworkController.getArtworks);
 router.get('/:id', ArtworkController.getArtwork);
 
 // Authenticated actions on specific artwork
-router.patch('/:id/publish', authenticateToken, ArtworkController.publishArtwork);
+router.patch(
+  '/:id/publish',
+  authenticateToken,
+  ArtworkController.publishArtwork
+);
 router.delete('/:id', authenticateToken, ArtworkController.deleteArtwork);
 
 // Create new artwork
-router.post('/', authenticateToken, singleUpload('file'), ArtworkController.createArtwork);
+router.post(
+  '/',
+  authenticateToken,
+  singleUpload('file'),
+  ArtworkController.createArtwork
+);
 
 module.exports = router;

@@ -1,8 +1,7 @@
 // src/routes/collections.route.js
 const express = require('express');
 const router = express.Router();
-const CollectionController = require("../controller/collection.controller")
-
+const CollectionController = require('../controller/collection.controller');
 
 // CRUD routes
 router.post('/', CollectionController.createCollection);

@@ -25,7 +25,9 @@ function hasPermission(permission) {
         return res.status(403).json({
           error: 'Insufficient permissions',
           required: permission,
-          your_permissions: Object.keys(role.permissions || {}).filter(k => role.permissions[k]),
+          your_permissions: Object.keys(role.permissions || {}).filter(
+            (k) => role.permissions[k]
+          ),
         });
       }
 
@@ -47,10 +49,14 @@ function hasAnyPermission(...permissions) {
     const role = await Role.findById(req.user.role_id);
     if (!role) return res.status(403).json({ error: 'Role not found' });
 
-    const hasAtLeastOne = permissions.some(p => role.permissions?.[p] === true);
+    const hasAtLeastOne = permissions.some(
+      (p) => role.permissions?.[p] === true
+    );
 
     if (!hasAtLeastOne) {
-      return res.status(403).json({ error: 'Missing at least one required permission' });
+      return res
+        .status(403)
+        .json({ error: 'Missing at least one required permission' });
     }
 
     next();

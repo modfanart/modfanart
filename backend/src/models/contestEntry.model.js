@@ -1,6 +1,6 @@
 // src/models/contestEntry.model.js
-const { db } = require('../config');           // ← only db
-const { sql } = require('kysely');             // ← ADD THIS LINE
+const { db } = require('../config'); // ← only db
+const { sql } = require('kysely'); // ← ADD THIS LINE
 
 class ContestEntry {
   static async create(contestId, artworkId, creatorId, notes = null) {

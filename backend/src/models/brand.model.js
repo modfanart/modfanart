@@ -16,10 +16,7 @@ class Brand {
   static async findById(id, options = {}) {
     const { includeDeleted = false, onlyOwner = false, ownerId } = options;
 
-    let query = db
-      .selectFrom('brands')
-      .selectAll()
-      .where('id', '=', id);
+    let query = db.selectFrom('brands').selectAll().where('id', '=', id);
 
     if (!includeDeleted) {
       query = query.where('deleted_at', 'is', null);
@@ -33,27 +30,27 @@ class Brand {
 
     if (!brand) return null;
 
-if (options.withArtworks) {
-  brand.artworks = await db
-    .selectFrom('brand_artworks')
-    .innerJoin('artworks', 'artworks.id', 'brand_artworks.artwork_id')
-    .select([
-      'artworks.id',
-      'artworks.title',
-      'artworks.description',           // ← add if useful in brand view
-      'artworks.thumbnail_url',         // ← add if it exists (common companion field)
-      'artworks.status',
-      'brand_artworks.is_featured',
-      'brand_artworks.sort_order',
-      'brand_artworks.added_at',
-    ])
-    .where('brand_artworks.brand_id', '=', id)
-    .orderBy('brand_artworks.sort_order', 'asc')
-    // Optional: only show published artworks in brand storefront
-    .where('artworks.status', '=', 'published')
-    .where('artworks.deleted_at', 'is', null)
-    .execute();
-}
+    if (options.withArtworks) {
+      brand.artworks = await db
+        .selectFrom('brand_artworks')
+        .innerJoin('artworks', 'artworks.id', 'brand_artworks.artwork_id')
+        .select([
+          'artworks.id',
+          'artworks.title',
+          'artworks.description', // ← add if useful in brand view
+          'artworks.thumbnail_url', // ← add if it exists (common companion field)
+          'artworks.status',
+          'brand_artworks.is_featured',
+          'brand_artworks.sort_order',
+          'brand_artworks.added_at',
+        ])
+        .where('brand_artworks.brand_id', '=', id)
+        .orderBy('brand_artworks.sort_order', 'asc')
+        // Optional: only show published artworks in brand storefront
+        .where('artworks.status', '=', 'published')
+        .where('artworks.deleted_at', 'is', null)
+        .execute();
+    }
 
     // Optional: load recent published posts
     if (options.withPosts) {
@@ -72,57 +69,57 @@ if (options.withArtworks) {
     return brand;
   }
 
-static async findBySlug(slug, options = {}) {
-  const { withArtworks = false, withPosts = false } = options;
+  static async findBySlug(slug, options = {}) {
+    const { withArtworks = false, withPosts = false } = options;
 
-  // 1. Get brand
-  const brand = await db
-    .selectFrom('brands')
-    .selectAll()
-    .where('slug', '=', slug)
-    .where('deleted_at', 'is', null)
-    .executeTakeFirst();
-
-  if (!brand) return null;
-
-  // 2. Attach artworks
-  if (withArtworks) {
-    const artworks = await db
-      .selectFrom('brand_artworks')
-      .innerJoin('artworks', 'artworks.id', 'brand_artworks.artwork_id')
-      .select([
-        'artworks.id',
-        'artworks.title',
-        'artworks.description',
-        'artworks.file_url',
-        'artworks.thumbnail_url',
-        'artworks.status',
-        'brand_artworks.is_featured',
-        'brand_artworks.sort_order',
-        'brand_artworks.added_at',
-      ])
-      .where('brand_artworks.brand_id', '=', brand.id)
-      .orderBy('brand_artworks.sort_order', 'asc')
-      .execute();
-
-    brand.artworks = artworks;
-  }
-
-  // 3. Attach posts (if needed)
-  if (withPosts) {
-    const posts = await db
-      .selectFrom('brand_posts')
+    // 1. Get brand
+    const brand = await db
+      .selectFrom('brands')
       .selectAll()
-      .where('brand_id', '=', brand.id)
+      .where('slug', '=', slug)
       .where('deleted_at', 'is', null)
-      .orderBy('created_at', 'desc')
-      .execute();
+      .executeTakeFirst();
 
-    brand.posts = posts;
+    if (!brand) return null;
+
+    // 2. Attach artworks
+    if (withArtworks) {
+      const artworks = await db
+        .selectFrom('brand_artworks')
+        .innerJoin('artworks', 'artworks.id', 'brand_artworks.artwork_id')
+        .select([
+          'artworks.id',
+          'artworks.title',
+          'artworks.description',
+          'artworks.file_url',
+          'artworks.thumbnail_url',
+          'artworks.status',
+          'brand_artworks.is_featured',
+          'brand_artworks.sort_order',
+          'brand_artworks.added_at',
+        ])
+        .where('brand_artworks.brand_id', '=', brand.id)
+        .orderBy('brand_artworks.sort_order', 'asc')
+        .execute();
+
+      brand.artworks = artworks;
+    }
+
+    // 3. Attach posts (if needed)
+    if (withPosts) {
+      const posts = await db
+        .selectFrom('brand_posts')
+        .selectAll()
+        .where('brand_id', '=', brand.id)
+        .where('deleted_at', 'is', null)
+        .orderBy('created_at', 'desc')
+        .execute();
+
+      brand.posts = posts;
+    }
+
+    return brand;
   }
-
-  return brand;
-}
 
   static async create(userId, data) {
     const now = sql`NOW()`;
@@ -164,7 +161,7 @@ static async findBySlug(slug, options = {}) {
         updated_at: now,
       })
       .where('id', '=', id)
-      .where('user_id', '=', ownerId)           // ownership guard
+      .where('user_id', '=', ownerId) // ownership guard
       .where('deleted_at', 'is', null)
       .returningAll()
       .executeTakeFirst();

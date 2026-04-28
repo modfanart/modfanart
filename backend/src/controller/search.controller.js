@@ -32,7 +32,7 @@ async function globalSearch(req, res) {
     ]);
 
     const requestedTypes = type
-      ? new Set(type.split(',').map(t => t.trim().toLowerCase()))
+      ? new Set(type.split(',').map((t) => t.trim().toLowerCase()))
       : allowedTypes;
 
     const subQueries = [];
@@ -217,7 +217,7 @@ async function globalSearch(req, res) {
     const total = rows.length > 0 ? Number(rows[0].total_count) : 0;
 
     res.status(200).json({
-      results: rows.map(row => {
+      results: rows.map((row) => {
         const { total_count, ...result } = row;
         // optional: parse extra if you decide to make it JSON later
         return result;
