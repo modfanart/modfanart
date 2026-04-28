@@ -3,19 +3,7 @@ const { db } = require('../config');
 const { sql } = require('kysely');
 const { v4: uuidv4 } = require('uuid');
 
-/**
- * @typedef {import('../db/types').BrandVerificationRequestRow} BrandVerificationRequestRow
- */
-
-/**
- * Brand Verification Request Model
- */
 class BrandVerificationRequest {
-  /**
-   * Create a new brand verification request
-   * @param {Partial<BrandVerificationRequestRow>} data
-   * @returns {Promise<BrandVerificationRequestRow>}
-   */
   static async create(data) {
     const id = data.id || uuidv4();
 
@@ -23,16 +11,21 @@ class BrandVerificationRequest {
       .insertInto('brand_verification_requests')
       .values({
         id,
-        user_id: data.user_id || null,
+        user_id: data.user_id || null, // Can be null during signup
         company_name: data.company_name,
         website: data.website || null,
-        documents: data.documents
-          ? sql`ARRAY[${data.documents.map((d) => sql.lit(d))}]::text[]`
-          : null,
+        contact_email: data.contact_email || null,
+        contact_phone: data.contact_phone || null,
+        description: data.description || null,
+        documents: data.documents ? JSON.stringify(data.documents) : null,
+        team_size: data.team_size || null,
+        how_heard: data.how_heard || null,
+
         status: data.status || 'pending',
         reviewed_by: data.reviewed_by || null,
         reviewed_at: data.reviewed_at || null,
         notes: data.notes || null,
+
         created_at: sql`NOW()`,
         updated_at: sql`NOW()`,
       })
@@ -42,39 +35,33 @@ class BrandVerificationRequest {
     return request;
   }
 
-  /**
-   * Find a request by ID
-   * @param {string} id
-   * @returns {Promise<BrandVerificationRequestRow | null>}
-   */
-  static async findById(id) {
-    const [request] = await db
-      .selectFrom('brand_verification_requests')
-      .selectAll()
-      .where('id', '=', id)
-      .execute();
-
-    return request || null;
-  }
-
-  /**
-   * Update a verification request
-   * @param {string} id
-   * @param {Partial<BrandVerificationRequestRow>} data
-   * @returns {Promise<BrandVerificationRequestRow | null>}
-   */
   static async update(id, data) {
     const updateData = {
-      ...data,
       updated_at: sql`NOW()`,
     };
 
-    // Handle documents array specially if provided
+    if (data.company_name !== undefined)
+      updateData.company_name = data.company_name;
+    if (data.website !== undefined) updateData.website = data.website;
+    if (data.contact_email !== undefined)
+      updateData.contact_email = data.contact_email;
+    if (data.contact_phone !== undefined)
+      updateData.contact_phone = data.contact_phone;
+    if (data.description !== undefined)
+      updateData.description = data.description;
     if (data.documents !== undefined) {
       updateData.documents = data.documents
-        ? sql`ARRAY[${data.documents.map((d) => sql.lit(d))}]::text[]`
+        ? JSON.stringify(data.documents)
         : null;
     }
+    if (data.team_size !== undefined) updateData.team_size = data.team_size;
+    if (data.how_heard !== undefined) updateData.how_heard = data.how_heard;
+    if (data.status !== undefined) updateData.status = data.status;
+    if (data.notes !== undefined) updateData.notes = data.notes;
+    if (data.reviewed_by !== undefined)
+      updateData.reviewed_by = data.reviewed_by;
+    if (data.reviewed_at !== undefined)
+      updateData.reviewed_at = data.reviewed_at;
 
     const [updated] = await db
       .updateTable('brand_verification_requests')
@@ -86,13 +73,16 @@ class BrandVerificationRequest {
     return updated || null;
   }
 
-  /**
-   * Soft-delete / mark as rejected (optional helper)
-   * @param {string} id
-   * @param {string} [reviewedBy]
-   * @param {string} [notes]
-   * @returns {Promise<boolean>}
-   */
+  static async findById(id) {
+    const [request] = await db
+      .selectFrom('brand_verification_requests')
+      .selectAll()
+      .where('id', '=', id)
+      .execute();
+
+    return request || null;
+  }
+
   static async reject(id, reviewedBy = null, notes = null) {
     const [result] = await db
       .updateTable('brand_verification_requests')
@@ -112,13 +102,6 @@ class BrandVerificationRequest {
     return !!result;
   }
 
-  /**
-   * Approve request (status change + optional reviewer)
-   * @param {string} id
-   * @param {string} reviewedBy
-   * @param {string} [notes]
-   * @returns {Promise<boolean>}
-   */
   static async approve(id, reviewedBy, notes = null) {
     const [result] = await db
       .updateTable('brand_verification_requests')
@@ -138,13 +121,6 @@ class BrandVerificationRequest {
     return !!result;
   }
 
-  /**
-   * Schedule interview (status change)
-   * @param {string} id
-   * @param {string} reviewedBy
-   * @param {string} [notes]
-   * @returns {Promise<boolean>}
-   */
   static async scheduleInterview(id, reviewedBy, notes = null) {
     const [result] = await db
       .updateTable('brand_verification_requests')
@@ -164,16 +140,6 @@ class BrandVerificationRequest {
     return !!result;
   }
 
-  /**
-   * List requests with optional filters
-   * @param {Object} [options]
-   * @param {string} [options.status]
-   * @param {number} [options.limit=20]
-   * @param {number} [options.offset=0]
-   * @param {string} [options.orderBy='created_at']
-   * @param {'asc'|'desc'} [options.orderDir='desc']
-   * @returns {Promise<BrandVerificationRequestRow[]>}
-   */
   static async findAll(options = {}) {
     const {
       status,
@@ -187,22 +153,14 @@ class BrandVerificationRequest {
       .selectFrom('brand_verification_requests')
       .selectAll()
       .orderBy(orderBy, orderDir)
-      .limit(limit)
-      .offset(offset);
+      .limit(Number(limit))
+      .offset(Number(offset));
 
-    if (status) {
-      query = query.where('status', '=', status);
-    }
+    if (status) query = query.where('status', '=', status);
 
     return await query.execute();
   }
 
-  /**
-   * Count total requests (useful for pagination)
-   * @param {Object} [options]
-   * @param {string} [options.status]
-   * @returns {Promise<number>}
-   */
   static async count(options = {}) {
     const { status } = options;
 
@@ -210,9 +168,7 @@ class BrandVerificationRequest {
       .selectFrom('brand_verification_requests')
       .select(({ fn }) => fn.countAll().as('total'));
 
-    if (status) {
-      query = query.where('status', '=', status);
-    }
+    if (status) query = query.where('status', '=', status);
 
     const [{ total }] = await query.execute();
     return Number(total);

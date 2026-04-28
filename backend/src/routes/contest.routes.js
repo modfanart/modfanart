@@ -45,6 +45,7 @@ router.get(
 // Assigning & Managing Judges (Brand Owner / Admin only)
 router.post('/:contestId/judges', ContestJudgeController.assignJudge);
 router.get('/:contestId/judges', ContestJudgeController.getJudges);
+router.get('/judge/invitations', ContestJudgeController.getPendingInvitations);
 router.delete(
   '/:contestId/judges/:judgeId',
   ContestJudgeController.removeJudge

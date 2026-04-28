@@ -21,6 +21,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import { useLoginMutation } from '@/services/api/authApi'; // ← import from your RTK Query slice
 import { useAppDispatch } from '@/store/hooks'; // assuming you have typed hooks
 import { setCredentials } from '@/services/api/features/authSlice';
+import { userApi } from '@/services/api/userApi';
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address.' }),
   password: z.string().min(8, { message: 'Password must be at least 8 characters.' }),
@@ -53,16 +54,16 @@ export default function LoginPage() {
         email: values.email,
         password: values.password,
       }).unwrap();
-      console.log('Login response:', response); // ← must show accessToken
-      // Assuming your backend returns { access_token, user, ... }
+
       dispatch(
         setCredentials({
           accessToken: response.accessToken,
           user: response.user,
-          // refreshToken: response.refresh_token, // if using
         })
       );
 
+      // 🔥 THIS IS THE FIX
+      dispatch(userApi.util.invalidateTags(['CurrentUser']));
       // Store token persistently if "remember me" (or use httpOnly cookie from backend)
       if (values.rememberMe) {
         localStorage.setItem('accessToken', response.accessToken);

@@ -295,7 +295,7 @@ function OpportunityGrid({ items, brandBase, isClosed = false }: any) {
 
               {/* FOOTER */}
               <CardFooter className="grid grid-cols-2 gap-3 border-t p-4">
-                <Link href={`${brandBase}/opportunities/${opp.id}`}>
+                <Link href={`${brandBase}/opportunities/${opp.id}/monitor`}>
                   <Button className="w-full">{isClosed ? 'Results' : 'Manage'}</Button>
                 </Link>
 
