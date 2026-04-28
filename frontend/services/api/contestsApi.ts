@@ -426,11 +426,13 @@ const contestsApi = createApi({
       query: ({ contestId, userId }) => ({
         url: `/contest/${contestId}/judges`,
         method: 'POST',
-        body: { userId },
+        body: { judgeId: userId }, // ✅ FIX
       }),
-      invalidatesTags: (result, error, { contestId }) => [{ type: 'ContestJudges', id: contestId }],
     }),
-
+    getJudgeInvitations: builder.query<{ contests: Contest[] }, void>({
+      query: () => '/contest/judge/invitations',
+      providesTags: ['JudgeContests'],
+    }),
     acceptJudgeInvitation: builder.mutation<any, { contestId: string; judgeId: string }>({
       query: ({ contestId, judgeId }) => ({
         url: `/contest/${contestId}/judges/${judgeId}/accept`,
@@ -531,6 +533,7 @@ export const {
   useRemoveCategoryFromContestMutation,
   useGetContestJudgesQuery,
   useAssignJudgeMutation,
+  useGetJudgeInvitationsQuery,
   useAcceptJudgeInvitationMutation,
   useRemoveJudgeMutation,
   useSubmitJudgeScoreMutation,

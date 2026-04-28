@@ -98,13 +98,12 @@ export const rolesApi = createApi({
     }),
 
     // POST /roles/users/:userId/roles
-    assignRoleToUser: builder.mutation<UserRole, AssignRoleRequest>({
-      query: ({ user_id, role_id }) => ({
-        url: `/users/${user_id}/roles`,
+    assignRoleToUser: builder.mutation<UserRole, { userId: string; roleId: string }>({
+      query: ({ userId, roleId }) => ({
+        url: `/users/${userId}/roles`,
         method: 'POST',
-        body: { role_id },
+        body: { roleId },
       }),
-      invalidatesTags: (result, error, { user_id }) => [{ type: 'UserRoles', id: user_id }],
     }),
 
     // Optional future endpoint:

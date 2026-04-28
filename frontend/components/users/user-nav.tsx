@@ -26,26 +26,36 @@ export function UserNav() {
   if (isUserLoading || !user) return null;
 
   const displayName = user.username || user.email?.split('@')[0] || 'User';
-  const roleName = user.role?.name?.toLowerCase() ?? 'member';
   const avatarSrc = user.avatar_url || '/default-avatar.png';
   const initials = displayName.slice(0, 2).toUpperCase();
+
+  const roleName = user.role?.name?.toLowerCase() ?? 'member';
+
+  // ✅ Add this
+  const ADMIN_ROLES = ['admin', 'super_admin', 'developer'];
 
   let dashboardPath = '/';
 
   if (roleName === 'artist') dashboardPath = `/artist/${user.username}`;
+
   if (roleName === 'brand_manager') {
     const brand = user?.brands?.[0];
     if (brand?.id) dashboardPath = `/brand-manager/${brand.id}`;
   }
-  if (roleName === 'judge') dashboardPath = `/judge/${user.username}`;
-  if (roleName === 'admin') dashboardPath = `/admin/${user.role?.name}`;
 
+  if (roleName === 'judge') dashboardPath = `/judge/${user.username}`;
+
+  // ✅ FIX: support all admin-level roles
+  if (ADMIN_ROLES.includes(roleName)) {
+    dashboardPath = `/admin/${user?.username}`;
+  }
+
+  // ✅ FIX: eligibility
   const isEligibleForDashboard =
     roleName === 'artist' ||
     roleName === 'brand_manager' ||
     roleName === 'judge' ||
-    roleName === 'admin';
-
+    ADMIN_ROLES.includes(roleName);
   const handleLogout = async () => {
     try {
       await logout().unwrap();

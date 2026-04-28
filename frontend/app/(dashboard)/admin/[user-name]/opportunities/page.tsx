@@ -75,12 +75,14 @@ export default function ContestsPage() {
   const contests = data?.contests ?? [];
 
   const adminBase = useMemo(() => {
-    if (currentUser?.role?.name === 'Admin') {
-      return `/admin/${currentUser.role.name.toLowerCase()}`;
+    const roleName = currentUser?.role?.name?.toLowerCase();
+
+    if (roleName === 'admin' || roleName === 'super_admin' || roleName === 'developer') {
+      return `/admin/${roleName}`;
     }
+
     return '';
   }, [currentUser]);
-
   /* ───────────────── FILTER ───────────────── */
 
   const filteredContests = contests.filter((c) => {
