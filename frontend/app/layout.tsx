@@ -25,7 +25,6 @@ export const metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      // RootLayout.tsx
       <body
         className={cn(
           'min-h-screen flex flex-col bg-white font-sans antialiased',
