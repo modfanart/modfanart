@@ -1,4 +1,3 @@
-import { LayoutWrapper } from '@/components/layouts/layout-wrapper';
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
@@ -8,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function PrivacyLayout({ children }: { children: ReactNode }) {
-  return <LayoutWrapper>{children}</LayoutWrapper>;
+  return <>{children}</>;
 }

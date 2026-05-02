@@ -13,7 +13,7 @@ import {
   type CreateLicenseCheckoutSessionRequest,
   type LicenseCheckoutSessionResponse,
 } from '@/services/api/licenseApi';
-import { LayoutWrapper } from '@/components/layouts/layout-wrapper';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -550,28 +550,26 @@ export default function LicenseArtworkPage() {
   const { id } = useParams<{ id: string }>();
 
   return (
-    <LayoutWrapper>
-      <div className="container max-w-7xl py-10 px-4 sm:px-6 lg:px-8">
-        {/* Back Navigation & Title */}
-        <div className="mb-8">
-          <Link
-            href={`/gallery/artwork/${id}`}
-            className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Artwork
-          </Link>
-        </div>
-
-        <h1 className="text-3xl sm:text-4xl font-bold mb-2">License Artwork</h1>
-        <p className="text-lg text-muted-foreground mb-10">
-          Select your license type and complete the secure payment process
-        </p>
-
-        <Elements stripe={stripePromise}>
-          <LicenseFormContent />
-        </Elements>
+    <div className="container max-w-7xl py-10 px-4 sm:px-6 lg:px-8">
+      {/* Back Navigation & Title */}
+      <div className="mb-8">
+        <Link
+          href={`/gallery/artwork/${id}`}
+          className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Artwork
+        </Link>
       </div>
-    </LayoutWrapper>
+
+      <h1 className="text-3xl sm:text-4xl font-bold mb-2">License Artwork</h1>
+      <p className="text-lg text-muted-foreground mb-10">
+        Select your license type and complete the secure payment process
+      </p>
+
+      <Elements stripe={stripePromise}>
+        <LicenseFormContent />
+      </Elements>
+    </div>
   );
 }

@@ -35,7 +35,7 @@ export default function AdminBrandsPage() {
   const role = user?.role?.name;
 
   let adminBase = '';
-  if (role === 'Admin') {
+  if (role === 'admin' || role === 'super_admin' || role === 'developer') {
     adminBase = `/admin/${user?.role?.name}`;
   }
 

@@ -194,18 +194,8 @@ function OpportunityGrid({
 
             <CardFooter className="pt-4 border-t">
               <div className="flex w-full gap-3">
-                <Button asChild variant="default" className="flex-1">
-                  <Link href={`/dashboard/opportunities/${opp.id}/my-entry`}>
-                    {isClosed || opp.status === 'completed'
-                      ? 'View Results'
-                      : showJudgingStatus
-                        ? 'Check Judging'
-                        : 'Manage Entry'}
-                  </Link>
-                </Button>
-
                 <Button asChild variant="outline" className="flex-1">
-                  <Link href={`/opportunities/${opp.slug || opp.id}`}>View Contest</Link>
+                  <Link href={`/contest/${opp.id}`}>View Contest</Link>
                 </Button>
               </div>
             </CardFooter>

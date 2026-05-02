@@ -11,7 +11,7 @@ import {
   useSubmitJudgeScoreMutation,
   useGetEntryScoresQuery,
 } from '@/services/api/contestsApi';
-
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -20,18 +20,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-
+import { getBasePath } from '@/hooks/getBasePath';
 import { Trophy, Calendar, Users, Star, Send, Eye } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-
+import { useAuth } from '@/store/AuthContext';
 export default function JudgeContestPage() {
   const { contestId } = useParams<{ contestId: string }>();
   const { toast } = useToast();
-
+  const { user, loading: authLoading } = useAuth();
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
   const [score, setScore] = useState<number>(0);
   const [comments, setComments] = useState('');
-
+  const basePath = user ? getBasePath(user) : null;
   // Fetch contest details
   const { data: contest, isLoading: contestLoading } = useGetContestQuery(contestId);
 
@@ -153,11 +153,19 @@ export default function JudgeContestPage() {
 
       {/* Entries Grid */}
       <div>
-        <h2 className="text-2xl font-semibold mb-6 flex items-center gap-3">
-          <Trophy className="h-6 w-6" />
-          Contest Entries
-        </h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-semibold flex items-center gap-3">
+            <Trophy className="h-6 w-6" />
+            Contest Entries
+          </h2>
 
+          <Link href={`${basePath}/review-queue/${contestId}`}>
+            <Button variant="outline" size="sm" className="flex items-center gap-2">
+              <Eye className="h-4 w-4" />
+              Review Queue
+            </Button>
+          </Link>
+        </div>
         {entries.length === 0 ? (
           <Alert>
             <AlertDescription>No entries available for judging yet.</AlertDescription>
