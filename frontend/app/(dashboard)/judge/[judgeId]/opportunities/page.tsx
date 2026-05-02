@@ -296,14 +296,19 @@ function OpportunityGrid({ items, isActive = false, onGenerateLink, user }: any)
             </CardContent>
 
             <CardFooter className="grid grid-cols-2 gap-2">
+              {/* Main Action */}
               <Button asChild>
                 <Link href={`${base}/contest/${contest.id}`}>{isActive ? 'Start' : 'View'}</Link>
               </Button>
 
-              <Button variant="outline" onClick={() => onGenerateLink(contest)}>
-                <LinkIcon className="h-4 w-4 mr-1" />
-                Link
-              </Button>
+              {/* ✅ Results Button */}
+              {(contest.status === 'completed' ||
+                contest.status === 'archived' ||
+                contest.winner_announced) && (
+                <Button variant="secondary" asChild>
+                  <Link href={`${base}/results/${contest.id}`}>Results</Link>
+                </Button>
+              )}
             </CardFooter>
           </Card>
         );

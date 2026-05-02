@@ -10,95 +10,120 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 
-import { PlusCircle, Edit, Trash2, Eye, CheckCircle, XCircle, Clock, Trophy } from 'lucide-react';
+import { PlusCircle, Trash2, Eye, CheckCircle, XCircle, Clock, Trophy, Rocket } from 'lucide-react';
+
+import type { LucideIcon } from 'lucide-react';
 
 import { useAuth } from '@/store/AuthContext';
-import { useGetMyArtworksQuery, useDeleteArtworkMutation } from '@/services/api/artworkApi';
+import {
+  useGetMyArtworksQuery,
+  useDeleteArtworkMutation,
+  usePublishArtworkMutation,
+} from '@/services/api/artworkApi';
+
 import { useGetMyContestEntriesQuery } from '@/services/api/contestsApi';
 
 import type { ArtworkListItem } from '@/services/api/artworkApi';
 
 // ────────────────────────────────────────────────
+// Types
+// ────────────────────────────────────────────────
+
+type StatusKey = 'published' | 'draft' | 'pending' | 'rejected' | 'archived' | 'winner';
+
+// ────────────────────────────────────────────────
 // Helpers
 // ────────────────────────────────────────────────
 
-const normalizeStatus = (status?: string) => {
-  if (!status) return 'unknown';
+const normalizeStatus = (status?: string): StatusKey => {
+  if (!status) return 'draft';
+
   const s = status.toLowerCase();
+
   if (s === 'moderation_pending') return 'pending';
-  return s;
+
+  if (
+    s === 'published' ||
+    s === 'draft' ||
+    s === 'pending' ||
+    s === 'rejected' ||
+    s === 'archived' ||
+    s === 'winner'
+  ) {
+    return s;
+  }
+
+  return 'draft';
 };
 
-const getStatusIcon = (status: string) => {
-  const s = normalizeStatus(status);
-
-  if (s === 'published') return <CheckCircle className="h-4 w-4 text-green-500" />;
-  if (s === 'draft') return <Clock className="h-4 w-4 text-yellow-500" />;
-  if (s === 'pending') return <Clock className="h-4 w-4 text-orange-500" />;
-  if (s === 'rejected') return <XCircle className="h-4 w-4 text-red-500" />;
-  if (s === 'archived') return <XCircle className="h-4 w-4 text-gray-500" />;
-  if (s === 'approved') return <CheckCircle className="h-4 w-4 text-emerald-600" />;
-  if (s === 'winner') return <Trophy className="h-4 w-4 text-amber-500" />;
-  if (s === 'disqualified') return <XCircle className="h-4 w-4 text-purple-600" />;
-
-  return <Clock className="h-4 w-4 text-gray-500" />;
-};
-
-const getStatusBadge = (status: string) => {
-  const s = normalizeStatus(status);
-
-  if (s === 'published') return 'bg-green-100 text-green-800';
-  if (s === 'draft') return 'bg-yellow-100 text-yellow-800';
-  if (s === 'pending') return 'bg-orange-100 text-orange-800';
-  if (s === 'rejected') return 'bg-red-100 text-red-800';
-  if (s === 'archived') return 'bg-gray-100 text-gray-800';
-  if (s === 'approved') return 'bg-emerald-100 text-emerald-800';
-  if (s === 'winner') return 'bg-amber-100 text-amber-800 font-semibold';
-  if (s === 'disqualified') return 'bg-purple-100 text-purple-800';
-
-  return 'bg-gray-100 text-gray-800';
+const STATUS_MAP: Record<StatusKey, { label: string; className: string; icon: LucideIcon }> = {
+  published: {
+    label: 'Published',
+    className: 'bg-green-100 text-green-800',
+    icon: CheckCircle,
+  },
+  draft: {
+    label: 'Draft',
+    className: 'bg-yellow-100 text-yellow-800',
+    icon: Clock,
+  },
+  pending: {
+    label: 'Pending',
+    className: 'bg-orange-100 text-orange-800',
+    icon: Clock,
+  },
+  rejected: {
+    label: 'Rejected',
+    className: 'bg-red-100 text-red-800',
+    icon: XCircle,
+  },
+  archived: {
+    label: 'Archived',
+    className: 'bg-gray-100 text-gray-800',
+    icon: XCircle,
+  },
+  winner: {
+    label: 'Winner',
+    className: 'bg-amber-100 text-amber-800',
+    icon: Trophy,
+  },
 };
 
 // ────────────────────────────────────────────────
+// Components
+// ────────────────────────────────────────────────
 
-interface UnifiedSubmission {
-  id: string;
-  title: string;
-  description?: string | null;
-  thumbnail_url?: string | null;
-  file_url?: string | null;
-  status: string;
-  views_count: number;
-  created_at: string;
+const StatusUI = ({ status }: { status?: string }) => {
+  const key = normalizeStatus(status);
+  const { label, className, icon: Icon } = STATUS_MAP[key];
 
-  contestEntryId?: string;
-  contestTitle?: string;
-  contestEntryStatus?: string;
-  rank?: number | null;
-
-  isContestSubmission: boolean;
-}
+  return (
+    <Badge className={`${className} flex gap-1 items-center w-fit`}>
+      <Icon className="h-3 w-3" />
+      {label}
+    </Badge>
+  );
+};
 
 // ────────────────────────────────────────────────
 
 export default function ManageSubmissionsPage() {
-  // ── Hooks (ALWAYS at top, no conditions) ─────────
-  const [activeTab, setActiveTab] = useState('all');
+  const [activeTab, setActiveTab] = useState<
+    'all' | 'draft' | 'pending' | 'published' | 'rejected' | 'in-contests'
+  >('all');
 
   const { user, loading: authLoading } = useAuth();
 
-  const { data: artworksData, isLoading: artworksLoading } = useGetMyArtworksQuery(
-    activeTab === 'all' || activeTab === 'in-contests' ? undefined : { status: activeTab }
-  );
+  const { data: artworksData, isLoading: artworksLoading } = useGetMyArtworksQuery();
 
   const { data: entriesResponse, isLoading: entriesLoading } = useGetMyContestEntriesQuery();
 
-  const [deleteArtwork, { isLoading: isDeletingArtwork }] = useDeleteArtworkMutation();
+  const [deleteArtwork] = useDeleteArtworkMutation();
+  const [publishArtwork] = usePublishArtworkMutation();
 
   const artworks = artworksData?.artworks ?? [];
   const contestEntries = entriesResponse?.entries ?? [];
 
-  // ✅ hook MUST be before any return
   const entryMap = useMemo(
     () => new Map(contestEntries.map((e) => [e.artwork_id, e])),
     [contestEntries]
@@ -106,11 +131,12 @@ export default function ManageSubmissionsPage() {
 
   const isLoading = authLoading || artworksLoading || entriesLoading;
 
-  // ── Early returns AFTER hooks ───────────────────
   if (isLoading) {
     return (
-      <div className="flex-1 p-6 flex items-center justify-center min-h-[60vh]">
-        <Skeleton className="h-10 w-40" />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-6">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton key={i} className="h-72 w-full rounded-xl" />
+        ))}
       </div>
     );
   }
@@ -125,32 +151,18 @@ export default function ManageSubmissionsPage() {
     );
   }
 
-  // ── Derived data ────────────────────────────────
   const username = user.username?.toLowerCase() || 'anonymous';
   const artistBase = `/artist/${username}`;
 
-  const unified: UnifiedSubmission[] = [];
-
-  artworks.forEach((art: ArtworkListItem) => {
+  const unified = artworks.map((art: ArtworkListItem) => {
     const entry = entryMap.get(art.id);
 
-    unified.push({
-      id: art.id,
-      title: art.title,
-      description: art.description,
-      thumbnail_url: art.thumbnail_url,
-      file_url: art.file_url,
-      status: normalizeStatus(art.status),
-      views_count: art.views_count,
-      created_at: art.created_at,
+    return {
+      ...art,
       isContestSubmission: !!entry,
-      ...(entry && {
-        contestEntryId: entry.entry_id,
-        contestTitle: entry.contest_title,
-        contestEntryStatus: entry.entry_status,
-        rank: entry.rank,
-      }),
-    });
+      contestTitle: entry?.contest_title,
+      rank: entry?.rank,
+    };
   });
 
   let displayed = unified;
@@ -162,28 +174,29 @@ export default function ManageSubmissionsPage() {
   }
 
   const handleDelete = async (id: string) => {
-    try {
-      await deleteArtwork(id).unwrap();
-    } catch (err) {
-      console.error('Delete failed', err);
-    }
+    await deleteArtwork(id);
   };
 
-  // ── UI ─────────────────────────────────────────
+  const handlePublish = async (id: string) => {
+    await publishArtwork(id);
+  };
+
   return (
     <div className="p-6 space-y-6">
+      {/* Header */}
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">My Submissions</h1>
+        <h1 className="text-2xl font-bold">My Artworks</h1>
 
         <Link href={`${artistBase}/my-artworks/new`}>
           <Button>
             <PlusCircle className="mr-2 h-4 w-4" />
-            New Artwork
+            Create Artwork
           </Button>
         </Link>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
         <TabsList>
           <TabsTrigger value="all">All</TabsTrigger>
           <TabsTrigger value="draft">Draft</TabsTrigger>
@@ -195,11 +208,12 @@ export default function ManageSubmissionsPage() {
 
         <TabsContent value={activeTab}>
           {displayed.length === 0 ? (
-            <div className="text-center py-10 text-muted-foreground">No submissions found</div>
+            <div className="text-center py-16 text-muted-foreground">No artworks found</div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-6">
               {displayed.map((item) => (
-                <Card key={item.id}>
+                <Card key={item.id} className="overflow-hidden hover:shadow-lg transition">
+                  {/* Image */}
                   <div className="relative aspect-square">
                     <Image
                       src={item.thumbnail_url || item.file_url || '/placeholder.svg'}
@@ -209,30 +223,33 @@ export default function ManageSubmissionsPage() {
                     />
                   </div>
 
-                  <CardContent>
-                    <h3 className="font-medium">{item.title}</h3>
+                  {/* Content */}
+                  <CardContent className="space-y-2 pt-4">
+                    <h3 className="font-semibold truncate">{item.title}</h3>
 
-                    <Badge className={getStatusBadge(item.status)}>
-                      <span className="flex items-center gap-1">
-                        {getStatusIcon(item.status)}
-                        {item.status}
-                      </span>
-                    </Badge>
+                    <StatusUI status={item.status} />
                   </CardContent>
 
-                  <CardFooter className="flex gap-2">
+                  {/* Actions */}
+                  <CardFooter className="flex justify-between gap-2">
                     <Link href={`/artworks/${item.id}`}>
-                      <Button size="sm">
+                      <Button size="sm" variant="outline">
                         <Eye className="h-4 w-4" />
                       </Button>
                     </Link>
 
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => handleDelete(item.id)}
-                      disabled={isDeletingArtwork}
-                    >
+                    {normalizeStatus(item.status) === 'draft' && (
+                      <Button
+                        size="sm"
+                        onClick={() => handlePublish(item.id)}
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        <Rocket className="h-4 w-4 mr-1" />
+                        Publish
+                      </Button>
+                    )}
+
+                    <Button size="sm" variant="destructive" onClick={() => handleDelete(item.id)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </CardFooter>

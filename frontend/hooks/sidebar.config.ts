@@ -60,8 +60,6 @@ export const sidebarConfig: Record<Role, (base: string) => NavItem[]> = {
   judge: (base: string) => [
     { name: 'Overview', href: `${base}`, icon: LayoutDashboard },
     { name: 'Opportunities', href: `${base}/opportunities`, icon: Trophy },
-    { name: 'Review Queue', href: `${base}/review-queue`, icon: ClipboardList },
-    { name: 'Results', href: `${base}/results`, icon: Trophy },
   ],
 
   admin: (base: string) => [

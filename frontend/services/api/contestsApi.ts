@@ -501,7 +501,10 @@ const contestsApi = createApi({
       }),
       invalidatesTags: (result, error, contestId) => [{ type: 'Contest', id: contestId }],
     }),
-
+    getMyJudgeScores: builder.query<{ scores: ContestJudgeScore[] }, { contestId: string }>({
+      query: ({ contestId }) => `/contest/${contestId}/my-scores`,
+      providesTags: ['ContestScores'],
+    }),
     // Leaderboard
     getLeaderboard: builder.query<LeaderboardEntry[], string>({
       query: (contestId) => `/contest/${contestId}/leaderboard`,
@@ -524,6 +527,7 @@ export const {
   useDeleteContestMutation,
   useGetContestEntriesQuery,
   useSubmitEntryMutation,
+  useGetMyJudgeScoresQuery,
   useUpdateEntryStatusMutation,
   useGetMyContestEntriesQuery,
   useDeleteContestEntryMutation,
