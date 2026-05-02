@@ -14,19 +14,7 @@ const crypto = require('crypto');
 const { sql } = require('kysely');
 const { db } = require('../config');
 // Helpers (you can move to utils/email.util.js later)
-async function sendVerificationEmail(user, token) {
-  // TODO: implement real email sending (nodemailer, resend, etc.)
-  console.log(
-    `Verification link: http://localhost:3000/auth/verify-email?token=${token}`
-  );
-}
-
-async function sendPasswordResetEmail(user, token) {
-  console.log(
-    `Reset password link: http://localhost:3000/auth/reset-password?token=${token}`
-  );
-}
-
+const EmailService = require('../services/email.service');
 class AuthController {
   // POST /auth/register
   static async register(req, res) {
@@ -78,7 +66,7 @@ class AuthController {
         new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24h
       );
 
-      await sendVerificationEmail(user, token);
+      await EmailService.sendVerificationEmail(user, token);
 
       res.status(201).json({
         message: 'User registered. Please check your email to verify.',
@@ -240,8 +228,7 @@ class AuthController {
         new Date(Date.now() + 60 * 60 * 1000).toISOString() // 1 hour
       );
 
-      await sendPasswordResetEmail(user, token);
-
+      await EmailService.sendPasswordResetEmail(user, token);
       res.json({ message: 'Password reset link sent to email.' });
     } catch (error) {
       console.error(error);

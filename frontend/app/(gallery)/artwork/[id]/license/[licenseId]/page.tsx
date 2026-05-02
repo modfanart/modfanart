@@ -1,4 +1,3 @@
-import { LayoutWrapper } from '@/components/layouts/layout-wrapper';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -207,283 +206,278 @@ export default async function LicenseCheckoutPage({ params }: { params: Promise<
   const defaultOption = artwork.licenseOptions.find((opt) => opt.id === 'commercial-basic')!;
 
   return (
-    <LayoutWrapper>
-      <div className="container py-10 max-w-7xl">
-        <div className="mb-6">
-          <Link
-            href={`/gallery/artwork/${id}`}
-            className="flex items-center text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Artwork
-          </Link>
+    <div className="container py-10 max-w-7xl">
+      <div className="mb-6">
+        <Link
+          href={`/gallery/artwork/${id}`}
+          className="flex items-center text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Artwork
+        </Link>
+      </div>
+
+      <h1 className="text-3xl font-bold mb-2">License Artwork</h1>
+      <p className="text-muted-foreground mb-8">
+        Complete your licensing agreement for this artwork
+      </p>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left column */}
+        <div className="lg:col-span-2 space-y-8">
+          {/* Artwork Details Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Artwork Details</CardTitle>
+              <CardDescription>Review the artwork you're licensing</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col md:flex-row gap-8">
+                <div className="w-full md:w-1/3 bg-muted/30 rounded-xl overflow-hidden border">
+                  <div className="aspect-square relative">
+                    <Image
+                      src={artwork.imageUrl}
+                      alt={artwork.title}
+                      fill
+                      className="object-contain p-6"
+                      priority
+                      unoptimized
+                    />
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-2xl font-bold mb-2">{artwork.title}</h2>
+                  <p className="text-lg text-muted-foreground mb-4">by {artwork.artist}</p>
+                  <p className="mb-6 leading-relaxed">{artwork.description}</p>
+
+                  <div className="space-y-4">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">IP Owner</span>
+                      <span className="font-medium">{artwork.ipOwner}</span>
+                    </div>
+                    <Separator />
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Base License Type</span>
+                      <span className="font-medium">{artwork.licenseType}</span>
+                    </div>
+                    <Separator />
+                    <div className="flex justify-between items-start">
+                      <span className="text-muted-foreground">Tags</span>
+                      <div className="flex flex-wrap gap-2 justify-end">
+                        {artwork.tags.map((tag) => (
+                          <Badge key={tag} variant="secondary" className="text-xs">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* License Options Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle>License Options</CardTitle>
+              <CardDescription>Select the license that best fits your needs</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <RadioGroup defaultValue={defaultOption.id} className="space-y-5">
+                {artwork.licenseOptions.map((option) => (
+                  <div
+                    key={option.id}
+                    className="flex items-start space-x-4 rounded-lg border p-4 hover:bg-accent/50 transition-colors"
+                  >
+                    <RadioGroupItem value={option.id} id={option.id} className="mt-1" />
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor={option.id} className="text-lg font-semibold cursor-pointer">
+                          {option.name}
+                        </Label>
+                        <span className="text-2xl font-bold">${option.price}</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{option.description}</p>
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="secondary" className="text-xs">
+                          Duration: {option.duration}
+                        </Badge>
+                        {option.restrictions.map((restriction, idx) => (
+                          <Badge key={idx} variant="outline" className="text-xs">
+                            {restriction}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </RadioGroup>
+            </CardContent>
+          </Card>
+
+          {/* Licensing Information Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Licensing Information</CardTitle>
+              <CardDescription>Provide details about your intended use</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="company">Company / Organization *</Label>
+                  <Input id="company" placeholder="Acme Corp" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="website">Website</Label>
+                  <Input id="website" placeholder="https://example.com" />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="usage">Intended Usage *</Label>
+                <Textarea
+                  id="usage"
+                  placeholder="Describe how you'll use this artwork (e.g., t-shirts, website banners, app icons)"
+                  className="min-h-[120px]"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="distribution">Distribution Channels</Label>
+                <Textarea
+                  id="distribution"
+                  placeholder="e.g., online store, physical retail, social media"
+                  className="min-h-[100px]"
+                />
+              </div>
+
+              <div className="flex items-start space-x-3 pt-4">
+                <Checkbox id="terms" />
+                <div className="space-y-1 leading-none">
+                  <Label htmlFor="terms" className="text-sm font-medium">
+                    I agree to the licensing terms and conditions *
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    By checking this, you agree to comply with all restrictions of the selected
+                    license.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
-        <h1 className="text-3xl font-bold mb-2">License Artwork</h1>
-        <p className="text-muted-foreground mb-8">
-          Complete your licensing agreement for this artwork
-        </p>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left column */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Artwork Details Card */}
+        {/* Right column - Summary & Payment */}
+        <div className="space-y-8">
+          <div className="lg:sticky lg:top-20">
             <Card>
               <CardHeader>
-                <CardTitle>Artwork Details</CardTitle>
-                <CardDescription>Review the artwork you're licensing</CardDescription>
+                <CardTitle>Order Summary</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex justify-between text-lg">
+                  <span>License Fee ({defaultOption.name})</span>
+                  <span className="font-semibold">${defaultOption.price}.00</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Platform Service Fee</span>
+                  <span>$15.00</span>
+                </div>
+                <Separator />
+                <div className="flex justify-between text-xl font-bold">
+                  <span>Total</span>
+                  <span>${defaultOption.price + 15}.00</span>
+                </div>
+                <p className="text-sm text-muted-foreground pt-2">
+                  Taxes may apply based on your location.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Payment Method</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-col md:flex-row gap-8">
-                  <div className="w-full md:w-1/3 bg-muted/30 rounded-xl overflow-hidden border">
-                    <div className="aspect-square relative">
-                      <Image
-                        src={artwork.imageUrl}
-                        alt={artwork.title}
-                        fill
-                        className="object-contain p-6"
-                        priority
-                        unoptimized
-                      />
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    <h2 className="text-2xl font-bold mb-2">{artwork.title}</h2>
-                    <p className="text-lg text-muted-foreground mb-4">by {artwork.artist}</p>
-                    <p className="mb-6 leading-relaxed">{artwork.description}</p>
+                <Tabs defaultValue="credit-card" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="credit-card">Credit Card</TabsTrigger>
+                    <TabsTrigger value="invoice">Invoice</TabsTrigger>
+                  </TabsList>
 
-                    <div className="space-y-4">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">IP Owner</span>
-                        <span className="font-medium">{artwork.ipOwner}</span>
+                  <TabsContent value="credit-card" className="space-y-4 pt-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="card-number">Card Number</Label>
+                      <Input id="card-number" placeholder="1234 5678 9012 3456" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="expiry">Expiry Date</Label>
+                        <Input id="expiry" placeholder="MM/YY" />
                       </div>
-                      <Separator />
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Base License Type</span>
-                        <span className="font-medium">{artwork.licenseType}</span>
+                      <div className="space-y-2">
+                        <Label htmlFor="cvc">CVC</Label>
+                        <Input id="cvc" placeholder="123" />
                       </div>
-                      <Separator />
-                      <div className="flex justify-between items-start">
-                        <span className="text-muted-foreground">Tags</span>
-                        <div className="flex flex-wrap gap-2 justify-end">
-                          {artwork.tags.map((tag) => (
-                            <Badge key={tag} variant="secondary" className="text-xs">
-                              {tag}
-                            </Badge>
-                          ))}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="card-name">Name on Card</Label>
+                      <Input id="card-name" placeholder="John Doe" />
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="invoice" className="space-y-4 pt-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="billing-email">Billing Email *</Label>
+                      <Input id="billing-email" type="email" placeholder="billing@company.com" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="po-number">Purchase Order Number</Label>
+                      <Input id="po-number" placeholder="PO-123456" />
+                    </div>
+                    <div className="rounded-lg bg-blue-50 p-4">
+                      <div className="flex gap-3">
+                        <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-blue-900">Invoice Payment</p>
+                          <p className="text-sm text-blue-700 mt-1">
+                            Invoices are sent within 1 business day with Net-30 terms. Your license
+                            activates upon payment receipt.
+                          </p>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </div>
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
 
-            {/* License Options Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle>License Options</CardTitle>
-                <CardDescription>Select the license that best fits your needs</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <RadioGroup defaultValue={defaultOption.id} className="space-y-5">
-                  {artwork.licenseOptions.map((option) => (
-                    <div
-                      key={option.id}
-                      className="flex items-start space-x-4 rounded-lg border p-4 hover:bg-accent/50 transition-colors"
-                    >
-                      <RadioGroupItem value={option.id} id={option.id} className="mt-1" />
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label
-                            htmlFor={option.id}
-                            className="text-lg font-semibold cursor-pointer"
-                          >
-                            {option.name}
-                          </Label>
-                          <span className="text-2xl font-bold">${option.price}</span>
-                        </div>
-                        <p className="text-sm text-muted-foreground">{option.description}</p>
-                        <div className="flex flex-wrap gap-2">
-                          <Badge variant="secondary" className="text-xs">
-                            Duration: {option.duration}
-                          </Badge>
-                          {option.restrictions.map((restriction, idx) => (
-                            <Badge key={idx} variant="outline" className="text-xs">
-                              {restriction}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </RadioGroup>
-              </CardContent>
-            </Card>
+            <Button size="lg" className="w-full text-lg py-6">
+              Complete Purchase
+            </Button>
 
-            {/* Licensing Information Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Licensing Information</CardTitle>
-                <CardDescription>Provide details about your intended use</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="company">Company / Organization *</Label>
-                    <Input id="company" placeholder="Acme Corp" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="website">Website</Label>
-                    <Input id="website" placeholder="https://example.com" />
-                  </div>
-                </div>
+            <p className="text-center text-sm text-muted-foreground mt-4">
+              Need assistance?{' '}
+              <Link href="/support" className="text-primary hover:underline">
+                Contact support
+              </Link>
+            </p>
 
-                <div className="space-y-2">
-                  <Label htmlFor="usage">Intended Usage *</Label>
-                  <Textarea
-                    id="usage"
-                    placeholder="Describe how you'll use this artwork (e.g., t-shirts, website banners, app icons)"
-                    className="min-h-[120px]"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="distribution">Distribution Channels</Label>
-                  <Textarea
-                    id="distribution"
-                    placeholder="e.g., online store, physical retail, social media"
-                    className="min-h-[100px]"
-                  />
-                </div>
-
-                <div className="flex items-start space-x-3 pt-4">
-                  <Checkbox id="terms" />
-                  <div className="space-y-1 leading-none">
-                    <Label htmlFor="terms" className="text-sm font-medium">
-                      I agree to the licensing terms and conditions *
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      By checking this, you agree to comply with all restrictions of the selected
-                      license.
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Right column - Summary & Payment */}
-          <div className="space-y-8">
-            <div className="lg:sticky lg:top-20">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Order Summary</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex justify-between text-lg">
-                    <span>License Fee ({defaultOption.name})</span>
-                    <span className="font-semibold">${defaultOption.price}.00</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Platform Service Fee</span>
-                    <span>$15.00</span>
-                  </div>
-                  <Separator />
-                  <div className="flex justify-between text-xl font-bold">
-                    <span>Total</span>
-                    <span>${defaultOption.price + 15}.00</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground pt-2">
-                    Taxes may apply based on your location.
+            <div className="mt-6 rounded-lg bg-green-50 p-4 border border-green-200">
+              <div className="flex gap-3">
+                <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-green-900">Secure & Protected</p>
+                  <p className="text-sm text-green-700 mt-1">
+                    All transactions are encrypted and processed securely. Your data is protected.
                   </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Payment Method</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Tabs defaultValue="credit-card" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
-                      <TabsTrigger value="credit-card">Credit Card</TabsTrigger>
-                      <TabsTrigger value="invoice">Invoice</TabsTrigger>
-                    </TabsList>
-
-                    <TabsContent value="credit-card" className="space-y-4 pt-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="card-number">Card Number</Label>
-                        <Input id="card-number" placeholder="1234 5678 9012 3456" />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="expiry">Expiry Date</Label>
-                          <Input id="expiry" placeholder="MM/YY" />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="cvc">CVC</Label>
-                          <Input id="cvc" placeholder="123" />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="card-name">Name on Card</Label>
-                        <Input id="card-name" placeholder="John Doe" />
-                      </div>
-                    </TabsContent>
-
-                    <TabsContent value="invoice" className="space-y-4 pt-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="billing-email">Billing Email *</Label>
-                        <Input id="billing-email" type="email" placeholder="billing@company.com" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="po-number">Purchase Order Number</Label>
-                        <Input id="po-number" placeholder="PO-123456" />
-                      </div>
-                      <div className="rounded-lg bg-blue-50 p-4">
-                        <div className="flex gap-3">
-                          <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                          <div>
-                            <p className="text-sm font-medium text-blue-900">Invoice Payment</p>
-                            <p className="text-sm text-blue-700 mt-1">
-                              Invoices are sent within 1 business day with Net-30 terms. Your
-                              license activates upon payment receipt.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </TabsContent>
-                  </Tabs>
-                </CardContent>
-              </Card>
-
-              <Button size="lg" className="w-full text-lg py-6">
-                Complete Purchase
-              </Button>
-
-              <p className="text-center text-sm text-muted-foreground mt-4">
-                Need assistance?{' '}
-                <Link href="/support" className="text-primary hover:underline">
-                  Contact support
-                </Link>
-              </p>
-
-              <div className="mt-6 rounded-lg bg-green-50 p-4 border border-green-200">
-                <div className="flex gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium text-green-900">Secure & Protected</p>
-                    <p className="text-sm text-green-700 mt-1">
-                      All transactions are encrypted and processed securely. Your data is protected.
-                    </p>
-                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </LayoutWrapper>
+    </div>
   );
 }

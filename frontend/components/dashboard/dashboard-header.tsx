@@ -47,10 +47,10 @@ export default function DashboardHeader({ onMenuClick }: { onMenuClick?: () => v
 
         {/* CENTER SEARCH (HIDDEN ON SMALL) */}
         <div className="flex-1 hidden md:flex justify-center">
-          <div className="relative w-full max-w-xl">
+          {/* <div className="relative w-full max-w-xl">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Search artworks, users, brands..." className="pl-9 h-9 w-full" />
-          </div>
+          </div> */}
         </div>
 
         {/* RIGHT */}

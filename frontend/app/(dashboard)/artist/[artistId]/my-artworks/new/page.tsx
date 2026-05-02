@@ -9,7 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Loader2, Upload, AlertCircle, CheckCircle2, X } from 'lucide-react';
-
+import { useAuth } from '@/store/AuthContext';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -74,7 +74,10 @@ export default function NewContestSubmissionPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const contestId = searchParams.get('contest');
+  const { user, loading: authLoading } = useAuth();
 
+  const username = user?.username?.toLowerCase() || 'anonymous';
+  const artistBase = `/artist/${username}`;
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
@@ -178,9 +181,7 @@ export default function NewContestSubmissionPage() {
 
       const artworkResult = (await createArtwork(formData).unwrap()) as any;
       const artwork = artworkResult.artwork;
-      console.log('[DEBUG] Full artworkResult:', artworkResult);
-      console.log('[DEBUG] artworkResult keys:', Object.keys(artworkResult || {}));
-      console.log('[DEBUG] artworkResult.data:', artworkResult?.data);
+
       if (!artwork?.id) {
         console.error('[ERROR] No id found in artwork response', {
           fullResponse: artworkResult,
@@ -188,8 +189,6 @@ export default function NewContestSubmissionPage() {
         });
         throw new Error('Artwork created successfully but no ID was returned');
       }
-
-      console.log('[SUCCESS] Artwork ID:', artwork.id);
 
       if (!artwork?.id) {
         throw new Error('Artwork created successfully but no ID was returned');
@@ -223,8 +222,7 @@ export default function NewContestSubmissionPage() {
       // Success feedback + redirect
       // You can add a toast / full-page success here if preferred
       setTimeout(() => {
-        router.push(`/opportunities/${contestId}`);
-        // Alternative: router.push(`/contests/${contestId}/entries/${newEntryId}`) if your API returns entry
+        router.push(`/${artistBase}/my-artworks`);
       }, 1800);
     } catch (err: any) {
       console.error('Contest submission failed:', err);

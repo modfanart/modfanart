@@ -19,11 +19,11 @@ export function LayoutWrapper({ children }: LayoutWrapperProps) {
     pathname?.startsWith('/license-requests');
 
   return (
-    <div className="flex min-h-screen flex-col">
-      {!isDashboardPath && <MainNav />}
-
-      <main className="flex-1">{children}</main>
-
+    <div className="flex flex-col flex-1">
+      {' '}
+      {/* ✅ FIXED */}
+      {!isDashboardPath && <MainNav />} {/* ✅ SAFE */}
+      {children}
       {!isDashboardPath && <SiteFooter />}
     </div>
   );
