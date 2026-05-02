@@ -27,3 +27,4 @@ yarn-error.log*
 next-env.d.ts.next/
 node_modules/
 .next/cache/
+mod-backend-secret.pem
