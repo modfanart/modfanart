@@ -14,9 +14,10 @@ export function LayoutWrapper({ children }: LayoutWrapperProps) {
   const pathname = usePathname();
 
   const isDashboardPath =
-    pathname?.startsWith('/dashboard') ||
-    pathname?.startsWith('/submissions') ||
-    pathname?.startsWith('/license-requests');
+    pathname?.startsWith('/admin') ||
+    pathname?.startsWith('/artist') ||
+    pathname?.startsWith('/judge') ||
+    pathname?.startsWith('/brand-manager');
 
   return (
     <div className="flex flex-col flex-1">
