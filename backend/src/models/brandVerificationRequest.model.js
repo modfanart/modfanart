@@ -1,11 +1,21 @@
 // src/models/brandVerificationRequest.model.js
 const { db } = require('../config');
 const { sql } = require('kysely');
-const { v4: uuidv4 } = require('uuid');
+
+// Lazy-loaded uuid (fix for uuid ESM-only issue)
+let uuidv4;
+
+async function getUuid() {
+  if (!uuidv4) {
+    const mod = await import('uuid');
+    uuidv4 = mod.v4;
+  }
+  return uuidv4;
+}
 
 class BrandVerificationRequest {
   static async create(data) {
-    const id = data.id || uuidv4();
+    const id = data.id || (await getUuid())();
 
     const [request] = await db
       .insertInto('brand_verification_requests')
