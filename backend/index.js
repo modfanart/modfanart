@@ -46,7 +46,7 @@ app.get('/health', (req, res) => {
 const errorHandler = require('./src/middleware/error'); // adjust path
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Backend running on port ${PORT}`);
 });
