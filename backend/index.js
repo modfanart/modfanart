@@ -20,7 +20,7 @@ app.use(express.json());
 app.use(requestLogger);
 app.use(attachDb);
 // Routes
-
+/** */
 app.use('/api/tags', require('./src/routes/tagging.routes'));
 app.use('/api/contest', require('./src/routes/contest.routes'));
 app.use('/api/order', require('./src/routes/order.routes'));
