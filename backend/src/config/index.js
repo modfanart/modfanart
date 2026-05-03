@@ -1,4 +1,4 @@
-require('dotenv').config();
+import 'dotenv/config';
 
 import { Kysely, PostgresDialect } from 'kysely';
 import { Pool } from 'pg';
