@@ -1,49 +1,66 @@
-name: Deploy to EC2
+name: Deploy modfanart backend to AWS EC2
 
 on:
   push:
-    branches: ["main"]
+    branches:
+      - main
     paths:
       - "backend/**"
-      - ".github/workflows/**"
 
 jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: modfanart
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t ghcr.io/modfanart/modfanart-backend:latest \
+            ./backend
+
+      - name: Push Docker image
+        run: |
+          docker push ghcr.io/modfanart/modfanart-backend:latest
+
   deploy:
+    needs: build-and-push
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Build Docker Image
-        run: docker build -t node-app ./backend
-
-      - name: Save Docker Image
-        run: docker save node-app > node-app.tar
-
-      - name: Copy Image to EC2
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          source: "node-app.tar"
-          target: "/home/ubuntu/"
-
-      - name: Deploy on EC2
+      - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
+          username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            docker stop node-app || true
-            docker rm node-app || true
+            set -e
 
-            docker load < node-app.tar
+            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io \
+              -u modfanart --password-stdin
+
+            docker rm -f modfanart-backend || true
+
+            docker pull ghcr.io/modfanart/modfanart-backend:latest
 
             docker run -d \
-              --name node-app \
+              --name modfanart-backend \
               -p 5000:5000 \
               --env-file /home/ubuntu/.env \
-              node-app
+              ghcr.io/modfanart/modfanart-backend:latest
+
+            docker image prune -f
