@@ -1,4 +1,4 @@
-import 'dotenv/config';
+require('dotenv').config();
 
 import { Kysely, PostgresDialect } from 'kysely';
 import { Pool } from 'pg';
@@ -8,10 +8,10 @@ import { S3Client } from '@aws-sdk/client-s3';
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   max: 10,
-ssl:
-  process.env.NODE_ENV === 'production'
-    ? { rejectUnauthorized: true }
-    : false,
+  ssl:
+    process.env.NODE_ENV === 'production'
+      ? { rejectUnauthorized: true }
+      : false,
 });
 
 // Connection logs
