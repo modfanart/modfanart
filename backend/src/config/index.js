@@ -1,8 +1,8 @@
-import 'dotenv/config';
+require('dotenv/config');
 
-import { Kysely, PostgresDialect } from 'kysely';
-import { Pool } from 'pg';
-import { S3Client } from '@aws-sdk/client-s3';
+const { Kysely, PostgresDialect } = require('kysely');
+const { Pool } = require('pg');
+const { S3Client } = require('@aws-sdk/client-s3');
 
 // PostgreSQL pool
 const pool = new Pool({
@@ -30,6 +30,7 @@ pool.on('error', (err) => {
   try {
     const client = await pool.connect();
     console.log('🎉 Successfully connected to PostgreSQL database!');
+
     const res = await client.query('SELECT current_database(), version()');
 
     console.log(`📍 Connected to: ${res.rows[0].current_database}`);
@@ -42,7 +43,7 @@ pool.on('error', (err) => {
   }
 })();
 
-// Kysely instance (no generic typing in JS)
+// Kysely instance
 const db = new Kysely({
   dialect: new PostgresDialect({ pool }),
 });
@@ -52,7 +53,7 @@ let s3Client = null;
 
 try {
   s3Client = new S3Client({
-    region: process.env.AWS_REGION || 'eu-north-1', // or your actual region
+    region: process.env.AWS_REGION || 'eu-north-1',
 
     credentials: {
       accessKeyId: process.env.AWS_ACCESS_KEY_ID,
@@ -65,4 +66,4 @@ try {
   console.warn('⚠️ S3 client failed (missing credentials?)');
 }
 
-export { db, s3Client, pool };
+module.exports = { db, s3Client, pool };
