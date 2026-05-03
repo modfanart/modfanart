@@ -1,19 +1,11 @@
 // src/models/collections.model.js
-import { db } from '../config/index.js'; // your Kysely DB instance
-import { sql } from 'kysely';
+const { db } = require('../config/index.js'); // your Kysely DB instance
+const { sql } = require('kysely');
 
 /**
  * Create a new collection
- * @param {Object} data
- * @param {string} data.owner_type
- * @param {string} data.owner_id
- * @param {string} data.name
- * @param {string} data.slug
- * @param {string} [data.description]
- * @param {boolean} [data.is_public]
- * @param {string} [data.cover_image_url]
  */
-export async function createCollection(data) {
+async function createCollection(data) {
   const result = await db
     .insertInto('collections')
     .values({
@@ -37,7 +29,7 @@ export async function createCollection(data) {
 /**
  * Get all collections for a given owner
  */
-export async function getCollectionsByOwner(owner_type, owner_id) {
+async function getCollectionsByOwner(owner_type, owner_id) {
   return db
     .selectFrom('collections')
     .selectAll()
@@ -51,7 +43,7 @@ export async function getCollectionsByOwner(owner_type, owner_id) {
 /**
  * Get a single collection by id
  */
-export async function getCollectionById(id) {
+async function getCollectionById(id) {
   return db
     .selectFrom('collections')
     .selectAll()
@@ -63,7 +55,7 @@ export async function getCollectionById(id) {
 /**
  * Update collection
  */
-export async function updateCollection(id, updates) {
+async function updateCollection(id, updates) {
   return db
     .updateTable('collections')
     .set({
@@ -78,7 +70,7 @@ export async function updateCollection(id, updates) {
 /**
  * Soft delete collection
  */
-export async function deleteCollection(id) {
+async function deleteCollection(id) {
   return db
     .updateTable('collections')
     .set({
@@ -87,3 +79,12 @@ export async function deleteCollection(id) {
     .where('id', '=', id)
     .executeTakeFirst();
 }
+
+// Export all functions (CommonJS style)
+module.exports = {
+  createCollection,
+  getCollectionsByOwner,
+  getCollectionById,
+  updateCollection,
+  deleteCollection,
+};
