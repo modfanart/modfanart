@@ -1,26 +1,62 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const path = require('path');
+const rateLimit = require('express-rate-limit');
+
 const attachDb = require('./src/middleware/attachDb');
 const requestLogger = require('./src/middleware/requestLogger');
+
 dotenv.config();
 
 const app = express();
 
+/* ---------------- RATE LIMITER ---------------- */
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 mins
+  max: 100, // limit each IP
+  message: {
+    status: 429,
+    message: 'Too many requests, please try again later.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+/* Apply globally */
+app.use(limiter);
+
+/* ---------------- CORS ---------------- */
 app.use(
   cors({
-    origin:
-      process.env.FRONTEND_URL ||
-      'http://localhost:3000' ||
-      'http://localhost:5173',
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    credentials: true,
   })
 );
+
+/* ---------------- MIDDLEWARE ---------------- */
 app.use(express.json());
-// ← Add this line
 app.use(requestLogger);
 app.use(attachDb);
-// Routes
-/** */
+
+/* ---------------- STATIC (index.html) ---------------- */
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+/* ---------------- HEALTH ---------------- */
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    uptime: process.uptime(),
+    timestamp: Date.now(),
+    env: process.env.NODE_ENV || 'dev',
+  });
+});
+
+/* ---------------- ROUTES ---------------- */
 app.use('/api/tags', require('./src/routes/tagging.routes'));
 app.use('/api/contest', require('./src/routes/contest.routes'));
 app.use('/api/order', require('./src/routes/order.routes'));
@@ -37,16 +73,14 @@ app.use('/api/search', require('./src/routes/search.routes'));
 app.use('/api/payout', require('./src/routes/payout.routes'));
 app.use('/api/webhook', require('./src/routes/webhooks'));
 app.use('/api/notifications', require('./src/routes/notification.routes'));
-// Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', env: process.env.NODE_ENV || 'dev' });
-});
 
-// Global error handler (last)
-const errorHandler = require('./src/middleware/error'); // adjust path
+/* ---------------- ERROR HANDLER ---------------- */
+const errorHandler = require('./src/middleware/error');
 app.use(errorHandler);
 
-const PORT = 3000;
+/* ---------------- SERVER ---------------- */
+const PORT = process.env.PORT || 3000;
+
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Backend running on port ${PORT}`);
+  console.log(`🚀 Backend running on port ${PORT}`);
 });
