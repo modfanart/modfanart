@@ -80,6 +80,15 @@ export default function OpportunitiesPage() {
   return (
     <LayoutWrapper>
       <div className="container py-10 lg:py-14">
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-2xl font-bold tracking-tight">Opportunities</h1>
+          <Link href="/contests/new">
+            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1">
+              New Campaign <span className="text-lg leading-none">+</span>
+            </Button>
+          </Link>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* ---------------- SIDEBAR ---------------- */}
           <aside className="lg:col-span-3">
