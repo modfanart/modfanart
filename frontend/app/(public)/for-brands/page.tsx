@@ -17,6 +17,17 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
+import underline from '@/assets/images/icons/underline.png';
+import star2 from '@/assets/images/icons/star2.png';
+import guideline1 from '@/assets/images/icons/guideline1.png';
+import jobapp1 from '@/assets/images/icons/jobapp1.png';
+import certificate1 from '@/assets/images/icons/certificate1.png';
+import badge5 from '@/assets/images/icons/badge5.png';
+import marketing1 from '@/assets/images/icons/marketing1.png';
+import ipAddress1 from '@/assets/images/icons/ipaddress1.png';
+
+
+
 // ── SafeImage (same pattern as homepage) ──────────────────────────────────────
 function SafeImage({ src, alt = '', fill = false, className = '', ...rest }: any) {
   const isEmpty = !src || String(src).trim() === '';
@@ -135,8 +146,13 @@ export default function ForBrandsPage() {
 
           <p className="mt-6 text-lg font-medium">
             The result is a{' '}
-            <span className="text-purple-500 underline decoration-purple-400 decoration-wavy underline-offset-4">
+            <span className="relative inline-block text-purple-500">
               lose-lose situation,
+              <img
+                src={underline.src}
+                alt=""
+                className="absolute left-0 -bottom-2 w-full"
+              />
             </span>{' '}
             for brands and for fans.
           </p>
@@ -150,7 +166,9 @@ export default function ForBrandsPage() {
             {/* Left text */}
             <div className="flex-1 p-10">
               <div className="flex items-center gap-3 mb-5">
-                <span className="text-purple-500 text-2xl">✳</span>
+                <span className="w-10 h-10 rounded-full bg-white flex items-center justify-center mb-4">
+                    <img src={star2.src} alt="Award 1" className="w-6 h-6" />
+                  </span>
                 <h3 className="text-2xl font-bold">The MOD Approach</h3>
               </div>
               <p className="text-sm text-gray-600 leading-relaxed">
@@ -198,22 +216,22 @@ export default function ForBrandsPage() {
           <div className="mt-14 space-y-10">
             {[
               {
-                icon: <BookOpen size={20} className="text-purple-500" />,
+                icon: <img src={guideline1.src} alt="icon" className="w-5 h-5 object-contain" />,
                 title: 'Set Your Brand Guidelines',
                 body: "You decide what's acceptable, what's off-limits, and what fits your brand. These guidelines shape every submission.",
               },
               {
-                icon: <ShieldCheck size={20} className="text-purple-500" />,
+                icon: <img src={jobapp1.src} alt="icon" className="w-5 h-5 object-contain" />,
                 title: 'Review Submissions',
                 body: "Artists submit work tied to your campaign. Submissions are screened using MOD's AI-powered review system, which automatically evaluates designs against your brand guidelines, flags potential issues, and shortlists relevant work before it reaches your dashboard.\n\nYou can rely on intelligent automation while retaining full human approval authority at any time and at your discretion.",
               },
               {
-                icon: <CheckCircle2 size={20} className="text-purple-500" />,
+                icon: <img src={badge5.src} alt="icon" className="w-5 h-5 object-contain" />,
                 title: 'License Approved Art',
                 body: 'You choose what moves forward. Approved designs are licensed under terms you control, including usage and royalties.',
               },
               {
-                icon: <Receipt size={20} className="text-purple-500" />,
+                icon: <img src={certificate1.src} alt="icon" className="w-5 h-5 object-contain" />,
                 title: 'Generate Licensed Revenue',
                 body: 'Approved artwork becomes official merchandise. Sales are tracked, royalties are distributed, and everything stays transparent. At every step, control stays with you.',
               },
@@ -240,7 +258,7 @@ export default function ForBrandsPage() {
       </section>
 
       {/* ══════════════════════ WHY BRANDS CHOOSE MOD ════════════════════════ */}
-      <section className="bg-white py-16 px-6">
+      <section className="bg-white px-6">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-4xl md:text-5xl font-black tracking-tight text-center mb-10">
             WHY <span className="text-purple-500">BRANDS</span> CHOOSE MOD
@@ -307,19 +325,19 @@ export default function ForBrandsPage() {
           <div className="mt-12 flex flex-col md:flex-row items-center justify-center gap-3">
             {[
               {
-                icon: <Megaphone size={28} className="text-purple-500" />,
+                icon: <img src={marketing1.src} alt="icon" className="w-8 h-8 object-contain" />,
                 text: 'A brand launches a fan art campaign with clear guidelines.',
               },
               {
-                icon: <MapPin size={28} className="text-purple-500" />,
+                icon: <img src={ipAddress1.src} alt="icon" className="w-8 h-8 object-contain" />,
                 text: 'Artists submit designs inspired by the IP.',
               },
               {
-                icon: <BadgeCheck size={28} className="text-purple-500" />,
+                icon: <img src={badge5.src} alt="icon" className="w-8 h-8 object-contain" />,
                 text: 'Submissions are reviewed and approved by the brand.',
               },
               {
-                icon: <Scroll size={28} className="text-purple-500" />,
+                icon: <img src={certificate1.src} alt="icon" className="w-8 h-8 object-contain" />,
                 text: 'Selected artwork becomes officially licensed merchandise.',
               },
             ].map(({ icon, text }, i) => (

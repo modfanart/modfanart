@@ -3,6 +3,12 @@
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, Shield, Coins, FileCheck, Handshake, Ribbon, Palette } from 'lucide-react';
+import award1 from '@/assets/images/icons/award1.png';
+import license1 from '@/assets/images/icons/license1.png';
+import palette2 from '@/assets/images/icons/palette2.png';
+
+
+
 
 // ── SafeImage ──────────────────────────────────────────────────────────────────
 function SafeImage({ src, alt = '', fill = false, className = '', ...rest }: any) {
@@ -51,7 +57,7 @@ export default function AboutPage() {
         />
         <div className="absolute inset-0 bg-black/65" />
 
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white px-4 z-20">
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white px-4 mt-14 z-20">
           <h1 className="text-5xl md:text-6xl font-black leading-tight tracking-tight">
             WE BELIEVE FANDOM
           </h1>
@@ -90,8 +96,8 @@ export default function AboutPage() {
         <div className="max-w-5xl mx-auto">
           {/* Title */}
           <div className="flex items-center justify-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
-              <Shield size={20} className="text-purple-500" />
+            <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0">
+              <img src={award1.src} alt="Info" className="w-10 h-10" />
             </div>
             <h2 className="text-4xl md:text-5xl font-black tracking-tight">WHY MOD WAS CREATED</h2>
           </div>
@@ -138,7 +144,7 @@ export default function AboutPage() {
       </section>
 
       {/* ═══════════════════════ WHAT MOD ACTUALLY DOES ════════════════════════ */}
-      <section className="bg-white py-20 px-6 ">
+      <section className="bg-white py-12 px-6 ">
         <div className="max-w-3xl mx-auto text-center">
           <h2 className="text-4xl md:text-5xl font-black tracking-tight">
             WHAT <span className="text-purple-500">MOD</span> ACTUALLY DOES
@@ -232,7 +238,7 @@ export default function AboutPage() {
               {/* Left column */}
               <div className="flex flex-col gap-3 mt-8">
                 <div className="w-[160px] h-[160px] bg-purple-100 rounded-2xl flex items-center justify-center">
-                  <Ribbon size={48} className="text-purple-500" />
+                  <img src={license1.src} alt="Info" className="w-16 h-16" />
                 </div>
                 <div className="relative w-[160px] h-[160px] rounded-2xl overflow-hidden bg-gray-200">
                   <SafeImage
@@ -255,7 +261,7 @@ export default function AboutPage() {
                   />
                 </div>
                 <div className="w-[160px] h-[160px] bg-purple-100 rounded-2xl flex items-center justify-center">
-                  <Palette size={48} className="text-purple-500" />
+                  <img src={palette2.src} alt="Info" className="w-16 h-16" />
                 </div>
               </div>
             </div>
