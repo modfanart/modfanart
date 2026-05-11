@@ -49,7 +49,7 @@ export default function HomePage() {
   ];
   return (
     <LayoutWrapper>
-      <main className="-mt-32 w-full overflow-x-hidden">
+      <main className="w-full overflow-x-hidden">
         {/* ================= HERO ================= */}
         <section className="relative w-full h-[80vh] min-h-[420px] overflow-hidden">
           {/* BG */}
