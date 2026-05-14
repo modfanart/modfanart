@@ -24,7 +24,7 @@ import jobapp1 from '@/assets/images/icons/jobapp1.png';
 import certificate1 from '@/assets/images/icons/certificate1.png';
 import badge5 from '@/assets/images/icons/badge5.png';
 import marketing1 from '@/assets/images/icons/marketing1.png';
-import ipAddress1 from '@/assets/images/icons/ipaddress1.png';
+import ipAddress1 from '@/assets/images/icons/ipAddress1.png';
 
 
 
