@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { LayoutWrapper } from "@/components/layout-wrapper";
 import { useRouter } from 'next/navigation';
 import {
   UserCircle,
@@ -20,6 +19,15 @@ import Link from 'next/link';
 import star2 from "@/assets/images/icons/star2.png";
 import badge5 from "@/assets/images/icons/badge5.png";
 import license1 from "@/assets/images/icons/license1.png";
+
+//art
+import artist1 from "@/assets/images/art/devil_brawlball.png";
+import artist2 from "@/assets/images/art/basil-tulip-1.png";
+import artist3 from "@/assets/images/art/inana94-1.png";
+import artist4 from "@/assets/images/art/god_enki.png";
+import artist5 from "@/assets/images/art/anubis-int.jpg";
+import artist6 from "@/assets/images/art/heavy-metal-mummy.jpg";
+
 
 
 
@@ -83,12 +91,12 @@ const opportunityImages = [
 
 // ── Artist cards placeholder data ─────────────────────────────────────────────
 const artistCards = [
-  { src: "", name: "Jake Muller",   brand: "Brand Name" },
-  { src: "", name: "Katie Fang",    brand: "Brand Name" },
-  { src: "", name: "Derek Cooper",  brand: "Brand Name" },
-  { src: "", name: "Kevin Richner", brand: "Brand Name" },
-  { src: "", name: "Jake Raven",    brand: "Brand Name" },
-  { src: "", name: "Stacey Carter", brand: "Brand Name" },
+  { src: artist1.src, name: "Knauxic",   brand: "Brawl Ball LLC" },
+  { src: artist2.src, name: "Knauxic",    brand: "Brawl Ball LLC" },
+  { src: artist3.src, name: "SHA",  brand: "Venus Ventures LLC" },
+  { src: artist4.src, name: "STL Illustrations", brand: "Venus Ventures LLC" },
+  { src: artist5.src, name: "Red/022",    brand: "Mod INC" },
+  { src: artist6.src, name: "Isaac Varela", brand: "Mod INC" },
 ];
 
 // ── Main Page ──────────────────────────────────────────────────────────────────
