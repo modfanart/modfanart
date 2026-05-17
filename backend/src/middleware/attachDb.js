@@ -1,7 +1,9 @@
-// src/middleware/attachDb.js   (or db.middleware.js)
-const { db } = require('../config'); // ← your Kysely instance
+// src/middleware/attachDb.js
+const { db } = require('../config');
 
 module.exports = function attachDb(req, res, next) {
-  req.db = db;
+  if (!req.db) {
+    req.db = db;
+  }
   next();
 };
