@@ -7,7 +7,7 @@ import { ThemeProvider } from '@/components/layouts/theme-provider';
 import { DevToolsWrapper } from '@/components/dev/dev-tools-wrapper';
 import { Providers } from '@/store/Providers';
 import { AuthProvider } from '@/store/AuthContext';
-
+import { LayoutWrapper } from '@/components/layouts/layout-wrapper';
 const fontSans = FontSans({
   subsets: ['latin'],
   variable: '--font-sans',
@@ -33,7 +33,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <AuthProvider>
             <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
               <DevToolsWrapper showDebugTools={process.env.NODE_ENV === 'development'}>
-                  {children}
+                {/* ✅ WRAP HERE */}
+                <LayoutWrapper>{children}</LayoutWrapper>
+
                 <Toaster />
               </DevToolsWrapper>
             </ThemeProvider>

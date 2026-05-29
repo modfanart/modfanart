@@ -2,6 +2,7 @@
 
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type { RootState } from '@/store'; // ← import RootState for type safety
+import { API_BASE_URL } from '..';
 
 // ────────────────────────────────────────────────
 // Types (you can move these to a separate types file)
@@ -72,7 +73,7 @@ interface ModerationQueueItem {
 export const adminApi = createApi({
   reducerPath: 'adminApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: '/api', // or process.env.NEXT_PUBLIC_API_URL
+    baseUrl: `${API_BASE_URL}`, // or process.env.NEXT_PUBLIC_API_URL
     prepareHeaders: (headers, { getState }) => {
       // More flexible — support different auth slice shapes
       const token =

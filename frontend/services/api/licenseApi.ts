@@ -1,5 +1,6 @@
 // src/services/api/licensesApi.ts
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { API_BASE_URL } from '..';
 
 export interface License {
   id: string;
@@ -54,7 +55,7 @@ export const licensesApi = createApi({
   reducerPath: 'licensesApi',
 
   baseQuery: fetchBaseQuery({
-    baseUrl: '/api/licenses',
+    baseUrl: `${API_BASE_URL}/licenses`,
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as any)?.auth?.accessToken;
       if (token) {

@@ -1,5 +1,6 @@
 // src/services/api/favoritesApi.ts
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { API_BASE_URL } from '..';
 
 /**
  * Minimal artwork shape aligned with ArtworkRow
@@ -32,7 +33,7 @@ export interface FavoriteToggleResponse {
 export const favoritesApi = createApi({
   reducerPath: 'favoritesApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: '/api',
+    baseUrl: `${API_BASE_URL}`,
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as any)?.auth?.accessToken;
       if (token) {

@@ -1,5 +1,6 @@
 // src/services/api/artworkApi.ts
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { API_BASE_URL } from '..';
 
 // ────────────────────────────────────────────────
 // Types — aligned with real API response
@@ -100,7 +101,7 @@ const artworkApi = createApi({
   reducerPath: 'artworkApi',
 
   baseQuery: fetchBaseQuery({
-    baseUrl: '/api',
+    baseUrl: `${API_BASE_URL}`,
     credentials: 'include',
     prepareHeaders: (headers, { getState }) => {
       const token =

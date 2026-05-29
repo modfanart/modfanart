@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { API_BASE_URL } from '..';
 
 /**
  * ─────────────────────────────────────────────────────────────
@@ -215,7 +216,7 @@ export interface CurrentUserResponse {
 export const userApi = createApi({
   reducerPath: 'userApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: '/api/users',
+    baseUrl: `${API_BASE_URL}/users`,
     prepareHeaders: (headers, { getState }) => {
       const state = getState() as any;
       const tokenFromState = state?.auth?.accessToken;

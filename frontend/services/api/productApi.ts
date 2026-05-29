@@ -1,5 +1,6 @@
 // src/services/api/productsApi.ts
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { API_BASE_URL } from '..';
 
 export interface Product {
   id: string;
@@ -84,7 +85,7 @@ export interface UpdateProductRequest {
 export const productsApi = createApi({
   reducerPath: 'productsApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: '/api/products',
+    baseUrl: `${API_BASE_URL}/products`,
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as any)?.auth?.accessToken;
       if (token) {

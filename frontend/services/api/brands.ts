@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { API_BASE_URL } from '..';
 
 /* =========================================================
    TYPES
@@ -84,7 +85,7 @@ export const brandApi = createApi({
   reducerPath: 'brandApi',
 
   baseQuery: fetchBaseQuery({
-    baseUrl: '/api/brands',
+    baseUrl: `${API_BASE_URL}/brands`,
     credentials: 'include',
     prepareHeaders: (headers) => {
       const token = localStorage.getItem('accessToken') || localStorage.getItem('token');

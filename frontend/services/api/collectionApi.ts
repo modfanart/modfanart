@@ -1,6 +1,7 @@
 // src/services/api/collectionApi.ts
 
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { API_BASE_URL } from '..';
 export interface CollectionRow {
   id: string;
   owner_type: 'user' | 'brand';
@@ -26,7 +27,7 @@ export interface CollectionItemRow {
 
 // Optional: if you have a base query with auth token handling
 const baseQuery = fetchBaseQuery({
-  baseUrl: '/api',
+  baseUrl: `${API_BASE_URL}`,
   prepareHeaders: (headers) => {
     const token = localStorage.getItem('accessToken');
     if (token) {

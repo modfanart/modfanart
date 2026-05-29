@@ -1,5 +1,6 @@
 // src/services/api/rolesApi.ts
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { API_BASE_URL } from '..';
 
 /**
  * ─────────────────────────────────────────────────────────────
@@ -49,7 +50,7 @@ export interface UserRole {
 export const rolesApi = createApi({
   reducerPath: 'rolesApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: '/api/roles',
+    baseUrl: `${API_BASE_URL}/roles`,
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as any)?.auth?.accessToken;
       if (token) {
