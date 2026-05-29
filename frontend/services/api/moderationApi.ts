@@ -1,5 +1,6 @@
 // src/services/api/moderationApi.ts
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { API_BASE_URL } from '..';
 
 /**
  * Aligned with ModerationQueueRow + UserViolationRow
@@ -54,7 +55,7 @@ export interface ModerationMetrics {
 export const moderationApi = createApi({
   reducerPath: 'moderationApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: '/api/moderation',
+    baseUrl: `${API_BASE_URL}/moderation`,
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as any)?.auth?.accessToken;
       if (token) {

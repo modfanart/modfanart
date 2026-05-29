@@ -3,6 +3,7 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type { BaseQueryFn, FetchArgs, FetchBaseQueryError } from '@reduxjs/toolkit/query';
 import { setCredentials, logout } from '@/services/api/features/authSlice'; // ← make sure this import is correct
 import type { RootState } from '@/store'; // ← import RootState for type safety
+import { API_BASE_URL } from '..';
 
 // ────────────────────────────────────────────────
 // Full User shape aligned with UserRow from src/db/types.js
@@ -61,7 +62,7 @@ export interface ResetPasswordRequest {
 // Base query setup
 // ────────────────────────────────────────────────
 const rawBaseQuery = fetchBaseQuery({
-  baseUrl: '/api/auth',
+  baseUrl: `${API_BASE_URL}/auth`,
   credentials: 'include',
   prepareHeaders: (headers, { getState }) => {
     const token = (getState() as RootState)?.auth?.accessToken;
