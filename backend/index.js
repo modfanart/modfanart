@@ -101,7 +101,7 @@ routes.forEach(({ path, module: mod }) => {
 app.use(errorHandler);
 
 // ====================== START SERVER ======================
-const PORT = process.env.PORT || 8080;
+const PORT = 5000;
 
 const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Backend running on port ${PORT}`);
