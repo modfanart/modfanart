@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { API_BASE_URL } from '..';
 
 export interface Notification {
   id: string;
@@ -30,7 +31,7 @@ export interface UnreadCountResponse {
 export const notifyApi = createApi({
   reducerPath: 'notifyApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: '/api/notifications',
+    baseUrl: `${API_BASE_URL}/notifications`,
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as any)?.auth?.accessToken;
       if (token) {

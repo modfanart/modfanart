@@ -1,6 +1,7 @@
 // src/api/searchApi.ts
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import type { GlobalSearchResponse, GlobalSearchParams } from './features/searchTypes'; // ← define these yourself
+import { API_BASE_URL } from '..';
 /**
  * Type for the search response from your backend
  * Adjust fields according to what your globalSearch actually returns
@@ -12,7 +13,7 @@ import type { GlobalSearchResponse, GlobalSearchParams } from './features/search
 export const searchApi = createApi({
   reducerPath: 'searchApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: '/api',
+    baseUrl: `${API_BASE_URL}`,
     credentials: 'include',
     prepareHeaders: (headers, { getState }) => {
       const token =

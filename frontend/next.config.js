@@ -30,32 +30,6 @@ const nextConfig = {
       { protocol: 'https', hostname: 'res.cloudinary.com' },
     ],
   },
-
-  async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination:
-          process.env.NODE_ENV === 'development'
-            ? 'http://localhost:8080/api/:path*'
-            : 'https://modfanart-9x6b.onrender.com/api/:path*',
-      },
-    ];
-  },
-
-  ...(process.env.NODE_ENV === 'production'
-    ? {
-        poweredByHeader: false,
-        compiler: {
-          removeConsole: { exclude: ['error'] },
-        },
-      }
-    : {
-        webpack: (config) => {
-          config.optimization.minimize = false;
-          return config;
-        },
-      }),
 };
 
 export default nextConfig;

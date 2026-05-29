@@ -1,5 +1,6 @@
 // src/services/api/artworkTagsApi.ts
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { API_BASE_URL } from '..';
 
 // ────────────────────────────────────────────────
 // Matches TagRow from src/db/types.js
@@ -51,7 +52,7 @@ const artworkTagsApi = createApi({
   reducerPath: 'artworkTagsApi',
 
   baseQuery: fetchBaseQuery({
-    baseUrl: '/api',
+    baseUrl: `${API_BASE_URL}`,
     prepareHeaders: (headers, { getState }) => {
       // More flexible — support different auth slice shapes
       const token =

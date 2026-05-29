@@ -1,4 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { API_BASE_URL } from '..';
 
 // ────────────────────────────────────────────────
 // Matches CategoryRow exactly from src/db/types.js
@@ -51,7 +52,7 @@ const categoriesApi = createApi({
   reducerPath: 'categoriesApi',
 
   baseQuery: fetchBaseQuery({
-    baseUrl: '/api',
+    baseUrl: `${API_BASE_URL}`,
     prepareHeaders: (headers, { getState }) => {
       const token =
         (getState() as any)?.auth?.accessToken ?? (getState() as any)?.auth?.token ?? null;

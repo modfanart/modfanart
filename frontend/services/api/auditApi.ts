@@ -1,5 +1,6 @@
 // src/services/api/auditApi.ts
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { API_BASE_URL } from '..';
 
 // ────────────────────────────────────────────────
 // Matches AuditedEventRow from src/db/types.js
@@ -54,7 +55,7 @@ const auditApi = createApi({
   reducerPath: 'auditApi',
 
   baseQuery: fetchBaseQuery({
-    baseUrl: '/api',
+    baseUrl: `${API_BASE_URL}`,
     prepareHeaders: (headers, { getState }) => {
       const token =
         (getState() as any)?.auth?.token ?? (getState() as any)?.auth?.accessToken ?? null;

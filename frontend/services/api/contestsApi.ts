@@ -1,5 +1,6 @@
 // src/services/api/contestApi.ts
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { API_BASE_URL } from '..';
 
 // ────────────────────────────────────────────────
 // Core Types
@@ -210,7 +211,7 @@ const contestsApi = createApi({
   reducerPath: 'contestsApi',
 
   baseQuery: fetchBaseQuery({
-    baseUrl: '/api',
+    baseUrl: `${API_BASE_URL}`,
     prepareHeaders: (headers, { getState }) => {
       const token =
         (getState() as any)?.auth?.accessToken ?? (getState() as any)?.auth?.token ?? null;
