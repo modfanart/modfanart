@@ -585,9 +585,9 @@ export function ContactSalesPage() {
                 <div>
                   <h4 className="font-medium">Email</h4>
                   <p className="text-sm text-muted-foreground break-all">
-                    onboarding@modplatform.com
+                    support@modfanofficial.com
                     <br />
-                    support@modplatform.com
+                    team@modfanofficial.com
                   </p>
                 </div>
               </div>
