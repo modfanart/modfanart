@@ -138,13 +138,13 @@ export default function ContactPageClient() {
               <h3 className="text-lg font-medium">Other ways to reach us</h3>
               <div className="mt-2 space-y-2">
                 <p className="text-sm">
-                  <strong>Email:</strong> support@modfanofficial.com
+                  <strong>Email:</strong> support@modplatform.com
                 </p>
                 <p className="text-sm">
-                  <strong>Business Inquiries:</strong> team@modfanofficial.com
+                  <strong>Business Inquiries:</strong> partnerships@modplatform.com
                 </p>
                 <p className="text-sm">
-                  <strong>Address:</strong> 2 Simcoe St S Ste 300, Oshawa, ON L1H 8C1
+                  <strong>Address:</strong> 123 Creative Ave, Suite 456, San Francisco, CA 94103
                 </p>
               </div>
             </CardFooter>

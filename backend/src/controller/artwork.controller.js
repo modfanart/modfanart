@@ -265,7 +265,7 @@ class ArtworkController {
           'status', // ✅ ADD THIS
           'created_at',
         ])
-        .where('status', '=', 'published')
+
         .where('deleted_at', 'is', null)
         .orderBy('created_at', 'desc');
 

@@ -1,10 +1,26 @@
 // src/db/types.ts
-// Database row types for Kysely – use these in your DB interface for full type safety
+import { Generated } from 'kysely';
+
+// =============================================
+// Base Row Types for Kysely
+// =============================================
+
+export interface ContactMessageRow {
+  id: Generated<string>;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  status: 'unread' | 'read' | 'replied' | 'archived';
+  created_at: Generated<string>;
+  updated_at: Generated<string>;
+  deleted_at: string | null;
+}
 
 export interface UserRow {
-  id: string;
+  id: Generated<string>;
   username: string;
-  email: string; // citext in DB
+  email: string;
   email_verified: boolean;
   password_hash: string | null;
   role_id: string;
@@ -15,52 +31,52 @@ export interface UserRow {
   bio: string | null;
   location: string | null;
   website: string | null;
-  payout_method: object | null;
+  payout_method: Record<string, any> | null;
   stripe_connect_id: string | null;
   signup_key_used: string | null;
   last_login_at: string | null;
-  created_at: string;
-  updated_at: string;
+  created_at: Generated<string>;
+  updated_at: Generated<string>;
   deleted_at: string | null;
 }
 
 export interface RoleRow {
-  id: string;
+  id: Generated<string>;
   name: string;
   hierarchy_level: number;
   is_system: boolean;
   permissions: Record<string, boolean>;
-  created_at: string;
+  created_at: Generated<string>;
 }
 
 export interface UserRoleRow {
   user_id: string;
   role_id: string;
   assigned_by: string | null;
-  assigned_at: string;
+  assigned_at: Generated<string>;
 }
 
 export interface RefreshTokenRow {
-  id: string;
+  id: Generated<string>;
   user_id: string;
   token_hash: string;
   expires_at: string;
-  created_at: string;
+  created_at: Generated<string>;
   revoked_at: string | null;
 }
 
 export interface AuthTokenRow {
-  id: string;
+  id: Generated<string>;
   user_id: string;
   type: 'email_verification' | 'password_reset';
   token_hash: string;
   expires_at: string;
   used_at: string | null;
-  created_at: string;
+  created_at: Generated<string>;
 }
 
 export interface BrandVerificationRequestRow {
-  id: string;
+  id: Generated<string>;
   user_id: string;
   company_name: string;
   website: string | null;
@@ -69,12 +85,12 @@ export interface BrandVerificationRequestRow {
   reviewed_by: string | null;
   reviewed_at: string | null;
   notes: string | null;
-  created_at: string;
-  updated_at: string;
+  created_at: Generated<string>;
+  updated_at: Generated<string>;
 }
 
 export interface CategoryRow {
-  id: string;
+  id: Generated<string>;
   name: string;
   slug: string;
   parent_id: string | null;
@@ -82,19 +98,19 @@ export interface CategoryRow {
   icon_url: string | null;
   sort_order: number;
   is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  created_at: Generated<string>;
+  updated_at: Generated<string>;
 }
 
 export interface TagRow {
-  id: string;
+  id: Generated<string>;
   name: string;
   slug: string;
   approved: boolean;
   usage_count: number;
   created_by: string | null;
   approved_by: string | null;
-  created_at: string;
+  created_at: Generated<string>;
 }
 
 export interface TaggingRow {
@@ -102,11 +118,11 @@ export interface TaggingRow {
   taggable_type: string;
   taggable_id: string;
   created_by: string | null;
-  created_at: string;
+  created_at: Generated<string>;
 }
 
 export interface ArtworkRow {
-  id: string;
+  id: Generated<string>;
   creator_id: string;
   title: string;
   description: string | null;
@@ -125,19 +141,26 @@ export interface ArtworkRow {
   moderated_at: string | null;
   views_count: number;
   favorites_count: number;
-  created_at: string;
-  updated_at: string;
+  created_at: Generated<string>;
+  updated_at: Generated<string>;
   deleted_at: string | null;
 }
 
+export interface ArtworkLikeRow {
+  id: Generated<string>;
+  user_id: string;
+  artwork_id: string;
+  created_at: Generated<string>;
+}
+
 export interface ArtworkPricingTierRow {
-  id: string;
+  id: Generated<string>;
   artwork_id: string;
   license_type: 'personal' | 'commercial' | 'exclusive';
   price_inr_cents: number;
   price_usd_cents: number;
   is_active: boolean;
-  created_at: string;
+  created_at: Generated<string>;
 }
 
 export interface ArtworkCategoryRow {
@@ -146,13 +169,13 @@ export interface ArtworkCategoryRow {
 }
 
 export interface ContestRow {
-  id: string;
+  id: Generated<string>;
   brand_id: string;
   title: string;
   slug: string;
   description: string;
   rules: string | null;
-  prizes: Array<{ rank: number; amount_inr?: number; type: string }> | null;
+  prizes: any[] | null; // Array of prize objects
   start_date: string;
   submission_end_date: string;
   voting_end_date: string | null;
@@ -160,11 +183,11 @@ export interface ContestRow {
   status: 'draft' | 'published' | 'live' | 'judging' | 'completed' | 'archived';
   visibility: 'public' | 'private' | 'unlisted';
   max_entries_per_user: number;
-  entry_requirements: object | null;
-  judging_criteria: object | null;
+  entry_requirements: Record<string, any> | null;
+  judging_criteria: Record<string, any> | null;
   winner_announced: boolean;
-  created_at: string;
-  updated_at: string;
+  created_at: Generated<string>;
+  updated_at: Generated<string>;
   deleted_at: string | null;
 }
 
@@ -174,7 +197,7 @@ export interface ContestCategoryRow {
 }
 
 export interface ContestEntryRow {
-  id: string;
+  id: Generated<string>;
   contest_id: string;
   artwork_id: string;
   creator_id: string;
@@ -186,15 +209,15 @@ export interface ContestEntryRow {
   moderation_status: string;
   moderated_by: string | null;
   moderated_at: string | null;
-  created_at: string;
-  updated_at: string;
+  created_at: Generated<string>;
+  updated_at: Generated<string>;
 }
 
 export interface ContestVoteRow {
   entry_id: string;
   user_id: string;
   vote_weight: number;
-  created_at: string;
+  created_at: Generated<string>;
 }
 
 export interface ContestJudgeRow {
@@ -209,11 +232,11 @@ export interface ContestJudgeScoreRow {
   judge_id: string;
   score: number;
   comments: string | null;
-  created_at: string;
+  created_at: Generated<string>;
 }
 
 export interface OrderRow {
-  id: string;
+  id: Generated<string>;
   order_number: string;
   buyer_id: string | null;
   seller_id: string;
@@ -231,23 +254,23 @@ export interface OrderRow {
   invoice_number: string | null;
   paid_at: string | null;
   fulfilled_at: string | null;
-  created_at: string;
-  updated_at: string;
+  created_at: Generated<string>;
+  updated_at: Generated<string>;
 }
 
 export interface OrderItemRow {
-  id: string;
+  id: Generated<string>;
   order_id: string;
   artwork_id: string | null;
   license_type: string | null;
   unit_price_cents: number;
   quantity: number;
   description: string | null;
-  metadata: object | null;
+  metadata: Record<string, any> | null;
 }
 
 export interface RefundRow {
-  id: string;
+  id: Generated<string>;
   order_id: string;
   amount_cents: number;
   reason: string | null;
@@ -255,11 +278,11 @@ export interface RefundRow {
   stripe_refund_id: string | null;
   approved_by: string | null;
   processed_at: string | null;
-  created_at: string;
+  created_at: Generated<string>;
 }
 
 export interface LicenseRow {
-  id: string;
+  id: Generated<string>;
   order_item_id: string;
   artwork_id: string;
   buyer_id: string;
@@ -269,11 +292,11 @@ export interface LicenseRow {
   expires_at: string | null;
   is_active: boolean;
   revoked_at: string | null;
-  created_at: string;
+  created_at: Generated<string>;
 }
 
 export interface ModerationQueueRow {
-  id: string;
+  id: Generated<string>;
   entity_type: string;
   entity_id: string;
   status: string;
@@ -283,12 +306,12 @@ export interface ModerationQueueRow {
   reviewed_at: string | null;
   decision: string | null;
   notes: string | null;
-  created_at: string;
-  updated_at: string;
+  created_at: Generated<string>;
+  updated_at: Generated<string>;
 }
 
 export interface UserViolationRow {
-  id: string;
+  id: Generated<string>;
   user_id: string;
   reported_by: string | null;
   entity_type: string | null;
@@ -299,42 +322,43 @@ export interface UserViolationRow {
   strike_issued: boolean;
   resolved_by: string | null;
   resolved_at: string | null;
-  created_at: string;
+  created_at: Generated<string>;
 }
 
 export interface FavoriteRow {
   user_id: string;
   favoritable_type: string;
   favoritable_id: string;
-  created_at: string;
+  created_at: Generated<string>;
 }
 
 export interface NotificationRow {
-  id: string;
+  id: Generated<string>;
   user_id: string;
   type: string;
   title: string;
   body: string | null;
-  data: object | null;
+  data: Record<string, any> | null;
   read_at: string | null;
-  created_at: string;
+  created_at: Generated<string>;
+  deleted_at: string | null;
 }
 
 export interface AuditedEventRow {
-  id: string;
+  id: Generated<string>;
   actor_id: string | null;
   action: string;
   entity_type: string | null;
   entity_id: string | null;
-  old_values: object | null;
-  new_values: object | null;
+  old_values: Record<string, any> | null;
+  new_values: Record<string, any> | null;
   ip_address: string | null;
   user_agent: string | null;
-  created_at: string;
+  created_at: Generated<string>;
 }
 
 export interface BrandRow {
-  id: string;
+  id: Generated<string>;
   user_id: string;
   name: string;
   slug: string;
@@ -342,13 +366,13 @@ export interface BrandRow {
   logo_url: string | null;
   banner_url: string | null;
   website: string | null;
-  social_links: Record<string, string> | null; // JSONB → object
+  social_links: Record<string, any> | null;
   status: 'active' | 'suspended' | 'pending' | 'deactivated';
   verification_request_id: string | null;
   followers_count: number;
-  created_at: Date;
-  updated_at: Date;
-  deleted_at: Date | null;
+  created_at: Generated<string>;
+  updated_at: Generated<string>;
+  deleted_at: string | null;
 }
 
 export interface BrandArtworkRow {
@@ -356,11 +380,11 @@ export interface BrandArtworkRow {
   artwork_id: string;
   is_featured: boolean;
   sort_order: number;
-  added_at: Date;
+  added_at: Generated<string>;
 }
 
 export interface BrandPostRow {
-  id: string;
+  id: Generated<string>;
   brand_id: string;
   title: string;
   content: string | null;
@@ -370,43 +394,46 @@ export interface BrandPostRow {
   likes_count: number;
   comments_count: number;
   upvotes_count: number;
-  created_at: Date;
-  updated_at: Date;
-  deleted_at: Date | null;
+  created_at: Generated<string>;
+  updated_at: Generated<string>;
+  deleted_at: string | null;
 }
 
 export interface BrandPostLikeRow {
   post_id: string;
   user_id: string;
-  created_at: Date;
+  created_at: Generated<string>;
 }
 
 export interface BrandPostCommentRow {
-  id: string;
+  id: Generated<string>;
   post_id: string;
   user_id: string;
   parent_id: string | null;
   content: string;
   likes_count: number;
-  created_at: Date;
-  updated_at: Date;
-  deleted_at: Date | null;
+  created_at: Generated<string>;
+  updated_at: Generated<string>;
+  deleted_at: string | null;
 }
 
 export interface BrandPostUpvoteRow {
   post_id: string;
   user_id: string;
   vote_weight: number;
-  created_at: Date;
+  created_at: Generated<string>;
 }
 
-export interface BrandFollowerRow {
-  brand_id: string;
+export interface BrandManagerRow {
+  id: Generated<string>;
   user_id: string;
-  followed_at: Date;
+  brand_id: string;
+  role: 'owner' | 'manager' | 'editor';
+  created_at: Generated<string>;
 }
-export interface Collections {
-  id: string;
+
+export interface CollectionRow {
+  id: Generated<string>;
   owner_type: 'user' | 'brand';
   owner_id: string;
   name: string;
@@ -415,56 +442,21 @@ export interface Collections {
   is_public: boolean;
   cover_image_url: string | null;
   sort_order: number;
-  created_at: string;
-  updated_at: string;
+  created_at: Generated<string>;
+  updated_at: Generated<string>;
   deleted_at: string | null;
 }
 
-export interface CollectionItem {
-  id: string;
+export interface CollectionItemRow {
+  id: Generated<string>;
   collection_id: string;
   artwork_id: string;
   sort_order: number;
-  added_at: string;
+  added_at: Generated<string>;
 }
 
-export interface DB {
-  users: UserRow;
-  roles: RoleRow;
-  user_roles: UserRoleRow;
-  refresh_tokens: RefreshTokenRow;
-  auth_tokens: AuthTokenRow;
-  brand_verification_requests: BrandVerificationRequestRow;
-  categories: CategoryRow;
-  tags: TagRow;
-  collections: Collections;
-  collection_items: CollectionItem;
-  taggings: TaggingRow;
-  artwork: ArtworkRow;
-  artwork_pricing_tiers: ArtworkPricingTierRow;
-  artwork_categories: ArtworkCategoryRow;
-  contests: ContestRow;
-  contest_categories: ContestCategoryRow;
-  contest_entries: ContestEntryRow;
-  contest_votes: ContestVoteRow;
-  contest_judges: ContestJudgeRow;
-  contest_judge_scores: ContestJudgeScoreRow;
-  orders: OrderRow;
-  order_items: OrderItemRow;
-  refunds: RefundRow;
-  licenses: LicenseRow;
-  moderation_queue: ModerationQueueRow;
-  user_violations: UserViolationRow;
-  favorites: FavoriteRow;
-  notifications: NotificationRow;
-  audited_events: AuditedEventRow;
-  brands: BrandRow;
-  brand_artworks: BrandArtworkRow;
-  brand_posts: BrandPostRow;
-  brand_post_likes: BrandPostLikeRow;
-  brand_post_comments: BrandPostCommentRow;
-  brand_post_upvotes: BrandPostUpvoteRow;
-  brand_followers: BrandFollowerRow;
-  // If you use composite primary keys or want stricter typing later,
-  // you can replace e.g. UserRow → UserTable (with more specific fields)
+export interface BrandFollowerRow {
+  brand_id: string;
+  user_id: string;
+  followed_at: Generated<string>;
 }
