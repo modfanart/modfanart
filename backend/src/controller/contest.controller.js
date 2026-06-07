@@ -645,25 +645,16 @@ class ContestController {
       const sortField = allowedSort.includes(sort) ? sort : 'start_date';
       const sortDir = order.toLowerCase() === 'asc' ? 'asc' : 'desc';
 
-      const contests = await db
-        .selectFrom('contests as c')
-        .select([
-          'c.*', // includes hero_image & gallery
-          db
-            .selectFrom('contest_entries')
-            .whereRef('contest_entries.contest_id', '=', 'c.id')
-            .select(db.fn.countAll().as('entry_count'))
-            .as('entry_count'),
-        ])
-        .where('c.deleted_at', 'is', null)
-        .where('c.visibility', '=', visibility)
-        .$if(status, (qb) => qb.where('c.status', '=', status))
-        .$if(brand_id, (qb) => qb.where('c.brand_id', '=', brand_id))
-        .orderBy(`c.${sortField}`, sortDir)
-        .limit(perPage)
-        .offset(offset)
-        .execute();
-
+const contests = await db
+  .selectFrom('contests as c')
+  .selectAll('c') // ✅ correct way
+  .select([
+    db
+      .selectFrom('contest_entries')
+      .whereRef('contest_entries.contest_id', '=', 'c.id')
+      .select(db.fn.countAll().as('entry_count'))
+      .as('entry_count'),
+  ])
       // Total count
       let countQuery = db
         .selectFrom('contests')
