@@ -3,15 +3,30 @@ require('dotenv').config();
 const { Kysely, PostgresDialect } = require('kysely');
 const { Pool } = require('pg');
 
-// ==================== POSTGRES POOL (FROM CONNECTION STRING) ====================
-const connectionString =
-  process.env.DATABASE_URL ||
-  'postgres://modapp:Tiger%4073Blaze@mod-postgres:5432/modfanart';
+const isProduction = process.env.NODE_ENV === 'production';
 
-const pool = new Pool({
-  connectionString,
-  max: 10,
-});
+let pool;
+
+if (isProduction) {
+  console.log('🚀 Using VPS PostgreSQL');
+
+  pool = new Pool({
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 5432,
+    user: process.env.DB_USER || 'modfanart',
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME || 'modfanart',
+  });
+} else {
+  console.log('🧪 Using Neon PostgreSQL');
+
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+      rejectUnauthorized: false,
+    },
+  });
+}
 
 pool.on('connect', () => console.log('✅ New database client connected'));
 
@@ -23,7 +38,6 @@ pool.on('error', (err) =>
   console.error('❌ Database pool error:', err.message)
 );
 
-// ==================== TEST DB CONNECTION ====================
 (async () => {
   let client;
 
@@ -44,7 +58,6 @@ pool.on('error', (err) =>
   }
 })();
 
-// ==================== KYSELY ====================
 const db = new Kysely({
   dialect: new PostgresDialect({
     pool,

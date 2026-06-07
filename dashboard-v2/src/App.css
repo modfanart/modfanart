@@ -1,0 +1,77 @@
+/* App-specific styles */
+.sidebar-transition {
+  transition: width 0.2s ease-in-out;
+}
+
+.content-transition {
+  transition: margin-left 0.2s ease-in-out;
+}
+
+/* Card hover effects */
+.card-hover {
+  transition: all 0.2s ease-in-out;
+}
+
+.card-hover:hover {
+  background-color: #27272a;
+}
+
+/* Button styles */
+.btn-primary {
+  @apply bg-white text-black hover:bg-zinc-200 font-medium rounded-md px-4 py-2 transition-all duration-200;
+}
+
+.btn-secondary {
+  @apply bg-zinc-800 text-white hover:bg-zinc-700 font-medium rounded-md px-4 py-2 transition-all duration-200;
+}
+
+/* Input styles */
+.input-dark {
+  @apply bg-zinc-950 border-zinc-800 text-white placeholder-zinc-500 focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-zinc-950;
+}
+
+/* Skeleton loader */
+.skeleton {
+  @apply bg-zinc-800 animate-pulse rounded;
+}
+
+/* Data table styles */
+.data-table {
+  @apply w-full border-collapse;
+}
+
+.data-table th {
+  @apply text-left text-xs font-medium text-zinc-400 uppercase tracking-wider p-3 border-b border-zinc-800;
+}
+
+.data-table td {
+  @apply p-3 border-b border-zinc-800 text-sm text-zinc-300;
+}
+
+.data-table tr:hover {
+  @apply bg-zinc-900/50;
+}
+
+/* Badge variants */
+.badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium border;
+}
+
+/* Modal backdrop */
+.modal-backdrop {
+  @apply fixed inset-0 bg-black/80 backdrop-blur-sm z-50;
+}
+
+/* Sticky header */
+.sticky-header {
+  @apply sticky top-0 bg-zinc-950/90 backdrop-blur-md border-b border-zinc-800 z-40;
+}
+
+/* Grid layouts */
+.dashboard-grid {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4;
+}
+
+.inventory-grid {
+  @apply grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4;
+}

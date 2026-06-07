@@ -73,8 +73,6 @@
     "next-themes": "latest",
     "nodemailer": "latest",
     "path": "latest",
-    "pg": "latest",
-    "pg-native": "latest",
     "react": "^18.3.1",
     "react-day-picker": "latest",
     "react-dom": "^18.3.1",
