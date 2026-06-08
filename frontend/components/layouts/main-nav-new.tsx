@@ -20,10 +20,11 @@ const authLinks = [
 ];
 
 const publicLinks = [
-  { label: 'Home', href: '/' },
-  { label: 'About', href: '/about' },
-  { label: 'Guidelines', href: '/for-brands' },
-  { label: 'Contact', href: '/contact' },
+  { label: "Home", href: "/" },
+  { label: "For Artists", href: "/for-artists" },
+  { label: "For Brands", href: "/for-brands" },
+  { label: "About Us", href: "/about" },
+  { label: "Book Demo", href: "/contact/sales" },
 ];
 
 export default function MainNav() {
@@ -41,7 +42,7 @@ export default function MainNav() {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-8 py-4 backdrop-blur bg-white/70 border-b border-gray-200/60">
+      <nav className="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-8 py-4">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5">
           <Image
@@ -55,7 +56,7 @@ export default function MainNav() {
         </Link>
 
         {/* Center Nav */}
-        <div className="hidden md:flex bg-white/90 backdrop-blur rounded-full px-6 py-2 items-center gap-6 text-sm font-medium border border-gray-200/60">
+        <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur rounded-full px-6 py-2 items-center gap-6 text-sm font-medium border border-gray-200/60">
           {links.map(({ label, href }) => {
             const isActive = pathname === href;
 

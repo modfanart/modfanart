@@ -314,7 +314,7 @@ export default function AboutPage() {
       <section className="bg-white py-20 px-6 text-center">
         <div className="max-w-3xl mx-auto">
           {/* Overlapping avatars */}
-          <div className="flex justify-center mb-6">
+          {/* <div className="flex justify-center mb-6">
             <div className="flex -space-x-3">
               {avatars.map((src, i) => (
                 <div
@@ -325,7 +325,7 @@ export default function AboutPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </div> */}
 
           <h2 className="text-4xl md:text-5xl font-black tracking-tight leading-tight">
             JOIN THE PLATFORM BUILT FOR
@@ -349,7 +349,7 @@ export default function AboutPage() {
             ].map((text, i) => (
               <Button
                 key={i}
-                className="bg-purple-600 hover:bg-purple-700 rounded-full px-6 text-sm flex items-center gap-2"
+                className="bg-purple-600 hover:bg-purple-700 rounded-full px-6 text-sm flex items-center gap-2 cursor-default"
               >
                 <CheckCircle2 size={14} /> {text}
               </Button>
