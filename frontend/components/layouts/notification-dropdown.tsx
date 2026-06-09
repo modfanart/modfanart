@@ -23,11 +23,7 @@ export function NotificationDropdown({ children }: { children: React.ReactNode }
           <div className="flex items-center justify-between p-4 border-b">
             <h3 className="font-semibold">Notifications</h3>
             {notifications.length > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => markAllAsRead()}
-              >
+              <Button variant="ghost" size="sm" onClick={() => markAllAsRead()}>
                 Mark all read
               </Button>
             )}
@@ -44,12 +40,13 @@ export function NotificationDropdown({ children }: { children: React.ReactNode }
             ) : (
               <div className="divide-y">
                 {notifications.map((notif) => (
-                  <div
-                    key={notif.id}
-                    className="p-4 hover:bg-muted/50 transition-colors"
-                  >
+                  <div key={notif.id} className="p-4 hover:bg-muted/50 transition-colors">
                     <div className="font-medium text-sm">{notif.title}</div>
-                    {notif.body && <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{notif.body}</p>}
+                    {notif.body && (
+                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                        {notif.body}
+                      </p>
+                    )}
                     <p className="text-xs text-muted-foreground mt-2">
                       {formatDistanceToNow(new Date(notif.created_at), { addSuffix: true })}
                     </p>
