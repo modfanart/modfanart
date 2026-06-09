@@ -20,11 +20,11 @@ const authLinks = [
 ];
 
 const publicLinks = [
-  { label: "Home", href: "/" },
-  { label: "For Artists", href: "/for-artists" },
-  { label: "For Brands", href: "/for-brands" },
-  { label: "About Us", href: "/about" },
-  { label: "Book Demo", href: "/contact/sales" },
+  { label: 'Home', href: '/' },
+  { label: 'For Artists', href: '/for-artists' },
+  { label: 'For Brands', href: '/for-brands' },
+  { label: 'About Us', href: '/about' },
+  { label: 'Book Demo', href: '/contact/sales' },
 ];
 
 export default function MainNav() {

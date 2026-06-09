@@ -79,7 +79,7 @@ export default function CreateBrandPage() {
         website: values.website?.trim() || null,
         status: 'pending' as const,
         user_id: currentUser.id,
-        logo_url: null,        // Will be updated after creation if needed
+        logo_url: null, // Will be updated after creation if needed
         banner_url: null,
         social_links: null,
         followers_count: 0,

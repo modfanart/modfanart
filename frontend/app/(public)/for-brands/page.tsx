@@ -26,8 +26,6 @@ import badge5 from '@/assets/images/icons/badge5.png';
 import marketing1 from '@/assets/images/icons/marketing1.png';
 import ipAddress1 from '@/assets/images/icons/ipAddress1.png';
 
-
-
 // ── SafeImage (same pattern as homepage) ──────────────────────────────────────
 function SafeImage({ src, alt = '', fill = false, className = '', ...rest }: any) {
   const isEmpty = !src || String(src).trim() === '';
@@ -148,11 +146,7 @@ export default function ForBrandsPage() {
             The result is a{' '}
             <span className="relative inline-block text-purple-500">
               lose-lose situation,
-              <img
-                src={underline.src}
-                alt=""
-                className="absolute left-0 -bottom-2 w-full"
-              />
+              <img src={underline.src} alt="" className="absolute left-0 -bottom-2 w-full" />
             </span>{' '}
             for brands and for fans.
           </p>
@@ -167,8 +161,8 @@ export default function ForBrandsPage() {
             <div className="flex-1 p-10">
               <div className="flex items-center gap-3 mb-5">
                 <span className="w-10 h-10 rounded-full bg-white flex items-center justify-center mb-4">
-                    <img src={star2.src} alt="Award 1" className="w-6 h-6" />
-                  </span>
+                  <img src={star2.src} alt="Award 1" className="w-6 h-6" />
+                </span>
                 <h3 className="text-2xl font-bold">The MOD Approach</h3>
               </div>
               <p className="text-sm text-gray-600 leading-relaxed">

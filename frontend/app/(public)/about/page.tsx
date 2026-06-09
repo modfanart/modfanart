@@ -7,9 +7,6 @@ import award1 from '@/assets/images/icons/award1.png';
 import license1 from '@/assets/images/icons/license1.png';
 import palette2 from '@/assets/images/icons/palette2.png';
 
-
-
-
 // ── SafeImage ──────────────────────────────────────────────────────────────────
 function SafeImage({ src, alt = '', fill = false, className = '', ...rest }: any) {
   const isEmpty = !src || String(src).trim() === '';
