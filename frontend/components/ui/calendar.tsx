@@ -24,15 +24,15 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
 
         nav: 'flex items-center gap-1',
 
-   nav_button_previous: cn(
-  buttonVariants({ variant: 'outline' }),
-  'h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 absolute left-1'
-),
+        nav_button_previous: cn(
+          buttonVariants({ variant: 'outline' }),
+          'h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 absolute left-1'
+        ),
 
-nav_button_next: cn(
-  buttonVariants({ variant: 'outline' }),
-  'h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 absolute right-1'
-),
+        nav_button_next: cn(
+          buttonVariants({ variant: 'outline' }),
+          'h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 absolute right-1'
+        ),
 
         table: 'w-full border-collapse space-y-1',
 
