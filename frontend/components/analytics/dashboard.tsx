@@ -162,7 +162,6 @@ export function AnalyticsDashboard({
                 onSelect={(range) => {
                   handleDateRangeChange(range?.from, range?.to);
                 }}
-                initialFocus
               />
             </PopoverContent>
           </Popover>
