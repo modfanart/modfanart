@@ -592,7 +592,7 @@ export default function BrandGuidelinesPage() {
         </section>
 
         {/* Specific IP Guidelines */}
-        <section>
+        {/* <section>
           <h2 className="text-2xl font-bold mb-6">Popular IP-Specific Guidelines</h2>
           <p className="mb-6">
             Many major IP holders have published their own fan art guidelines. Here are links to
@@ -712,7 +712,7 @@ export default function BrandGuidelinesPage() {
               </AlertDescription>
             </Alert>
           </div>
-        </section>
+        </section> */}
 
         {/* Submission Process */}
         <section>

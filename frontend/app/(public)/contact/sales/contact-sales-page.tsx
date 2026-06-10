@@ -165,411 +165,376 @@ export function ContactSalesPage() {
 
       <div className="mb-10 md:mb-12 text-center">
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-gray-900">
-          Request Your Brand
+          Request a Brand Demo
         </h1>
+
         <p className="mt-4 text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">
-          Submit your brand details below. Our team will review your request, schedule an onboarding
-          call if needed, and set up a dedicated brand manager account for you or your team.
+          Submit your brand details below. Our team will review your request, schedule an onboarding call, 
+          and set up a dedicated brand manager account for you or your team.
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12 max-w-7xl mx-auto">
         {/* Main form area */}
         <div className="lg:col-span-2">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-8">
-              <TabsTrigger value="request">Request Your Brand</TabsTrigger>
-              <TabsTrigger value="demo">Book a Demo</TabsTrigger>
-            </TabsList>
+          {!submitted ? (
+            <Card className="border-none shadow-lg">
+              <CardHeader className="pb-6">
+                <CardTitle className="text-2xl">
+                  Brand Demo & Onboarding Request
+                </CardTitle>
 
-            {/* ────────────────────────────────────────────────
-                REQUEST YOUR BRAND TAB
-            ──────────────────────────────────────────────── */}
-            <TabsContent value="request">
-              {!submitted ? (
-                <Card className="border-none shadow-lg">
-                  <CardHeader className="pb-6">
-                    <CardTitle className="text-2xl">Brand Onboarding Request</CardTitle>
-                    <CardDescription className="text-base">
-                      Please provide accurate details about your brand. This helps us prepare for
-                      the onboarding process (review → call → brand manager account creation).
-                    </CardDescription>
-                  </CardHeader>
+                <CardDescription className="text-base">
+                  Share a few details about your brand so we can prepare for a
+                  personalized walkthrough of the MOD Platform.
+                </CardDescription>
+              </CardHeader>
 
-                  <CardContent>
-                    <Form {...form}>
-                      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <FormField
-                            control={form.control}
-                            name="companyName"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Brand / Company Name *</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    placeholder="Example Studios, Fashion Brand XYZ"
-                                    {...field}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
+              <CardContent>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
 
-                          <FormField
-                            control={form.control}
-                            name="website"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Official Website / Online Presence</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="https://yourbrand.com" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
+                    {/* Company Info */}
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <FormField
-                            control={form.control}
-                            name="contactEmail"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Primary Contact Email *</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="licensing@yourbrand.com" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="contactPhone"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Contact Phone (WhatsApp / Mobile preferred)</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="+91 98765 43210" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-
-                        <FormField
-                          control={form.control}
-                          name="teamSize"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Approximate Team Size</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select team size" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="1-10">1–10 people</SelectItem>
-                                  <SelectItem value="11-50">11–50 people</SelectItem>
-                                  <SelectItem value="51-200">51–200 people</SelectItem>
-                                  <SelectItem value="201-500">201–500 people</SelectItem>
-                                  <SelectItem value="501+">501+ people</SelectItem>
-                                  <SelectItem value="agency">Creative Agency / Studio</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="description"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>About Your Brand & Goals *</FormLabel>
-                              <FormControl>
-                                <Textarea
-                                  placeholder="What is your brand about? Which categories (fashion, entertainment, gaming, etc.)? Are you looking to monetize fan creations, protect IP, build community, or something else?..."
-                                  className="min-h-[120px] resize-y"
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="howHeard"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>How did you hear about us?</FormLabel>
-                              <FormControl>
-                                <RadioGroup
-                                  onValueChange={field.onChange}
-                                  defaultValue={field.value}
-                                  className="grid grid-cols-2 sm:grid-cols-3 gap-4"
-                                >
-                                  <FormItem className="flex items-center space-x-3 space-y-0">
-                                    <FormControl>
-                                      <RadioGroupItem value="search" />
-                                    </FormControl>
-                                    <FormLabel className="font-normal cursor-pointer">
-                                      Search Engine
-                                    </FormLabel>
-                                  </FormItem>
-
-                                  <FormItem className="flex items-center space-x-3 space-y-0">
-                                    <FormControl>
-                                      <RadioGroupItem value="social" />
-                                    </FormControl>
-                                    <FormLabel className="font-normal cursor-pointer">
-                                      Social Media
-                                    </FormLabel>
-                                  </FormItem>
-
-                                  <FormItem className="flex items-center space-x-3 space-y-0">
-                                    <FormControl>
-                                      <RadioGroupItem value="referral" />
-                                    </FormControl>
-                                    <FormLabel className="font-normal cursor-pointer">
-                                      Referral
-                                    </FormLabel>
-                                  </FormItem>
-
-                                  <FormItem className="flex items-center space-x-3 space-y-0">
-                                    <FormControl>
-                                      <RadioGroupItem value="event" />
-                                    </FormControl>
-                                    <FormLabel className="font-normal cursor-pointer">
-                                      Event / Conference
-                                    </FormLabel>
-                                  </FormItem>
-
-                                  <FormItem className="flex items-center space-x-3 space-y-0">
-                                    <FormControl>
-                                      <RadioGroupItem value="article" />
-                                    </FormControl>
-                                    <FormLabel className="font-normal cursor-pointer">
-                                      Article / Press
-                                    </FormLabel>
-                                  </FormItem>
-
-                                  <FormItem className="flex items-center space-x-3 space-y-0">
-                                    <FormControl>
-                                      <RadioGroupItem value="other" />
-                                    </FormControl>
-                                    <FormLabel className="font-normal cursor-pointer">
-                                      Other
-                                    </FormLabel>
-                                  </FormItem>
-                                </RadioGroup>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <div className="pt-4">
-                          <Button
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="w-full bg-violet-600 hover:bg-violet-700 text-white h-12 text-lg font-medium"
-                          >
-                            {isSubmitting ? 'Submitting...' : 'Submit Brand Request'}
-                          </Button>
-                        </div>
-                      </form>
-                    </Form>
-                  </CardContent>
-                </Card>
-              ) : (
-                <Card className="border-none shadow-lg">
-                  <CardHeader className="pb-6">
-                    <CardTitle className="text-2xl">Thank You!</CardTitle>
-                    <CardDescription className="text-base">
-                      Your brand request has been successfully submitted.
-                    </CardDescription>
-                  </CardHeader>
-
-                  <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-                    <CheckCircle className="h-20 w-20 text-green-500 mb-6" />
-                    <h3 className="text-2xl font-semibold mb-4">We’ve received your request</h3>
-                    <p className="text-gray-600 text-lg max-w-2xl mb-8 leading-relaxed">
-                      Our onboarding team will carefully review your brand details. You’ll hear back
-                      from us within 1–3 business days to schedule a quick call and move forward
-                      with setting up your brand manager account.
-                    </p>
-
-                    <div className="flex flex-col sm:flex-row gap-4">
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setSubmitted(false);
-                          form.reset();
-                        }}
-                        className="min-w-[180px]"
-                      >
-                        Submit Another Request
-                      </Button>
-
-                      <Button
-                        onClick={() => setActiveTab('demo')}
-                        className="bg-violet-600 hover:bg-violet-700 min-w-[180px]"
-                      >
-                        Book a Demo Instead
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </TabsContent>
-
-            {/* ────────────────────────────────────────────────
-                 BOOK A DEMO – untouched as requested
-            ──────────────────────────────────────────────── */}
-            <TabsContent value="demo">
-              {!demoSubmitted ? (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Schedule a Demo</CardTitle>
-                    <CardDescription>
-                      Select a date and time that works for you, and our team will walk you through
-                      the MOD Platform.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <h3 className="text-lg font-medium mb-4">Select a Date</h3>
-                        <div className="space-y-2">
-                          {timeSlots.map((day) => (
-                            <div key={day.date} className="flex items-center">
-                              <Button
-                                variant={selectedDate === day.date ? 'default' : 'outline'}
-                                className={`w-full justify-start ${
-                                  selectedDate === day.date ? 'bg-[#9747ff] hover:bg-[#8035e0]' : ''
-                                }`}
-                                onClick={() => setSelectedDate(day.date)}
-                              >
-                                <CalendarDays className="mr-2 h-4 w-4" />
-                                {day.date}
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-medium mb-4">Select a Time</h3>
-                        {selectedDate ? (
-                          <div className="grid grid-cols-2 gap-2">
-                            {timeSlots
-                              .find((day) => day.date === selectedDate)
-                              ?.slots.map((time) => (
-                                <Button
-                                  key={time}
-                                  variant={selectedTime === time ? 'default' : 'outline'}
-                                  className={`${selectedTime === time ? 'bg-[#9747ff] hover:bg-[#8035e0]' : ''}`}
-                                  onClick={() => setSelectedTime(time)}
-                                >
-                                  <Clock className="mr-2 h-4 w-4" />
-                                  {time}
-                                </Button>
-                              ))}
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-center h-32 border rounded-md border-dashed">
-                            <p className="text-gray-500">Please select a date first</p>
-                          </div>
+                      <FormField
+                        control={form.control}
+                        name="companyName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Brand / Company Name *</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Example Studios, Fashion Brand XYZ"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
                         )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="website"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              Official Website / Online Presence
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="https://yourbrand.com"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <FormField
+                        control={form.control}
+                        name="contactEmail"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Primary Contact Email *</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="licensing@yourbrand.com"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="contactPhone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              Contact Phone (WhatsApp / Mobile preferred)
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="+1 (555) 123-4567"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <FormField
+                      control={form.control}
+                      name="teamSize"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Approximate Team Size</FormLabel>
+
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select team size" />
+                              </SelectTrigger>
+                            </FormControl>
+
+                            <SelectContent>
+                              <SelectItem value="1-10">1–10 people</SelectItem>
+                              <SelectItem value="11-50">11–50 people</SelectItem>
+                              <SelectItem value="51-200">51–200 people</SelectItem>
+                              <SelectItem value="201-500">201–500 people</SelectItem>
+                              <SelectItem value="501+">501+ people</SelectItem>
+                              <SelectItem value="agency">
+                                Creative Agency / Studio
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="description"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>About Your Brand & Goals *</FormLabel>
+
+                          <FormControl>
+                            <Textarea
+                              className="min-h-[140px]"
+                              placeholder="What does your brand create? What categories do you operate in? What are you hoping to accomplish with MOD?"
+                              {...field}
+                            />
+                          </FormControl>
+
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Demo Interest */}
+
+                    <div className="rounded-xl border bg-slate-50 p-6">
+                      <h3 className="font-semibold text-lg mb-4">
+                        What are you most interested in?
+                      </h3>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                        <label className="flex items-center gap-2">
+                          <input type="checkbox" />
+                          Licensing & Brand Protection
+                        </label>
+
+                        <label className="flex items-center gap-2">
+                          <input type="checkbox" />
+                          AI Content Screening
+                        </label>
+
+                        <label className="flex items-center gap-2">
+                          <input type="checkbox" />
+                          Revenue Opportunities
+                        </label>
+
+                        <label className="flex items-center gap-2">
+                          <input type="checkbox" />
+                          Fan Merchandise Programs
+                        </label>
+
+                        <label className="flex items-center gap-2">
+                          <input type="checkbox" />
+                          Creator Management
+                        </label>
+
+                        <label className="flex items-center gap-2">
+                          <input type="checkbox" />
+                          Enterprise Integrations
+                        </label>
                       </div>
                     </div>
-                    <div className="mt-8">
-                      <h3 className="text-lg font-medium mb-4">Demo Details</h3>
-                      <div className="space-y-4">
-                        <div className="flex items-start">
-                          <Users className="h-5 w-5 mr-3 text-gray-500 mt-0.5" />
+
+                    {/* How Heard */}
+
+                    <FormField
+                      control={form.control}
+                      name="howHeard"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>How did you hear about us?</FormLabel>
+
+                          <FormControl>
+                            <RadioGroup
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                              className="grid grid-cols-2 sm:grid-cols-3 gap-4"
+                            >
+                              <FormItem className="flex items-center space-x-3 space-y-0">
+                                <FormControl>
+                                  <RadioGroupItem value="search" />
+                                </FormControl>
+                                <FormLabel className="font-normal">
+                                  Search Engine
+                                </FormLabel>
+                              </FormItem>
+
+                              <FormItem className="flex items-center space-x-3 space-y-0">
+                                <FormControl>
+                                  <RadioGroupItem value="social" />
+                                </FormControl>
+                                <FormLabel className="font-normal">
+                                  Social Media
+                                </FormLabel>
+                              </FormItem>
+
+                              <FormItem className="flex items-center space-x-3 space-y-0">
+                                <FormControl>
+                                  <RadioGroupItem value="referral" />
+                                </FormControl>
+                                <FormLabel className="font-normal">
+                                  Referral
+                                </FormLabel>
+                              </FormItem>
+
+                              <FormItem className="flex items-center space-x-3 space-y-0">
+                                <FormControl>
+                                  <RadioGroupItem value="event" />
+                                </FormControl>
+                                <FormLabel className="font-normal">
+                                  Event / Conference
+                                </FormLabel>
+                              </FormItem>
+
+                              <FormItem className="flex items-center space-x-3 space-y-0">
+                                <FormControl>
+                                  <RadioGroupItem value="article" />
+                                </FormControl>
+                                <FormLabel className="font-normal">
+                                  Article / Press
+                                </FormLabel>
+                              </FormItem>
+
+                              <FormItem className="flex items-center space-x-3 space-y-0">
+                                <FormControl>
+                                  <RadioGroupItem value="other" />
+                                </FormControl>
+                                <FormLabel className="font-normal">
+                                  Other
+                                </FormLabel>
+                              </FormItem>
+                            </RadioGroup>
+                          </FormControl>
+
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* What Happens Next */}
+
+                    <div className="rounded-xl border p-6 bg-white">
+                      <h3 className="font-semibold text-lg mb-5">
+                        What Happens Next?
+                      </h3>
+
+                      <div className="space-y-5">
+                        <div className="flex gap-4">
+                          <FileText className="h-5 w-5 text-violet-600 mt-1" />
                           <div>
-                            <h4 className="font-medium">Who should attend</h4>
-                            <p className="text-sm text-gray-600">
-                              Brand managers, IP owners, licensing teams, and anyone involved in
-                              managing fan art or creative content.
+                            <h4 className="font-medium">Review</h4>
+                            <p className="text-sm text-muted-foreground">
+                              Our team reviews your submission and evaluates your
+                              onboarding requirements.
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-start">
-                          <Clock className="h-5 w-5 mr-3 text-gray-500 mt-0.5" />
+
+                        <div className="flex gap-4">
+                          <Mail className="h-5 w-5 text-violet-600 mt-1" />
                           <div>
-                            <h4 className="font-medium">Duration</h4>
-                            <p className="text-sm text-gray-600">
-                              45 minutes with additional time for Q&A
+                            <h4 className="font-medium">Email Outreach</h4>
+                            <p className="text-sm text-muted-foreground">
+                              We'll contact you to coordinate a convenient demo time.
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-start">
-                          <MessageSquare className="h-5 w-5 mr-3 text-gray-500 mt-0.5" />
+
+                        <div className="flex gap-4">
+                          <Users className="h-5 w-5 text-violet-600 mt-1" />
                           <div>
-                            <h4 className="font-medium">What we'll cover</h4>
-                            <p className="text-sm text-gray-600">
-                              Platform overview, AI screening capabilities, licensing workflow,
-                              revenue models, and customization options.
+                            <h4 className="font-medium">Personalized Demo</h4>
+                            <p className="text-sm text-muted-foreground">
+                              A 45-minute walkthrough tailored to your brand.
                             </p>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </CardContent>
-                  <CardFooter>
+
+                    <div className="rounded-xl bg-violet-50 border border-violet-200 p-5">
+                      <p className="font-medium mb-2">
+                        Average response time: 1–2 business days
+                      </p>
+
+                      <p className="text-sm text-muted-foreground">
+                        Brand managers, licensing teams, IP owners, creator program
+                        managers, and decision makers are encouraged to attend.
+                      </p>
+                    </div>
+
                     <Button
-                      onClick={handleBookDemo}
-                      className="w-full bg-[#9747ff] hover:bg-[#8035e0]"
-                      disabled={!selectedDate || !selectedTime}
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full h-12 text-lg bg-violet-600 hover:bg-violet-700"
                     >
-                      Book Demo
+                      {isSubmitting
+                        ? 'Submitting...'
+                        : 'Request Demo & Brand Review'}
                     </Button>
-                  </CardFooter>
-                </Card>
-              ) : (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Demo Scheduled</CardTitle>
-                    <CardDescription>Your demo has been successfully scheduled.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="flex flex-col items-center justify-center py-10">
-                    <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
-                    <h3 className="text-xl font-semibold mb-2">You're all set!</h3>
-                    <p className="text-center text-gray-600 mb-2">
-                      Your demo is scheduled for{' '}
-                      <span className="font-semibold">{selectedDate}</span> at{' '}
-                      <span className="font-semibold">{selectedTime}</span>.
-                    </p>
-                    <p className="text-center text-gray-600 mb-6">
-                      We've sent a calendar invitation to your email with all the details and a link
-                      to join the call.
-                    </p>
-                    <div className="flex gap-4">
-                      <Button variant="outline" onClick={() => setDemoSubmitted(false)}>
-                        Reschedule
-                      </Button>
-                      <Link href="/">
-                        <Button className="bg-[#9747ff] hover:bg-[#8035e0]">
-                          Return to Homepage
-                        </Button>
-                      </Link>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </TabsContent>
-          </Tabs>
+
+                  </form>
+                </Form>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="border-none shadow-lg">
+              <CardContent className="py-16 text-center">
+                <CheckCircle className="h-20 w-20 text-green-500 mx-auto mb-6" />
+
+                <h2 className="text-3xl font-bold mb-4">
+                  Request Submitted
+                </h2>
+
+                <p className="text-gray-600 max-w-xl mx-auto mb-8">
+                  Thank you for your interest in MOD. Our team will review your
+                  information and contact you within 1–2 business days to schedule
+                  your personalized demo.
+                </p>
+
+                <Button
+                  onClick={() => {
+                    setSubmitted(false);
+                    form.reset();
+                  }}
+                  variant="outline"
+                >
+                  Submit Another Request
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Side info panel */}
