@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/accordion';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, XCircle, AlertTriangle, Info, Download, ExternalLink } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, Info, Download, ExternalLink, Upload } from 'lucide-react';
 
 export const metadata = {
   title: 'Brand Guidelines | MOD Platform',
@@ -987,27 +987,50 @@ export default function BrandGuidelinesPage() {
         </section>
 
         {/* CTA */}
-        <section className="bg-[#9747ff] text-white rounded-lg p-8 text-center">
-          <h2 className="text-3xl font-bold mb-4">Ready to Submit Your Fan Art?</h2>
-          <p className="text-xl mb-6 max-w-2xl mx-auto">
-            Join thousands of artists who are legally licensing their fan art and earning royalties
-            through the MOD Platform.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/submissions/new">
-              <Button size="lg" className="bg-white text-[#9747ff] hover:bg-gray-100">
-                Submit Your Fan Art
-              </Button>
-            </Link>
-            <Link href="/signup">
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-white text-white hover:bg-white/10"
-              >
-                Create an Account
-              </Button>
-            </Link>
+        <section className="py-10">
+          <div className="relative rounded-3xl overflow-hidden bg-black text-white text-center py-16 px-8">
+            {/* purple glow */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="w-72 h-40 bg-purple-600 blur-[80px] opacity-60 rounded-full" />
+            </div>
+
+            <div className="relative z-10">
+              <h2 className="text-4xl md:text-5xl font-black leading-tight">
+                READY TO SUBMIT
+                <br />
+                YOUR FAN ART?
+              </h2>
+              <p className="mt-5 text-sm text-gray-300 max-w-xl mx-auto">
+                Join thousands of artists who are legally licensing their fan art and earning
+                royalties through the MOD Platform.
+              </p>
+
+              <div className="mt-6 flex flex-wrap justify-center gap-3">
+                {['Read the guidelines', 'Prepare your submission', 'Submit with confidence'].map(
+                  (t, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-2 bg-white/10 rounded-full px-5 py-2 text-xs font-medium hover:bg-white/20 transition-colors"
+                    >
+                      <CheckCircle size={13} className="text-purple-400" /> {t}
+                    </div>
+                  ),
+                )}
+              </div>
+
+              <div className="mt-7 flex flex-col sm:flex-row items-center justify-center gap-3">
+                <Link href="/submissions/new">
+                  <Button className="bg-purple-600 hover:bg-purple-700 rounded-full px-8 flex items-center gap-2">
+                    <Upload size={15} /> Submit Your Fan Art
+                  </Button>
+                </Link>
+                <Link href="/signup">
+                  <Button variant="outline" className="text-black rounded-full px-8">
+                    Create an Account
+                  </Button>
+                </Link>
+              </div>
+            </div>
           </div>
         </section>
       </div>
