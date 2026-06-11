@@ -12,6 +12,11 @@ import {
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, XCircle, AlertTriangle, Info, Download, ExternalLink, Upload } from 'lucide-react';
+import creatingCompliantImg from '@/assets/images/guidelines/creating-compliant-fan-art.jpeg';
+import characterImg from '@/assets/images/guidelines/character-guidelines.jpeg';
+import logosTrademarksImg from '@/assets/images/guidelines/logos-trademarks-guidelines.jpeg';
+import worldsSettingsImg from '@/assets/images/guidelines/worlds-settings-guidelines.jpeg';
+import storiesPlotsImg from '@/assets/images/guidelines/stories-plots-guidelines.jpeg';
 
 export const metadata = {
   title: 'Brand Guidelines | MOD Platform',
@@ -59,12 +64,13 @@ export default function BrandGuidelinesPage() {
               </Alert>
             </div>
             <div className="flex items-center justify-center">
-              <div className="relative h-[300px] w-full max-w-md rounded-lg overflow-hidden">
+              <div className="w-full max-w-md rounded-lg overflow-hidden">
                 <Image
-                  src="/placeholder.svg?height=600&width=800&text=Brand+Guidelines"
+                  src={creatingCompliantImg}
                   alt="Brand Guidelines Illustration"
-                  fill
-                  className="object-cover"
+                  placeholder="blur"
+                  sizes="(min-width: 1024px) 28rem, 100vw"
+                  className="w-full h-auto"
                 />
               </div>
             </div>
@@ -227,12 +233,13 @@ export default function BrandGuidelinesPage() {
                   </ul>
                 </div>
                 <div className="flex flex-col space-y-4">
-                  <div className="relative h-[200px] rounded-lg overflow-hidden">
+                  <div className="rounded-lg overflow-hidden">
                     <Image
-                      src="/placeholder.svg?height=400&width=600&text=Character+Example"
+                      src={characterImg}
                       alt="Character Fan Art Example"
-                      fill
-                      className="object-cover"
+                      placeholder="blur"
+                      sizes="(min-width: 1024px) 50vw, 100vw"
+                      className="w-full h-auto"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
@@ -297,12 +304,13 @@ export default function BrandGuidelinesPage() {
                   </ul>
                 </div>
                 <div className="flex flex-col space-y-4">
-                  <div className="relative h-[200px] rounded-lg overflow-hidden">
+                  <div className="rounded-lg overflow-hidden">
                     <Image
-                      src="/placeholder.svg?height=400&width=600&text=Logo+Example"
+                      src={logosTrademarksImg}
                       alt="Logo Fan Art Example"
-                      fill
-                      className="object-cover"
+                      placeholder="blur"
+                      sizes="(min-width: 1024px) 50vw, 100vw"
+                      className="w-full h-auto"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
@@ -367,12 +375,13 @@ export default function BrandGuidelinesPage() {
                   </ul>
                 </div>
                 <div className="flex flex-col space-y-4">
-                  <div className="relative h-[200px] rounded-lg overflow-hidden">
+                  <div className="rounded-lg overflow-hidden">
                     <Image
-                      src="/placeholder.svg?height=400&width=600&text=World+Example"
+                      src={worldsSettingsImg}
                       alt="World Setting Fan Art Example"
-                      fill
-                      className="object-cover"
+                      placeholder="blur"
+                      sizes="(min-width: 1024px) 50vw, 100vw"
+                      className="w-full h-auto"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
@@ -437,12 +446,13 @@ export default function BrandGuidelinesPage() {
                   </ul>
                 </div>
                 <div className="flex flex-col space-y-4">
-                  <div className="relative h-[200px] rounded-lg overflow-hidden">
+                  <div className="rounded-lg overflow-hidden">
                     <Image
-                      src="/placeholder.svg?height=400&width=600&text=Story+Example"
+                      src={storiesPlotsImg}
                       alt="Story Fan Art Example"
-                      fill
-                      className="object-cover"
+                      placeholder="blur"
+                      sizes="(min-width: 1024px) 50vw, 100vw"
+                      className="w-full h-auto"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
