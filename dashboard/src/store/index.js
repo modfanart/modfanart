@@ -13,7 +13,7 @@ import ordersApi from '../services/api/orderApi';
 import moderationApi from '../services/api/moderationApi';
 import licensesApi from '../services/api/licenseApi';
 import favoritesApi from '../services/api/favoriteApi';
-import contestsApi from '../services/api/contestsApi';
+import contestsApi from '../services/api/categoriesApi';
 import categoriesApi from '../services/api/categoriesApi';
 import auditApi from '../services/api/auditApi';
 import artworkApi from '../services/api/artworkApi';
