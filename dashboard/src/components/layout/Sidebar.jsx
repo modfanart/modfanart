@@ -26,20 +26,28 @@ export const Sidebar = ({ mobileOpen, onMobileClose, collapsed, setCollapsed }) 
   }, [location.pathname]);
 
   return (
-    <aside
-      className={cn(
-        "fixed left-0 top-0 h-screen bg-zinc-950 border-r border-zinc-800 z-50 flex flex-col transition-all duration-200",
-        collapsed ? "lg:w-16" : "lg:w-64",
-        "max-lg:w-64"
-      )}
-    >
+<aside
+  className={cn(
+    "fixed left-0 top-0 h-screen bg-zinc-950 border-r border-zinc-800 z-50 flex flex-col transition-transform duration-200",
+
+    // MOBILE: slide in/out
+    mobileOpen ? "translate-x-0" : "-translate-x-full",
+
+    // DESKTOP: always visible, no translate
+    "lg:translate-x-0",
+
+    // WIDTH CONTROL
+    collapsed ? "lg:w-16" : "lg:w-64",
+    "w-64 lg:w-auto"
+  )}
+>
       {/* Header */}
       <div className="h-16 flex items-center justify-between px-4 border-b border-zinc-800">
         {(!collapsed || mobileOpen) && (
           <div className="flex items-center gap-2">
             <Database className="w-8 h-8 text-white" />
             <span className="text-lg font-semibold text-white">
-              SanitaryERP
+              MOD WORKSPACE
             </span>
           </div>
         )}
@@ -77,30 +85,7 @@ export const Sidebar = ({ mobileOpen, onMobileClose, collapsed, setCollapsed }) 
         })}
       </nav>
 
-      {/* User */}
-      <div className="p-4 border-t border-zinc-800">
-        <div className="flex items-center gap-3">
-          <div
-            onClick={() => navigate("/profile")}
-            className="w-9 h-9 rounded-full bg-zinc-800 flex items-center justify-center text-white cursor-pointer"
-          >
-            {user?.username?.slice(0, 2).toUpperCase() || "U"}
-          </div>
 
-          {(!collapsed || mobileOpen) && (
-            <>
-              <div className="flex-1">
-                <p className="text-sm text-white">{user?.username}</p>
-                <p className="text-xs text-zinc-500">{user?.role?.name}</p>
-              </div>
-
-              <button onClick={logout}>
-                <SignOut className="w-5 h-5 text-zinc-400" />
-              </button>
-            </>
-          )}
-        </div>
-      </div>
     </aside>
   );
 };

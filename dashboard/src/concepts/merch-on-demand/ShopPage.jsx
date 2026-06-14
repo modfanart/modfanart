@@ -25,12 +25,48 @@ const brandColors = [
   'from-pink-500/20 to-pink-600/10 border-pink-500/30',
   'from-cyan-500/20 to-cyan-600/10 border-cyan-500/30',
 ];
+// Mock Data
+const MOCK_BRANDS = [
+  { id: 'b1', name: 'Nike' },
+  { id: 'b2', name: 'Adidas' },
+  { id: 'b3', name: 'Puma' },
+];
 
+const MOCK_CATEGORIES = {
+  b1: [
+    { id: 'c1', name: 'Shoes' },
+    { id: 'c2', name: 'Clothing' },
+  ],
+  b2: [
+    { id: 'c3', name: 'Sportswear' },
+    { id: 'c4', name: 'Sneakers' },
+  ],
+};
+
+const MOCK_PRODUCTS = [
+  {
+    id: 'p1',
+    name: 'Air Max 270',
+    brand_id: 'b1',
+    category_id: 'c1',
+  },
+  {
+    id: 'p2',
+    name: 'Ultraboost',
+    brand_id: 'b2',
+    category_id: 'c4',
+  },
+  {
+    id: 'p3',
+    name: 'Puma Runner',
+    brand_id: 'b3',
+    category_id: 'c1',
+  },
+];
 export const ShopPage = () => {
   const navigate = useNavigate();
   const { brandId } = useParams();
-  const { addToCart } = useCart();
-  
+
   const [brands, setBrands] = useState([]);
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
@@ -41,56 +77,50 @@ export const ShopPage = () => {
   const [total, setTotal] = useState(0);
 
   // Fetch brands on mount
-  useEffect(() => {
-    const fetchBrands = async () => {
-      try {
-        const { data } = await getBrands();
-        setBrands(data);
-        
-        // If brandId is in URL, select that brand
-        if (brandId) {
-          const brand = data.find(b => b.id === brandId);
-          if (brand) {
-            setSelectedBrand(brand);
-          }
-        }
-      } catch (error) {
-        toast.error('Failed to load brands');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchBrands();
-  }, [brandId]);
+useEffect(() => {
+  setBrands(MOCK_BRANDS);
 
+  if (brandId) {
+    const brand = MOCK_BRANDS.find(b => b.id === brandId);
+    if (brand) setSelectedBrand(brand);
+  }
+
+  setLoading(false);
+}, [brandId]);
   // Fetch categories and products when brand is selected
-  useEffect(() => {
-    if (selectedBrand) {
-      const fetchData = async () => {
-        setLoading(true);
-        try {
-          const [categoriesRes, productsRes] = await Promise.all([
-            getCategories(selectedBrand.id),
-            getProducts({ 
-              brand_id: selectedBrand.id,
-              category_id: selectedCategory !== 'all' ? selectedCategory : undefined,
-              search: search || undefined,
-              limit: 100
-            })
-          ]);
-          setCategories(categoriesRes.data);
-          setProducts(productsRes.data.products);
-          setTotal(productsRes.data.total);
-        } catch (error) {
-          toast.error('Failed to load products');
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchData();
-    }
-  }, [selectedBrand, selectedCategory, search]);
+useEffect(() => {
+  if (!selectedBrand) return;
 
+  setLoading(true);
+
+  try {
+    const categories = MOCK_CATEGORIES[selectedBrand.id] || [];
+    setCategories(categories);
+
+    let filteredProducts = MOCK_PRODUCTS.filter(
+      p => p.brand_id === selectedBrand.id
+    );
+
+    if (selectedCategory && selectedCategory !== 'all') {
+      filteredProducts = filteredProducts.filter(
+        p => p.category_id === selectedCategory
+      );
+    }
+
+    if (search) {
+      filteredProducts = filteredProducts.filter(p =>
+        p.name.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    setProducts(filteredProducts);
+    setTotal(filteredProducts.length);
+  } catch (err) {
+    toast.error('Failed to load products');
+  } finally {
+    setLoading(false);
+  }
+}, [selectedBrand, selectedCategory, search]);
   const handleSelectBrand = (brand) => {
     setSelectedBrand(brand);
     setSelectedCategory('all');
@@ -107,14 +137,6 @@ export const ShopPage = () => {
     navigate('/shop');
   };
 
-  const handleAddToCart = async (product) => {
-    const result = await addToCart(product.id, 1);
-    if (result.success) {
-      toast.success(`${product.name} added to cart`);
-    } else {
-      toast.error(result.error || 'Failed to add to cart');
-    }
-  };
 
   // Show brand selection view
   if (!selectedBrand) {
@@ -277,7 +299,7 @@ export const ShopPage = () => {
                   
                   <Button
                     className="w-full bg-white text-black hover:bg-zinc-200"
-                    onClick={() => handleAddToCart(product)}
+         
                     disabled={product.stock <= 0}
                     data-testid={`add-to-cart-${product.id}`}
                   >

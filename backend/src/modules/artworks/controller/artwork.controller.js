@@ -244,100 +244,107 @@ class ArtworkController {
    * GET /artworks
    * Public: List published artworks (explore/discovery feed)
    */
-  static async getArtworks(req, res) {
-    try {
-      const page = Math.max(1, parseInt(req.query.page) || 1);
-      const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 20));
-      const offset = (page - 1) * limit;
-      const search = req.query.search?.trim();
-      const categoryId = req.query.category_id;
+/**
+ * GET /artworks
+ * Public: List published artworks (explore/discovery feed)
+ */
+static async getArtworks(req, res) {
+  try {
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 20));
+    const offset = (page - 1) * limit;
+    const search = req.query.search?.trim();
 
-      let query = db
-        .selectFrom('artworks')
-        .select([
-          'id',
-          'title',
-          'description',
-          'thumbnail_url',
-          'views_count',
-          'favorites_count',
-          'creator_id',
-          'status', // ✅ ADD THIS
-          'created_at',
+    // MAIN QUERY (NO STATUS FILTER)
+    let query = db
+      .selectFrom('artworks')
+      .leftJoin('users', 'users.id', 'artworks.creator_id')
+      .select([
+        'artworks.id',
+        'artworks.title',
+        'artworks.description',
+        'artworks.thumbnail_url',
+        'artworks.views_count',
+        'artworks.favorites_count',
+        'artworks.status',
+        'artworks.created_at',
+
+        'users.id as creator_id',
+        'users.username as creator_username',
+        'users.email as creator_email',
+        'users.avatar_url as creator_avatar',
+      ])
+      .where('artworks.deleted_at', 'is', null)
+      .orderBy('artworks.created_at', 'desc');
+
+    // SEARCH FILTER
+    if (search) {
+      query = query.where((eb) =>
+        eb.or([
+          eb('artworks.title', 'ilike', `%${search}%`),
+          eb('artworks.description', 'ilike', `%${search}%`),
         ])
-
-        .where('deleted_at', 'is', null)
-        .orderBy('created_at', 'desc');
-
-      if (search) {
-        query = query.where((eb) =>
-          eb.or([
-            eb('title', 'ilike', `%${search}%`),
-            eb('description', 'ilike', `%${search}%`),
-          ])
-        );
-      }
-
-      if (categoryId) {
-        query = query
-          .innerJoin(
-            'artwork_categories',
-            'artwork_categories.artwork_id',
-            'artworks.id'
-          )
-          .where('artwork_categories.category_id', '=', categoryId);
-      }
-
-      let countQuery = db
-        .selectFrom('artworks')
-        .where('status', '=', 'published')
-        .where('deleted_at', 'is', null);
-
-      if (search) {
-        countQuery = countQuery.where((eb) =>
-          eb.or([
-            eb('title', 'ilike', `%${search}%`),
-            eb('description', 'ilike', `%${search}%`),
-          ])
-        );
-      }
-
-      if (categoryId) {
-        countQuery = countQuery
-          .innerJoin(
-            'artwork_categories',
-            'artwork_categories.artwork_id',
-            'artworks.id'
-          )
-          .where('artwork_categories.category_id', '=', categoryId);
-      }
-
-      const countResult = await countQuery
-        .select(db.fn.count('artworks.id').as('total'))
-        .executeTakeFirst();
-
-      const total = parseInt(countResult?.total || '0');
-      const totalPages = Math.ceil(total / limit);
-
-      const artworks = await query.limit(limit).offset(offset).execute();
-
-      res.json({
-        artworks,
-        pagination: {
-          page,
-          limit,
-          total,
-          total_pages: totalPages,
-          has_next: page < totalPages,
-          has_prev: page > 1,
-        },
-      });
-    } catch (error) {
-      console.error('Get artworks list error:', error);
-      res.status(500).json({ error: 'Failed to fetch artworks' });
+      );
     }
-  }
 
+    // COUNT QUERY (NO STATUS FILTER)
+    let countQuery = db
+      .selectFrom('artworks')
+      .where('deleted_at', 'is', null);
+
+    if (search) {
+      countQuery = countQuery.where((eb) =>
+        eb.or([
+          eb('title', 'ilike', `%${search}%`),
+          eb('description', 'ilike', `%${search}%`),
+        ])
+      );
+    }
+
+    const countResult = await countQuery
+      .select(db.fn.count('id').as('total'))
+      .executeTakeFirst();
+
+    const total = parseInt(countResult?.total || '0');
+    const totalPages = Math.ceil(total / limit);
+
+    const rows = await query.limit(limit).offset(offset).execute();
+
+    const artworks = rows.map((a) => ({
+      id: a.id,
+      title: a.title,
+      description: a.description,
+      thumbnail_url: a.thumbnail_url,
+      views_count: a.views_count,
+      favorites_count: a.favorites_count,
+      status: a.status,
+      created_at: a.created_at,
+      creator: a.creator_id
+        ? {
+            id: a.creator_id,
+            username: a.creator_username,
+            email: a.creator_email,
+            avatar_url: a.creator_avatar,
+          }
+        : null,
+    }));
+
+    return res.json({
+      artworks,
+      pagination: {
+        page,
+        limit,
+        total,
+        total_pages: totalPages,
+        has_next: page < totalPages,
+        has_prev: page > 1,
+      },
+    });
+  } catch (error) {
+    console.error('Get artworks list error:', error);
+    return res.status(500).json({ error: 'Failed to fetch artworks' });
+  }
+}
   /**
    * GET /artworks/me
    * Authenticated: Get current user's ALL artworks (dashboard / profile management)

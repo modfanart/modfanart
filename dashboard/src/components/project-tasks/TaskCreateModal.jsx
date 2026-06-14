@@ -15,29 +15,40 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { useCreateTaskMutation } from '../../services/api/projectTasksApi';
 import { toast } from 'sonner';
 
-const TaskCreateModal = ({ open, onOpenChange }) => {
+const TaskCreateModal = ({ 
+  open, 
+  onOpenChange, 
+  projectId   // ← Added this prop
+}) => {
   const [createTask, { isLoading }] = useCreateTaskMutation();
 
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    project_id: '',
+    project_id: projectId || '',   // Pre-fill project ID
     priority: 'medium',
     due_date: '',
   });
 
-  // Reset form when modal closes
+  // Reset form when modal closes, but keep projectId for next open
   useEffect(() => {
     if (!open) {
       setFormData({
         title: '',
         description: '',
-        project_id: '',
+        project_id: projectId || '',     // Preserve projectId
         priority: 'medium',
         due_date: '',
       });
     }
-  }, [open]);
+  }, [open, projectId]);
+
+  // Update project_id if projectId prop changes
+  useEffect(() => {
+    if (projectId) {
+      setFormData(prev => ({ ...prev, project_id: projectId }));
+    }
+  }, [projectId]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -51,7 +62,7 @@ const TaskCreateModal = ({ open, onOpenChange }) => {
       await createTask({
         title: formData.title.trim(),
         description: formData.description.trim(),
-        project_id: formData.project_id || null,
+        project_id: projectId || formData.project_id || null,   // Use prop first
         priority: formData.priority,
         due_date: formData.due_date || null,
         status: 'todo',
@@ -128,7 +139,12 @@ const TaskCreateModal = ({ open, onOpenChange }) => {
             </div>
           </div>
 
-          {/* You can add Project selection here later if you fetch projects */}
+          {/* Optional: Show which project this task belongs to */}
+          {projectId && (
+            <div className="text-sm text-zinc-500">
+              This task will be added to: <span className="text-white font-medium">Project {projectId}</span>
+            </div>
+          )}
 
           <DialogFooter>
             <Button
@@ -139,7 +155,10 @@ const TaskCreateModal = ({ open, onOpenChange }) => {
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading || !formData.title.trim()}>
+            <Button 
+              type="submit" 
+              disabled={isLoading || !formData.title.trim()}
+            >
               {isLoading ? 'Creating...' : 'Create Task'}
             </Button>
           </DialogFooter>
