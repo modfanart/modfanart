@@ -492,6 +492,95 @@
  * @property {string} created_at          timestamptz
  * @property {string | null} deleted_at   Soft delete support
  */
+
+/**
+ * =============================================
+ * TASK / PROJECT MANAGEMENT SYSTEM TYPES
+ * =============================================
+ */
+
+/**
+ * @typedef {Object} ProjectRow
+ * @property {string} id                  UUID
+ * @property {string} name
+ * @property {string} slug
+ * @property {string | null} description
+ * @property {string | null} created_by   References UserRow.id
+ * @property {boolean} is_active
+ * @property {string} created_at          timestamptz ISO string
+ */
+
+/**
+ * @typedef {Object} ProjectMemberRow
+ * @property {string} project_id          References ProjectRow.id
+ * @property {string} user_id             References UserRow.id
+ * @property {'admin' | 'member' | 'viewer'} role
+ * @property {string} joined_at           timestamptz ISO string
+ */
+
+/**
+ * @typedef {Object} TaskRow
+ * @property {string} id                  UUID
+ * @property {string} project_id          References ProjectRow.id
+ * @property {string} title
+ * @property {string | null} description
+ * @property {'backlog' | 'todo' | 'in_progress' | 'in_review' | 'blocked' | 'done' | 'archived'} status
+ * @property {'low' | 'medium' | 'high' | 'urgent'} priority
+ * @property {string | null} created_by   References UserRow.id
+ * @property {string | null} assigned_to  References UserRow.id
+ * @property {string | null} due_date     timestamptz ISO string
+ * @property {string | null} completed_at timestamptz ISO string
+ * @property {number | null} story_points
+ * @property {string[] | null} labels
+ * @property {string} created_at
+ * @property {string} updated_at
+ */
+
+/**
+ * @typedef {Object} TaskCommentRow
+ * @property {string} id                  UUID
+ * @property {string} task_id             References TaskRow.id
+ * @property {string} user_id             References UserRow.id
+ * @property {string} content
+ * @property {string[] | null} mentions   Array of UserRow.id
+ * @property {string} created_at
+ * @property {string | null} updated_at
+ */
+
+/**
+ * @typedef {Object} TaskAttachmentRow
+ * @property {string} id                  UUID
+ * @property {string} task_id             References TaskRow.id
+ * @property {string} file_url
+ * @property {string | null} uploaded_by  References UserRow.id
+ * @property {string} created_at
+ */
+
+/**
+ * @typedef {Object} TaskActivityLogRow
+ * @property {string} id                  UUID
+ * @property {string} task_id             References TaskRow.id
+ * @property {string | null} actor_id     References UserRow.id
+ * @property {string} action              e.g. 'created', 'assigned', 'status_changed', 'commented'
+ * @property {object | null} old_value    JSONB
+ * @property {object | null} new_value    JSONB
+ * @property {string} created_at
+ */
+
+/**
+ * @typedef {Object} TaskWatcherRow
+ * @property {string} task_id             References TaskRow.id
+ * @property {string} user_id             References UserRow.id
+ */
+
+/**
+ * @typedef {Object} SubtaskRow
+ * @property {string} id                  UUID
+ * @property {string} parent_task_id      References TaskRow.id
+ * @property {string} title
+ * @property {boolean} is_completed
+ * @property {string} created_at
+ */
 module.exports = {};
 // This file is only for type documentation / IntelliSense
 // No runtime code is needed

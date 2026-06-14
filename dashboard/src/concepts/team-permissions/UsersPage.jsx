@@ -88,9 +88,9 @@ export const UsersPage= () => {
   const [newRole, setNewRole] = useState({ name: '', hierarchy_level: 10, description: '' });
   const [editingRole, setEditingRole] = useState(null);
 
-  const canEditUsers = hasRole(['super_admin', 'admin', 'hr']);
-  const canDeleteUsers = hasRole(['super_admin']);
-  const canManageRoles = hasRole(['super_admin', 'admin']);
+  const canEditUsers = hasRole(['SUPER_ADMIN', 'ADMIN', 'HR', 'DEVELOPER']);
+  const canDeleteUsers = hasRole(['SUPER_ADMIN', 'ADMIN', 'HR', 'DEVELOPER']);
+  const canManageRoles = hasRole(['SUPER_ADMIN', 'ADMIN', 'HR', 'DEVELOPER']);
 
   const users = usersData?.users || usersData || [];
   const roles = rolesData || [];

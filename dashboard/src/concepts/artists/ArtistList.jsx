@@ -38,30 +38,39 @@ export const ArtistsList = () => {
   const [deleteConfirm, setDeleteConfirm] = useState({ open: false, artist: null });
   const [suspendConfirm, setSuspendConfirm] = useState({ open: false, artist: null });
 
-  // Permission check
-  const canManageArtists = hasRole(['super_admin', 'admin', 'developer']);
+// Permission check
+const canManageArtists = hasRole(['SUPER_ADMIN', 'ADMIN', 'DEVELOPER']);
 
-  if (!canManageArtists) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-zinc-950">
-        <div className="text-center">
-          <p className="text-red-400 text-xl">Access Denied</p>
-          <p className="text-zinc-500 mt-2">You don't have permission to manage artists.</p>
-        </div>
+// Hooks must ALWAYS run before any conditional return
+const queryArgs = useMemo(() => ({
+  roleSlug: 'ARTIST',
+  page,
+  limit: 15,
+  ...(search.trim() && { search: search.trim() }),
+  ...(status !== 'all' && { status }),
+}), [page, search, status]);
+
+const {
+  data,
+  isLoading,
+  isFetching,
+} = useGetUsersByRoleSlugQuery(queryArgs, {
+  skip: !canManageArtists,
+});
+
+// Now it's safe to conditionally return
+if (!canManageArtists) {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-zinc-950">
+      <div className="text-center">
+        <p className="text-red-400 text-xl">Access Denied</p>
+        <p className="text-zinc-500 mt-2">
+          You don't have permission to manage artists.
+        </p>
       </div>
-    );
-  }
-
-  const queryArgs = useMemo(() => ({
-    roleSlug: 'artist',           // ← Usually lowercase
-    page,
-    limit: 15,
-    ...(search.trim() && { search: search.trim() }),
-    ...(status !== 'all' && { status }),
-  }), [page, search, status]);
-
-  const { data, isLoading, isFetching } = useGetUsersByRoleSlugQuery(queryArgs);
-
+    </div>
+  );
+}
   const artists = data?.users ?? [];
   const pagination = data?.pagination;
 

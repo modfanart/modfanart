@@ -1,13 +1,14 @@
 // index.js
+
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
 const rateLimit = require('express-rate-limit');
 
-const attachDb = require('./src/middleware/attachDb');
-const requestLogger = require('./src/middleware/requestLogger');
-const errorHandler = require('./src/middleware/error');
+const attachDb = require('./src/common/middleware/attachDb');
+const requestLogger = require('./src/common/middleware/requestLogger');
+const errorHandler = require('./src/common/middleware/error');
 
 dotenv.config();
 /** */
@@ -81,22 +82,23 @@ app.get('/health', (req, res) => {
 
 // ====================== ROUTES ======================
 const routes = [
-  { path: '/api/tags', module: './src/routes/tagging.routes' },
-  { path: '/api/contest', module: './src/routes/contest.routes' },
-  { path: '/api/order', module: './src/routes/order.routes' },
-  { path: '/api/category', module: './src/routes/category.routes' },
-  { path: '/api/contact', module: './src/routes/contact.routes' },
-  { path: '/api/auth', module: './src/routes/auth.routes' },
-  { path: '/api/roles', module: './src/routes/role.routes' },
-  { path: '/api/artwork', module: './src/routes/artwork.routes' },
-  { path: '/api/licenses', module: './src/routes/license.routes' },
-  { path: '/api/users', module: './src/routes/user.routes' },
-  { path: '/api/brands', module: './src/routes/brand.routes' },
-  { path: '/api/collections', module: './src/routes/collection.route' },
-  { path: '/api/search', module: './src/routes/search.routes' },
-  { path: '/api/payout', module: './src/routes/payout.routes' },
-  { path: '/api/webhook', module: './src/routes/webhooks' },
-  { path: '/api/notifications', module: './src/routes/notification.routes' },
+  { path: '/api/tags', module: './src/modules/tags/tagging.routes.js' },
+  { path: '/api/contest', module: './src/modules/contests/contest.routes.js' },
+  { path: '/api/order', module: './src/modules/licenses/order.routes.js' },
+  { path: '/api/category', module: './src/modules/artworks/category.routes.js' },
+  { path: '/api/contact', module: './src/modules/queries/contact.routes.js' },
+  { path: '/api/auth', module: './src/modules/auth/auth.routes.js' },
+  { path: '/api/roles', module: './src/modules/rbac/role.routes.js' },
+  { path: '/api/artwork', module: './src/modules/artworks/artwork.routes.js' },
+  { path: '/api/licenses', module: './src/modules/licenses/license.routes.js' },
+  { path: '/api/users', module: './src/modules/users/user.routes.js' },
+  { path: '/api/brands', module: './src/modules/brands/brand.routes.js' },
+  { path: '/api/collections', module: './src/modules/collections/collection.route.js' },
+  { path: '/api/search', module: './src/modules/search/search.routes.js' },
+  { path: '/api/payout', module: './src/modules/licenses/payout.routes.js' },
+  { path: '/api/notifications', module: './src/modules/notifications/notification.routes.js' },
+  { path: '/api/tasks', module: './src/modules/tasks/task.routes.js' },
+  { path: '/api/projects', module: './src/modules/tasks/project.routes.js' }
 ];
 
 routes.forEach(({ path, module: mod }) => {
