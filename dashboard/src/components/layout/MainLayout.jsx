@@ -15,6 +15,12 @@ const MainLayout = () => {
 
   return (
     <div className="min-h-screen bg-zinc-950 flex">
+      {mobileOpen && (
+  <div
+    className="fixed inset-0 bg-black/60 z-40 lg:hidden"
+    onClick={() => setMobileOpen(false)}
+  />
+)}
       {/* Sidebar */}
       <Sidebar
         mobileOpen={mobileOpen}

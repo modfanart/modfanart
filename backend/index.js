@@ -46,7 +46,7 @@ app.use(limiter);
 // ====================== CORS ======================
 const allowedOrigins = [
   'http://localhost:3000',
-  'http://localhost:5173',
+  'http://localhost:5173', 'https://www.modfanofficial.com', 'https://workspace.modfanofficial.com'
 ];
 
 app.use(
