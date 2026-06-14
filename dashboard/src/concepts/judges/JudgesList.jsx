@@ -42,26 +42,43 @@ export const JudgesList = () => {
   const [suspendConfirm, setSuspendConfirm] = useState({ open: false, judge: null });
 
   // Permission check
-  const canManageJudges = hasRole(['super_admin', 'admin', 'developer']);
+// Permission check
+const canManageJudges = hasRole([
+  'SUPER_ADMIN',
+  'ADMIN',
+  'DEVELOPER'
+]);
 
-  if (!canManageJudges) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-zinc-950">
+// Hooks must always run
+const queryArgs = useMemo(() => ({
+  roleSlug: 'JUDGE',
+  page,
+  limit: 15,
+  ...(search.trim() && { search: search.trim() }),
+  ...(status !== 'all' && { status }),
+}), [page, search, status]);
+
+const {
+  data,
+  isLoading,
+  isFetching
+} = useGetUsersByRoleSlugQuery(queryArgs, {
+  skip: !canManageJudges,
+});
+
+// Safe conditional return AFTER hooks
+if (!canManageJudges) {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-zinc-950">
+      <div className="text-center">
         <p className="text-red-400 text-xl">Access Denied</p>
+        <p className="text-zinc-500 mt-2">
+          You don't have permission to manage judges.
+        </p>
       </div>
-    );
-  }
-
-  const queryArgs = useMemo(() => ({
-    roleSlug: 'judge', // 🔥 CHANGE HERE
-    page,
-    limit: 15,
-    ...(search.trim() && { search: search.trim() }),
-    ...(status !== 'all' && { status }),
-  }), [page, search, status]);
-
-  const { data, isLoading, isFetching } = useGetUsersByRoleSlugQuery(queryArgs);
-
+    </div>
+  );
+}
   const judges = data?.users ?? [];
   const pagination = data?.pagination;
 

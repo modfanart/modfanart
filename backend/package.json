@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  
   "scripts": {
     "migrate": "tsx src/scripts/migrate.ts",
     "migrate:up": "tsx src/scripts/migrate.ts",
@@ -28,6 +29,7 @@
     "express-rate-limit": "^8.2.1",
     "jsonwebtoken": "^9.0.3",
     "kysely": "^0.28.9",
+    "module-alias": "^2.3.4",
     "multer": "^2.0.2",
     "node-fetch": "^3.3.2",
     "pdfkit": "^0.17.2",
