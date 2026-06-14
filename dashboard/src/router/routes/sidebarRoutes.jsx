@@ -3,6 +3,7 @@ import {
 Users, Storefront, ShieldCheck, Trophy, ClipboardTextIcon, SquaresFour, Question, 
 } from "@phosphor-icons/react"
 import Dashboard from "../../concepts/dashboard/DashboardPage"
+import ProjectsTasksList from "../../concepts/tasks/ProjectTasksList"
 import ArtistsList from "../../concepts/artists/ArtistList"
 import BrandsListPage from "../../concepts/brands/BrandsList"
 import UsersPage from "../../concepts/team-permissions/UsersPage";
@@ -12,6 +13,7 @@ import Queries from "../../concepts/queries/QueriesPage";
 import JudgeList from "../../concepts/judges/JudgesList";
 import { File } from "@phosphor-icons/react/dist/ssr";
 import LicensesList from "../../concepts/licensing/LicensingList";
+import MediaList from "../../concepts/media/MediaList";
 import { FileText } from "lucide-react";
 const iconProps = {
   size: 20,
@@ -67,6 +69,20 @@ export const sidebarRoutes = [
  icon: <FileText {...iconProps} />,
   isSidebarActive: true,
  element: <LicensesList />,
+ },
+ {
+  path: "/tickets",
+   name: "Projects & Tasks",
+  icon: <SquaresFour {...iconProps} />,
+   isSidebarActive: true,
+  element: <ProjectsTasksList />,
+ },
+ {
+  path: "/media-library",
+   name: "Media Library",
+  icon: <File {...iconProps} />,
+   isSidebarActive: true,
+  element: <MediaList />, // Replace with actual component when ready
  },
   // {
   //   path: "/storefront",

@@ -1,0 +1,533 @@
+// src/controllers/artwork.controller.js
+const Artwork = require('../models/artwork.model');
+const ArtworkCategory = require('../models/artworkCategory.model');
+const ArtworkPricingTier = require('../models/artworkPricingTier.model');
+const { db, s3Client } = require('../../../config');
+const path = require('path');
+const crypto = require('crypto');
+
+const { PutObjectCommand } = require('@aws-sdk/client-s3');
+
+class ArtworkController {
+  /**
+   * POST /artworks
+   * Create a new artwork (draft by default)
+   * Requires: multer middleware for file upload (req.file)
+   */
+  static async createArtwork(req, res) {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+
+      const userId = req.user.id;
+      const {
+        title,
+        description,
+        category_ids = [],
+        pricing_tiers = [],
+      } = req.body;
+
+      if (!title || title.trim() === '') {
+        return res.status(400).json({ error: 'Title is required' });
+      }
+
+      const ext = path.extname(req.file.originalname).toLowerCase();
+      const allowed = [
+        '.jpg',
+        '.jpeg',
+        '.png',
+        '.gif',
+        '.webp',
+        '.svg',
+        '.mp4',
+      ];
+      if (!allowed.includes(ext)) {
+        return res.status(400).json({ error: 'Invalid file type' });
+      }
+
+      // Upload to S3
+      const fileKey = `artworks/${userId}/${crypto.randomUUID()}${ext}`;
+      await s3Client.send(
+        new PutObjectCommand({
+          Bucket: process.env.S3_BUCKET_NAME,
+          Key: fileKey,
+          Body: req.file.buffer,
+          ContentType: req.file.mimetype,
+        })
+      );
+
+      const fileUrl = `https://amzn-artwork-images.s3.eu-north-1.amazonaws.com/${fileKey}`;
+      // Create draft artwork
+      const artwork = await Artwork.create(userId, {
+        title: title.trim(),
+        description: description?.trim() || null,
+        file_url: fileUrl,
+        thumbnail_url: fileUrl, // TODO: generate real thumbnail later
+        source_file_url: fileUrl,
+        status: 'draft',
+        moderation_status: 'pending',
+      });
+
+      if (!artwork) {
+        return res
+          .status(500)
+          .json({ error: 'Failed to create artwork record' });
+      }
+
+      // Assign categories
+      if (Array.isArray(category_ids) && category_ids.length > 0) {
+        for (const catId of category_ids) {
+          await ArtworkCategory.assign(artwork.id, catId).catch((err) => {
+            console.warn(`Failed to assign category ${catId}:`, err);
+          });
+        }
+      }
+
+      // Create pricing tiers
+      if (Array.isArray(pricing_tiers) && pricing_tiers.length > 0) {
+        for (const tier of pricing_tiers) {
+          if (
+            ['personal', 'commercial', 'exclusive'].includes(tier.license_type)
+          ) {
+            await ArtworkPricingTier.create(artwork.id, {
+              license_type: tier.license_type,
+              price_inr_cents: parseInt(tier.price_inr_cents) || 0,
+              price_usd_cents: parseInt(tier.price_usd_cents) || 0,
+              is_active: true,
+            }).catch((err) => {
+              console.warn(`Failed to create pricing tier:`, err);
+            });
+          }
+        }
+      }
+
+      res.status(201).json({
+        message: 'Artwork created successfully (draft)',
+        artwork: {
+          id: artwork.id,
+          title: artwork.title,
+          status: artwork.status,
+          file_url: artwork.file_url,
+          thumbnail_url: artwork.thumbnail_url,
+          created_at: artwork.created_at,
+        },
+      });
+    } catch (error) {
+      console.error('Create artwork error:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+        code: error.code, // AWS errors have .code
+        bucket: process.env.S3_BUCKET_NAME,
+        region: process.env.AWS_REGION || 'unknown',
+        hasCredentials: !!process.env.AWS_ACCESS_KEY_ID,
+        file: req.file ? 'present' : 'missing',
+        body: req.body,
+      });
+
+      res.status(500).json({
+        error: 'Failed to create artwork',
+        message: error.message || 'Internal server error',
+        code: error.code || undefined,
+      });
+    }
+  }
+
+  /**
+   * GET /artworks/:id
+   * Get single artwork (public view) with pricing and categories
+   */
+  static async getArtwork(req, res) {
+    try {
+      const { id } = req.params;
+      const artwork = await Artwork.findById(id);
+
+      if (!artwork || artwork.deleted_at) {
+        return res.status(404).json({ error: 'Artwork not found or deleted' });
+      }
+
+      await Artwork.incrementView(id);
+
+      const pricing = await ArtworkPricingTier.findActiveForArtwork(id);
+      const categoryIds = await ArtworkCategory.getCategoryIdsForArtwork(id);
+
+      res.json({
+        id: artwork.id,
+        title: artwork.title,
+        description: artwork.description,
+        file_url: artwork.file_url,
+        thumbnail_url: artwork.thumbnail_url,
+        source_file_url: artwork.source_file_url,
+        status: artwork.status,
+        moderation_status: artwork.moderation_status,
+        views_count: artwork.views_count + 1,
+        favorites_count: artwork.favorites_count,
+        creator_id: artwork.creator_id,
+        created_at: artwork.created_at,
+        updated_at: artwork.updated_at,
+        pricing_tiers: pricing,
+        category_ids: categoryIds,
+      });
+    } catch (error) {
+      console.error('Get artwork error:', error);
+      res.status(500).json({ error: 'Failed to fetch artwork' });
+    }
+  }
+
+  /**
+   * PATCH /artworks/:id/publish
+   * Publish a draft artwork (creator only)
+   */
+  static async publishArtwork(req, res) {
+    try {
+      const { id } = req.params;
+      const artwork = await Artwork.findById(id);
+
+      if (!artwork || artwork.deleted_at) {
+        return res.status(404).json({ error: 'Artwork not found' });
+      }
+
+      if (artwork.creator_id !== req.user.id) {
+        return res
+          .status(403)
+          .json({ error: 'You can only publish your own artwork' });
+      }
+
+      if (artwork.status !== 'draft') {
+        return res
+          .status(400)
+          .json({ error: 'Only draft artworks can be published' });
+      }
+
+      await Artwork.publish(id);
+
+      res.json({
+        message: 'Artwork published successfully',
+        status: 'published',
+      });
+    } catch (error) {
+      console.error('Publish artwork error:', error);
+      res.status(500).json({ error: 'Failed to publish artwork' });
+    }
+  }
+
+  /**
+   * DELETE /artworks/:id
+   * Soft delete own artwork
+   */
+  static async deleteArtwork(req, res) {
+    try {
+      const { id } = req.params;
+      const artwork = await Artwork.findById(id);
+
+      if (!artwork || artwork.deleted_at) {
+        return res.status(404).json({ error: 'Artwork not found' });
+      }
+
+      if (artwork.creator_id !== req.user.id) {
+        return res
+          .status(403)
+          .json({ error: 'You can only delete your own artwork' });
+      }
+
+      await Artwork.softDelete(id);
+
+      res.json({ message: 'Artwork deleted successfully' });
+    } catch (error) {
+      console.error('Delete artwork error:', error);
+      res.status(500).json({ error: 'Failed to delete artwork' });
+    }
+  }
+
+  /**
+   * GET /artworks
+   * Public: List published artworks (explore/discovery feed)
+   */
+  static async getArtworks(req, res) {
+    try {
+      const page = Math.max(1, parseInt(req.query.page) || 1);
+      const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 20));
+      const offset = (page - 1) * limit;
+      const search = req.query.search?.trim();
+      const categoryId = req.query.category_id;
+
+      let query = db
+        .selectFrom('artworks')
+        .select([
+          'id',
+          'title',
+          'description',
+          'thumbnail_url',
+          'views_count',
+          'favorites_count',
+          'creator_id',
+          'status', // ✅ ADD THIS
+          'created_at',
+        ])
+
+        .where('deleted_at', 'is', null)
+        .orderBy('created_at', 'desc');
+
+      if (search) {
+        query = query.where((eb) =>
+          eb.or([
+            eb('title', 'ilike', `%${search}%`),
+            eb('description', 'ilike', `%${search}%`),
+          ])
+        );
+      }
+
+      if (categoryId) {
+        query = query
+          .innerJoin(
+            'artwork_categories',
+            'artwork_categories.artwork_id',
+            'artworks.id'
+          )
+          .where('artwork_categories.category_id', '=', categoryId);
+      }
+
+      let countQuery = db
+        .selectFrom('artworks')
+        .where('status', '=', 'published')
+        .where('deleted_at', 'is', null);
+
+      if (search) {
+        countQuery = countQuery.where((eb) =>
+          eb.or([
+            eb('title', 'ilike', `%${search}%`),
+            eb('description', 'ilike', `%${search}%`),
+          ])
+        );
+      }
+
+      if (categoryId) {
+        countQuery = countQuery
+          .innerJoin(
+            'artwork_categories',
+            'artwork_categories.artwork_id',
+            'artworks.id'
+          )
+          .where('artwork_categories.category_id', '=', categoryId);
+      }
+
+      const countResult = await countQuery
+        .select(db.fn.count('artworks.id').as('total'))
+        .executeTakeFirst();
+
+      const total = parseInt(countResult?.total || '0');
+      const totalPages = Math.ceil(total / limit);
+
+      const artworks = await query.limit(limit).offset(offset).execute();
+
+      res.json({
+        artworks,
+        pagination: {
+          page,
+          limit,
+          total,
+          total_pages: totalPages,
+          has_next: page < totalPages,
+          has_prev: page > 1,
+        },
+      });
+    } catch (error) {
+      console.error('Get artworks list error:', error);
+      res.status(500).json({ error: 'Failed to fetch artworks' });
+    }
+  }
+
+  /**
+   * GET /artworks/me
+   * Authenticated: Get current user's ALL artworks (dashboard / profile management)
+   * Supports ?status=published|draft|pending|... filter
+   */
+  static async getMyArtworks(req, res) {
+    try {
+      const userId = req.user.id;
+      const page = Math.max(1, parseInt(req.query.page) || 1);
+      const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 20));
+      const offset = (page - 1) * limit;
+      const statusFilter = req.query.status?.trim();
+
+      let query = db
+        .selectFrom('artworks')
+        .select([
+          'id',
+          'title',
+          'description',
+          'file_url',
+          'thumbnail_url',
+          'source_file_url',
+          'status',
+          'moderation_status',
+          'views_count',
+          'favorites_count',
+          'creator_id',
+          'created_at',
+          'updated_at',
+        ])
+        .where('creator_id', '=', userId)
+        .where('deleted_at', 'is', null)
+        .orderBy('created_at', 'desc');
+
+      if (statusFilter) {
+        const statuses = statusFilter.split(',').map((s) => s.trim());
+        query = query.where('status', 'in', statuses);
+      }
+
+      // Count query
+      let countQuery = db
+        .selectFrom('artworks')
+        .where('creator_id', '=', userId)
+        .where('deleted_at', 'is', null);
+
+      if (statusFilter) {
+        const statuses = statusFilter.split(',').map((s) => s.trim());
+        countQuery = countQuery.where('status', 'in', statuses);
+      }
+
+      const countResult = await countQuery
+        .select(db.fn.countAll().as('total'))
+        .executeTakeFirst();
+
+      const total = parseInt(countResult?.total || '0');
+      const totalPages = Math.ceil(total / limit);
+
+      const artworks = await query.limit(limit).offset(offset).execute();
+
+      res.json({
+        artworks,
+        pagination: {
+          page,
+          limit,
+          total,
+          total_pages: totalPages,
+          has_next: page < totalPages,
+          has_prev: page > 1,
+        },
+      });
+    } catch (error) {
+      console.error('Get my artworks error:', error);
+      res.status(500).json({ error: 'Failed to fetch your artworks' });
+    }
+  }
+
+  /**
+   * GET /artworks/by-creator/:creatorId
+   * Public: Get published artworks by a specific creator
+   */
+  /**
+   * GET /artworks/by-creator/:creatorId
+   * Public: Get ONLY published artworks by a specific creator
+   * No joins, no extra context — pure artwork list
+   */
+  static async getArtworksByCreator(req, res) {
+    try {
+      const { creatorId } = req.params;
+
+      if (!creatorId || typeof creatorId !== 'string') {
+        return res.status(400).json({ error: 'Valid creator ID required' });
+      }
+
+      const page = Math.max(1, parseInt(req.query.page) || 1);
+      const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 20));
+      const offset = (page - 1) * limit;
+      const search = req.query.search?.trim();
+
+      // ────────────────────────────────────────────────
+      // MAIN QUERY (STRICT: published only)
+      // ────────────────────────────────────────────────
+
+      let query = db
+        .selectFrom('artworks')
+        .select([
+          'id',
+          'creator_id',
+          'title',
+          'description',
+
+          // ✅ IMPORTANT (frontend needs these)
+          'file_url',
+          'thumbnail_url',
+          'source_file_url',
+
+          'status',
+          'moderation_status',
+
+          'views_count',
+          'favorites_count',
+
+          'created_at',
+          'updated_at',
+        ])
+        .where('creator_id', '=', creatorId)
+        .where('status', '=', 'published') // 🔥 STRICT FILTER
+        .where('deleted_at', 'is', null)
+        .orderBy('created_at', 'desc');
+
+      if (search) {
+        query = query.where((eb) =>
+          eb.or([
+            eb('title', 'ilike', `%${search}%`),
+            eb('description', 'ilike', `%${search}%`),
+          ])
+        );
+      }
+
+      // ────────────────────────────────────────────────
+      // COUNT QUERY
+      // ────────────────────────────────────────────────
+
+      let countQuery = db
+        .selectFrom('artworks')
+        .where('creator_id', '=', creatorId)
+        .where('status', '=', 'published')
+        .where('deleted_at', 'is', null);
+
+      if (search) {
+        countQuery = countQuery.where((eb) =>
+          eb.or([
+            eb('title', 'ilike', `%${search}%`),
+            eb('description', 'ilike', `%${search}%`),
+          ])
+        );
+      }
+
+      const countResult = await countQuery
+        .select(db.fn.count('id').as('total'))
+        .executeTakeFirst();
+
+      const total = parseInt(countResult?.total || '0');
+      const totalPages = Math.ceil(total / limit);
+
+      // ────────────────────────────────────────────────
+      // EXECUTE
+      // ────────────────────────────────────────────────
+
+      const artworks = await query.limit(limit).offset(offset).execute();
+
+      // ────────────────────────────────────────────────
+      // RESPONSE
+      // ────────────────────────────────────────────────
+
+      return res.json({
+        artworks,
+        pagination: {
+          page,
+          limit,
+          total,
+          total_pages: totalPages,
+          has_next: page < totalPages,
+          has_prev: page > 1,
+        },
+      });
+    } catch (error) {
+      console.error('Get artworks by creator error:', error);
+      res.status(500).json({ error: 'Failed to fetch creator artworks' });
+    }
+  }
+}
+
+module.exports = ArtworkController;

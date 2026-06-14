@@ -1,9 +1,8 @@
-// eslint.config.mjs   (recommended extension for ESM + import.meta)
+// eslint.config.mjs
 import js from '@eslint/js';
 import globals from 'globals';
 
-import ts from '@typescript-eslint/eslint-plugin';
-import tsParser from '@typescript-eslint/parser';
+import tseslint from 'typescript-eslint';
 
 import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
@@ -16,10 +15,10 @@ import prettier from 'eslint-plugin-prettier';
 // ────────────────────────────────────────────────────────────
 
 export default [
-  // 1. Base JS rules
+  // 1. Base JS
   js.configs.recommended,
 
-  // 2. Globals (browser + node)
+  // 2. Globals
   {
     languageOptions: {
       globals: {
@@ -29,7 +28,7 @@ export default [
     },
   },
 
-  // 3. React + Hooks + a11y
+  // 3. React
   {
     plugins: {
       react,
@@ -44,13 +43,13 @@ export default [
       ...reactHooks.configs.recommended.rules,
       ...jsxA11y.configs.recommended.rules,
 
-      'react/react-in-jsx-scope': 'off', // new JSX transform
-      'react/prop-types': 'off', // using TS
-      'react/jsx-uses-react': 'off', // new JSX transform
+      'react/react-in-jsx-scope': 'off',
+      'react/prop-types': 'off',
+      'react/jsx-uses-react': 'off',
     },
   },
 
-  // 4. ──── Improved import handling ────────────────────────────────────────
+  // 4. Imports
   {
     plugins: {
       import: importPlugin,
@@ -58,28 +57,26 @@ export default [
     settings: {
       'import/resolver': {
         typescript: {
-          alwaysTryTypes: true, // ← critical for @/ aliases + .ts/.tsx
+          alwaysTryTypes: true,
           project: './tsconfig.json',
         },
-      },
-      'import/extensions': ['.js', '.jsx', '.ts', '.tsx'],
-      'import/parsers': {
-        '@typescript-eslint/parser': ['.ts', '.tsx'],
       },
     },
     rules: {
       'import/no-unresolved': 'error',
       'import/no-duplicates': 'error',
       'import/first': 'error',
-      'import/extensions': ['error', 'never', { ignorePackages: true }],
 
       'import/order': [
-        'error', // ← change to 'error' once stable
+        'error',
         {
           groups: [
-            'builtin', // node: fs, path, ...
-            'external', // npm packages
-            ['internal', 'parent', 'sibling', 'index'], // your code
+            'builtin',
+            'external',
+            'internal',
+            'parent',
+            'sibling',
+            'index',
             'object',
             'type',
           ],
@@ -90,7 +87,7 @@ export default [
               position: 'before',
             },
           ],
-          pathGroupsExcludedImportTypes: ['builtin', 'type'],
+          pathGroupsExcludedImportTypes: ['builtin'],
           'newlines-between': 'always',
           alphabetize: {
             order: 'asc',
@@ -101,7 +98,7 @@ export default [
     },
   },
 
-  // 5. Next.js rules
+  // 5. Next.js
   {
     plugins: {
       '@next/next': nextPlugin,
@@ -109,51 +106,45 @@ export default [
     rules: {
       ...nextPlugin.configs.recommended.rules,
       ...nextPlugin.configs['core-web-vitals'].rules,
-      '@next/next/no-img-element': 'warn', // ← you have many <img>
+      '@next/next/no-img-element': 'warn',
     },
   },
 
-  // 6. TypeScript (only on .ts/.tsx)
-  {
+  // 6. TypeScript (FIXED PROPERLY)
+  ...tseslint.configs.recommendedTypeChecked.map((config) => ({
+    ...config,
     files: ['**/*.{ts,tsx}'],
     languageOptions: {
-      parser: tsParser,
+      ...config.languageOptions,
       parserOptions: {
-        project: true, // ← modern way (infers from nearest tsconfig)
+        project: true,
         tsconfigRootDir: import.meta.dirname,
       },
     },
-    plugins: {
-      '@typescript-eslint': ts,
-    },
     rules: {
-      ...ts.configs.recommended.rules,
-      ...ts.configs['recommended-type-checked'].rules,
+      ...config.rules,
 
-      // Keep strict, but downgrade noisy unsafe rules during cleanup
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': [
         'error',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
 
-      // Very helpful during heavy API/DB refactoring
       '@typescript-eslint/no-unsafe-assignment': 'warn',
       '@typescript-eslint/no-unsafe-member-access': 'warn',
       '@typescript-eslint/no-unsafe-argument': 'warn',
       '@typescript-eslint/no-unsafe-call': 'warn',
       '@typescript-eslint/no-unsafe-return': 'warn',
 
-      // Common React + async pain points — make them less painful
       '@typescript-eslint/no-misused-promises': [
         'error',
-        { checksVoidReturn: { attributes: false } }, // allows async onClick / onSubmit
+        { checksVoidReturn: { attributes: false } },
       ],
       '@typescript-eslint/no-floating-promises': 'error',
     },
-  },
+  })),
 
-  // 7. Prettier (last – overrides formatting)
+  // 7. Prettier
   {
     plugins: { prettier },
     rules: {
@@ -163,7 +154,7 @@ export default [
     },
   },
 
-  // 8. Jest / tests (if you use them)
+  // 8. Tests
   {
     files: ['**/*.{test,spec}.{ts,tsx}'],
     languageOptions: {
@@ -171,7 +162,7 @@ export default [
     },
   },
 
-  // 9. Ignore patterns
+  // 9. Ignore
   {
     ignores: [
       '**/node_modules/**',
@@ -182,7 +173,6 @@ export default [
       'coverage/**',
       '**/*.min.*',
       'next-env.d.ts',
-      '**/*.config.*', // optional: ignore eslint.config.mjs itself if noisy
     ],
   },
 ];

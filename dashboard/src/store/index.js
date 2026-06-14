@@ -8,7 +8,7 @@ import { setupListeners } from '@reduxjs/toolkit/query';
 import authApi from '@/services/api/authApi';
 import userApi from '@/services/api/userApi';
 import rolesApi from '@/services/api/rolesApi';
-
+import {projectTaskApi }from '@/services/api/projectTasksApi';
 import ordersApi from '@/services/api/orderApi';
 import moderationApi from '@/services/api/moderationApi';
 import licensesApi from '@/services/api/licenseApi';
@@ -20,6 +20,7 @@ import artworkApi from '@/services/api/artworkApi';
 import artworkTagsApi from '@/services/api/artworkTagsApi';
 import brandApi from '@/services/api/brands';
 import { collectionsApi } from '@/services/api/collectionApi';
+import mediaApi from '@/services/api/mediaApi';
 import { searchApi } from '@/services/api/searchApi';
 import notifyApi from '@/services/api/notifyApi';
 import { contactApi } from '@/services/api/contactApi';
@@ -74,6 +75,7 @@ export const store = configureStore({
     [collectionsApi.reducerPath]: collectionsApi.reducer,
     [searchApi.reducerPath]: searchApi.reducer,
     [notifyApi.reducerPath]: notifyApi.reducer,
+    [projectTaskApi.reducerPath]: projectTaskApi.reducer, [mediaApi.reducerPath]: mediaApi.reducer,
   },
 
   middleware: (getDefaultMiddleware) =>
@@ -100,7 +102,7 @@ export const store = configureStore({
       brandApi.middleware,
       collectionsApi.middleware,
       searchApi.middleware,
-      notifyApi.middleware
+      notifyApi.middleware, projectTaskApi.middleware, mediaApi.middleware,
       // add more .middleware when you create new api slices
     ),
 
