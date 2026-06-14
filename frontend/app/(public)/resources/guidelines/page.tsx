@@ -18,6 +18,8 @@ export const metadata = {
   description: 'Guidelines for submitting fan art that complies with IP holder requirements',
 };
 
+const PDF_URL = "/pdfs/FanArtistGuidelines.pdf";
+
 export default function BrandGuidelinesPage() {
   return (
     <div className="container py-12 md:py-16 lg:py-24">
@@ -861,13 +863,15 @@ export default function BrandGuidelinesPage() {
                 <p className="text-sm text-muted-foreground mb-4">
                   Download our comprehensive fan art guidelines PDF for offline reference.
                 </p>
-                <Button variant="outline" className="w-full">
-                  <Download className="mr-2 h-4 w-4" />
-                  Download PDF
-                </Button>
+                <a href={PDF_URL} download>
+                  <Button variant="outline" className="w-full">
+                    <Download className="mr-2 h-4 w-4" />
+                    Download PDF
+                  </Button>
+                </a>
               </CardContent>
             </Card>
-            <Card>
+            {/* <Card>
               <CardHeader>
                 <CardTitle>Video Tutorials</CardTitle>
               </CardHeader>
@@ -880,7 +884,7 @@ export default function BrandGuidelinesPage() {
                   <Link href="/resources/tutorials">View Tutorials</Link>
                 </Button>
               </CardContent>
-            </Card>
+            </Card> */}
             <Card>
               <CardHeader>
                 <CardTitle>Artist Community</CardTitle>
@@ -891,7 +895,13 @@ export default function BrandGuidelinesPage() {
                   other.
                 </p>
                 <Button variant="outline" className="w-full" asChild>
-                  <Link href="/community">Join Community</Link>
+                  <a
+                    href="https://discord.gg/St9XvnZT8h"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Join Community
+                  </a>
                 </Button>
               </CardContent>
             </Card>
