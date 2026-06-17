@@ -1,32 +1,32 @@
 // src/services/api/artworkApi.js
 
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { API_BASE_URL } from '..';
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { API_BASE_URL } from "..";
 
 const artworkApi = createApi({
-  reducerPath: 'artworkApi',
+  reducerPath: "artworkApi",
 
   baseQuery: fetchBaseQuery({
     baseUrl: API_BASE_URL,
-    credentials: 'include',
+    credentials: "include",
 
-  prepareHeaders: (headers) => {
-    const token = localStorage.getItem('accessToken');
+    prepareHeaders: (headers) => {
+      const token = localStorage.getItem("accessToken");
 
-    if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
-    }
+      if (token) {
+        headers.set("Authorization", `Bearer ${token}`);
+      }
 
-    return headers;
-  },
+      return headers;
+    },
   }),
 
   tagTypes: [
-    'Artwork',
-    'ArtworkList',
-    'MyArtworks',
-    'ArtworkCategories',
-    'Categories',
+    "Artwork",
+    "ArtworkList",
+    "MyArtworks",
+    "ArtworkCategories",
+    "Categories",
   ],
 
   endpoints: (builder) => ({
@@ -42,7 +42,7 @@ const artworkApi = createApi({
         if (params?.category) queryParams.category = params.category;
 
         return {
-          url: '/artwork',
+          url: "/artwork",
           ...(Object.keys(queryParams).length > 0 && {
             params: queryParams,
           }),
@@ -53,20 +53,18 @@ const artworkApi = createApi({
         result
           ? [
               ...result.artworks.map((a) => ({
-                type: 'Artwork',
+                type: "Artwork",
                 id: a.id,
               })),
-              { type: 'ArtworkList', id: 'LIST' },
+              { type: "ArtworkList", id: "LIST" },
             ]
-          : [{ type: 'ArtworkList', id: 'LIST' }],
+          : [{ type: "ArtworkList", id: "LIST" }],
     }),
 
     getArtwork: builder.query({
       query: (id) => `/artwork/${id}`,
 
-      providesTags: (result, error, id) => [
-        { type: 'Artwork', id },
-      ],
+      providesTags: (result, error, id) => [{ type: "Artwork", id }],
     }),
 
     getArtworksByCreator: builder.query({
@@ -81,35 +79,33 @@ const artworkApi = createApi({
           url: `/by-creator/${creatorId}`,
         };
 
-        return Object.keys(params).length > 0
-          ? { ...base, params }
-          : base;
+        return Object.keys(params).length > 0 ? { ...base, params } : base;
       },
 
       providesTags: (result) =>
         result
           ? [
               ...result.artworks.map((a) => ({
-                type: 'Artwork',
+                type: "Artwork",
                 id: a.id,
               })),
-              { type: 'ArtworkList', id: 'BY_CREATOR' },
+              { type: "ArtworkList", id: "BY_CREATOR" },
             ]
-          : [{ type: 'ArtworkList', id: 'BY_CREATOR' }],
+          : [{ type: "ArtworkList", id: "BY_CREATOR" }],
     }),
 
     // Authenticated
 
     createArtwork: builder.mutation({
       query: (formData) => ({
-        url: '/artwork',
-        method: 'POST',
+        url: "/artwork",
+        method: "POST",
         body: formData,
       }),
 
       invalidatesTags: [
-        { type: 'ArtworkList', id: 'LIST' },
-        { type: 'MyArtworks', id: 'LIST' },
+        { type: "ArtworkList", id: "LIST" },
+        { type: "MyArtworks", id: "LIST" },
       ],
     }),
 
@@ -122,7 +118,7 @@ const artworkApi = createApi({
         if (params?.limit) queryParams.limit = params.limit;
 
         return {
-          url: '/artwork/me',
+          url: "/artwork/me",
           ...(Object.keys(queryParams).length > 0 && {
             params: queryParams,
           }),
@@ -133,56 +129,54 @@ const artworkApi = createApi({
         result
           ? [
               ...result.artworks.map((a) => ({
-                type: 'Artwork',
+                type: "Artwork",
                 id: a.id,
               })),
-              { type: 'MyArtworks', id: 'LIST' },
+              { type: "MyArtworks", id: "LIST" },
             ]
-          : [{ type: 'MyArtworks', id: 'LIST' }],
+          : [{ type: "MyArtworks", id: "LIST" }],
     }),
 
     publishArtwork: builder.mutation({
       query: (id) => ({
         url: `/artwork/${id}/publish`,
-        method: 'PATCH',
+        method: "PATCH",
       }),
 
       invalidatesTags: (result, error, id) => [
-        { type: 'Artwork', id },
-        { type: 'ArtworkList', id: 'LIST' },
-        { type: 'MyArtworks', id: 'LIST' },
+        { type: "Artwork", id },
+        { type: "ArtworkList", id: "LIST" },
+        { type: "MyArtworks", id: "LIST" },
       ],
     }),
 
     deleteArtwork: builder.mutation({
       query: (id) => ({
         url: `/artwork/${id}`,
-        method: 'DELETE',
+        method: "DELETE",
       }),
 
       invalidatesTags: (result, error, id) => [
-        { type: 'Artwork', id },
-        { type: 'ArtworkList', id: 'LIST' },
-        { type: 'MyArtworks', id: 'LIST' },
+        { type: "Artwork", id },
+        { type: "ArtworkList", id: "LIST" },
+        { type: "MyArtworks", id: "LIST" },
       ],
     }),
 
     // Categories
 
     getArtworkCategories: builder.query({
-      query: (artworkId) =>
-        `/artwork/${artworkId}/categories`,
+      query: (artworkId) => `/artwork/${artworkId}/categories`,
 
-      transformResponse: (response) =>
-        response.categories ?? [],
+      transformResponse: (response) => response.categories ?? [],
 
       providesTags: (result, error, artworkId) => [
         {
-          type: 'ArtworkCategories',
+          type: "ArtworkCategories",
           id: artworkId,
         },
         {
-          type: 'Artwork',
+          type: "Artwork",
           id: artworkId,
         },
       ],
@@ -191,17 +185,17 @@ const artworkApi = createApi({
     addCategoryToArtwork: builder.mutation({
       query: ({ artworkId, categoryId }) => ({
         url: `/artwork/${artworkId}/categories`,
-        method: 'POST',
+        method: "POST",
         body: { categoryId },
       }),
 
       invalidatesTags: (result, error, { artworkId }) => [
         {
-          type: 'ArtworkCategories',
+          type: "ArtworkCategories",
           id: artworkId,
         },
         {
-          type: 'Artwork',
+          type: "Artwork",
           id: artworkId,
         },
       ],
@@ -210,16 +204,16 @@ const artworkApi = createApi({
     removeCategoryFromArtwork: builder.mutation({
       query: ({ artworkId, categoryId }) => ({
         url: `/artwork/${artworkId}/categories/${categoryId}`,
-        method: 'DELETE',
+        method: "DELETE",
       }),
 
       invalidatesTags: (result, error, { artworkId }) => [
         {
-          type: 'ArtworkCategories',
+          type: "ArtworkCategories",
           id: artworkId,
         },
         {
-          type: 'Artwork',
+          type: "Artwork",
           id: artworkId,
         },
       ],
@@ -234,18 +228,18 @@ const artworkApi = createApi({
         }
 
         if (filters?.activeOnly) {
-          queryParams.active = 'true';
+          queryParams.active = "true";
         }
 
         return {
-          url: '/categories',
+          url: "/categories",
           ...(Object.keys(queryParams).length > 0 && {
             params: queryParams,
           }),
         };
       },
 
-      providesTags: ['Categories'],
+      providesTags: ["Categories"],
     }),
   }),
 });

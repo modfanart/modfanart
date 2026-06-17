@@ -1,16 +1,16 @@
 // src/services/api/collectionApi.js
 
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { API_BASE_URL } from '..';
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { API_BASE_URL } from "..";
 
 const baseQuery = fetchBaseQuery({
   baseUrl: API_BASE_URL,
 
- prepareHeaders: (headers) => {
-    const token = localStorage.getItem('accessToken');
+  prepareHeaders: (headers) => {
+    const token = localStorage.getItem("accessToken");
 
     if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
+      headers.set("Authorization", `Bearer ${token}`);
     }
 
     return headers;
@@ -18,32 +18,28 @@ const baseQuery = fetchBaseQuery({
 });
 
 export const collectionsApi = createApi({
-  reducerPath: 'collectionsApi',
+  reducerPath: "collectionsApi",
 
   baseQuery,
 
-  tagTypes: [
-    'Collection',
-    'CollectionList',
-    'CollectionItems',
-  ],
+  tagTypes: ["Collection", "CollectionList", "CollectionItems"],
 
   endpoints: (builder) => ({
     // Create Collection
     createCollection: builder.mutation({
       query: (body) => ({
-        url: '/collections',
-        method: 'POST',
+        url: "/collections",
+        method: "POST",
         body,
       }),
 
-      invalidatesTags: ['CollectionList'],
+      invalidatesTags: ["CollectionList"],
     }),
 
     // Get Collections
     getCollections: builder.query({
       query: (params) => ({
-        url: '/collections',
+        url: "/collections",
         params,
       }),
 
@@ -51,18 +47,18 @@ export const collectionsApi = createApi({
         result
           ? [
               ...result.collections.map(({ id }) => ({
-                type: 'Collection',
+                type: "Collection",
                 id,
               })),
               {
-                type: 'CollectionList',
-                id: 'LIST',
+                type: "CollectionList",
+                id: "LIST",
               },
             ]
           : [
               {
-                type: 'CollectionList',
-                id: 'LIST',
+                type: "CollectionList",
+                id: "LIST",
               },
             ],
     }),
@@ -73,7 +69,7 @@ export const collectionsApi = createApi({
 
       providesTags: (result, error, id) => [
         {
-          type: 'Collection',
+          type: "Collection",
           id,
         },
       ],
@@ -83,18 +79,18 @@ export const collectionsApi = createApi({
     updateCollection: builder.mutation({
       query: ({ id, ...patch }) => ({
         url: `/collections/${id}`,
-        method: 'PUT',
+        method: "PUT",
         body: patch,
       }),
 
       invalidatesTags: (result, error, { id }) => [
         {
-          type: 'Collection',
+          type: "Collection",
           id,
         },
         {
-          type: 'CollectionList',
-          id: 'LIST',
+          type: "CollectionList",
+          id: "LIST",
         },
       ],
     }),
@@ -103,17 +99,17 @@ export const collectionsApi = createApi({
     deleteCollection: builder.mutation({
       query: (id) => ({
         url: `/collections/${id}`,
-        method: 'DELETE',
+        method: "DELETE",
       }),
 
       invalidatesTags: (result, error, id) => [
         {
-          type: 'Collection',
+          type: "Collection",
           id,
         },
         {
-          type: 'CollectionList',
-          id: 'LIST',
+          type: "CollectionList",
+          id: "LIST",
         },
       ],
     }),
@@ -122,19 +118,15 @@ export const collectionsApi = createApi({
     addArtworkToCollection: builder.mutation({
       query: ({ collectionId, artworkId }) => ({
         url: `/collections/${collectionId}/items`,
-        method: 'POST',
+        method: "POST",
         body: {
           artworkId,
         },
       }),
 
-      invalidatesTags: (
-        result,
-        error,
-        { collectionId }
-      ) => [
+      invalidatesTags: (result, error, { collectionId }) => [
         {
-          type: 'Collection',
+          type: "Collection",
           id: collectionId,
         },
       ],
@@ -144,16 +136,12 @@ export const collectionsApi = createApi({
     removeArtworkFromCollection: builder.mutation({
       query: ({ collectionId, artworkId }) => ({
         url: `/collections/${collectionId}/items/${artworkId}`,
-        method: 'DELETE',
+        method: "DELETE",
       }),
 
-      invalidatesTags: (
-        result,
-        error,
-        { collectionId }
-      ) => [
+      invalidatesTags: (result, error, { collectionId }) => [
         {
-          type: 'Collection',
+          type: "Collection",
           id: collectionId,
         },
       ],
