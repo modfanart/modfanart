@@ -1,37 +1,37 @@
-// src/services/api/categoriesApi.js
+// src/services/api/categoryApi.js
 
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { API_BASE_URL } from '..';
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { API_BASE_URL } from "..";
 
 const categoriesApi = createApi({
-  reducerPath: 'categoriesApi',
+  reducerPath: "categoriesApi",
 
   baseQuery: fetchBaseQuery({
     baseUrl: API_BASE_URL,
 
-  prepareHeaders: (headers) => {
-    const token = localStorage.getItem('accessToken');
+    prepareHeaders: (headers) => {
+      const token = localStorage.getItem("accessToken");
 
-    if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
-    }
+      if (token) {
+        headers.set("Authorization", `Bearer ${token}`);
+      }
 
-    return headers;
-  },
+      return headers;
+    },
 
-    credentials: 'include',
+    credentials: "include",
   }),
 
-  tagTypes: ['Categories', 'Category'],
+  tagTypes: ["Categories", "Category"],
 
   endpoints: (builder) => ({
     // GET /category
     getAllCategories: builder.query({
       query: () => ({
-        url: '/category',
+        url: "/category",
       }),
 
-      providesTags: ['Categories'],
+      providesTags: ["Categories"],
     }),
 
     // GET /category/:id
@@ -40,7 +40,7 @@ const categoriesApi = createApi({
 
       providesTags: (result, error, id) => [
         {
-          type: 'Category',
+          type: "Category",
           id,
         },
       ],
@@ -49,26 +49,26 @@ const categoriesApi = createApi({
     // POST /category
     createCategory: builder.mutation({
       query: (body) => ({
-        url: '/category',
-        method: 'POST',
+        url: "/category",
+        method: "POST",
         body,
       }),
 
-      invalidatesTags: ['Categories'],
+      invalidatesTags: ["Categories"],
     }),
 
     // PATCH /category/:id
     updateCategory: builder.mutation({
       query: ({ id, ...patch }) => ({
         url: `/category/${id}`,
-        method: 'PATCH',
+        method: "PATCH",
         body: patch,
       }),
 
       invalidatesTags: (result, error, { id }) => [
-        'Categories',
+        "Categories",
         {
-          type: 'Category',
+          type: "Category",
           id,
         },
       ],
@@ -78,13 +78,13 @@ const categoriesApi = createApi({
     deleteCategory: builder.mutation({
       query: (id) => ({
         url: `/category/${id}`,
-        method: 'DELETE',
+        method: "DELETE",
       }),
 
       invalidatesTags: (result, error, id) => [
-        'Categories',
+        "Categories",
         {
-          type: 'Category',
+          type: "Category",
           id,
         },
       ],
@@ -92,26 +92,25 @@ const categoriesApi = createApi({
 
     // GET /category/slug/:slug
     getCategoryBySlug: builder.query({
-      query: (slug) =>
-        `/category/slug/${encodeURIComponent(slug)}`,
+      query: (slug) => `/category/slug/${encodeURIComponent(slug)}`,
 
       providesTags: (result, error, slug) => [
         {
-          type: 'Category',
+          type: "Category",
           id: `SLUG-${slug}`,
         },
-        'Categories',
+        "Categories",
       ],
     }),
 
     // GET /category/tree
     getCategoryTree: builder.query({
       query: (params = {}) => ({
-        url: '/category/tree',
+        url: "/category/tree",
         params,
       }),
 
-      providesTags: ['Categories'],
+      providesTags: ["Categories"],
     }),
   }),
 });

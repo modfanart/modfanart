@@ -1,39 +1,39 @@
 // src/services/api/favoritesApi.js
 
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { API_BASE_URL } from '..';
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { API_BASE_URL } from "..";
 
 export const favoritesApi = createApi({
-  reducerPath: 'favoritesApi',
+  reducerPath: "favoritesApi",
 
   baseQuery: fetchBaseQuery({
     baseUrl: API_BASE_URL,
 
-  prepareHeaders: (headers) => {
-    const token = localStorage.getItem('accessToken');
+    prepareHeaders: (headers) => {
+      const token = localStorage.getItem("accessToken");
 
-    if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
-    }
+      if (token) {
+        headers.set("Authorization", `Bearer ${token}`);
+      }
 
-    return headers;
-  },
+      return headers;
+    },
   }),
 
-  tagTypes: ['FavoriteArtworks', 'Artwork'],
+  tagTypes: ["FavoriteArtworks", "Artwork"],
 
   endpoints: (builder) => ({
     // POST /artworks/:artworkId/favorite
     toggleFavorite: builder.mutation({
       query: (artworkId) => ({
         url: `/artworks/${artworkId}/favorite`,
-        method: 'POST',
+        method: "POST",
       }),
 
       invalidatesTags: (result, error, artworkId) => [
-        'FavoriteArtworks',
+        "FavoriteArtworks",
         {
-          type: 'Artwork',
+          type: "Artwork",
           id: artworkId,
         },
       ],
@@ -41,19 +41,18 @@ export const favoritesApi = createApi({
 
     // GET /me/favorites/artworks
     getMyFavoriteArtworks: builder.query({
-      query: () => '/me/favorites/artworks',
+      query: () => "/me/favorites/artworks",
 
-      providesTags: ['FavoriteArtworks'],
+      providesTags: ["FavoriteArtworks"],
     }),
 
     // GET /artworks/:artworkId/favorite
     isArtworkFavorited: builder.query({
-      query: (artworkId) =>
-        `/artworks/${artworkId}/favorite`,
+      query: (artworkId) => `/artworks/${artworkId}/favorite`,
 
       providesTags: (result, error, artworkId) => [
         {
-          type: 'Artwork',
+          type: "Artwork",
           id: artworkId,
         },
       ],
