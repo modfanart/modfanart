@@ -1,15 +1,15 @@
 // backend/src/repositories/submission.repository.js
-const { db, DB } = require('../config');
-const { logger } = require('../utils/logger');
-const { dbCache, createCacheKey } = require('../cache'); // copy this from frontend/lib/cache
+const { db, DB } = require("../config");
+const { logger } = require("../utils/logger");
+const { dbCache, createCacheKey } = require("../cache"); // copy this from frontend/lib/cache
 
 // Zod & types (copy from frontend if needed)
 const SubmissionStatusEnum = [
-  'pending',
-  'review',
-  'approved',
-  'rejected',
-  'licensed',
+  "pending",
+  "review",
+  "approved",
+  "rejected",
+  "licensed",
 ];
 
 // ─────────────────────────────────────────────
@@ -30,7 +30,7 @@ class SubmissionRepository {
    * @returns {Promise<Submission | null>}
    */
   async getById(id) {
-    const cacheKey = createCacheKey('submission', { id });
+    const cacheKey = createCacheKey("submission", { id });
 
     return dbCache.getOrSet(
       cacheKey,
@@ -38,7 +38,7 @@ class SubmissionRepository {
         const result = await db
           .selectFrom(DB.SUBMISSIONS)
           .selectAll()
-          .where('id', '=', id)
+          .where("id", "=", id)
           .executeTakeFirst();
 
         if (!result) return null;
@@ -56,7 +56,7 @@ class SubmissionRepository {
    * @returns {Promise<{ submissions: Submission[]; total: number }>}
    */
   async getByUserId(userId, limit = 50, offset = 0) {
-    const cacheKey = createCacheKey('user_submissions', {
+    const cacheKey = createCacheKey("user_submissions", {
       userId,
       limit,
       offset,
@@ -68,8 +68,8 @@ class SubmissionRepository {
         // Count total
         const countResult = await db
           .selectFrom(DB.SUBMISSIONS)
-          .select(db.fn.countAll().as('total'))
-          .where('user_id', '=', userId)
+          .select(db.fn.countAll().as("total"))
+          .where("user_id", "=", userId)
           .executeTakeFirst();
 
         const total = Number(countResult?.total || 0);
@@ -78,8 +78,8 @@ class SubmissionRepository {
         const rows = await db
           .selectFrom(DB.SUBMISSIONS)
           .selectAll()
-          .where('user_id', '=', userId)
-          .orderBy('submitted_at', 'desc')
+          .where("user_id", "=", userId)
+          .orderBy("submitted_at", "desc")
           .limit(limit)
           .offset(offset)
           .execute();
@@ -101,7 +101,7 @@ class SubmissionRepository {
    * @returns {Promise<{ submissions: Submission[]; total: number }>}
    */
   async getByStatus(status, limit = 50, offset = 0) {
-    const cacheKey = createCacheKey('status_submissions', {
+    const cacheKey = createCacheKey("status_submissions", {
       status,
       limit,
       offset,
@@ -113,8 +113,8 @@ class SubmissionRepository {
         // Count total
         const countResult = await db
           .selectFrom(DB.SUBMISSIONS)
-          .select(db.fn.countAll().as('total'))
-          .where('status', '=', status)
+          .select(db.fn.countAll().as("total"))
+          .where("status", "=", status)
           .executeTakeFirst();
 
         const total = Number(countResult?.total || 0);
@@ -123,8 +123,8 @@ class SubmissionRepository {
         const rows = await db
           .selectFrom(DB.SUBMISSIONS)
           .selectAll()
-          .where('status', '=', status)
-          .orderBy('submitted_at', 'desc')
+          .where("status", "=", status)
+          .orderBy("submitted_at", "desc")
           .limit(limit)
           .offset(offset)
           .execute();
@@ -159,27 +159,27 @@ class SubmissionRepository {
     try {
       let query = db.selectFrom(DB.SUBMISSIONS).selectAll();
 
-      if (userId) query = query.where('user_id', '=', userId);
-      if (status) query = query.where('status', '=', status);
-      if (category) query = query.where('category', '=', category);
-      if (originalIp) query = query.where('original_ip', '=', originalIp);
-      if (startDate) query = query.where('submitted_at', '>=', startDate);
-      if (endDate) query = query.where('submitted_at', '<=', endDate);
+      if (userId) query = query.where("user_id", "=", userId);
+      if (status) query = query.where("status", "=", status);
+      if (category) query = query.where("category", "=", category);
+      if (originalIp) query = query.where("original_ip", "=", originalIp);
+      if (startDate) query = query.where("submitted_at", ">=", startDate);
+      if (endDate) query = query.where("submitted_at", "<=", endDate);
 
       if (searchTerm) {
         const likeTerm = `%${searchTerm}%`;
         query = query.where((eb) =>
           eb.or([
-            eb('title', 'ilike', likeTerm),
-            eb('description', 'ilike', likeTerm),
-            eb('original_ip', 'ilike', likeTerm),
+            eb("title", "ilike", likeTerm),
+            eb("description", "ilike", likeTerm),
+            eb("original_ip", "ilike", likeTerm),
           ])
         );
       }
 
       // Total count (using window function for efficiency)
       const countResult = await query
-        .select(db.fn.countAll().over().as('total'))
+        .select(db.fn.countAll().over().as("total"))
         .limit(1)
         .executeTakeFirst();
 
@@ -187,7 +187,7 @@ class SubmissionRepository {
 
       // Paginated results
       const rows = await query
-        .orderBy('submitted_at', 'desc')
+        .orderBy("submitted_at", "desc")
         .limit(limit)
         .offset(offset)
         .execute();
@@ -197,8 +197,8 @@ class SubmissionRepository {
         total,
       };
     } catch (error) {
-      logger.error('Failed to search submissions', {
-        context: 'submission-repository',
+      logger.error("Failed to search submissions", {
+        context: "submission-repository",
         error: error.message || error,
         params,
       });
@@ -212,23 +212,23 @@ class SubmissionRepository {
    * @param {string} [userId]
    */
   clearCache(submissionId, userId) {
-    dbCache.delete(createCacheKey('submission', { id: submissionId }));
+    dbCache.delete(createCacheKey("submission", { id: submissionId }));
 
     if (userId) {
       // Clear common pagination keys (adjust range as needed)
       for (let offset = 0; offset < 1000; offset += 50) {
         dbCache.delete(
-          createCacheKey('user_submissions', { userId, limit: 50, offset })
+          createCacheKey("user_submissions", { userId, limit: 50, offset })
         );
       }
     }
 
     // Clear status-based caches
-    const statuses = ['pending', 'review', 'approved', 'rejected', 'licensed'];
+    const statuses = ["pending", "review", "approved", "rejected", "licensed"];
     for (const status of statuses) {
       for (let offset = 0; offset < 1000; offset += 50) {
         dbCache.delete(
-          createCacheKey('status_submissions', { status, limit: 50, offset })
+          createCacheKey("status_submissions", { status, limit: 50, offset })
         );
       }
     }

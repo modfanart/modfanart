@@ -5,30 +5,30 @@ import { setupListeners } from '@reduxjs/toolkit/query';
 // ────────────────────────────────────────────────
 // RTK Query API slices
 // ────────────────────────────────────────────────
-import authApi from '@/services/api/authApi';
-import userApi from '@/services/api/userApi';
-import rolesApi from '@/services/api/rolesApi';
-import {projectTaskApi }from '@/services/api/projectTasksApi';
-import ordersApi from '@/services/api/orderApi';
-import moderationApi from '@/services/api/moderationApi';
-import licensesApi from '@/services/api/licenseApi';
-import favoritesApi from '@/services/api/favoriteApi';
-import contestsApi from '@/services/api/contestsApi';
-import categoriesApi from '@/services/api/categoriesApi';
-import auditApi from '@/services/api/auditApi';
-import artworkApi from '@/services/api/artworkApi';
-import artworkTagsApi from '@/services/api/artworkTagsApi';
-import brandApi from '@/services/api/brands';
-import { collectionsApi } from '@/services/api/collectionApi';
-import mediaApi from '@/services/api/mediaApi';
-import { searchApi } from '@/services/api/searchApi';
-import notifyApi from '@/services/api/notifyApi';
-import { contactApi } from '@/services/api/contactApi';
+import authApi from '../services/api/authApi';
+import userApi from '../services/api/userApi';
+import rolesApi from '../services/api/rolesApi';
+import {projectTaskApi }from '../services/api/projectTasksApi';
+import ordersApi from '../services/api/orderApi';
+import moderationApi from '../services/api/moderationApi';
+import licensesApi from '../services/api/licenseApi';
+import favoritesApi from '../services/api/favoriteApi';
+import contestsApi from '../services/api/contestsApi';
+import categoriesApi from '../services/api/categoryApi';
+import auditApi from '../services/api/auditApi';
+import artworkApi from '../services/api/artworkApi';
+import artworkTagsApi from '../services/api/artworkTagsApi';
+import brandApi from '../services/api/brands';
+import { collectionsApi } from '../services/api/collectionApi';
+import mediaApi from '../services/api/mediaApi';
+import { searchApi } from '../services/api/searchApi';
+import notifyApi from '../services/api/notifyApi';
+import { contactApi } from '../services/api/contactApi';
 // ────────────────────────────────────────────────
 // Reducers (slices)
 // ────────────────────────────────────────────────
-import authReducer from '@/services/api/features/authSlice';
-import { adminApi } from '@/services/api/adminApi';
+import authReducer from '../services/api/features/authSlice';
+import { adminApi } from '../services/api/adminApi';
 // import otherSliceReducer from '@/features/other/otherSlice';  // add more as needed
 
 // ────────────────────────────────────────────────

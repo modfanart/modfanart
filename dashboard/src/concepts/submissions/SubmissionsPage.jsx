@@ -5,7 +5,12 @@ import { Image, Eye } from '@phosphor-icons/react';
 
 import { Header } from '../../components/layout/Header';
 import { Button } from '../../components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '../../components/ui/dialog';
 
 import { useGetArtworksQuery } from '@/services/api/artworkApi';
 
@@ -37,13 +42,29 @@ export const SubmissionsPage = () => {
     limit: 50,
   });
 
-  const artworks = data?.artworks || [];
+  // ✅ Normalize API response → UI-friendly shape
+  const artworks =
+    data?.artworks?.map((a) => ({
+      id: a.id,
+      title: a.title,
+      description: a.description,
+      status: a.status,
+      created_at: a.created_at,
+
+      // FIXED FIELDS
+      creator_name: a.creator?.username || 'Unknown',
+      creator_email: a.creator?.email,
+
+      image_url: a.thumbnail_url,
+
+      categories: a.categories || [],
+    })) || [];
 
   return (
     <div className="min-h-screen" data-testid="submissions-page">
-      <Header 
-        title="Submissions" 
-        subtitle={`${artworks.length} submissions`} 
+      <Header
+        title="Submissions"
+        subtitle={`${artworks.length} submissions`}
       />
 
       <div className="p-4 sm:p-6 space-y-6">
@@ -79,27 +100,32 @@ export const SubmissionsPage = () => {
                 <tbody>
                   {artworks.map((artwork) => (
                     <tr key={artwork.id}>
-                      
+                      {/* Title */}
                       <td className="text-white font-medium">
                         {artwork.title}
                       </td>
 
+                      {/* Creator */}
                       <td className="text-zinc-400">
-                        {artwork.creator_name || '—'}
+                        {artwork.creator_name}
                       </td>
 
+                      {/* Status */}
                       <td>
                         <StatusBadge status={artwork.status} />
                       </td>
 
-                      <td>
-                        {artwork.categories?.length || 0}
+                      {/* Categories */}
+                      <td className="text-zinc-400">
+                        {artwork.categories.length}
                       </td>
 
+                      {/* Created */}
                       <td className="text-zinc-500 text-sm">
                         {new Date(artwork.created_at).toLocaleDateString()}
                       </td>
 
+                      {/* Actions */}
                       <td>
                         <Button
                           variant="ghost"
@@ -110,20 +136,20 @@ export const SubmissionsPage = () => {
                           <Eye className="w-4 h-4" />
                         </Button>
                       </td>
-
                     </tr>
                   ))}
                 </tbody>
-
               </table>
             </div>
           )}
         </div>
       </div>
 
-      {/* Artwork Detail Modal */}
-      <Dialog 
-        open={!!selectedArtwork} 
+      {/* ──────────────────────────────────────────────── */}
+      {/* Detail Modal */}
+      {/* ──────────────────────────────────────────────── */}
+      <Dialog
+        open={!!selectedArtwork}
         onOpenChange={(open) => !open && setSelectedArtwork(null)}
       >
         <DialogContent className="bg-zinc-900 border-zinc-800 max-w-2xl">
@@ -145,16 +171,21 @@ export const SubmissionsPage = () => {
                 />
               )}
 
-              {/* Info */}
+              {/* Info Grid */}
               <div className="grid grid-cols-2 gap-4 text-sm">
+
                 <div>
                   <p className="text-zinc-500">Creator</p>
-                  <p className="text-white">{selectedArtwork.creator_name}</p>
+                  <p className="text-white">
+                    {selectedArtwork.creator_name}
+                  </p>
                 </div>
 
                 <div>
                   <p className="text-zinc-500">Status</p>
-                  <p className="text-white">{selectedArtwork.status}</p>
+                  <p className="text-white">
+                    {selectedArtwork.status}
+                  </p>
                 </div>
 
                 <div>
@@ -167,7 +198,9 @@ export const SubmissionsPage = () => {
                 <div>
                   <p className="text-zinc-500">Categories</p>
                   <p className="text-white">
-                    {selectedArtwork.categories?.map(c => c.name).join(', ') || '—'}
+                    {selectedArtwork.categories.length
+                      ? selectedArtwork.categories.map(c => c.name).join(', ')
+                      : '—'}
                   </p>
                 </div>
               </div>
@@ -175,7 +208,9 @@ export const SubmissionsPage = () => {
               {/* Description */}
               {selectedArtwork.description && (
                 <div>
-                  <p className="text-zinc-500 text-sm mb-1">Description</p>
+                  <p className="text-zinc-500 text-sm mb-1">
+                    Description
+                  </p>
                   <p className="text-white text-sm">
                     {selectedArtwork.description}
                   </p>

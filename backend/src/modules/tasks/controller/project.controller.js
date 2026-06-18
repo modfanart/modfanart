@@ -1,9 +1,8 @@
-const Project = require('../models/project.model');
-const ProjectMember = require('../models/projectMember.model');
-const Task = require('../models/task.model'); // if needed for future
+const Project = require("../models/project.model");
+const ProjectMember = require("../models/projectMember.model");
+const Task = require("../models/task.model"); // if needed for future
 
 class ProjectController {
-
   // CREATE PROJECT
   static async create(req, res) {
     try {
@@ -11,26 +10,30 @@ class ProjectController {
       const { name, description, slug } = req.body;
 
       if (!name) {
-        return res.status(400).json({ success: false, message: 'Project name is required' });
+        return res
+          .status(400)
+          .json({ success: false, message: "Project name is required" });
       }
 
       const project = await Project.create(userId, {
         name,
         description,
-        slug: slug || name.toLowerCase().replace(/\s+/g, '-'),
+        slug: slug || name.toLowerCase().replace(/\s+/g, "-"),
       });
 
       // Automatically make creator an admin
-      await ProjectMember.add(project.id, userId, 'admin');
+      await ProjectMember.add(project.id, userId, "admin");
 
       res.status(201).json({
         success: true,
-        message: 'Project created successfully',
-        data: project
+        message: "Project created successfully",
+        data: project,
       });
     } catch (err) {
       console.error(err);
-      res.status(500).json({ success: false, message: 'Failed to create project' });
+      res
+        .status(500)
+        .json({ success: false, message: "Failed to create project" });
     }
   }
 
@@ -42,18 +45,24 @@ class ProjectController {
 
       const project = await Project.findById(id);
       if (!project) {
-        return res.status(404).json({ success: false, message: 'Project not found' });
+        return res
+          .status(404)
+          .json({ success: false, message: "Project not found" });
       }
 
       const isMember = await ProjectMember.hasAccess(id, userId);
       if (!isMember) {
-        return res.status(403).json({ success: false, message: 'Access denied' });
+        return res
+          .status(403)
+          .json({ success: false, message: "Access denied" });
       }
 
       res.json({ success: true, data: project });
     } catch (err) {
       console.error(err);
-      res.status(500).json({ success: false, message: 'Error fetching project' });
+      res
+        .status(500)
+        .json({ success: false, message: "Error fetching project" });
     }
   }
 
@@ -66,7 +75,9 @@ class ProjectController {
       res.json({ success: true, data: projects });
     } catch (err) {
       console.error(err);
-      res.status(500).json({ success: false, message: 'Failed to fetch projects' });
+      res
+        .status(500)
+        .json({ success: false, message: "Failed to fetch projects" });
     }
   }
 
@@ -79,20 +90,31 @@ class ProjectController {
 
       const project = await Project.findById(id);
       if (!project) {
-        return res.status(404).json({ success: false, message: 'Project not found' });
+        return res
+          .status(404)
+          .json({ success: false, message: "Project not found" });
       }
 
       const member = await ProjectMember.getMember(id, userId);
-      if (!member || member.role !== 'admin') {
-        return res.status(403).json({ success: false, message: 'Only admins can update project' });
+      if (!member || member.role !== "admin") {
+        return res
+          .status(403)
+          .json({ success: false, message: "Only admins can update project" });
       }
 
-      const updated = await Project.update(id, { name, description, slug, is_active });
+      const updated = await Project.update(id, {
+        name,
+        description,
+        slug,
+        is_active,
+      });
 
       res.json({ success: true, data: updated });
     } catch (err) {
       console.error(err);
-      res.status(500).json({ success: false, message: 'Failed to update project' });
+      res
+        .status(500)
+        .json({ success: false, message: "Failed to update project" });
     }
   }
 
@@ -100,29 +122,35 @@ class ProjectController {
   static async addMember(req, res) {
     try {
       const { projectId } = req.params;
-      const { user_id, role = 'member' } = req.body;
+      const { user_id, role = "member" } = req.body;
       const actorId = req.user.id;
 
       if (!user_id) {
-        return res.status(400).json({ success: false, message: 'User ID is required' });
+        return res
+          .status(400)
+          .json({ success: false, message: "User ID is required" });
       }
 
       const project = await Project.findById(projectId);
       if (!project) {
-        return res.status(404).json({ success: false, message: 'Project not found' });
+        return res
+          .status(404)
+          .json({ success: false, message: "Project not found" });
       }
 
       const actor = await ProjectMember.getMember(projectId, actorId);
-      if (!actor || actor.role !== 'admin') {
-        return res.status(403).json({ success: false, message: 'Only admins can add members' });
+      if (!actor || actor.role !== "admin") {
+        return res
+          .status(403)
+          .json({ success: false, message: "Only admins can add members" });
       }
 
       await ProjectMember.add(projectId, user_id, role);
 
-      res.json({ success: true, message: 'Member added successfully' });
+      res.json({ success: true, message: "Member added successfully" });
     } catch (err) {
       console.error(err);
-      res.status(500).json({ success: false, message: 'Failed to add member' });
+      res.status(500).json({ success: false, message: "Failed to add member" });
     }
   }
 
@@ -134,20 +162,26 @@ class ProjectController {
 
       const project = await Project.findById(projectId);
       if (!project) {
-        return res.status(404).json({ success: false, message: 'Project not found' });
+        return res
+          .status(404)
+          .json({ success: false, message: "Project not found" });
       }
 
       const actor = await ProjectMember.getMember(projectId, actorId);
-      if (!actor || actor.role !== 'admin') {
-        return res.status(403).json({ success: false, message: 'Only admins can remove members' });
+      if (!actor || actor.role !== "admin") {
+        return res
+          .status(403)
+          .json({ success: false, message: "Only admins can remove members" });
       }
 
       await ProjectMember.remove(projectId, userId);
 
-      res.json({ success: true, message: 'Member removed successfully' });
+      res.json({ success: true, message: "Member removed successfully" });
     } catch (err) {
       console.error(err);
-      res.status(500).json({ success: false, message: 'Failed to remove member' });
+      res
+        .status(500)
+        .json({ success: false, message: "Failed to remove member" });
     }
   }
 
@@ -158,24 +192,33 @@ class ProjectController {
       const { role } = req.body;
       const actorId = req.user.id;
 
-      if (!['admin', 'member', 'viewer'].includes(role)) {
-        return res.status(400).json({ success: false, message: 'Invalid role' });
+      if (!["admin", "member", "viewer"].includes(role)) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid role" });
       }
 
       const project = await Project.findById(projectId);
-      if (!project) return res.status(404).json({ success: false, message: 'Project not found' });
+      if (!project)
+        return res
+          .status(404)
+          .json({ success: false, message: "Project not found" });
 
       const actor = await ProjectMember.getMember(projectId, actorId);
-      if (!actor || actor.role !== 'admin') {
-        return res.status(403).json({ success: false, message: 'Only admins can change roles' });
+      if (!actor || actor.role !== "admin") {
+        return res
+          .status(403)
+          .json({ success: false, message: "Only admins can change roles" });
       }
 
       await ProjectMember.updateRole(projectId, userId, role);
 
-      res.json({ success: true, message: 'Role updated successfully' });
+      res.json({ success: true, message: "Role updated successfully" });
     } catch (err) {
       console.error(err);
-      res.status(500).json({ success: false, message: 'Failed to update role' });
+      res
+        .status(500)
+        .json({ success: false, message: "Failed to update role" });
     }
   }
 
@@ -187,7 +230,9 @@ class ProjectController {
 
       const hasAccess = await ProjectMember.hasAccess(projectId, userId);
       if (!hasAccess) {
-        return res.status(403).json({ success: false, message: 'Access denied' });
+        return res
+          .status(403)
+          .json({ success: false, message: "Access denied" });
       }
 
       const members = await ProjectMember.getMembers(projectId);
@@ -195,7 +240,9 @@ class ProjectController {
       res.json({ success: true, data: members });
     } catch (err) {
       console.error(err);
-      res.status(500).json({ success: false, message: 'Failed to fetch members' });
+      res
+        .status(500)
+        .json({ success: false, message: "Failed to fetch members" });
     }
   }
 }

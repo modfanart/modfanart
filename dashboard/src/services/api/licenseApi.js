@@ -1,38 +1,33 @@
 // src/services/api/licensesApi.js
 
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { API_BASE_URL } from '..';
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { API_BASE_URL } from "..";
 
 export const licensesApi = createApi({
-  reducerPath: 'licensesApi',
+  reducerPath: "licensesApi",
 
   baseQuery: fetchBaseQuery({
     baseUrl: `${API_BASE_URL}/licenses`,
 
-  prepareHeaders: (headers) => {
-    const token = localStorage.getItem('accessToken');
+    prepareHeaders: (headers) => {
+      const token = localStorage.getItem("accessToken");
 
-    if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
-    }
+      if (token) {
+        headers.set("Authorization", `Bearer ${token}`);
+      }
 
-    return headers;
-  },
+      return headers;
+    },
   }),
 
-  tagTypes: [
-    'MyLicenses',
-    'License',
-    'IssuedLicenses',
-    'AllLicenses',
-  ],
+  tagTypes: ["MyLicenses", "License", "IssuedLicenses", "AllLicenses"],
 
   endpoints: (builder) => ({
     // Buyer: My Licenses
     getMyLicenses: builder.query({
-      query: () => '/me',
+      query: () => "/me",
 
-      providesTags: ['MyLicenses'],
+      providesTags: ["MyLicenses"],
     }),
 
     // Get Single License
@@ -41,7 +36,7 @@ export const licensesApi = createApi({
 
       providesTags: (result, error, id) => [
         {
-          type: 'License',
+          type: "License",
           id,
         },
       ],
@@ -49,25 +44,25 @@ export const licensesApi = createApi({
 
     // Seller: Issued Licenses
     getIssuedLicenses: builder.query({
-      query: () => '/issued',
+      query: () => "/issued",
 
-      providesTags: ['IssuedLicenses'],
+      providesTags: ["IssuedLicenses"],
     }),
 
     // Revoke License
     revokeLicense: builder.mutation({
       query: ({ id, reason }) => ({
         url: `/${id}/revoke`,
-        method: 'PATCH',
+        method: "PATCH",
         body: { reason },
       }),
 
       invalidatesTags: (result, error, { id }) => [
-        'MyLicenses',
-        'IssuedLicenses',
-        'AllLicenses',
+        "MyLicenses",
+        "IssuedLicenses",
+        "AllLicenses",
         {
-          type: 'License',
+          type: "License",
           id,
         },
       ],
@@ -75,16 +70,16 @@ export const licensesApi = createApi({
 
     // Admin: All Licenses
     getAllLicenses: builder.query({
-      query: () => '/',
+      query: () => "/",
 
-      providesTags: ['AllLicenses'],
+      providesTags: ["AllLicenses"],
     }),
 
     // Create Checkout Session
     createLicenseCheckoutSession: builder.mutation({
       query: (body) => ({
-        url: '/checkout-session',
-        method: 'POST',
+        url: "/checkout-session",
+        method: "POST",
         body,
       }),
     }),

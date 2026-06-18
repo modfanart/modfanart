@@ -1,37 +1,49 @@
 import React, { useState } from 'react';
-import { Plus, Calendar, User, Clock } from '@phosphor-icons/react';
+import { Plus, Calendar } from '@phosphor-icons/react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
-import { Card, CardContent } from '../ui/card';
 import { Input } from '../ui/input';
 
-const TasksList = ({ tasks = [], isLoading, projectId }) => {
+const TasksList = ({
+  tasks = [],
+  isLoading,
+  onCreateTaskClick
+}) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  // Filter tasks
-  const filteredTasks = tasks
-    .filter(task => {
-      const matchesSearch = task.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           task.description?.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      if (statusFilter === 'all') return matchesSearch;
-      return matchesSearch && task.status === statusFilter;
+  // Normalize API (support both raw + wrapped response)
+  const taskList = Array.isArray(tasks) ? tasks : tasks?.data || [];
+
+  // FILTER + SEARCH
+  const filteredTasks = taskList
+    .filter((task) => {
+      const search = (searchTerm || '').toLowerCase();
+
+      const matchesSearch =
+        task.title?.toLowerCase().includes(search) ||
+        task.description?.toLowerCase().includes(search);
+
+      const matchesStatus =
+        statusFilter === 'all' ||
+        task.status?.toLowerCase() === statusFilter;
+
+      return matchesSearch && matchesStatus;
     })
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    .sort(
+      (a, b) =>
+        new Date(b.created_at) - new Date(a.created_at)
+    );
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
       case 'todo':
-      case 'to_do':
         return 'bg-zinc-700 text-white';
       case 'in_progress':
-      case 'inprogress':
         return 'bg-blue-600 text-white';
       case 'review':
         return 'bg-amber-600 text-white';
       case 'done':
-      case 'completed':
         return 'bg-green-600 text-white';
       default:
         return 'bg-zinc-700 text-white';
@@ -56,102 +68,116 @@ const TasksList = ({ tasks = [], isLoading, projectId }) => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between">
-        <div className="relative w-full sm:w-80">
-          <Input
-            placeholder="Search tasks..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 bg-zinc-900 border-zinc-800"
-          />
-        </div>
+    <div className="space-y-5">
 
-        <div className="flex gap-2">
+      {/* TOOLBAR */}
+      <div className="flex flex-col sm:flex-row gap-4 justify-between">
+
+        <Input
+          placeholder="Search tasks..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="sm:w-80 bg-zinc-900 border-zinc-800"
+        />
+
+        <div className="flex gap-3">
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-zinc-700"
+            className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm"
           >
             <option value="all">All Status</option>
-            <option value="todo">To Do</option>
+            <option value="todo">Todo</option>
             <option value="in_progress">In Progress</option>
             <option value="review">Review</option>
             <option value="done">Done</option>
           </select>
 
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
+          <Button onClick={onCreateTaskClick} className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
             New Task
           </Button>
         </div>
       </div>
 
-      {/* Tasks List */}
-      {filteredTasks.length === 0 ? (
-        <div className="text-center py-20 bg-zinc-900 border border-zinc-800 rounded-xl">
-          <p className="text-zinc-400">No tasks found</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {filteredTasks.map((task) => (
-            <Card
-              key={task.id}
-              className="bg-zinc-900 border-zinc-800 hover:border-zinc-700 transition-all cursor-pointer"
-            >
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3">
-                      <h3 className="font-medium text-white text-lg">{task.title}</h3>
-                      <Badge className={getStatusColor(task.status)}>
-                        {task.status?.replace('_', ' ').toUpperCase()}
-                      </Badge>
-                    </div>
+      {/* TABLE */}
+      <div className="overflow-x-auto border border-zinc-800 rounded-lg">
+        <table className="w-full text-sm text-left">
 
-                    {task.description && (
-                      <p className="text-zinc-400 text-sm mt-2 line-clamp-2">
+          <thead className="bg-zinc-900 text-zinc-300">
+            <tr>
+              <th className="p-3">Title</th>
+              <th className="p-3">Status</th>
+              <th className="p-3">Priority</th>
+              <th className="p-3">Due Date</th>
+              <th className="p-3">Created</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {filteredTasks.length === 0 ? (
+              <tr>
+                <td colSpan="5" className="text-center p-10 text-zinc-400">
+                  No tasks found
+                </td>
+              </tr>
+            ) : (
+              filteredTasks.map((task) => (
+                <tr
+                  key={task.id}
+                  className="border-t border-zinc-800 hover:bg-zinc-900 transition"
+                >
+
+                  {/* TITLE */}
+                  <td className="p-3">
+                    <div>
+                      <p className="font-medium text-white">
+                        {task.title}
+                      </p>
+                      <p className="text-xs text-zinc-400 line-clamp-1">
                         {task.description}
                       </p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between mt-5 text-sm">
-                  <div className="flex items-center gap-6">
-                    {/* Priority */}
-                    {task.priority && (
-                      <div className={`flex items-center gap-1.5 ${getPriorityColor(task.priority)}`}>
-                        <span className="font-medium">Priority:</span>
-                        <span className="capitalize">{task.priority}</span>
-                      </div>
-                    )}
-
-                    {/* Due Date */}
-                    {task.due_date && (
-                      <div className="flex items-center gap-2 text-zinc-400">
-                        <Calendar className="w-4 h-4" />
-                        <span>{new Date(task.due_date).toLocaleDateString()}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Assignee */}
-                  {task.assignee && (
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-full bg-zinc-700 flex items-center justify-center text-xs font-medium">
-                        {task.assignee.name?.[0]?.toUpperCase() || '?'}
-                      </div>
-                      <span className="text-zinc-400 text-sm">{task.assignee.name}</span>
                     </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+                  </td>
+
+                  {/* STATUS */}
+                  <td className="p-3">
+                    <Badge className={getStatusColor(task.status)}>
+                      {task.status?.replace('_', ' ').toUpperCase()}
+                    </Badge>
+                  </td>
+
+                  {/* PRIORITY */}
+                  <td className="p-3">
+                    <span className={`font-medium ${getPriorityColor(task.priority)}`}>
+                      {task.priority || '-'}
+                    </span>
+                  </td>
+
+                  {/* DUE DATE */}
+                  <td className="p-3 text-zinc-400">
+                    {task.due_date ? (
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4" />
+                        {new Date(task.due_date).toLocaleDateString()}
+                      </div>
+                    ) : (
+                      '-'
+                    )}
+                  </td>
+
+                  {/* CREATED */}
+                  <td className="p-3 text-zinc-400">
+                    {new Date(task.created_at).toLocaleDateString()}
+                  </td>
+
+                </tr>
+              ))
+            )}
+          </tbody>
+
+        </table>
+      </div>
     </div>
   );
 };

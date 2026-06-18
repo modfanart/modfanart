@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, CheckSquare, Users } from '@phosphor-icons/react';
+import { ArrowLeft, Plus, CheckSquare, Users, UserPlus } from '@phosphor-icons/react';
 
 import { Header } from '../../components/layout/Header';
 import { Button } from '../../components/ui/button';
@@ -11,27 +11,32 @@ import { Badge } from '../../components/ui/badge';
 import {
   useGetProjectByIdQuery,
   useGetProjectTasksQuery,
+  useGetProjectMembersQuery,
+  useAddProjectMemberMutation,
 } from '../../services/api/projectTasksApi';
 
-import TasksList from '../../components/project-tasks/TasksList'; // We'll create this if needed
+import TasksList from '../../components/project-tasks/TasksList';        // ← Updated
+import TaskCreateModal from '../../components/project-tasks/TaskCreateModal';
+import AddMemberModal from '../../components/project-tasks/AddMemberModal';
 
 export const ProjectDetailPage = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState('tasks');
+  const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
+  const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
 
-  const {
-    data: projectData,
-    isLoading: projectLoading,
-  } = useGetProjectByIdQuery(projectId);
-const project = projectData?.data || projectData || {};
-  const {
-    data: tasksData = [],
-    isLoading: tasksLoading,
-  } = useGetProjectTasksQuery(projectId);
+  // Queries
+  const { data: projectData, isLoading: projectLoading } = useGetProjectByIdQuery(projectId);
+  const { data: tasksData, isLoading: tasksLoading } = useGetProjectTasksQuery(projectId);
+  const { data: membersData, isLoading: membersLoading } = useGetProjectMembersQuery(projectId);
 
+  const project = projectData?.data || projectData || {};
   const tasks = tasksData?.data || tasksData || [];
+  const members = membersData?.data || membersData || [];
+
+  const [addProjectMember] = useAddProjectMemberMutation();
 
   if (projectLoading) {
     return (
@@ -43,8 +48,8 @@ const project = projectData?.data || projectData || {};
 
   return (
     <div className="min-h-screen bg-zinc-950">
-      <Header 
-        title={project?.name || 'Project'} 
+      <Header
+        title={project?.name || 'Project'}
         subtitle={project?.description || ''}
         backButton
         onBack={() => navigate('/workspace')}
@@ -54,11 +59,9 @@ const project = projectData?.data || projectData || {};
         <div className="flex flex-wrap gap-4 mb-6">
           <Badge variant="outline" className="flex items-center gap-2">
             <Users className="w-4 h-4" />
-            {project?.memberCount || 0} Members
+            {members.length} Members
           </Badge>
-          <Badge variant="outline">
-            {tasks.length} Tasks
-          </Badge>
+          <Badge variant="outline">{tasks.length} Tasks</Badge>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -71,14 +74,13 @@ const project = projectData?.data || projectData || {};
             <TabsTrigger value="members">Members</TabsTrigger>
           </TabsList>
 
-          {/* TASKS TAB */}
-          <TabsContent value="tasks">
-     
-
+          {/* TASKS TAB - Using TasksList */}
+          <TabsContent value="tasks" className="space-y-4">
             <TasksList 
-              tasks={tasks} 
-              isLoading={tasksLoading} 
+              tasks={tasks}
+              isLoading={tasksLoading}
               projectId={projectId}
+              onCreateTaskClick={() => setIsCreateTaskOpen(true)}   // Connects to modal
             />
           </TabsContent>
 
@@ -89,18 +91,72 @@ const project = projectData?.data || projectData || {};
               <p className="text-zinc-400 leading-relaxed">
                 {project?.description || 'No description provided.'}
               </p>
-              {/* Add progress, stats, etc. here later */}
             </div>
           </TabsContent>
 
-          {/* MEMBERS TAB (Placeholder) */}
+          {/* MEMBERS TAB */}
           <TabsContent value="members">
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 text-center text-zinc-400">
-              Members management coming soon...
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Project Members</h2>
+              <Button 
+                onClick={() => setIsAddMemberOpen(true)} 
+                className="flex items-center gap-2"
+              >
+                <UserPlus className="w-4 h-4" />
+                Add Member
+              </Button>
+            </div>
+
+            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+              {membersLoading ? (
+                <p>Loading members...</p>
+              ) : members.length === 0 ? (
+                <p className="text-zinc-400 text-center py-8">No members yet.</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {members.map((member) => (
+                    <div
+                      key={member.id}
+                      className="flex items-center gap-3 bg-zinc-950 border border-zinc-800 p-4 rounded-lg"
+                    >
+                      <div className="w-10 h-10 bg-zinc-700 rounded-full flex items-center justify-center overflow-hidden">
+                        {member.avatar ? (
+                          <img 
+                            src={member.avatar} 
+                            alt={member.name} 
+                            className="w-10 h-10 rounded-full object-cover" 
+                          />
+                        ) : (
+                          <span className="text-lg font-medium">
+                            {member.name?.[0]?.toUpperCase() || 'U'}
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-medium">{member.name}</p>
+                        <p className="text-sm text-zinc-400">{member.email}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Modals */}
+      <TaskCreateModal
+        open={isCreateTaskOpen}
+        onOpenChange={setIsCreateTaskOpen}
+        projectId={projectId}
+      />
+
+      <AddMemberModal
+        open={isAddMemberOpen}
+        onOpenChange={setIsAddMemberOpen}
+        projectId={projectId}
+      />
     </div>
   );
 };

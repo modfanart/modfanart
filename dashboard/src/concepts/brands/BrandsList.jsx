@@ -34,10 +34,7 @@ export const BrandsListPage = () => {
   const [deleteConfirm, setDeleteConfirm] = useState({ open: false, brand: null });
 
   const role = user?.role?.name;
-  let adminBase = '';
-  if (role === 'admin' || role === 'super_admin' || role === 'developer') {
-    adminBase = `/admin/${role}`;
-  }
+
 
   // Queries
   const { data, isLoading } = useGetAllBrandsQuery({});
@@ -115,7 +112,7 @@ export const BrandsListPage = () => {
 
           <Button 
             className="bg-white text-black hover:bg-zinc-200"
-            onClick={() => navigate(`${adminBase}/brand/create`)}
+            onClick={() => navigate(`/brand/create`)}
           >
             <Plus className="w-4 h-4 mr-2" />
             Add Brand
@@ -136,7 +133,7 @@ export const BrandsListPage = () => {
         ) : (
           <BrandsGrid 
             brands={displayedBrands} 
-            adminBase={adminBase}
+  navigate={navigate}
             toggleStatus={toggleStatus}
             onDelete={(brand) => setDeleteConfirm({ open: true, brand })}
           />
@@ -175,7 +172,7 @@ export const BrandsListPage = () => {
 };
 
 /* ====================== Brands Grid ====================== */
-const BrandsGrid = ({ brands, adminBase, toggleStatus, onDelete }) => {
+const BrandsGrid = ({ brands, toggleStatus, onDelete, navigate }) => {
   if (brands.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-center bg-zinc-900 border border-zinc-800 rounded-xl">
@@ -251,7 +248,7 @@ const BrandsGrid = ({ brands, adminBase, toggleStatus, onDelete }) => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate(`${adminBase}/brand/${brand.id}/stats`)}
+              onClick={() => navigate(`/brand/${brand.id}`)}
               className="text-zinc-300 hover:text-white hover:bg-zinc-800"
             >
               <Eye className="w-4 h-4 mr-1" />
@@ -260,7 +257,7 @@ const BrandsGrid = ({ brands, adminBase, toggleStatus, onDelete }) => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate(`${adminBase}/brand/${brand.id}/edit`)}
+              onClick={() => navigate(`/brand/${brand.id}/edit`)}
               className="text-zinc-300 hover:text-white hover:bg-zinc-800"
             >
               <PencilSimple className="w-4 h-4 mr-1" />

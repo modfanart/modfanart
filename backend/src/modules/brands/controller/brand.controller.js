@@ -1,25 +1,27 @@
 // src/controllers/brand.controller.js
-const { db, sql } = require('../../../config');
-const Brand = require('../models/brand.model');
-const BrandPost = require('../models/brandPost.model');
-const BrandPostComment = require('../models/brandPostComment.model');
-const BrandVerificationRequest = require('../models/brandVerificationRequest.model');
-const BrandManager = require('../models/brandManager.model');
+const { db, sql } = require("../../../config");
+const Brand = require("../models/brand.model");
+const BrandPost = require("../models/brandPost.model");
+const BrandPostComment = require("../models/brandPostComment.model");
+const BrandVerificationRequest = require("../models/brandVerificationRequest.model");
+const BrandManager = require("../models/brandManager.model");
 
 // Assume these helpers exist
-const { hasPermission } = require('../../../common/middleware/permission.middleware');
+const {
+  hasPermission,
+} = require("../../../common/middleware/permission.middleware");
 const {
   ensureBrandAccess,
   ensureBrandOwner,
-} = require('../../../common/middleware/brand.middleware');
+} = require("../../../common/middleware/brand.middleware");
 // ─────────────────────────────────────── ────────
 // Helpers
 // ───────────────────────────────────────────────
 
 async function ensureBrandManagerOrHigher(req) {
-  const allowedRoles = ['brand_manager', 'admin', 'superadmin', 'moderator'];
+  const allowedRoles = ["brand_manager", "admin", "superadmin", "moderator"];
   if (!allowedRoles.includes(req.user.role_name)) {
-    throw Object.assign(new Error('Insufficient global role'), { status: 403 });
+    throw Object.assign(new Error("Insufficient global role"), { status: 403 });
   }
 }
 
@@ -34,43 +36,43 @@ async function getAllBrands(req, res) {
       offset = 0,
       search,
 
-      sortBy = 'followers_count',
-      sortOrder = 'desc',
+      sortBy = "followers_count",
+      sortOrder = "desc",
       minFollowers,
     } = req.query;
 
     let query = db
-      .selectFrom('brands')
+      .selectFrom("brands")
       .select([
-        'id',
-        'name',
-        'slug',
-        'description',
-        'logo_url',
-        'banner_url',
-        'followers_count',
-        'created_at',
-        'updated_at',
-        'status',
+        "id",
+        "name",
+        "slug",
+        "description",
+        "logo_url",
+        "banner_url",
+        "followers_count",
+        "created_at",
+        "updated_at",
+        "status",
       ])
-      .where('deleted_at', 'is', null);
+      .where("deleted_at", "is", null);
 
     if (search) {
       const term = `%${search.trim()}%`;
       query = query.where((eb) =>
-        eb.or([eb('name', 'ilike', term), eb('slug', 'ilike', term)])
+        eb.or([eb("name", "ilike", term), eb("slug", "ilike", term)])
       );
     }
 
     if (minFollowers && !isNaN(Number(minFollowers))) {
-      query = query.where('followers_count', '>=', Number(minFollowers));
+      query = query.where("followers_count", ">=", Number(minFollowers));
     }
 
-    const validSortFields = ['followers_count', 'created_at', 'name'];
+    const validSortFields = ["followers_count", "created_at", "name"];
     const sortField = validSortFields.includes(sortBy)
       ? sortBy
-      : 'followers_count';
-    const direction = sortOrder.toLowerCase() === 'asc' ? 'asc' : 'desc';
+      : "followers_count";
+    const direction = sortOrder.toLowerCase() === "asc" ? "asc" : "desc";
 
     query = query
       .orderBy(sortField, direction)
@@ -81,20 +83,20 @@ async function getAllBrands(req, res) {
 
     // Total count for pagination
     let totalQuery = db
-      .selectFrom('brands')
-      .select(({ fn }) => fn.countAll().as('total'))
-      .where('deleted_at', 'is', null);
+      .selectFrom("brands")
+      .select(({ fn }) => fn.countAll().as("total"))
+      .where("deleted_at", "is", null);
 
     if (search) {
       const term = `%${search.trim()}%`;
       totalQuery = totalQuery.where((eb) =>
-        eb.or([eb('name', 'ilike', term), eb('slug', 'ilike', term)])
+        eb.or([eb("name", "ilike", term), eb("slug", "ilike", term)])
       );
     }
     if (minFollowers && !isNaN(Number(minFollowers))) {
       totalQuery = totalQuery.where(
-        'followers_count',
-        '>=',
+        "followers_count",
+        ">=",
         Number(minFollowers)
       );
     }
@@ -111,8 +113,8 @@ async function getAllBrands(req, res) {
       },
     });
   } catch (err) {
-    console.error('getAllBrands error:', err);
-    return res.status(500).json({ error: 'Failed to fetch brands' });
+    console.error("getAllBrands error:", err);
+    return res.status(500).json({ error: "Failed to fetch brands" });
   }
 }
 
@@ -120,16 +122,16 @@ async function getBrand(req, res) {
   try {
     const brand = await Brand.findById(req.params.id, {
       withArtworks: true,
-      withPosts: req.query.withPosts === 'true',
+      withPosts: req.query.withPosts === "true",
       includeDeleted: false,
     });
 
-    if (!brand) return res.status(404).json({ error: 'Brand not found' });
+    if (!brand) return res.status(404).json({ error: "Brand not found" });
 
     return res.json(brand);
   } catch (err) {
-    console.error('getBrand error:', err);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error("getBrand error:", err);
+    return res.status(500).json({ error: "Internal server error" });
   }
 }
 
@@ -137,23 +139,21 @@ async function getBrandBySlug(req, res) {
   try {
     const brand = await Brand.findBySlug(req.params.slug, {
       withArtworks: true,
-      withPosts: req.query.withPosts === 'true',
+      withPosts: req.query.withPosts === "true",
     });
 
-    if (!brand) return res.status(404).json({ error: 'Brand not found' });
+    if (!brand) return res.status(404).json({ error: "Brand not found" });
 
     return res.json(brand);
   } catch (err) {
-    console.error('getBrandBySlug error:', err);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error("getBrandBySlug error:", err);
+    return res.status(500).json({ error: "Internal server error" });
   }
 }
 
 // ───────────────────────────────────────────────
 // 2. Brand Verification & Onboarding
 // ───────────────────────────────────────────────
-
-// src/controllers/brand.controller.js
 
 async function submitBrandVerificationRequest(req, res) {
   try {
@@ -169,10 +169,10 @@ async function submitBrandVerificationRequest(req, res) {
     } = req.body;
 
     if (!company_name?.trim()) {
-      return res.status(400).json({ error: 'Company name is required' });
+      return res.status(400).json({ error: "Company name is required" });
     }
     if (!contact_email?.trim()) {
-      return res.status(400).json({ error: 'Contact email is required' });
+      return res.status(400).json({ error: "Contact email is required" });
     }
 
     const requestData = {
@@ -184,8 +184,8 @@ async function submitBrandVerificationRequest(req, res) {
       description: description ? description.trim() : null,
       documents: documents || [],
       team_size: team_size || null,
-      how_heard: how_heard || 'search',
-      status: 'pending',
+      how_heard: how_heard || "search",
+      status: "pending",
     };
 
     const request = await BrandVerificationRequest.create(requestData);
@@ -193,41 +193,38 @@ async function submitBrandVerificationRequest(req, res) {
     return res.status(201).json({
       success: true,
       message:
-        'Verification request received. Our team will review and get back to you.',
+        "Verification request received. Our team will review and get back to you.",
       requestId: request.id,
     });
   } catch (err) {
-    console.error('submitBrandVerificationRequest error:', err);
+    console.error("submitBrandVerificationRequest error:", err);
     return res.status(400).json({
-      error: err.message || 'Failed to submit verification request',
+      error: err.message || "Failed to submit verification request",
     });
   }
 }
-
-// Keep getBrandVerificationRequests and approveBrandVerificationRequest as you had in the last message
-// (they look good)
 
 async function getBrandVerificationRequests(req, res) {
   try {
     const { status, limit = 20, offset = 0 } = req.query;
 
     let query = db
-      .selectFrom('brand_verification_requests')
+      .selectFrom("brand_verification_requests")
       .selectAll()
-      .orderBy('created_at', 'desc')
+      .orderBy("created_at", "desc")
       .limit(Number(limit))
       .offset(Number(offset));
 
-    if (status) query = query.where('status', '=', status);
+    if (status) query = query.where("status", "=", status);
 
     const requests = await query.execute();
 
     return res.json(requests);
   } catch (err) {
-    console.error('getBrandVerificationRequests error:', err);
+    console.error("getBrandVerificationRequests error:", err);
     return res
       .status(500)
-      .json({ error: 'Failed to fetch verification requests' });
+      .json({ error: "Failed to fetch verification requests" });
   }
 }
 
@@ -237,8 +234,8 @@ async function approveBrandVerificationRequest(req, res) {
     const { manager_username, manager_email, temp_password, notes } = req.body;
 
     const request = await BrandVerificationRequest.findById(requestId);
-    if (!request) return res.status(404).json({ error: 'Request not found' });
-    if (request.status !== 'pending') {
+    if (!request) return res.status(404).json({ error: "Request not found" });
+    if (request.status !== "pending") {
       return res
         .status(400)
         .json({ error: `Request is already ${request.status}` });
@@ -251,9 +248,9 @@ async function approveBrandVerificationRequest(req, res) {
       password_hash: await hashPassword(
         temp_password || generateTempPassword()
       ),
-      role_id: await getRoleIdByName('brand_manager'),
+      role_id: await getRoleIdByName("brand_manager"),
       profile: { company_name: request.company_name },
-      status: 'pending_verification',
+      status: "pending_verification",
     });
 
     const brand = await Brand.create({
@@ -262,21 +259,21 @@ async function approveBrandVerificationRequest(req, res) {
       slug: await generateUniqueSlug(request.company_name),
       description: request.description,
       website: request.website,
-      status: 'active',
+      status: "active",
       verification_request_id: request.id,
     });
 
     await BrandManager.create({
       brand_id: brand.id,
       user_id: manager.id,
-      role: 'owner',
+      role: "owner",
     });
 
     await BrandVerificationRequest.update(requestId, {
-      status: 'approved',
+      status: "approved",
       reviewed_by: req.user.id,
       reviewed_at: new Date().toISOString(),
-      notes: notes ? `${request.notes || ''}\n${notes}` : request.notes,
+      notes: notes ? `${request.notes || ""}\n${notes}` : request.notes,
     });
 
     sendBrandOnboardingEmail({
@@ -290,11 +287,11 @@ async function approveBrandVerificationRequest(req, res) {
       success: true,
       brandId: brand.id,
       managerUserId: manager.id,
-      message: 'Brand and manager account created successfully',
+      message: "Brand and manager account created successfully",
     });
   } catch (err) {
-    console.error('approveBrandVerificationRequest error:', err);
-    return res.status(400).json({ error: err.message || 'Approval failed' });
+    console.error("approveBrandVerificationRequest error:", err);
+    return res.status(400).json({ error: err.message || "Approval failed" });
   }
 }
 // ───────────────────────────────────────────────
@@ -312,11 +309,11 @@ async function getMyBrands(req, res) {
     const brandIds = managed.map((m) => m.brand_id);
 
     const brands = await db
-      .selectFrom('brands')
+      .selectFrom("brands")
       .selectAll()
-      .where('id', 'in', brandIds)
-      .where('deleted_at', 'is', null)
-      .orderBy('created_at', 'desc')
+      .where("id", "in", brandIds)
+      .where("deleted_at", "is", null)
+      .orderBy("created_at", "desc")
       .execute();
 
     const brandsWithRole = brands.map((brand) => {
@@ -329,29 +326,29 @@ async function getMyBrands(req, res) {
 
     return res.json(brandsWithRole);
   } catch (err) {
-    console.error('getMyBrands error:', err);
-    return res.status(500).json({ error: 'Failed to fetch your brands' });
+    console.error("getMyBrands error:", err);
+    return res.status(500).json({ error: "Failed to fetch your brands" });
   }
 }
 
 async function updateBrand(req, res) {
   try {
     const updated = await Brand.update(req.params.id, req.body, req.user.id);
-    if (!updated) return res.status(404).json({ error: 'Brand not found' });
+    if (!updated) return res.status(404).json({ error: "Brand not found" });
 
     return res.json(updated);
   } catch (err) {
     const status = err.status || 400;
     return res
       .status(status)
-      .json({ error: err.message || 'Failed to update brand' });
+      .json({ error: err.message || "Failed to update brand" });
   }
 }
 
 async function deleteBrand(req, res) {
   try {
     if (!req.user) {
-      return res.status(401).json({ error: 'Not authenticated' });
+      return res.status(401).json({ error: "Not authenticated" });
     }
 
     await ensureBrandOwner(req); // ensure only owner can delete
@@ -360,10 +357,10 @@ async function deleteBrand(req, res) {
 
     return res.status(204).send();
   } catch (err) {
-    console.error('deleteBrand error:', err);
+    console.error("deleteBrand error:", err);
 
     const status = err.status || 400;
-    const message = err.message || 'Failed to delete brand';
+    const message = err.message || "Failed to delete brand";
     return res.status(status).json({ error: message });
   }
 }
@@ -392,7 +389,7 @@ async function addArtworkToBrand(req, res) {
   } catch (err) {
     return res
       .status(400)
-      .json({ error: err.message || 'Failed to add artwork' });
+      .json({ error: err.message || "Failed to add artwork" });
   }
 }
 
@@ -402,33 +399,33 @@ async function getAllBrandArtworks(req, res) {
     const { featuredOnly = false, limit = 50, offset = 0 } = req.query;
 
     let query = db
-      .selectFrom('brand_artworks')
-      .innerJoin('artworks', 'artworks.id', 'brand_artworks.artwork_id')
+      .selectFrom("brand_artworks")
+      .innerJoin("artworks", "artworks.id", "brand_artworks.artwork_id")
       .select([
-        'artworks.id',
-        'artworks.title',
-        'artworks.slug',
-        'artworks.description',
-        'artworks.preview_url',
-        'artworks.status',
-        'brand_artworks.is_featured',
-        'brand_artworks.sort_order',
-        'brand_artworks.added_at',
+        "artworks.id",
+        "artworks.title",
+        "artworks.slug",
+        "artworks.description",
+        "artworks.preview_url",
+        "artworks.status",
+        "brand_artworks.is_featured",
+        "brand_artworks.sort_order",
+        "brand_artworks.added_at",
       ])
-      .where('brand_artworks.brand_id', '=', brandId)
-      .orderBy('brand_artworks.sort_order', 'asc')
+      .where("brand_artworks.brand_id", "=", brandId)
+      .orderBy("brand_artworks.sort_order", "asc")
       .limit(Number(limit))
       .offset(Number(offset));
 
-    if (featuredOnly === 'true' || featuredOnly === true) {
-      query = query.where('brand_artworks.is_featured', '=', true);
+    if (featuredOnly === "true" || featuredOnly === true) {
+      query = query.where("brand_artworks.is_featured", "=", true);
     }
 
     const artworks = await query.execute();
     return res.json(artworks);
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: 'Failed to fetch brand artworks' });
+    return res.status(500).json({ error: "Failed to fetch brand artworks" });
   }
 }
 
@@ -445,7 +442,7 @@ async function removeArtworkFromBrand(req, res) {
   } catch (err) {
     return res
       .status(400)
-      .json({ error: err.message || 'Failed to remove artwork' });
+      .json({ error: err.message || "Failed to remove artwork" });
   }
 }
 
@@ -456,7 +453,7 @@ async function removeArtworkFromBrand(req, res) {
 async function followBrand(req, res) {
   try {
     await Brand.toggleFollow(req.params.id, req.user.id, true);
-    return res.json({ success: true, action: 'followed' });
+    return res.json({ success: true, action: "followed" });
   } catch (err) {
     return res.status(400).json({ error: err.message });
   }
@@ -465,7 +462,7 @@ async function followBrand(req, res) {
 async function unfollowBrand(req, res) {
   try {
     await Brand.toggleFollow(req.params.id, req.user.id, false);
-    return res.json({ success: true, action: 'unfollowed' });
+    return res.json({ success: true, action: "unfollowed" });
   } catch (err) {
     return res.status(400).json({ error: err.message });
   }
@@ -477,39 +474,39 @@ async function getBrandFollowers(req, res) {
     const { limit = 20, offset = 0 } = req.query;
 
     const followers = await db
-      .selectFrom('brand_followers')
-      .innerJoin('users', 'users.id', 'brand_followers.user_id')
+      .selectFrom("brand_followers")
+      .innerJoin("users", "users.id", "brand_followers.user_id")
       .select([
-        'users.id',
-        'users.username',
-        'users.display_name',
-        'users.avatar_url',
-        'brand_followers.followed_at',
+        "users.id",
+        "users.username",
+        "users.display_name",
+        "users.avatar_url",
+        "brand_followers.followed_at",
       ])
-      .where('brand_followers.brand_id', '=', id)
-      .orderBy('brand_followers.followed_at', 'desc')
+      .where("brand_followers.brand_id", "=", id)
+      .orderBy("brand_followers.followed_at", "desc")
       .limit(Number(limit))
       .offset(Number(offset))
       .execute();
 
     return res.json(followers);
   } catch (err) {
-    return res.status(500).json({ error: 'Failed to fetch followers' });
+    return res.status(500).json({ error: "Failed to fetch followers" });
   }
 }
 
 async function checkIfFollowing(req, res) {
   try {
     const exists = await db
-      .selectFrom('brand_followers')
-      .select('brand_id')
-      .where('brand_id', '=', req.params.id)
-      .where('user_id', '=', req.user.id)
+      .selectFrom("brand_followers")
+      .select("brand_id")
+      .where("brand_id", "=", req.params.id)
+      .where("user_id", "=", req.user.id)
       .executeTakeFirst();
 
     return res.json({ isFollowing: !!exists });
   } catch (err) {
-    return res.status(500).json({ error: 'Server error' });
+    return res.status(500).json({ error: "Server error" });
   }
 }
 
@@ -519,7 +516,7 @@ async function checkIfFollowing(req, res) {
 
 async function createBrandPost(req, res) {
   try {
-    await ensureBrandAccess(req, ['owner', 'manager', 'editor']);
+    await ensureBrandAccess(req, ["owner", "manager", "editor"]);
 
     const post = await BrandPost.create(
       req.params.brandId,
@@ -537,11 +534,11 @@ async function getBrandPosts(req, res) {
     const posts = await BrandPost.findByBrand(req.params.brandId, {
       limit: Number(req.query.limit) || 12,
       offset: Number(req.query.offset) || 0,
-      onlyPublished: req.query.drafts !== 'true',
+      onlyPublished: req.query.drafts !== "true",
     });
     return res.json(posts);
   } catch (err) {
-    return res.status(500).json({ error: 'Failed to fetch posts' });
+    return res.status(500).json({ error: "Failed to fetch posts" });
   }
 }
 
@@ -550,16 +547,16 @@ async function getBrandPost(req, res) {
     const post = await BrandPost.findById(req.params.postId, {
       brandId: req.params.brandId,
     });
-    if (!post) return res.status(404).json({ error: 'Post not found' });
+    if (!post) return res.status(404).json({ error: "Post not found" });
     return res.json(post);
   } catch (err) {
-    return res.status(500).json({ error: 'Server error' });
+    return res.status(500).json({ error: "Server error" });
   }
 }
 
 async function updateBrandPost(req, res) {
   try {
-    await ensureBrandAccess(req, ['owner', 'manager', 'editor']);
+    await ensureBrandAccess(req, ["owner", "manager", "editor"]);
 
     const updated = await BrandPost.update(
       req.params.postId,
@@ -567,7 +564,7 @@ async function updateBrandPost(req, res) {
       req.body,
       req.user.id
     );
-    if (!updated) return res.status(404).json({ error: 'Post not found' });
+    if (!updated) return res.status(404).json({ error: "Post not found" });
     return res.json(updated);
   } catch (err) {
     return res.status(400).json({ error: err.message });
@@ -576,7 +573,7 @@ async function updateBrandPost(req, res) {
 
 async function deleteBrandPost(req, res) {
   try {
-    await ensureBrandAccess(req, ['owner', 'manager']); // editors cannot delete
+    await ensureBrandAccess(req, ["owner", "manager"]); // editors cannot delete
 
     await BrandPost.softDelete(req.params.postId, req.params.brandId);
     return res.status(204).send();
@@ -587,7 +584,7 @@ async function deleteBrandPost(req, res) {
 
 async function togglePinBrandPost(req, res) {
   try {
-    await ensureBrandAccess(req, ['owner', 'manager']);
+    await ensureBrandAccess(req, ["owner", "manager"]);
 
     await BrandPost.togglePin(
       req.params.postId,
@@ -643,7 +640,7 @@ async function getBrandPostComments(req, res) {
     });
     return res.json(comments);
   } catch (err) {
-    return res.status(500).json({ error: 'Failed to fetch comments' });
+    return res.status(500).json({ error: "Failed to fetch comments" });
   }
 }
 
@@ -654,7 +651,7 @@ async function deleteBrandPostComment(req, res) {
       req.user.id
     );
     if (!deleted)
-      return res.status(403).json({ error: 'Not found or not authorized' });
+      return res.status(403).json({ error: "Not found or not authorized" });
     return res.status(204).send();
   } catch (err) {
     return res.status(400).json({ error: err.message });
@@ -677,18 +674,18 @@ async function likeBrandPostComment(req, res) {
 async function incrementBrandView(req, res) {
   try {
     await db
-      .updateTable('brands')
+      .updateTable("brands")
       .set({
         views_count: sql`views_count + 1`,
         updated_at: sql`NOW()`,
       })
-      .where('id', '=', req.params.id)
-      .where('deleted_at', 'is', null)
+      .where("id", "=", req.params.id)
+      .where("deleted_at", "is", null)
       .execute();
 
     return res.json({ success: true });
   } catch (err) {
-    return res.status(400).json({ error: 'Failed to increment view' });
+    return res.status(400).json({ error: "Failed to increment view" });
   }
 }
 
@@ -699,8 +696,8 @@ async function incrementBrandView(req, res) {
 async function adminCreateBrand(req, res) {
   try {
     if (!req.body || Object.keys(req.body).length === 0) {
-      console.error('adminCreateBrand error: empty request body');
-      return res.status(400).json({ error: 'Request body is required' });
+      console.error("adminCreateBrand error: empty request body");
+      return res.status(400).json({ error: "Request body is required" });
     }
 
     const {
@@ -716,38 +713,38 @@ async function adminCreateBrand(req, res) {
     } = req.body;
 
     if (!name) {
-      console.error('adminCreateBrand error: missing brand name');
-      return res.status(400).json({ error: 'Brand name is required' });
+      console.error("adminCreateBrand error: missing brand name");
+      return res.status(400).json({ error: "Brand name is required" });
     }
 
     if (!user_id) {
-      console.error('adminCreateBrand error: missing user_id');
-      return res.status(400).json({ error: 'Admin user_id is required' });
+      console.error("adminCreateBrand error: missing user_id");
+      return res.status(400).json({ error: "Admin user_id is required" });
     }
 
     // Prepare data for Brand.create (without user_id, pass it as first argument)
     const brandData = {
       name,
-      slug: slug || name.toLowerCase().replace(/\s+/g, '-'),
+      slug: slug || name.toLowerCase().replace(/\s+/g, "-"),
       description: description || null,
       logo_url: logo_url || null,
       banner_url: banner_url || null,
       website: website || null,
       social_links: social_links || null,
-      status: status || 'pending',
+      status: status || "pending",
     };
 
-    console.log('Admin creating brand with data:', { user_id, ...brandData });
+    console.log("Admin creating brand with data:", { user_id, ...brandData });
 
     // Pass the admin ID as first argument
     const brand = await Brand.create(user_id, brandData);
 
     return res.status(201).json(brand);
   } catch (err) {
-    console.error('adminCreateBrand error:', err);
+    console.error("adminCreateBrand error:", err);
     return res
       .status(400)
-      .json({ error: err.message || 'Failed to create brand' });
+      .json({ error: err.message || "Failed to create brand" });
   }
 }
 // In brand.controller.js
@@ -756,21 +753,21 @@ async function getBrandManagers(req, res) {
     const managers = await BrandManager.findByBrand(req.params.brandId);
     return res.json(managers);
   } catch (err) {
-    return res.status(500).json({ error: 'Failed to fetch managers' });
+    return res.status(500).json({ error: "Failed to fetch managers" });
   }
 }
 
 async function assignBrandManager(req, res) {
   try {
     const { brandId } = req.params;
-    const { userId, role = 'manager' } = req.body;
+    const { userId, role = "manager" } = req.body;
 
     // 1. Check if user already manages any brand
     const existing = await BrandManager.findByUser(userId);
     if (existing.length > 0) {
       return res
         .status(400)
-        .json({ error: 'User already manages another brand' });
+        .json({ error: "User already manages another brand" });
     }
 
     // 2. Ensure requester has permission (owner or admin)
@@ -786,7 +783,7 @@ async function assignBrandManager(req, res) {
   } catch (err) {
     return res
       .status(400)
-      .json({ error: err.message || 'Failed to assign manager' });
+      .json({ error: err.message || "Failed to assign manager" });
   }
 }
 // ───────────────────────────────────────────────

@@ -1,20 +1,23 @@
-const User = require('../../users/models/user.model');
-const Role = require('../../rbac/models/role.model');
-const RefreshToken = require('../models/refreshToken.model');
-const AuthToken = require('../models/authToken.model');
+const User = require("../../users/models/user.model");
+const Role = require("../../rbac/models/role.model");
+const RefreshToken = require("../models/refreshToken.model");
+const AuthToken = require("../models/authToken.model");
 
-const { hashPassword, comparePassword } = require('../../../common/utils/password.util');
+const {
+  hashPassword,
+  comparePassword,
+} = require("../../../common/utils/password.util");
 const {
   generateAccessToken,
   generateRefreshToken,
   verifyRefreshToken,
-} = require('../../../common/utils/jwt.util');
+} = require("../../../common/utils/jwt.util");
 
-const crypto = require('crypto');
-const { sql } = require('kysely');
-const { db } = require('../../../config');
+const crypto = require("crypto");
+const { sql } = require("kysely");
+const { db } = require("../../../config");
 // Helpers (you can move to utils/email.util.js later)
-const EmailService = require('../../../common/emails/email.service');
+const EmailService = require("../../../common/emails/email.service");
 class AuthController {
   // POST /auth/register
   static async register(req, res) {
@@ -23,28 +26,28 @@ class AuthController {
 
       // Basic validation (you should use zod/joi/express-validator)
       if (!username || !email || !password) {
-        return res.status(400).json({ error: 'Missing required fields' });
+        return res.status(400).json({ error: "Missing required fields" });
       }
 
       // For MVP restricted signup — remove or adjust later
       if (signup_key !== process.env.SIGNUP_KEY) {
-        return res.status(403).json({ error: 'Invalid signup key' });
+        return res.status(403).json({ error: "Invalid signup key" });
       }
 
       // Check existing user
       if (await User.findByEmail(email)) {
-        return res.status(409).json({ error: 'Email already in use' });
+        return res.status(409).json({ error: "Email already in use" });
       }
       if (await User.findByUsername(username)) {
-        return res.status(409).json({ error: 'Username taken' });
+        return res.status(409).json({ error: "Username taken" });
       }
 
       const passwordHash = await hashPassword(password);
 
       // Default role — usually 'default_user'
-      const defaultRole = await Role.findByName('user');
+      const defaultRole = await Role.findByName("user");
       if (!defaultRole) {
-        throw new Error('Default role not found');
+        throw new Error("Default role not found");
       }
 
       const user = await User.create({
@@ -52,16 +55,16 @@ class AuthController {
         email,
         password_hash: passwordHash,
         role_id: defaultRole.id,
-        status: 'pending_verification',
+        status: "pending_verification",
       });
 
       // Create email verification token
-      const token = crypto.randomBytes(32).toString('hex');
-      const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+      const token = crypto.randomBytes(32).toString("hex");
+      const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
 
       await AuthToken.create(
         user.id,
-        'email_verification',
+        "email_verification",
         tokenHash,
         new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24h
       );
@@ -69,12 +72,12 @@ class AuthController {
       await EmailService.sendVerificationEmail(user, token);
 
       res.status(201).json({
-        message: 'User registered. Please check your email to verify.',
+        message: "User registered. Please check your email to verify.",
         userId: user.id,
       });
     } catch (error) {
       console.error(error);
-      res.status(500).json({ error: 'Registration failed' });
+      res.status(500).json({ error: "Registration failed" });
     }
   }
 
@@ -84,29 +87,29 @@ class AuthController {
       const { token } = req.query;
 
       if (!token) {
-        return res.status(400).json({ error: 'Missing token' });
+        return res.status(400).json({ error: "Missing token" });
       }
 
-      const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+      const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
       const authToken = await AuthToken.findValid(
         tokenHash,
-        'email_verification'
+        "email_verification"
       );
 
       if (!authToken) {
-        return res.status(400).json({ error: 'Invalid or expired token' });
+        return res.status(400).json({ error: "Invalid or expired token" });
       }
 
       await User.update(authToken.user_id, {
         email_verified: true,
-        status: 'active',
+        status: "active",
       });
       await AuthToken.markAsUsed(authToken.id);
 
-      res.json({ message: 'Email verified successfully. You can now log in.' });
+      res.json({ message: "Email verified successfully. You can now log in." });
     } catch (error) {
       console.error(error);
-      res.status(500).json({ error: 'Verification failed' });
+      res.status(500).json({ error: "Verification failed" });
     }
   }
 
@@ -117,16 +120,16 @@ class AuthController {
       console.log(req.body);
       const user = await User.findByEmail(email);
       if (!user || !user.password_hash) {
-        return res.status(401).json({ error: 'Invalid credentials' });
+        return res.status(401).json({ error: "Invalid credentials" });
       }
       console.log(user);
-      if (user.status !== 'active') {
+      if (user.status !== "active") {
         return res.status(403).json({ error: `Account is ${user.status}` });
       }
 
       const passwordMatch = await comparePassword(password, user.password_hash);
       if (!passwordMatch) {
-        return res.status(401).json({ error: 'Invalid credentials' });
+        return res.status(401).json({ error: "Invalid credentials" });
       }
 
       // Update last login
@@ -137,9 +140,9 @@ class AuthController {
 
       // Store refresh token hash
       const refreshHash = crypto
-        .createHash('sha256')
+        .createHash("sha256")
         .update(refreshToken)
-        .digest('hex');
+        .digest("hex");
       await RefreshToken.create(
         user.id,
         refreshHash,
@@ -158,7 +161,7 @@ class AuthController {
       });
     } catch (error) {
       console.error(error);
-      res.status(500).json({ error: 'Login failed' });
+      res.status(500).json({ error: "Login failed" });
     }
   }
 
@@ -168,32 +171,32 @@ class AuthController {
       const { refreshToken } = req.body;
 
       if (!refreshToken) {
-        return res.status(401).json({ error: 'Refresh token required' });
+        return res.status(401).json({ error: "Refresh token required" });
       }
 
       const refreshHash = crypto
-        .createHash('sha256')
+        .createHash("sha256")
         .update(refreshToken)
-        .digest('hex');
+        .digest("hex");
       const storedToken = await db
-        .selectFrom('refresh_tokens')
+        .selectFrom("refresh_tokens")
         .selectAll()
-        .where('token_hash', '=', refreshHash)
-        .where('revoked_at', 'is', null)
-        .where('expires_at', '>', sql`NOW()`)
+        .where("token_hash", "=", refreshHash)
+        .where("revoked_at", "is", null)
+        .where("expires_at", ">", sql`NOW()`)
         .executeTakeFirst();
 
       if (!storedToken) {
         return res
           .status(403)
-          .json({ error: 'Invalid or expired refresh token' });
+          .json({ error: "Invalid or expired refresh token" });
       }
 
       const decoded = verifyRefreshToken(refreshToken);
       const user = await User.findById(decoded.userId);
 
-      if (!user || user.status !== 'active') {
-        return res.status(403).json({ error: 'User not found or inactive' });
+      if (!user || user.status !== "active") {
+        return res.status(403).json({ error: "User not found or inactive" });
       }
 
       const newAccessToken = generateAccessToken({ userId: user.id });
@@ -201,7 +204,7 @@ class AuthController {
       res.json({ accessToken: newAccessToken });
     } catch (error) {
       console.error(error);
-      res.status(403).json({ error: 'Token refresh failed' });
+      res.status(403).json({ error: "Token refresh failed" });
     }
   }
 
@@ -214,25 +217,25 @@ class AuthController {
       if (!user) {
         // Security: don't reveal if email exists
         return res.json({
-          message: 'If the email exists, a reset link has been sent.',
+          message: "If the email exists, a reset link has been sent.",
         });
       }
 
-      const token = crypto.randomBytes(32).toString('hex');
-      const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+      const token = crypto.randomBytes(32).toString("hex");
+      const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
 
       await AuthToken.create(
         user.id,
-        'password_reset',
+        "password_reset",
         tokenHash,
         new Date(Date.now() + 60 * 60 * 1000).toISOString() // 1 hour
       );
 
       await EmailService.sendPasswordResetEmail(user, token);
-      res.json({ message: 'Password reset link sent to email.' });
+      res.json({ message: "Password reset link sent to email." });
     } catch (error) {
       console.error(error);
-      res.status(500).json({ error: 'Error processing request' });
+      res.status(500).json({ error: "Error processing request" });
     }
   }
 
@@ -244,14 +247,14 @@ class AuthController {
       if (!token || !newPassword) {
         return res
           .status(400)
-          .json({ error: 'Token and new password required' });
+          .json({ error: "Token and new password required" });
       }
 
-      const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-      const authToken = await AuthToken.findValid(tokenHash, 'password_reset');
+      const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+      const authToken = await AuthToken.findValid(tokenHash, "password_reset");
 
       if (!authToken) {
-        return res.status(400).json({ error: 'Invalid or expired token' });
+        return res.status(400).json({ error: "Invalid or expired token" });
       }
 
       const passwordHash = await hashPassword(newPassword);
@@ -265,14 +268,13 @@ class AuthController {
       // Optional: revoke all refresh tokens
       await RefreshToken.revokeAllForUser(authToken.user_id);
 
-      res.json({ message: 'Password reset successful. Please log in.' });
+      res.json({ message: "Password reset successful. Please log in." });
     } catch (error) {
       console.error(error);
-      res.status(500).json({ error: 'Password reset failed' });
+      res.status(500).json({ error: "Password reset failed" });
     }
   }
 
-  // POST /auth/logout
   // POST /auth/logout
   static async logout(req, res) {
     try {
@@ -280,22 +282,25 @@ class AuthController {
 
       if (refreshToken) {
         const refreshHash = crypto
-          .createHash('sha256')
+          .createHash("sha256")
           .update(refreshToken)
-          .digest('hex');
+          .digest("hex");
 
         // Revoke specific token if provided and valid
         const tokenRecord = await db
-          .selectFrom('refresh_tokens')
-          .select('id')
-          .where('token_hash', '=', refreshHash)
-          .where('revoked_at', 'is', null)
+          .selectFrom("refresh_tokens")
+          .select("id")
+          .where("token_hash", "=", refreshHash)
+          .where("revoked_at", "is", null)
           .executeTakeFirst();
 
         if (tokenRecord) {
           await RefreshToken.revoke(tokenRecord.id);
           console.log(
-            `Refresh token revoked for logout: ${refreshHash.substring(0, 8)}...`
+            `Refresh token revoked for logout: ${refreshHash.substring(
+              0,
+              8
+            )}...`
           );
         }
       }
@@ -317,14 +322,14 @@ class AuthController {
       // Always return success — client clears local state anyway
       res.status(200).json({
         success: true,
-        message: 'Logged out successfully',
+        message: "Logged out successfully",
       });
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error("Logout error:", error);
       // Still return 200 — client should clear tokens regardless
       res.status(200).json({
         success: true,
-        message: 'Logged out (partial server cleanup)',
+        message: "Logged out (partial server cleanup)",
       });
     }
   }

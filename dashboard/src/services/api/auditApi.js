@@ -1,35 +1,35 @@
 // src/services/api/auditApi.js
 
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { API_BASE_URL } from '..';
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { API_BASE_URL } from "..";
 
 const auditApi = createApi({
-  reducerPath: 'auditApi',
+  reducerPath: "auditApi",
 
   baseQuery: fetchBaseQuery({
     baseUrl: API_BASE_URL,
 
-   prepareHeaders: (headers) => {
-    const token = localStorage.getItem('accessToken');
+    prepareHeaders: (headers) => {
+      const token = localStorage.getItem("accessToken");
 
-    if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
-    }
+      if (token) {
+        headers.set("Authorization", `Bearer ${token}`);
+      }
 
-    return headers;
-  },
+      return headers;
+    },
 
-    credentials: 'include',
+    credentials: "include",
   }),
 
-  tagTypes: ['AuditedEvent'],
+  tagTypes: ["AuditedEvent"],
 
   endpoints: (builder) => ({
     // POST /audit
     createAuditEvent: builder.mutation({
       query: (body) => ({
-        url: '/audit',
-        method: 'POST',
+        url: "/audit",
+        method: "POST",
         body,
       }),
     }),
@@ -40,7 +40,7 @@ const auditApi = createApi({
 
       providesTags: (result, error, id) => [
         {
-          type: 'AuditedEvent',
+          type: "AuditedEvent",
           id,
         },
       ],
@@ -49,7 +49,7 @@ const auditApi = createApi({
     // GET /audit/search
     searchAuditEvents: builder.query({
       query: (params) => ({
-        url: '/audit/search',
+        url: "/audit/search",
         params,
       }),
 
@@ -60,12 +60,12 @@ const auditApi = createApi({
 
         return [
           ...events.map(({ id }) => ({
-            type: 'AuditedEvent',
+            type: "AuditedEvent",
             id,
           })),
           {
-            type: 'AuditedEvent',
-            id: 'LIST',
+            type: "AuditedEvent",
+            id: "LIST",
           },
         ];
       },
@@ -78,12 +78,12 @@ const auditApi = createApi({
 
       providesTags: (result, error, { entityId }) => [
         {
-          type: 'AuditedEvent',
+          type: "AuditedEvent",
           id: `ENTITY_${entityId}`,
         },
 
         ...(result?.map(({ id }) => ({
-          type: 'AuditedEvent',
+          type: "AuditedEvent",
           id,
         })) ?? []),
       ],
@@ -95,12 +95,12 @@ const auditApi = createApi({
 
       providesTags: (result, error, actorId) => [
         {
-          type: 'AuditedEvent',
+          type: "AuditedEvent",
           id: `ACTOR_${actorId}`,
         },
 
         ...(result?.map(({ id }) => ({
-          type: 'AuditedEvent',
+          type: "AuditedEvent",
           id,
         })) ?? []),
       ],

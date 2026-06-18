@@ -8,7 +8,7 @@ import {
   Gear,
   SignOut,
 } from '@phosphor-icons/react';
-
+import { useOutletContext } from "react-router-dom";
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/button';
 import SearchModal from '../search/SearchModal';
@@ -19,14 +19,8 @@ export const Header = ({ title, subtitle }) => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  // Get menu toggle from MainLayout
-  let onMenuToggle = null;
-  try {
-    const ctx = useOutletContext?.(); // safer
-    onMenuToggle = ctx?.onMenuToggle;
-  } catch {
-    // Ignore if not inside MainLayout
-  }
+const outlet = useOutletContext();
+const onMenuToggle = outlet?.onMenuToggle;
 
   // Ctrl/Cmd + K for search
   React.useEffect(() => {

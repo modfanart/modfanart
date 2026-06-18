@@ -1,28 +1,28 @@
 // src/services/api/artworkTagsApi.js
 
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { API_BASE_URL } from '..';
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { API_BASE_URL } from "..";
 
 const artworkTagsApi = createApi({
-  reducerPath: 'artworkTagsApi',
+  reducerPath: "artworkTagsApi",
 
   baseQuery: fetchBaseQuery({
     baseUrl: API_BASE_URL,
 
-  prepareHeaders: (headers) => {
-    const token = localStorage.getItem('accessToken');
+    prepareHeaders: (headers) => {
+      const token = localStorage.getItem("accessToken");
 
-    if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
-    }
+      if (token) {
+        headers.set("Authorization", `Bearer ${token}`);
+      }
 
-    return headers;
-  },
+      return headers;
+    },
 
-    credentials: 'include',
+    credentials: "include",
   }),
 
-  tagTypes: ['ArtworkTags', 'Artwork', 'Tags'],
+  tagTypes: ["ArtworkTags", "Artwork", "Tags"],
 
   endpoints: (builder) => ({
     // GET /artworks/:artworkId/tags
@@ -30,11 +30,11 @@ const artworkTagsApi = createApi({
       query: (artworkId) => `/artworks/${artworkId}/tags`,
 
       providesTags: (result, error, artworkId) => [
-        { type: 'ArtworkTags', id: artworkId },
+        { type: "ArtworkTags", id: artworkId },
 
         ...(result
           ? result.map(({ id }) => ({
-              type: 'ArtworkTags',
+              type: "ArtworkTags",
               id,
             }))
           : []),
@@ -45,20 +45,20 @@ const artworkTagsApi = createApi({
     addTagToArtwork: builder.mutation({
       query: ({ artworkId, ...payload }) => ({
         url: `/artworks/${artworkId}/tags`,
-        method: 'POST',
+        method: "POST",
         body: payload,
       }),
 
       invalidatesTags: (result, error, { artworkId }) => [
         {
-          type: 'ArtworkTags',
+          type: "ArtworkTags",
           id: artworkId,
         },
         {
-          type: 'Artwork',
+          type: "Artwork",
           id: artworkId,
         },
-        'Tags',
+        "Tags",
       ],
     }),
 
@@ -66,39 +66,35 @@ const artworkTagsApi = createApi({
     removeTagFromArtwork: builder.mutation({
       query: ({ artworkId, tagId }) => ({
         url: `/artworks/${artworkId}/tags/${tagId}`,
-        method: 'DELETE',
+        method: "DELETE",
       }),
 
       invalidatesTags: (result, error, { artworkId }) => [
         {
-          type: 'ArtworkTags',
+          type: "ArtworkTags",
           id: artworkId,
         },
         {
-          type: 'Artwork',
+          type: "Artwork",
           id: artworkId,
         },
-        'Tags',
+        "Tags",
       ],
     }),
 
     // GET /tags?search=...
     searchTags: builder.query({
-      query: ({
-        query,
-        limit = 10,
-        approvedOnly = true,
-      }) => ({
-        url: '/tags',
+      query: ({ query, limit = 10, approvedOnly = true }) => ({
+        url: "/tags",
 
         params: {
           search: query,
           limit,
-          approved: approvedOnly ? 'true' : undefined,
+          approved: approvedOnly ? "true" : undefined,
         },
       }),
 
-      providesTags: ['Tags'],
+      providesTags: ["Tags"],
     }),
   }),
 });

@@ -1,31 +1,31 @@
 // src/services/api/adminApi.js
 
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { API_BASE_URL } from '..';
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { API_BASE_URL } from "..";
 
 export const adminApi = createApi({
-  reducerPath: 'adminApi',
+  reducerPath: "adminApi",
 
   baseQuery: fetchBaseQuery({
     baseUrl: API_BASE_URL,
 
- prepareHeaders: (headers) => {
-    const token = localStorage.getItem('accessToken');
+    prepareHeaders: (headers) => {
+      const token = localStorage.getItem("accessToken");
 
-    if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
-    }
+      if (token) {
+        headers.set("Authorization", `Bearer ${token}`);
+      }
 
-    return headers;
-  },
+      return headers;
+    },
   }),
 
   tagTypes: [
-    'PlatformStats',
-    'UsersList',
-    'UserDetail',
-    'PendingVerifications',
-    'ModerationQueue',
+    "PlatformStats",
+    "UsersList",
+    "UserDetail",
+    "PendingVerifications",
+    "ModerationQueue",
   ],
 
   endpoints: (builder) => ({
@@ -33,8 +33,8 @@ export const adminApi = createApi({
     // Platform Stats
     // ─────────────────────────────────────
     getPlatformStats: builder.query({
-      query: () => '/admin/stats',
-      providesTags: ['PlatformStats'],
+      query: () => "/admin/stats",
+      providesTags: ["PlatformStats"],
     }),
 
     // ─────────────────────────────────────
@@ -42,7 +42,7 @@ export const adminApi = createApi({
     // ─────────────────────────────────────
     getAdminUsers: builder.query({
       query: (params = {}) => ({
-        url: '/admin/users',
+        url: "/admin/users",
         params: {
           page: params.page ?? 1,
           limit: params.limit ?? 20,
@@ -50,7 +50,7 @@ export const adminApi = createApi({
           status: params.status,
           role: params.role,
           sort: params.sort,
-          order: params.order ?? 'desc',
+          order: params.order ?? "desc",
         },
       }),
 
@@ -58,38 +58,38 @@ export const adminApi = createApi({
         result
           ? [
               ...result.data.map(({ id }) => ({
-                type: 'UserDetail',
+                type: "UserDetail",
                 id,
               })),
-              { type: 'UsersList', id: 'LIST' },
+              { type: "UsersList", id: "LIST" },
             ]
-          : [{ type: 'UsersList', id: 'LIST' }],
+          : [{ type: "UsersList", id: "LIST" }],
     }),
 
     updateUserStatus: builder.mutation({
       query: ({ userId, status }) => ({
         url: `/admin/users/${userId}/status`,
-        method: 'PATCH',
+        method: "PATCH",
         body: { status },
       }),
 
       invalidatesTags: (result, error, { userId }) => [
-        { type: 'UserDetail', id: userId },
-        { type: 'UsersList', id: 'LIST' },
-        'PlatformStats',
+        { type: "UserDetail", id: userId },
+        { type: "UsersList", id: "LIST" },
+        "PlatformStats",
       ],
     }),
 
     deleteUser: builder.mutation({
       query: (userId) => ({
         url: `/admin/users/${userId}`,
-        method: 'DELETE',
+        method: "DELETE",
       }),
 
       invalidatesTags: (result, error, userId) => [
-        { type: 'UserDetail', id: userId },
-        { type: 'UsersList', id: 'LIST' },
-        'PlatformStats',
+        { type: "UserDetail", id: userId },
+        { type: "UsersList", id: "LIST" },
+        "PlatformStats",
       ],
     }),
 
@@ -98,24 +98,24 @@ export const adminApi = createApi({
     // ─────────────────────────────────────
     getPendingBrandVerifications: builder.query({
       query: ({ limit = 10 } = {}) => ({
-        url: '/admin/brands/pending-verification',
+        url: "/admin/brands/pending-verification",
         params: { limit },
       }),
 
-      providesTags: ['PendingVerifications'],
+      providesTags: ["PendingVerifications"],
     }),
 
     verifyBrand: builder.mutation({
       query: ({ brandId, action, notes }) => ({
         url: `/admin/brands/${brandId}/verify`,
-        method: 'PATCH',
+        method: "PATCH",
         body: {
           action,
           notes,
         },
       }),
 
-      invalidatesTags: ['PendingVerifications', 'PlatformStats'],
+      invalidatesTags: ["PendingVerifications", "PlatformStats"],
     }),
 
     // ─────────────────────────────────────
@@ -123,7 +123,7 @@ export const adminApi = createApi({
     // ─────────────────────────────────────
     getModerationQueue: builder.query({
       query: (params = {}) => ({
-        url: '/admin/moderation/queue',
+        url: "/admin/moderation/queue",
         params: {
           entity_type: params.entity_type,
           limit: params.limit ?? 20,
@@ -131,7 +131,7 @@ export const adminApi = createApi({
         },
       }),
 
-      providesTags: ['ModerationQueue'],
+      providesTags: ["ModerationQueue"],
     }),
   }),
 });

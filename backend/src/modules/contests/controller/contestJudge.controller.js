@@ -1,9 +1,9 @@
 // src/controllers/contestJudge.controller.js
-const Contest = require('../models/contest.model');
-const ContestJudge = require('../models/contestJudge.model');
-const User = require('../../users/models/user.model');
-const { db } = require('../../../config');
-const { sql } = require('kysely');
+const Contest = require("../models/contest.model");
+const ContestJudge = require("../models/contestJudge.model");
+const User = require("../../users/models/user.model");
+const { db } = require("../../../config");
+const { sql } = require("kysely");
 
 class ContestJudgeController {
   /**
@@ -16,22 +16,22 @@ class ContestJudgeController {
       const { judgeId } = req.body;
 
       if (!judgeId) {
-        return res.status(400).json({ error: 'judgeId is required' });
+        return res.status(400).json({ error: "judgeId is required" });
       }
 
       const contest = await Contest.findById(contestId);
       if (!contest) {
-        return res.status(404).json({ error: 'Contest not found' });
+        return res.status(404).json({ error: "Contest not found" });
       }
 
       // === Improved Authorization Logic ===
       const user = req.user;
-      const isPlatformAdmin = user?.role === 'Admin';
+      const isPlatformAdmin = user?.role === "Admin";
       const isBrandOwner = contest.brand_id === user?.id;
 
       // Brand Manager check - more forgiving
       const isBrandManager =
-        user?.role === 'brand_manager' &&
+        user?.role === "brand_manager" &&
         (user?.brands || []).some(
           (b) =>
             b.id === contest.brand_id ||
@@ -39,7 +39,7 @@ class ContestJudgeController {
         );
 
       const hasManagePermission =
-        user?.permissions?.['contests.manage'] === true;
+        user?.permissions?.["contests.manage"] === true;
 
       const hasPermission =
         isPlatformAdmin ||
@@ -48,7 +48,7 @@ class ContestJudgeController {
         hasManagePermission;
 
       if (!hasPermission) {
-        console.log('Authorization failed for user:', {
+        console.log("Authorization failed for user:", {
           userId: user?.id,
           userRole: user?.role,
           contestBrandId: contest.brand_id,
@@ -56,59 +56,59 @@ class ContestJudgeController {
         });
 
         return res.status(403).json({
-          error: 'Not authorized',
+          error: "Not authorized",
           message:
-            'Only the brand owner, brand manager for this brand, or admin can assign judges',
+            "Only the brand owner, brand manager for this brand, or admin can assign judges",
         });
       }
 
       // === Rest of the logic ===
       const judge = await db
-        .selectFrom('users as u')
-        .leftJoin('roles as r', 'r.id', 'u.role_id')
+        .selectFrom("users as u")
+        .leftJoin("roles as r", "r.id", "u.role_id")
         .select([
-          'u.id',
-          'u.username',
-          'u.avatar_url',
-          'u.profile',
-          'r.name as role',
-          'r.permissions as permissions',
+          "u.id",
+          "u.username",
+          "u.avatar_url",
+          "u.profile",
+          "r.name as role",
+          "r.permissions as permissions",
         ])
-        .where('u.id', '=', judgeId)
+        .where("u.id", "=", judgeId)
         .executeTakeFirst();
       if (!judge) {
-        return res.status(404).json({ error: 'User not found' });
+        return res.status(404).json({ error: "User not found" });
       }
 
-      if (!judge.permissions?.['contests.judge'] && judge.role !== 'Admin') {
+      if (!judge.permissions?.["contests.judge"] && judge.role !== "Admin") {
         return res.status(400).json({
-          error: 'User does not have judge permissions',
+          error: "User does not have judge permissions",
         });
       }
 
-      if (['judging', 'completed', 'archived'].includes(contest.status)) {
+      if (["judging", "completed", "archived"].includes(contest.status)) {
         return res.status(400).json({
           error:
-            'Cannot assign judges after contest has entered judging or completed phase',
+            "Cannot assign judges after contest has entered judging or completed phase",
         });
       }
 
       // Check if already assigned
       const existing = await db
-        .selectFrom('contest_judges')
-        .select('judge_id')
-        .where('contest_id', '=', contestId)
-        .where('judge_id', '=', judgeId)
+        .selectFrom("contest_judges")
+        .select("judge_id")
+        .where("contest_id", "=", contestId)
+        .where("judge_id", "=", judgeId)
         .executeTakeFirst();
 
       if (existing) {
         return res.status(409).json({
-          error: 'User is already assigned as a judge for this contest',
+          error: "User is already assigned as a judge for this contest",
         });
       }
 
       const assignment = await db
-        .insertInto('contest_judges')
+        .insertInto("contest_judges")
         .values({
           contest_id: contestId,
           judge_id: judgeId,
@@ -122,7 +122,7 @@ class ContestJudgeController {
 
       res.status(201).json({
         success: true,
-        message: 'Judge invited successfully',
+        message: "Judge invited successfully",
         data: {
           user_id: judgeId,
           judge_id: judgeId,
@@ -134,10 +134,10 @@ class ContestJudgeController {
         },
       });
     } catch (err) {
-      console.error('ASSIGN JUDGE ERROR:', err);
+      console.error("ASSIGN JUDGE ERROR:", err);
       res.status(500).json({
-        error: 'Failed to assign judge',
-        ...(process.env.NODE_ENV !== 'production' && {
+        error: "Failed to assign judge",
+        ...(process.env.NODE_ENV !== "production" && {
           detail: err.message,
           code: err.code,
         }),
@@ -149,23 +149,23 @@ class ContestJudgeController {
       const judgeId = req.user.id;
 
       const contests = await db
-        .selectFrom('contest_judges as cj')
-        .innerJoin('contests as c', 'c.id', 'cj.contest_id')
+        .selectFrom("contest_judges as cj")
+        .innerJoin("contests as c", "c.id", "cj.contest_id")
         .select([
-          'c.id',
-          'c.title',
-          'c.slug',
-          'c.description',
-          'c.status',
-          'c.start_date',
-          'c.submission_end_date',
-          'c.judging_end_date',
-          'cj.created_at as invited_at',
+          "c.id",
+          "c.title",
+          "c.slug",
+          "c.description",
+          "c.status",
+          "c.start_date",
+          "c.submission_end_date",
+          "c.judging_end_date",
+          "cj.created_at as invited_at",
         ])
-        .where('cj.judge_id', '=', judgeId)
-        .where('cj.accepted', '=', false)
-        .where('c.deleted_at', 'is', null)
-        .orderBy('cj.created_at', 'desc')
+        .where("cj.judge_id", "=", judgeId)
+        .where("cj.accepted", "=", false)
+        .where("c.deleted_at", "is", null)
+        .orderBy("cj.created_at", "desc")
         .execute();
 
       res.json({
@@ -173,14 +173,11 @@ class ContestJudgeController {
         contests,
       });
     } catch (err) {
-      console.error('GET PENDING INVITES ERROR:', err);
-      res.status(500).json({ error: 'Failed to fetch invitations' });
+      console.error("GET PENDING INVITES ERROR:", err);
+      res.status(500).json({ error: "Failed to fetch invitations" });
     }
   }
-  /**
-   * GET /contest/:contestId/judges
-   * FIXED: Safe access to profile JSONB
-   */
+
   /**
    * GET /contest/:contestId/judges
    */
@@ -189,24 +186,24 @@ class ContestJudgeController {
       const { contestId } = req.params;
 
       const judges = await db
-        .selectFrom('contest_judges as cj')
-        .innerJoin('users as u', 'u.id', 'cj.judge_id')
+        .selectFrom("contest_judges as cj")
+        .innerJoin("users as u", "u.id", "cj.judge_id")
         .select([
-          'cj.judge_id as user_id',
-          'u.username',
+          "cj.judge_id as user_id",
+          "u.username",
           sql`COALESCE(
           u.profile->>'full_name',
           u.profile->>'name',
           u.username
         ) as name`,
-          'u.avatar_url',
-          'cj.accepted',
-          'cj.invited_by',
-          'cj.created_at as assigned_at',
-          'cj.updated_at', // ← optional
+          "u.avatar_url",
+          "cj.accepted",
+          "cj.invited_by",
+          "cj.created_at as assigned_at",
+          "cj.updated_at", // ← optional
         ])
-        .where('cj.contest_id', '=', contestId)
-        .orderBy('cj.created_at', 'desc') // Now safe after adding column
+        .where("cj.contest_id", "=", contestId)
+        .orderBy("cj.created_at", "desc") // Now safe after adding column
         .execute();
 
       res.json({
@@ -214,10 +211,10 @@ class ContestJudgeController {
         judges,
       });
     } catch (err) {
-      console.error('GET JUDGES ERROR:', err);
+      console.error("GET JUDGES ERROR:", err);
       res.status(500).json({
-        error: 'Failed to fetch judges for contest',
-        ...(process.env.NODE_ENV !== 'production' && {
+        error: "Failed to fetch judges for contest",
+        ...(process.env.NODE_ENV !== "production" && {
           detail: err.message,
         }),
       });
@@ -234,31 +231,31 @@ class ContestJudgeController {
       if (judgeId !== req.user?.id) {
         return res
           .status(403)
-          .json({ error: 'This invitation is not for you' });
+          .json({ error: "This invitation is not for you" });
       }
 
       const assignment = await db
-        .updateTable('contest_judges')
+        .updateTable("contest_judges")
         .set({ accepted: true })
-        .where('contest_id', '=', contestId)
-        .where('judge_id', '=', judgeId)
-        .where('accepted', '=', false)
+        .where("contest_id", "=", contestId)
+        .where("judge_id", "=", judgeId)
+        .where("accepted", "=", false)
         .returningAll()
         .executeTakeFirst();
 
       if (!assignment) {
         return res.status(404).json({
-          error: 'Invitation not found or already accepted',
+          error: "Invitation not found or already accepted",
         });
       }
 
       res.json({
         success: true,
-        message: 'Judge invitation accepted successfully',
+        message: "Judge invitation accepted successfully",
       });
     } catch (err) {
       console.error(err);
-      res.status(500).json({ error: 'Failed to accept judge invitation' });
+      res.status(500).json({ error: "Failed to accept judge invitation" });
     }
   }
 
@@ -271,44 +268,44 @@ class ContestJudgeController {
 
       const contest = await Contest.findById(contestId);
       if (!contest) {
-        return res.status(404).json({ error: 'Contest not found' });
+        return res.status(404).json({ error: "Contest not found" });
       }
 
       const isAdmin =
-        req.user?.role === 'Admin' ||
-        req.user?.permissions?.['contests.manage'] === true;
+        req.user?.role === "Admin" ||
+        req.user?.permissions?.["contests.manage"] === true;
 
       if (!isAdmin && contest.brand_id !== req.user?.id) {
         return res
           .status(403)
-          .json({ error: 'Not authorized to remove judges' });
+          .json({ error: "Not authorized to remove judges" });
       }
 
-      if (contest.status === 'judging') {
+      if (contest.status === "judging") {
         return res.status(400).json({
-          error: 'Cannot remove judges while contest is in judging phase',
+          error: "Cannot remove judges while contest is in judging phase",
         });
       }
 
       const deleted = await db
-        .deleteFrom('contest_judges')
-        .where('contest_id', '=', contestId)
-        .where('judge_id', '=', judgeId)
-        .returning(['judge_id'])
+        .deleteFrom("contest_judges")
+        .where("contest_id", "=", contestId)
+        .where("judge_id", "=", judgeId)
+        .returning(["judge_id"])
         .executeTakeFirst();
 
       if (!deleted) {
-        return res.status(404).json({ error: 'Judge assignment not found' });
+        return res.status(404).json({ error: "Judge assignment not found" });
       }
 
       res.json({
         success: true,
-        message: 'Judge removed successfully',
+        message: "Judge removed successfully",
         judgeId,
       });
     } catch (err) {
-      console.error('REMOVE JUDGE ERROR:', err);
-      res.status(500).json({ error: 'Failed to remove judge' });
+      console.error("REMOVE JUDGE ERROR:", err);
+      res.status(500).json({ error: "Failed to remove judge" });
     }
   }
 
@@ -320,24 +317,24 @@ class ContestJudgeController {
       const judgeId = req.user.id;
 
       const contests = await db
-        .selectFrom('contest_judges as cj')
-        .innerJoin('contests as c', 'c.id', 'cj.contest_id')
+        .selectFrom("contest_judges as cj")
+        .innerJoin("contests as c", "c.id", "cj.contest_id")
         .select([
-          'c.id',
-          'c.title',
-          'c.slug',
-          'c.description',
-          'c.status',
-          'c.start_date',
-          'c.submission_end_date',
-          'c.judging_end_date',
-          'c.created_at',
-          'c.brand_id',
+          "c.id",
+          "c.title",
+          "c.slug",
+          "c.description",
+          "c.status",
+          "c.start_date",
+          "c.submission_end_date",
+          "c.judging_end_date",
+          "c.created_at",
+          "c.brand_id",
         ])
-        .where('cj.judge_id', '=', judgeId)
-        .where('cj.accepted', '=', true)
-        .where('c.deleted_at', 'is', null)
-        .orderBy('c.created_at', 'desc')
+        .where("cj.judge_id", "=", judgeId)
+        .where("cj.accepted", "=", true)
+        .where("c.deleted_at", "is", null)
+        .orderBy("c.created_at", "desc")
         .execute();
 
       res.json({
@@ -345,8 +342,8 @@ class ContestJudgeController {
         contests,
       });
     } catch (err) {
-      console.error('GET JUDGE CONTESTS ERROR:', err);
-      res.status(500).json({ error: 'Failed to fetch assigned contests' });
+      console.error("GET JUDGE CONTESTS ERROR:", err);
+      res.status(500).json({ error: "Failed to fetch assigned contests" });
     }
   }
 }
