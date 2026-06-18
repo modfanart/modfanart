@@ -1,36 +1,36 @@
 // src/controllers/category.controller.js
-const Category = require('../models/category.model');
-const { sql } = require('kysely');
-const { db } = require('../../../config');
+const Category = require("../models/category.model");
+const { sql } = require("kysely");
+const { db } = require("../../../config");
 class CategoryController {
   // ────────────────────────────────────────────────
   // Public: Get all active categories (with optional tree view)
   // GET /categories
   static async getAllCategories(req, res) {
     try {
-      const { flat = 'false', parentId } = req.query;
-      const isFlat = flat === 'true';
+      const { flat = "false", parentId } = req.query;
+      const isFlat = flat === "true";
 
       let query = db
-        .selectFrom('categories')
+        .selectFrom("categories")
         .select([
-          'id',
-          'name',
-          'slug',
-          'parent_id',
-          'description',
-          'icon_url',
-          'sort_order',
+          "id",
+          "name",
+          "slug",
+          "parent_id",
+          "description",
+          "icon_url",
+          "sort_order",
         ])
-        .where('is_active', '=', true)
-        .orderBy('sort_order', 'asc')
-        .orderBy('name', 'asc');
+        .where("is_active", "=", true)
+        .orderBy("sort_order", "asc")
+        .orderBy("name", "asc");
 
       if (parentId) {
-        query = query.where('parent_id', '=', parentId);
+        query = query.where("parent_id", "=", parentId);
       } else if (!isFlat) {
         // Default: top-level categories (no parent)
-        query = query.where('parent_id', 'is', null);
+        query = query.where("parent_id", "is", null);
       }
 
       const categories = await query.execute();
@@ -58,8 +58,8 @@ class CategoryController {
 
       res.json({ categories: enriched });
     } catch (error) {
-      console.error('Get categories error:', error);
-      res.status(500).json({ error: 'Failed to fetch categories' });
+      console.error("Get categories error:", error);
+      res.status(500).json({ error: "Failed to fetch categories" });
     }
   }
 
@@ -71,7 +71,7 @@ class CategoryController {
       const { identifier } = req.params;
 
       let category;
-      if (identifier.includes('-') || identifier.length > 30) {
+      if (identifier.includes("-") || identifier.length > 30) {
         // treat as slug
         category = await Category.findBySlug(identifier);
       } else {
@@ -79,13 +79,13 @@ class CategoryController {
       }
 
       if (!category) {
-        return res.status(404).json({ error: 'Category not found' });
+        return res.status(404).json({ error: "Category not found" });
       }
 
       res.json(category);
     } catch (error) {
       console.error(error);
-      res.status(500).json({ error: 'Failed to fetch category' });
+      res.status(500).json({ error: "Failed to fetch category" });
     }
   }
 
@@ -95,8 +95,8 @@ class CategoryController {
   static async createCategory(req, res) {
     try {
       // Requires admin/moderator permission
-      if (!req.user.permissions?.['categories.manage']) {
-        return res.status(403).json({ error: 'Permission denied' });
+      if (!req.user.permissions?.["categories.manage"]) {
+        return res.status(403).json({ error: "Permission denied" });
       }
 
       const {
@@ -109,18 +109,18 @@ class CategoryController {
       } = req.body;
 
       if (!name || !slug) {
-        return res.status(400).json({ error: 'name and slug are required' });
+        return res.status(400).json({ error: "name and slug are required" });
       }
 
       // Optional: validate slug uniqueness
       if (
         await db
-          .selectFrom('categories')
-          .select('id')
-          .where('slug', '=', slug)
+          .selectFrom("categories")
+          .select("id")
+          .where("slug", "=", slug)
           .executeTakeFirst()
       ) {
-        return res.status(409).json({ error: 'Slug already in use' });
+        return res.status(409).json({ error: "Slug already in use" });
       }
 
       const category = await Category.create({
@@ -135,8 +135,8 @@ class CategoryController {
 
       res.status(201).json(category);
     } catch (error) {
-      console.error('Create category error:', error);
-      res.status(500).json({ error: 'Failed to create category' });
+      console.error("Create category error:", error);
+      res.status(500).json({ error: "Failed to create category" });
     }
   }
 
@@ -145,8 +145,8 @@ class CategoryController {
   // PATCH /categories/:id
   static async updateCategory(req, res) {
     try {
-      if (!req.user.permissions?.['categories.manage']) {
-        return res.status(403).json({ error: 'Permission denied' });
+      if (!req.user.permissions?.["categories.manage"]) {
+        return res.status(403).json({ error: "Permission denied" });
       }
 
       const { id } = req.params;
@@ -162,7 +162,7 @@ class CategoryController {
 
       const existing = await Category.findById(id);
       if (!existing) {
-        return res.status(404).json({ error: 'Category not found' });
+        return res.status(404).json({ error: "Category not found" });
       }
 
       const updateData = {};
@@ -175,15 +175,15 @@ class CategoryController {
       if (is_active !== undefined) updateData.is_active = !!is_active;
 
       if (Object.keys(updateData).length === 0) {
-        return res.status(400).json({ error: 'No fields to update' });
+        return res.status(400).json({ error: "No fields to update" });
       }
 
       const updated = await Category.update(id, updateData);
 
       res.json(updated);
     } catch (error) {
-      console.error('Update category error:', error);
-      res.status(500).json({ error: 'Failed to update category' });
+      console.error("Update category error:", error);
+      res.status(500).json({ error: "Failed to update category" });
     }
   }
 
@@ -192,25 +192,25 @@ class CategoryController {
   // DELETE /categories/:id
   static async deleteCategory(req, res) {
     try {
-      if (!req.user.permissions?.['categories.manage']) {
-        return res.status(403).json({ error: 'Permission denied' });
+      if (!req.user.permissions?.["categories.manage"]) {
+        return res.status(403).json({ error: "Permission denied" });
       }
 
       const { id } = req.params;
 
       const category = await Category.findById(id);
       if (!category) {
-        return res.status(404).json({ error: 'Category not found' });
+        return res.status(404).json({ error: "Category not found" });
       }
 
       // Soft deactivate instead of hard delete (safer)
       await db
-        .updateTable('categories')
+        .updateTable("categories")
         .set({
           is_active: false,
           updated_at: sql`NOW()`,
         })
-        .where('id', '=', id)
+        .where("id", "=", id)
         .execute();
 
       // Optional: cascade deactivate children if needed
@@ -218,18 +218,18 @@ class CategoryController {
 
       res.status(204).send();
     } catch (error) {
-      console.error('Delete category error:', error);
-      res.status(500).json({ error: 'Failed to deactivate category' });
+      console.error("Delete category error:", error);
+      res.status(500).json({ error: "Failed to deactivate category" });
     }
   }
 
   static async getCategoryBySlug(req, res) {
     try {
       const { slug } = req.params;
-      const { page = '1', limit = '12' } = req.query;
+      const { page = "1", limit = "12" } = req.query;
 
-      if (!slug || typeof slug !== 'string') {
-        return res.status(400).json({ error: 'Valid slug is required' });
+      if (!slug || typeof slug !== "string") {
+        return res.status(400).json({ error: "Valid slug is required" });
       }
 
       const pageNum = parseInt(page, 10);
@@ -242,7 +242,7 @@ class CategoryController {
         limitNum < 1 ||
         limitNum > 100
       ) {
-        return res.status(400).json({ error: 'Invalid pagination parameters' });
+        return res.status(400).json({ error: "Invalid pagination parameters" });
       }
 
       const normalizedSlug = slug.trim().toLowerCase();
@@ -250,37 +250,37 @@ class CategoryController {
       const category = await Category.findBySlug(normalizedSlug);
 
       if (!category) {
-        return res.status(404).json({ error: 'Category not found' });
+        return res.status(404).json({ error: "Category not found" });
       }
 
       const offset = (pageNum - 1) * limitNum;
 
       const artworksQuery = db
-        .selectFrom('artworks')
+        .selectFrom("artworks")
         .innerJoin(
-          'artwork_categories',
-          'artworks.id',
-          'artwork_categories.artwork_id'
+          "artwork_categories",
+          "artworks.id",
+          "artwork_categories.artwork_id"
         )
         .innerJoin(
-          'categories',
-          'artwork_categories.category_id',
-          'categories.id'
+          "categories",
+          "artwork_categories.category_id",
+          "categories.id"
         )
         .select([
-          'artworks.id',
-          'artworks.title',
-          'artworks.description',
-          'artworks.file_url',
-          'artworks.thumbnail_url',
-          'artworks.views_count',
-          'artworks.favorites_count',
-          'artworks.created_at',
+          "artworks.id",
+          "artworks.title",
+          "artworks.description",
+          "artworks.file_url",
+          "artworks.thumbnail_url",
+          "artworks.views_count",
+          "artworks.favorites_count",
+          "artworks.created_at",
         ])
-        .where('categories.slug', '=', normalizedSlug)
-        .where('artworks.status', '=', 'published')
-        .where('artworks.deleted_at', 'is', null)
-        .orderBy('artworks.created_at', 'desc')
+        .where("categories.slug", "=", normalizedSlug)
+        .where("artworks.status", "=", "published")
+        .where("artworks.deleted_at", "is", null)
+        .orderBy("artworks.created_at", "desc")
         .limit(limitNum)
         .offset(offset);
 
@@ -288,21 +288,21 @@ class CategoryController {
 
       // Fixed count query
       const countResult = await db
-        .selectFrom('artworks')
+        .selectFrom("artworks")
         .innerJoin(
-          'artwork_categories',
-          'artworks.id',
-          'artwork_categories.artwork_id'
+          "artwork_categories",
+          "artworks.id",
+          "artwork_categories.artwork_id"
         )
         .innerJoin(
-          'categories',
-          'artwork_categories.category_id',
-          'categories.id'
+          "categories",
+          "artwork_categories.category_id",
+          "categories.id"
         )
-        .select(({ fn }) => [fn.countAll().as('total')])
-        .where('categories.slug', '=', normalizedSlug)
-        .where('artworks.status', '=', 'published')
-        .where('artworks.deleted_at', 'is', null)
+        .select(({ fn }) => [fn.countAll().as("total")])
+        .where("categories.slug", "=", normalizedSlug)
+        .where("artworks.status", "=", "published")
+        .where("artworks.deleted_at", "is", null)
         .executeTakeFirst();
 
       const total = Number(countResult?.total ?? 0);
@@ -321,8 +321,8 @@ class CategoryController {
         },
       });
     } catch (error) {
-      console.error('Get category by slug error:', error);
-      res.status(500).json({ error: 'Failed to fetch category data' });
+      console.error("Get category by slug error:", error);
+      res.status(500).json({ error: "Failed to fetch category data" });
     }
   }
 }

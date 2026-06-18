@@ -15,11 +15,16 @@ import { Input } from '../../components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
 import { Badge } from '../../components/ui/badge';
 import { 
-  useGetUsersByRoleSlugQuery, 
+  useGetUsersByRoleSlugQuery,  
   useUpdateUserStatusMutation, 
   useDeleteUserMutation 
 } from '../../services/api/userApi';
+import { UserFormModal } from '../../components/modals/UserFormModal'; // adjust path
 
+import {
+  useCreateUserMutation,
+  useUpdateUserMutation,
+} from '../../services/api/userApi';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -27,7 +32,11 @@ export const ArtistsList = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user: currentUser, hasRole } = useAuth();
-  
+  const [modalOpen, setModalOpen] = useState(false);
+const [selectedArtist, setSelectedArtist] = useState(null);
+
+const [createUser, { isLoading: creating }] = useCreateUserMutation();
+const [updateUser, { isLoading: updating }] = useUpdateUserMutation();
   const page = parseInt(searchParams.get('page') || '1');
   const search = searchParams.get('search') || '';
   const status = searchParams.get('status') || 'all';
@@ -125,7 +134,24 @@ if (!canManageArtists) {
   const getInitials = (username) => {
     return username ? username.slice(0, 2).toUpperCase() : '??';
   };
+const openCreate = () => {
+  setSelectedArtist(null);
+  setModalOpen(true);
+};
+const handleSave = async (payload) => {
+  if (selectedArtist) {
+    await updateUser({
+      userId: selectedArtist.id,
+      ...payload,
+    }).unwrap();
+    toast.success('Artist updated');
+  } else {
+    await createUser(payload).unwrap();
+    toast.success('Artist invited');
+  }
 
+  setModalOpen(false);
+};
   return (
     <div className="min-h-screen" data-testid="artists-admin-page">
       <Header title="Artists" subtitle={`${artists.length} total artists`} />
@@ -156,7 +182,7 @@ if (!canManageArtists) {
               <option value="deactivated">Deactivated</option>
             </select>
 
-            <Button onClick={() => navigate('/artists/add')}>
+            <Button >
               <Plus className="w-4 h-4 mr-2" />
               Invite Artist
             </Button>
@@ -175,7 +201,7 @@ if (!canManageArtists) {
             <Button 
               variant="outline" 
               className="mt-6"
-              onClick={() => navigate('/artists/add')}
+          onClick={openCreate}
             >
               Invite First Artist
             </Button>
@@ -203,7 +229,7 @@ if (!canManageArtists) {
 
                     <div>
                       <div 
-                        onClick={() => navigate(`/artists/${artist.id}`)}
+                        onClick={() => navigate(`/artist/${artist.id}`)}
                         className="font-semibold text-white hover:underline cursor-pointer"
                       >
                         @{artist.username}
@@ -229,14 +255,17 @@ if (!canManageArtists) {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => navigate(`/artists/${artist.id}`)}
+                    onClick={() => navigate(`/artist/${artist.id}`)}
                   >
                     View Profile
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => navigate(`/artists/${artist.id}/edit`)}
+                 onClick={() => {
+  setSelectedArtist(artist);
+  setModalOpen(true);
+}}
                   >
                     <PencilSimple className="w-4 h-4 mr-1" />
                     Edit
@@ -336,6 +365,14 @@ if (!canManageArtists) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <UserFormModal
+  open={modalOpen}
+  user={selectedArtist}
+  roles={[]} // optionally pass ARTIST role only or fetch roles
+  onClose={() => setModalOpen(false)}
+  onSave={handleSave}
+  isLoading={creating || updating}
+/>
     </div>
   );
 };

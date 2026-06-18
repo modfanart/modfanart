@@ -1,23 +1,23 @@
-const { db } = require('../../../config');
-const { sql } = require('kysely'); // ✅ REQUIRED
+const { db } = require("../../../config");
+const { sql } = require("kysely"); // ✅ REQUIRED
 
 class UserStatsService {
   static async getUserStats(userId) {
     const result = await db
-      .selectFrom('artworks')
+      .selectFrom("artworks")
       .select((eb) => [
-        eb.fn.count('id').as('artworks_count'),
+        eb.fn.count("id").as("artworks_count"),
 
         // ✅ FIXED
         eb.fn
-          .coalesce(eb.fn.sum('favorites_count'), sql`0`)
-          .as('likes_received'),
+          .coalesce(eb.fn.sum("favorites_count"), sql`0`)
+          .as("likes_received"),
 
         // ✅ FIXED
-        eb.fn.coalesce(eb.fn.sum('views_count'), sql`0`).as('views_received'),
+        eb.fn.coalesce(eb.fn.sum("views_count"), sql`0`).as("views_received"),
       ])
-      .where('creator_id', '=', userId)
-      .where('deleted_at', 'is', null)
+      .where("creator_id", "=", userId)
+      .where("deleted_at", "is", null)
       .executeTakeFirst();
 
     return {

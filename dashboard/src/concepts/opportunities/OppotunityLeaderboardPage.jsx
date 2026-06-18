@@ -58,7 +58,7 @@ export const OpportunityLeaderboardPage = () => {
         <Button
           variant="ghost"
           className="text-zinc-400 hover:text-white"
-          onClick={() => navigate(`/opportunities/${contestId}`)}
+          onClick={() => navigate(`/opportunity/${contestId}`)}
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Opportunity

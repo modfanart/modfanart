@@ -1,6 +1,9 @@
 // src/controllers/search.controller.js
-const { pool } = require('../../../config');
-const { escapeLike, toTsQueryPrefix } = require('../../../common/utils/dbHelpers.util');
+const { pool } = require("../../../config");
+const {
+  escapeLike,
+  toTsQueryPrefix,
+} = require("../../../common/utils/dbHelpers.util");
 
 /**
  * Global search endpoint
@@ -14,7 +17,7 @@ async function globalSearch(req, res) {
       return res.status(200).json({
         results: [],
         total: 0,
-        message: 'Query too short (min 2 characters)',
+        message: "Query too short (min 2 characters)",
       });
     }
 
@@ -23,16 +26,16 @@ async function globalSearch(req, res) {
     const tsQuery = toTsQueryPrefix(searchTerm); // better prefix matching
 
     const allowedTypes = new Set([
-      'artwork',
-      'user',
-      'brand',
-      'contest',
-      'category',
-      'tag',
+      "artwork",
+      "user",
+      "brand",
+      "contest",
+      "category",
+      "tag",
     ]);
 
     const requestedTypes = type
-      ? new Set(type.split(',').map((t) => t.trim().toLowerCase()))
+      ? new Set(type.split(",").map((t) => t.trim().toLowerCase()))
       : allowedTypes;
 
     const subQueries = [];
@@ -42,7 +45,7 @@ async function globalSearch(req, res) {
     // ────────────────────────────────────────────────
     // 1. Artworks
     // ────────────────────────────────────────────────
-    if (requestedTypes.has('artwork')) {
+    if (requestedTypes.has("artwork")) {
       subQueries.push(`
         SELECT
           'artwork' AS type,
@@ -60,7 +63,9 @@ async function globalSearch(req, res) {
           AND (
             a.title ILIKE $${paramIdx}
             OR a.description ILIKE $${paramIdx}
-            OR to_tsvector('english', a.title || ' ' || COALESCE(a.description, '')) @@ to_tsquery('english', $${paramIdx + 1})
+            OR to_tsvector('english', a.title || ' ' || COALESCE(a.description, '')) @@ to_tsquery('english', $${
+              paramIdx + 1
+            })
           )
         GROUP BY a.id, u.id, a.created_at
       `);
@@ -71,7 +76,7 @@ async function globalSearch(req, res) {
     // ────────────────────────────────────────────────
     // 2. Users
     // ────────────────────────────────────────────────
-    if (requestedTypes.has('user')) {
+    if (requestedTypes.has("user")) {
       subQueries.push(`
         SELECT
           'user' AS type,
@@ -87,7 +92,9 @@ async function globalSearch(req, res) {
             u.username ILIKE $${paramIdx}
             OR u.email ILIKE $${paramIdx}
             OR (u.profile->>'display_name')::text ILIKE $${paramIdx}
-            OR to_tsvector('english', u.username || ' ' || COALESCE(u.bio, '')) @@ to_tsquery('english', $${paramIdx + 1})
+            OR to_tsvector('english', u.username || ' ' || COALESCE(u.bio, '')) @@ to_tsquery('english', $${
+              paramIdx + 1
+            })
           )
       `);
       params.push(likeTerm, tsQuery);
@@ -97,7 +104,7 @@ async function globalSearch(req, res) {
     // ────────────────────────────────────────────────
     // 3. Brands
     // ────────────────────────────────────────────────
-    if (requestedTypes.has('brand')) {
+    if (requestedTypes.has("brand")) {
       subQueries.push(`
         SELECT
           'brand' AS type,
@@ -113,7 +120,9 @@ async function globalSearch(req, res) {
             b.name ILIKE $${paramIdx}
             OR b.slug ILIKE $${paramIdx}
             OR b.description ILIKE $${paramIdx}
-            OR to_tsvector('english', b.name || ' ' || COALESCE(b.description, '')) @@ to_tsquery('english', $${paramIdx + 1})
+            OR to_tsvector('english', b.name || ' ' || COALESCE(b.description, '')) @@ to_tsquery('english', $${
+              paramIdx + 1
+            })
           )
       `);
       params.push(likeTerm, tsQuery);
@@ -123,7 +132,7 @@ async function globalSearch(req, res) {
     // ────────────────────────────────────────────────
     // 4. Contests
     // ────────────────────────────────────────────────
-    if (requestedTypes.has('contest')) {
+    if (requestedTypes.has("contest")) {
       subQueries.push(`
         SELECT
           'contest' AS type,
@@ -139,7 +148,9 @@ async function globalSearch(req, res) {
           AND (
             c.title ILIKE $${paramIdx}
             OR c.description ILIKE $${paramIdx}
-            OR to_tsvector('english', c.title || ' ' || c.description) @@ to_tsquery('english', $${paramIdx + 1})
+            OR to_tsvector('english', c.title || ' ' || c.description) @@ to_tsquery('english', $${
+              paramIdx + 1
+            })
           )
       `);
       params.push(likeTerm, tsQuery);
@@ -149,7 +160,7 @@ async function globalSearch(req, res) {
     // ────────────────────────────────────────────────
     // 5. Categories
     // ────────────────────────────────────────────────
-    if (requestedTypes.has('category')) {
+    if (requestedTypes.has("category")) {
       subQueries.push(`
         SELECT
           'category' AS type,
@@ -174,7 +185,7 @@ async function globalSearch(req, res) {
     // ────────────────────────────────────────────────
     // 6. Tags
     // ────────────────────────────────────────────────
-    if (requestedTypes.has('tag')) {
+    if (requestedTypes.has("tag")) {
       subQueries.push(`
         SELECT
           'tag' AS type,
@@ -196,7 +207,7 @@ async function globalSearch(req, res) {
       return res.status(200).json({ results: [], total: 0 });
     }
 
-    const unionQuery = subQueries.join(' UNION ALL ');
+    const unionQuery = subQueries.join(" UNION ALL ");
 
     const finalQuery = `
       WITH results AS (
@@ -227,10 +238,10 @@ async function globalSearch(req, res) {
       offset: Number(offset),
     });
   } catch (err) {
-    console.error('[globalSearch]', err);
+    console.error("[globalSearch]", err);
     res.status(500).json({
-      error: 'Search failed',
-      message: process.env.NODE_ENV === 'development' ? err.message : undefined,
+      error: "Search failed",
+      message: process.env.NODE_ENV === "development" ? err.message : undefined,
     });
   }
 }

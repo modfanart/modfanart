@@ -210,7 +210,7 @@ export const OpportunityDetailPage = () => {
 
               <Button
                 className="w-full bg-white text-black hover:bg-zinc-200"
-                onClick={() => navigate(`/opportunities/${contest.id}/entries`)}
+                onClick={() => navigate(`/opportunity/${contest.id}/entries`)}
               >
                 <Users className="w-4 h-4 mr-2" />
                 View Entries
@@ -219,7 +219,7 @@ export const OpportunityDetailPage = () => {
               <Button
                 variant="outline"
                 className="w-full border-zinc-700 text-zinc-300"
-                onClick={() => navigate(`/opportunities/${contest.id}/leaderboard`)}
+                onClick={() => navigate(`/opportunity/${contest.id}/leaderboard`)}
               >
                 <Trophy className="w-4 h-4 mr-2" />
                 Leaderboard

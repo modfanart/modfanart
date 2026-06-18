@@ -1,5 +1,5 @@
 // src/controllers/collection.controller.js
-const Collections = require('../models/collection.model');
+const Collections = require("../models/collection.model");
 
 class CollectionController {
   /**
@@ -12,7 +12,7 @@ class CollectionController {
       res.status(201).json(collection);
     } catch (err) {
       console.error(err);
-      res.status(500).json({ error: 'Failed to create collection' });
+      res.status(500).json({ error: "Failed to create collection" });
     }
   }
 
@@ -29,7 +29,7 @@ class CollectionController {
       res.json(collections);
     } catch (err) {
       console.error(err);
-      res.status(500).json({ error: 'Failed to fetch collections' });
+      res.status(500).json({ error: "Failed to fetch collections" });
     }
   }
 
@@ -41,11 +41,11 @@ class CollectionController {
       const { id } = req.params;
       const collection = await Collections.getCollectionById(id);
       if (!collection)
-        return res.status(404).json({ error: 'Collection not found' });
+        return res.status(404).json({ error: "Collection not found" });
       res.json(collection);
     } catch (err) {
       console.error(err);
-      res.status(500).json({ error: 'Failed to fetch collection' });
+      res.status(500).json({ error: "Failed to fetch collection" });
     }
   }
 
@@ -60,7 +60,7 @@ class CollectionController {
       res.json(updated);
     } catch (err) {
       console.error(err);
-      res.status(500).json({ error: 'Failed to update collection' });
+      res.status(500).json({ error: "Failed to update collection" });
     }
   }
 
@@ -71,10 +71,10 @@ class CollectionController {
     try {
       const { id } = req.params;
       await Collections.deleteCollection(id);
-      res.json({ message: 'Collection deleted' });
+      res.json({ message: "Collection deleted" });
     } catch (err) {
       console.error(err);
-      res.status(500).json({ error: 'Failed to delete collection' });
+      res.status(500).json({ error: "Failed to delete collection" });
     }
   }
 }

@@ -1,9 +1,9 @@
 // src/routes/search.js
-const express = require('express');
-const { globalSearch } = require('./controller/search.controller');
+const express = require("express");
+const { globalSearch } = require("./controller/search.controller");
 
 const router = express.Router();
 
-router.get('/', globalSearch);
+router.get("/", globalSearch);
 
 module.exports = router;
