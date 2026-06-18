@@ -276,7 +276,17 @@
  * @property {string | null} description
  * @property {object | null} metadata
  */
-
+/**
+ * @typedef {Object} UserViolationRow
+ * @property {string} id
+ * @property {string} user_id
+ * @property {string | null} reporter_id
+ * @property {string} type
+ * @property {string | null} description
+ * @property {string} status
+ * @property {string} created_at
+ * @property {string} updated_at
+ */
 /**
  * @typedef {Object} RefundRow
  * @property {string} id

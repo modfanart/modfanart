@@ -19,8 +19,8 @@ export const Header = ({ title, subtitle }) => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
-const outlet = useOutletContext();
-const onMenuToggle = outlet?.onMenuToggle;
+  const outlet = useOutletContext();
+  const onMenuToggle = outlet?.onMenuToggle;
 
   // Ctrl/Cmd + K for search
   React.useEffect(() => {
@@ -142,7 +142,7 @@ const onMenuToggle = outlet?.onMenuToggle;
                       <button
                         onClick={() => {
                           setDropdownOpen(false);
-                          navigate('/profile');
+                          navigate(`/u/${user?.id}`);
                         }}
                         className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-white"
                       >

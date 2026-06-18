@@ -1,17 +1,19 @@
-// src/routes/cdn.routes.js
-
 const router = require("express").Router();
 
-const CDNController = require("../controllers/cdn.controller");
-const upload = require("../middleware/upload.middleware");
-const auth = require("../middleware/auth");
+const CDNController = require("./cdn.controller");
+const upload = require("../../common/middleware/upload");
+const { authenticateToken } = require("../../common/middleware/auth.middleware");
 
-router.post("/upload", auth, upload.single("file"), CDNController.uploadFile);
+// ✅ use wrapper you already created
+router.post(
+  "/upload",
+  authenticateToken,
+  upload.singleUpload("file"),
+  CDNController.uploadFile
+);
 
-router.get("/", auth, CDNController.listFiles);
-
-router.get("/:id", auth, CDNController.getFileById);
-
-router.delete("/:id", auth, CDNController.deleteFile);
+router.get("/", authenticateToken, CDNController.listFiles);
+router.get("/:id", authenticateToken, CDNController.getFileById);
+router.delete("/:id", authenticateToken, CDNController.deleteFile);
 
 module.exports = router;

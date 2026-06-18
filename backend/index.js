@@ -111,6 +111,8 @@ const routes = [
   },
   { path: "/api/tasks", module: "./src/modules/tasks/task.routes.js" },
   { path: "/api/projects", module: "./src/modules/tasks/project.routes.js" },
+  {path: "/api/media", module: "./src/modules/cdn/cdn.routes.js"},
+  {path: "/api/admin", module: "./src/modules/admin/admin.routes.js"}
 ];
 
 routes.forEach(({ path, module: mod }) => {
