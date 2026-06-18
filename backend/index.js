@@ -1,28 +1,28 @@
 // index.js
 
-const express = require('express');
-const cors = require('cors');
-const dotenv = require('dotenv');
-const path = require('path');
-const rateLimit = require('express-rate-limit');
+const express = require("express");
+const cors = require("cors");
+const dotenv = require("dotenv");
+const path = require("path");
+const rateLimit = require("express-rate-limit");
 
-const attachDb = require('./src/common/middleware/attachDb');
-const requestLogger = require('./src/common/middleware/requestLogger');
-const errorHandler = require('./src/common/middleware/error');
+const attachDb = require("./src/common/middleware/attachDb");
+const requestLogger = require("./src/common/middleware/requestLogger");
+const errorHandler = require("./src/common/middleware/error");
 
 dotenv.config();
 /** */
 const app = express();
 
 // ====================== GLOBAL ERROR HANDLERS ======================
-process.on('uncaughtException', (err) => {
-  console.error('💥 Uncaught Exception:', err.message);
+process.on("uncaughtException", (err) => {
+  console.error("💥 Uncaught Exception:", err.message);
   console.error(err.stack);
 });
 
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('💥 Unhandled Rejection at:', promise);
-  console.error('Reason:', reason);
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("💥 Unhandled Rejection at:", promise);
+  console.error("Reason:", reason);
   console.error(reason?.stack || reason);
 });
 
@@ -35,7 +35,7 @@ const limiter = rateLimit({
   max: 100,
   message: {
     status: 429,
-    message: 'Too many requests, please try again later.',
+    message: "Too many requests, please try again later.",
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -45,8 +45,10 @@ app.use(limiter);
 
 // ====================== CORS ======================
 const allowedOrigins = [
-  'http://localhost:3000',
-  'http://localhost:5173', 'https://www.modfanofficial.com', 'https://workspace.modfanofficial.com'
+  "http://localhost:3000",
+  "http://localhost:5173",
+  "https://www.modfanofficial.com",
+  "https://workspace.modfanofficial.com",
 ];
 
 app.use(
@@ -58,7 +60,7 @@ app.use(
         return callback(null, true);
       }
 
-      return callback(new Error('Not allowed by CORS'));
+      return callback(null, false); // 👈 IMPORTANT CHANGE
     },
     credentials: true,
   })
@@ -69,36 +71,45 @@ app.use(requestLogger);
 app.use(attachDb);
 
 // ====================== STATIC ======================
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, "public")));
 
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
 // ====================== HEALTH ======================
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', uptime: process.uptime() });
+app.get("/health", (req, res) => {
+  res.json({ status: "ok", uptime: process.uptime() });
 });
 
 // ====================== ROUTES ======================
 const routes = [
-  { path: '/api/tags', module: './src/modules/tags/tagging.routes.js' },
-  { path: '/api/contest', module: './src/modules/contests/contest.routes.js' },
-  { path: '/api/order', module: './src/modules/licenses/order.routes.js' },
-  { path: '/api/category', module: './src/modules/artworks/category.routes.js' },
-  { path: '/api/contact', module: './src/modules/queries/contact.routes.js' },
-  { path: '/api/auth', module: './src/modules/auth/auth.routes.js' },
-  { path: '/api/roles', module: './src/modules/rbac/role.routes.js' },
-  { path: '/api/artwork', module: './src/modules/artworks/artwork.routes.js' },
-  { path: '/api/licenses', module: './src/modules/licenses/license.routes.js' },
-  { path: '/api/users', module: './src/modules/users/user.routes.js' },
-  { path: '/api/brands', module: './src/modules/brands/brand.routes.js' },
-  { path: '/api/collections', module: './src/modules/collections/collection.route.js' },
-  { path: '/api/search', module: './src/modules/search/search.routes.js' },
-  { path: '/api/payout', module: './src/modules/licenses/payout.routes.js' },
-  { path: '/api/notifications', module: './src/modules/notifications/notification.routes.js' },
-  { path: '/api/tasks', module: './src/modules/tasks/task.routes.js' },
-  { path: '/api/projects', module: './src/modules/tasks/project.routes.js' }
+  { path: "/api/tags", module: "./src/modules/tags/tagging.routes.js" },
+  { path: "/api/contest", module: "./src/modules/contests/contest.routes.js" },
+  { path: "/api/order", module: "./src/modules/licenses/order.routes.js" },
+  {
+    path: "/api/category",
+    module: "./src/modules/artworks/category.routes.js",
+  },
+  { path: "/api/contact", module: "./src/modules/queries/contact.routes.js" },
+  { path: "/api/auth", module: "./src/modules/auth/auth.routes.js" },
+  { path: "/api/roles", module: "./src/modules/rbac/role.routes.js" },
+  { path: "/api/artwork", module: "./src/modules/artworks/artwork.routes.js" },
+  { path: "/api/licenses", module: "./src/modules/licenses/license.routes.js" },
+  { path: "/api/users", module: "./src/modules/users/user.routes.js" },
+  { path: "/api/brands", module: "./src/modules/brands/brand.routes.js" },
+  {
+    path: "/api/collections",
+    module: "./src/modules/collections/collection.route.js",
+  },
+  { path: "/api/search", module: "./src/modules/search/search.routes.js" },
+  { path: "/api/payout", module: "./src/modules/licenses/payout.routes.js" },
+  {
+    path: "/api/notifications",
+    module: "./src/modules/notifications/notification.routes.js",
+  },
+  { path: "/api/tasks", module: "./src/modules/tasks/task.routes.js" },
+  { path: "/api/projects", module: "./src/modules/tasks/project.routes.js" },
 ];
 
 routes.forEach(({ path, module: mod }) => {
@@ -117,13 +128,13 @@ app.use(errorHandler);
 // ====================== START SERVER ======================
 const PORT = 5000;
 
-const server = app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Backend running on port ${PORT}`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
 });
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('🛑 SIGTERM received, shutting down gracefully');
+process.on("SIGTERM", () => {
+  console.log("🛑 SIGTERM received, shutting down gracefully");
   server.close(() => process.exit(0));
 });

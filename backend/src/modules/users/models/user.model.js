@@ -1,11 +1,11 @@
 // src/models/user.model.js
-const { db } = require('../../../config');
-const { sql } = require('kysely');
+const { db } = require("../../../config");
+const { sql } = require("kysely");
 
 /** @typedef {import('../db/types').UserRow} UserRow */
 
 class User {
-  static table = 'users';
+  static table = "users";
 
   /**
    * @param {string} id
@@ -13,10 +13,10 @@ class User {
    */
   static async findById(id) {
     return db
-      .selectFrom('users')
+      .selectFrom("users")
       .selectAll()
-      .where('id', '=', id)
-      .where('deleted_at', 'is', null)
+      .where("id", "=", id)
+      .where("deleted_at", "is", null)
       .executeTakeFirst();
   }
 
@@ -26,10 +26,10 @@ class User {
    */
   static async findByEmail(email) {
     return db
-      .selectFrom('users')
+      .selectFrom("users")
       .selectAll()
-      .where('email', '=', email)
-      .where('deleted_at', 'is', null)
+      .where("email", "=", email)
+      .where("deleted_at", "is", null)
       .executeTakeFirst();
   }
 
@@ -39,10 +39,10 @@ class User {
    */
   static async findByUsername(username) {
     return db
-      .selectFrom('users')
+      .selectFrom("users")
       .selectAll()
-      .where('username', '=', username)
-      .where('deleted_at', 'is', null)
+      .where("username", "=", username)
+      .where("deleted_at", "is", null)
       .executeTakeFirst();
   }
 
@@ -51,7 +51,7 @@ class User {
    */
   static async create(data) {
     return db
-      .insertInto('users')
+      .insertInto("users")
       .values({
         ...data,
         created_at: sql`NOW()`,
@@ -62,12 +62,12 @@ class User {
   }
   static async updateById(id, data) {
     return db
-      .updateTable('users')
+      .updateTable("users")
       .set({
         ...data,
         updated_at: sql`NOW()`,
       })
-      .where('id', '=', id)
+      .where("id", "=", id)
       .execute();
   }
   /**
@@ -76,13 +76,13 @@ class User {
    */
   static async softDelete(id) {
     return db
-      .updateTable('users')
+      .updateTable("users")
       .set({
         deleted_at: sql`NOW()`,
         updated_at: sql`NOW()`,
-        status: 'deactivated',
+        status: "deactivated",
       })
-      .where('id', '=', id)
+      .where("id", "=", id)
       .execute();
   }
 
@@ -92,9 +92,9 @@ class User {
    */
   static async updateLastLogin(id) {
     return db
-      .updateTable('users')
+      .updateTable("users")
       .set({ last_login_at: sql`NOW()` })
-      .where('id', '=', id)
+      .where("id", "=", id)
       .execute();
   }
 

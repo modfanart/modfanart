@@ -25,7 +25,7 @@ const logger = (req, res, next) => {
   };
 
   // Log when response finishes
-  res.on('finish', () => {
+  res.on("finish", () => {
     const duration = Date.now() - start;
     const status = res.statusCode;
 
@@ -35,8 +35,8 @@ const logger = (req, res, next) => {
       url: req.originalUrl,
       path: req.path,
       query: req.query,
-      ip: req.ip || req.headers['x-forwarded-for'] || 'unknown',
-      userAgent: req.get('user-agent') || 'unknown',
+      ip: req.ip || req.headers["x-forwarded-for"] || "unknown",
+      userAgent: req.get("user-agent") || "unknown",
       statusCode: status,
       responseTimeMs: duration,
       // Optional: only log small bodies or skip large ones
@@ -50,13 +50,13 @@ const logger = (req, res, next) => {
     );
 
     // More detailed logging (good for development)
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('  Query:', logEntry.query);
+    if (process.env.NODE_ENV !== "production") {
+      console.log("  Query:", logEntry.query);
       if (logEntry.bodySize > 0 && logEntry.bodySize < 2000) {
-        console.log('  Body :', req.body);
+        console.log("  Body :", req.body);
       }
-      console.log('  IP   :', logEntry.ip);
-      console.log('  UA   :', logEntry.userAgent);
+      console.log("  IP   :", logEntry.ip);
+      console.log("  UA   :", logEntry.userAgent);
       // console.log('  Resp :', responseBody); // ← uncomment only when debugging
     }
   });

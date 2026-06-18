@@ -1,31 +1,30 @@
 // src/models/role.model.js
-const { db } = require('../../../config');
+const { db } = require("../../../config");
 
 class Role {
-  static table = 'roles';
+  static table = "roles";
 
   static async findByName(name) {
     return db
-      .selectFrom('roles')
+      .selectFrom("roles")
       .selectAll()
-      .where('name', '=', name)
+      .where("name", "=", name)
       .executeTakeFirst();
   }
 
   static async findById(id) {
     return db
-      .selectFrom('roles')
+      .selectFrom("roles")
       .selectAll()
-      .where('id', '=', id)
+      .where("id", "=", id)
       .executeTakeFirst();
   }
 
-  // You can cache system roles in memory after startup
   static async getSystemRoles() {
     return db
-      .selectFrom('roles')
+      .selectFrom("roles")
       .selectAll()
-      .where('is_system', '=', true)
+      .where("is_system", "=", true)
       .execute();
   }
 }
