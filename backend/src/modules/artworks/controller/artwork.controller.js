@@ -4,7 +4,7 @@ const Artwork = require("../models/artwork.model");
 const ArtworkCategory = require("../models/artworkCategory.model");
 const ArtworkPricingTier = require("../models/artworkPricingTier.model");
 const CDNFile = require("../../cdn/models/cdn-file.model");
-
+const { db } = require("../../../config");
 const path = require("path");
 const crypto = require("crypto");
 const fs = require("fs/promises");

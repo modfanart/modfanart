@@ -50,7 +50,7 @@ export const ArtistDetails = () => {
 
         {/* ================= PROFILE ================= */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 flex gap-6">
-          
+
           {/* Avatar */}
           <div className="w-20 h-20 bg-zinc-800 rounded-full flex items-center justify-center text-xl font-bold">
             {artist.username?.slice(0, 2).toUpperCase()}

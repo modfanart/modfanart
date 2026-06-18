@@ -1,4 +1,3 @@
-'use client';
 
 import React, { useEffect, useState } from 'react';
 import { Header } from '../../components/layout/Header';
@@ -6,10 +5,11 @@ import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
 import { Textarea } from '../../components/ui/textarea';
 import { toast } from 'sonner';
-
+import { useParams } from 'react-router-dom';
 import {
   useAdminCreateBrandMutation,
   useUpdateBrandMutation,
+  useGetBrandQuery,          // ← Added
 } from '../../services/api/brands';
 
 // -------------------- Section Wrapper --------------------
@@ -49,9 +49,7 @@ const BrandPreview = ({ form }) => {
           <h3 className="font-semibold text-white">
             {form.name || 'Brand Name'}
           </h3>
-          <p className="text-xs text-zinc-500">
-            {form.slug || 'slug'}
-          </p>
+          <p className="text-xs text-zinc-500">{form.slug || 'slug'}</p>
         </div>
 
         <p className="text-sm text-zinc-400 line-clamp-3">
@@ -61,9 +59,7 @@ const BrandPreview = ({ form }) => {
         <div className="pt-2 text-xs text-zinc-500 space-y-1">
           {form.website && <p>🌐 {form.website}</p>}
           {form.social_links?.twitter && <p>𝕏 {form.social_links.twitter}</p>}
-          {form.social_links?.instagram && (
-            <p>📸 {form.social_links.instagram}</p>
-          )}
+          {form.social_links?.instagram && <p>📸 {form.social_links.instagram}</p>}
           {form.social_links?.youtube && <p>▶ {form.social_links.youtube}</p>}
         </div>
       </div>
@@ -87,30 +83,44 @@ const emptyForm = {
   },
 };
 
-const BrandFormPage = ({ initialData = null, onSuccess }) => {
-  const isEdit = !!initialData;
+
+const BrandFormPage = ({ onSuccess }) => {
+  const { id } = useParams();
+  const isEdit = !!id;
 
   const [form, setForm] = useState(emptyForm);
 
+  // Mutations
   const [createBrand, { isLoading: isCreating }] = useAdminCreateBrandMutation();
   const [updateBrand, { isLoading: isUpdating }] = useUpdateBrandMutation();
 
-  // Fill form when editing
+  // Query for edit mode
+  const { data: brandData, isLoading: isLoadingBrand, error } = useGetBrandQuery(
+    id,
+    { skip: !isEdit }
+  );
+
+  // Fill form when brand data is loaded
   useEffect(() => {
-    if (initialData) {
+    if (brandData) {
       setForm({
-        ...emptyForm,
-        ...initialData,
+        name: brandData.name || '',
+        slug: brandData.slug || '',
+        description: brandData.description || '',
+        logo_url: brandData.logo_url || '',
+        banner_url: brandData.banner_url || '',
+        website: brandData.website || '',
+        status: brandData.status || 'active',
         social_links: {
-          twitter: initialData.social_links?.twitter || '',
-          instagram: initialData.social_links?.instagram || '',
-          youtube: initialData.social_links?.youtube || '',
+          twitter: brandData.social_links?.twitter || '',
+          instagram: brandData.social_links?.instagram || '',
+          youtube: brandData.social_links?.youtube || '',
         },
       });
     }
-  }, [initialData]);
+  }, [brandData]);
 
-  // Auto-generate slug
+  // Auto-generate slug for new brands only
   useEffect(() => {
     if (form.name && !isEdit) {
       const generatedSlug = form.name
@@ -132,23 +142,14 @@ const BrandFormPage = ({ initialData = null, onSuccess }) => {
     }));
   };
 
-  // ==================== SUBMIT HANDLER WITH BETTER ERROR CATCHING ====================
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      const payload = { 
-        ...form,
-        // TODO: Add user_id from your auth context if needed
-        // user_id: user?.id 
-      };
+      const payload = { ...form };
 
       if (isEdit) {
-        await updateBrand({ 
-          id: initialData.id, 
-          data: payload 
-        }).unwrap();
-
+        await updateBrand({ id: id, data: payload }).unwrap();
         toast.success('Brand updated successfully');
       } else {
         await createBrand(payload).unwrap();
@@ -161,19 +162,12 @@ const BrandFormPage = ({ initialData = null, onSuccess }) => {
 
       let errorMessage = 'Something went wrong';
 
-      // Handle different error formats from RTK Query
-      if (err?.data?.message) {
-        errorMessage = err.data.message;
-      } else if (err?.data?.error) {
-        errorMessage = err.data.error;
-      } else if (err?.data?.details) {
-        errorMessage = Array.isArray(err.data.details) 
-          ? err.data.details.join(', ') 
+      if (err?.data?.message) errorMessage = err.data.message;
+      else if (err?.data?.error) errorMessage = err.data.error;
+      else if (err?.data?.details) {
+        errorMessage = Array.isArray(err.data.details)
+          ? err.data.details.join(', ')
           : err.data.details;
-      } else if (err?.status === 400) {
-        errorMessage = 'Missing required fields (most likely user_id)';
-      } else if (err?.message) {
-        errorMessage = err.message;
       }
 
       toast.error(errorMessage, {
@@ -183,15 +177,31 @@ const BrandFormPage = ({ initialData = null, onSuccess }) => {
     }
   };
 
-  const isLoading = isCreating || isUpdating;
+  const isLoading = isCreating || isUpdating || (isEdit && isLoadingBrand);
+
+  if (isEdit && isLoadingBrand) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-zinc-400">Loading brand details...</p>
+      </div>
+    );
+  }
+
+  if (isEdit && error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-red-400">Failed to load brand details</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
       <Header
         title={isEdit ? 'Edit Brand' : 'Create Brand'}
         subtitle={
-          isEdit 
-            ? `Editing ${initialData?.name || ''}` 
+          isEdit
+            ? `Editing ${brandData?.name || ''}`
             : 'Add a new brand to the platform'
         }
       />
@@ -199,11 +209,9 @@ const BrandFormPage = ({ initialData = null, onSuccess }) => {
       <div className="p-6">
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
             {/* FORM */}
             <div className="lg:col-span-2 space-y-6">
               <form onSubmit={handleSubmit} className="space-y-6">
-                
                 {/* BRAND IDENTITY */}
                 <Section title="Brand Identity">
                   <div>
@@ -327,8 +335,8 @@ const BrandFormPage = ({ initialData = null, onSuccess }) => {
                     {isLoading
                       ? 'Saving...'
                       : isEdit
-                      ? 'Update Brand'
-                      : 'Create Brand'}
+                        ? 'Update Brand'
+                        : 'Create Brand'}
                   </Button>
                 </div>
               </form>

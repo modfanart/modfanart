@@ -1,30 +1,31 @@
 // src/routes/brandRoutes.js
-import { SignIn, WarningCircle } from "@phosphor-icons/react";
 import BrandDetailsPage from "../../concepts/brands/BrandDetailsPage";
 import BrandFormPage from "../../concepts/brands/BrandFormPage";
-
-
-const iconProps = {
-  size: 20,
-  weight: "duotone",
-};
+import BrandVerificationWorkflowPage from "../../concepts/brands/BrandVerificationWorkflow";
 
 export const brandRoutes = [
   {
     path: "/brand/:id",
     name: "Brand Details",
-    icon: <SignIn {...iconProps} />,
-    isSidebarActive: true,
     element: <BrandDetailsPage />,
+    isSidebarActive: true,
   },
-{
-    path: "/brand/create", name: "Brand Add",     icon: <SignIn {...iconProps} />,
-    isSidebarActive: true,
+  {
+    path: "/brand/create",
+    name: "Create Brand",
     element: <BrandFormPage />,
-},
-{
-    path: "/brand/:id/edit", name: "Brand Add",     icon: <SignIn {...iconProps} />,
     isSidebarActive: true,
+  },
+  {
+    path: "/brand/:id/edit",
+    name: "Edit Brand",
     element: <BrandFormPage />,
-}
+    isSidebarActive: true,
+  },
+  {
+    path: "/brand/:id/verification-workflow",
+    name: "Edit Brand",
+    element: <BrandVerificationWorkflowPage />,
+    isSidebarActive: true,
+  }
 ];

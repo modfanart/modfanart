@@ -33,10 +33,10 @@ const Router = () => {
 
       {/* ================= AUTH GUARD ================= */}
       <Route element={<PrivateRoute />}>
-        
+
         {/* ================= LAYOUT WRAPPER ================= */}
         <Route element={<MainLayout />}>
-          
+
           {/* protected pages */}
           {protectedRoutes.map(({ path, element, name }) => (
             <Route
