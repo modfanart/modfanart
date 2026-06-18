@@ -15,7 +15,7 @@ import {
   useUpdateRoleMutation,
   useDeleteRoleMutation,
   useAssignRoleToUserMutation,
-} from '@/services/api/rolesApi';
+} from '../../services/api/rolesApi';
 
 import { Header } from '../../components/layout/Header';
 import { Button } from '../../components/ui/button';

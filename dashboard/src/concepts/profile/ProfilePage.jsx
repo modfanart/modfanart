@@ -23,7 +23,7 @@ import {
   useChangePasswordMutation,
   useGetUserByUsernameQuery,
   useGetUserByIdQuery
-} from '@/services/api/userApi';
+} from '../../services/api/userApi';
 import { toast } from 'sonner';
 
 const ProfilePage = () => {

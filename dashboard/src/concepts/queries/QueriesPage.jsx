@@ -15,7 +15,7 @@ import {
   useGetMessagesQuery,
   useMarkAsReadMutation,
   useDeleteMessageMutation,
-} from '@/services/api/contactApi';
+} from '../../services/api/contactApi';
 
 import { toast } from 'sonner';
 
@@ -107,11 +107,10 @@ export const QueriesPage = () => {
                       </td>
                       <td>
                         <span
-                          className={`text-xs px-2 py-1 rounded ${
-                            msg.is_read
+                          className={`text-xs px-2 py-1 rounded ${msg.is_read
                               ? 'bg-green-900 text-green-400'
                               : 'bg-yellow-900 text-yellow-400'
-                          }`}
+                            }`}
                         >
                           {msg.is_read ? 'Read' : 'Unread'}
                         </span>

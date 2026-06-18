@@ -19,7 +19,7 @@ import {
   useAssignJudgeMutation,
   useRemoveJudgeMutation,
 
-} from '@/services/api/contestsApi';
+} from '../../services/api/contestsApi';
 import { useGetAllUsersQuery } from '../../services/api/userApi';
 const StatusBadge = ({ status }) => {
   const statusClasses = {

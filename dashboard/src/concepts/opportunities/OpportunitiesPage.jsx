@@ -18,7 +18,7 @@ import {
   useGetContestsQuery,
   useDeleteContestMutation,
   useUpdateContestMutation,
-} from '@/services/api/contestsApi';
+} from '../../services/api/contestsApi';
 
 const statusOptions = [
   { value: 'all', label: 'All Status' },
