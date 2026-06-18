@@ -10,7 +10,7 @@ import {
   useAdminCreateBrandMutation,
   useUpdateBrandMutation,
   useGetBrandQuery,          // ← Added
-} from '../../services/api/brands';
+} from '../../services/api/brandApi';
 
 // -------------------- Section Wrapper --------------------
 const Section = ({ title, children }) => (

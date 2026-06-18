@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { useParams } from 'react-router-dom';
-import { useGetUserByIdQuery } from '@/services/api/userApi';
-import { useGetContestEntriesQuery } from '@/services/api/contestsApi';
+import { useGetUserByIdQuery } from '../../services/api/userApi';
+import { useGetContestEntriesQuery } from '../../services/api/contestsApi';
 
 import { Header } from '../../components/layout/Header';
 import { Badge } from '../../components/ui/badge';

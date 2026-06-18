@@ -22,7 +22,7 @@ import {
   useUpdateBrandMutation,
   useGetVerificationRequestsQuery,
   useApproveVerificationRequestMutation,
-} from '../../services/api/brands';
+} from '../../services/api/brandApi';
 
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'sonner';

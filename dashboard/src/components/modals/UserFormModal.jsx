@@ -1,24 +1,24 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog';
+import { Button } from '../ui/button';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 
-export const UserFormModal = ({ 
-  open, 
-  user = null, 
-  roles, 
-  onClose, 
-  onSave, 
-  isLoading = false 
+export const UserFormModal = ({
+  open,
+  user = null,
+  roles,
+  onClose,
+  onSave,
+  isLoading = false
 }) => {
-  
+
   const isEdit = !!user;
 
   const [formData, setFormData] = useState({
@@ -121,8 +121,8 @@ export const UserFormModal = ({
 
           <div>
             <Label>Role</Label>
-            <Select 
-              value={formData.roleId} 
+            <Select
+              value={formData.roleId}
               onValueChange={(value) => setFormData(prev => ({ ...prev, roleId: value }))}
             >
               <SelectTrigger>

@@ -1,6 +1,6 @@
 // src/routes/sidebarRoutes.js
 import {
-Users, Storefront, ShieldCheck, Trophy, ClipboardTextIcon, SquaresFour, Question, 
+  Users, Storefront, ShieldCheck, Trophy, ClipboardTextIcon, SquaresFour, Question,
 } from "@phosphor-icons/react"
 import Dashboard from "../../concepts/dashboard/DashboardPage"
 import ProjectsTasksList from "../../concepts/tasks/ProjectTasksList"
@@ -21,19 +21,19 @@ const iconProps = {
 };
 
 export const sidebarRoutes = [
- {
-  path: "/",
-  name: "Overview",
-     icon: <SquaresFour {...iconProps} />,
+  {
+    path: "/",
+    name: "Overview",
+    icon: <SquaresFour {...iconProps} />,
     isSidebarActive: true,
     element: <Dashboard />,
- },
-{
-   path: "/brands",
-   name: "Brands",
-  icon: <Storefront {...iconProps} />,
-   isSidebarActive: true,
-   element: <BrandsListPage />,
+  },
+  {
+    path: "/brands",
+    name: "Brands",
+    icon: <Storefront {...iconProps} />,
+    isSidebarActive: true,
+    element: <BrandsListPage />,
   },
   {
     path: "/artists",
@@ -42,48 +42,48 @@ export const sidebarRoutes = [
     isSidebarActive: true,
     element: <ArtistsList />,
   },
-{
-  path: "/opportunities",
-   name: "Opportunities",
-  icon: <Trophy {...iconProps} />,
-   isSidebarActive: true,
-  element: <OpportunitiesPage />,
-   },
- {
-   path: "/submissions",
-   name: "Submissions",
-  icon: <ClipboardTextIcon {...iconProps} />,
-   isSidebarActive: true,
+  {
+    path: "/opportunities",
+    name: "Opportunities",
+    icon: <Trophy {...iconProps} />,
+    isSidebarActive: true,
+    element: <OpportunitiesPage />,
+  },
+  {
+    path: "/submissions",
+    name: "Submissions",
+    icon: <ClipboardTextIcon {...iconProps} />,
+    isSidebarActive: true,
     element: <SubmissionsPage />,
   },
- {
-   path: "/judging",
-   name: "Judging",
- icon: <File {...iconProps} />,
-   isSidebarActive: true,
-   element: <JudgeList />,
- },
- {
-  path: "/licensing",
-   name: "Licensing",
- icon: <FileText {...iconProps} />,
-  isSidebarActive: true,
- element: <LicensesList />,
- },
- {
-  path: "/tickets",
-   name: "Projects & Tasks",
-  icon: <SquaresFour {...iconProps} />,
-   isSidebarActive: true,
-  element: <ProjectsTasksList />,
- },
- {
-  path: "/media-library",
-   name: "Media Library",
-  icon: <File {...iconProps} />,
-   isSidebarActive: true,
-  element: <MediaList />, // Replace with actual component when ready
- },
+  {
+    path: "/judging",
+    name: "Judging",
+    icon: <File {...iconProps} />,
+    isSidebarActive: true,
+    element: <JudgeList />,
+  },
+  {
+    path: "/licensing",
+    name: "Licensing",
+    icon: <FileText {...iconProps} />,
+    isSidebarActive: true,
+    element: <LicensesList />,
+  },
+  {
+    path: "/tickets",
+    name: "Projects & Tasks",
+    icon: <SquaresFour {...iconProps} />,
+    isSidebarActive: true,
+    element: <ProjectsTasksList />,
+  },
+  {
+    path: "/media-library",
+    name: "Media Library",
+    icon: <File {...iconProps} />,
+    isSidebarActive: true,
+    element: <MediaList />, // Replace with actual component when ready
+  },
   // {
   //   path: "/storefront",
   //   name: "Storefront",
@@ -105,18 +105,18 @@ export const sidebarRoutes = [
   //   isSidebarActive: true,
   //   element: null,
   // },
-{
-   path: "/team-permissions",
- name: "Team & Permissions",
-   icon: <ShieldCheck {...iconProps} />,
-   isSidebarActive: true,
-  element: <UsersPage />,
+  {
+    path: "/team-permissions",
+    name: "Team & Permissions",
+    icon: <ShieldCheck {...iconProps} />,
+    isSidebarActive: true,
+    element: <UsersPage />,
   },
- {
-   path: "/queries",
-  name: "Queries",
- icon: <Question {...iconProps} />,
-   isSidebarActive: true,
-   element: <Queries />,
- },
+  {
+    path: "/queries",
+    name: "Queries",
+    icon: <Question {...iconProps} />,
+    isSidebarActive: true,
+    element: <Queries />,
+  },
 ];

@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from '../../components/ui/dialog';
 
-import { useGetArtworksQuery } from '@/services/api/artworkApi';
+import { useGetArtworksQuery } from '../../services/api/artworkApi';
 
 // ────────────────────────────────────────────────
 // Status Badge

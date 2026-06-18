@@ -8,7 +8,7 @@ import { Button } from '../../components/ui/button';
 import {
     useGetVerificationRequestsQuery,
     useApproveVerificationRequestMutation,
-} from '../../services/api/brands';
+} from '../../services/api/brandApi';
 
 const BrandVerificationWorkflowPage = () => {
     const { id } = useParams();
