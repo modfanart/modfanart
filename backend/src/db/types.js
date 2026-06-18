@@ -581,6 +581,26 @@
  * @property {boolean} is_completed
  * @property {string} created_at
  */
+/**
+ * @typedef {Object} CDNFileRow
+ * @property {string} id                  UUID
+ *
+ * @property {string} original_name       Original uploaded filename
+ * @property {string} stored_name         Generated filename stored on CDN
+ *
+ * @property {string} mime_type           MIME type (image/png, image/jpeg, application/pdf, etc.)
+ * @property {string | null} extension    File extension (.png, .jpg, .pdf, etc.)
+ *
+ * @property {number} size                File size in bytes
+ *
+ * @property {string} url                 Public CDN URL
+ * @property {string} path                Absolute server storage path
+ *
+ * @property {string | null} uploaded_by  References UserRow.id
+ *
+ * @property {string} created_at          ISO timestamp
+ * @property {string} updated_at          ISO timestamp
+ */
 module.exports = {};
 // This file is only for type documentation / IntelliSense
 // No runtime code is needed

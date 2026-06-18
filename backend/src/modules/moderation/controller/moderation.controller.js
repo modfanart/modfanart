@@ -1,9 +1,9 @@
 // backend/src/controllers/moderation.controller.js
-const { logger } = require('../utils/logger');
-const { getSubmissionsByStatus } = require('../models/submission');
-const { getComplianceRules } = require('../../../config/compliance'); // adapt from your config-service
-const { createModeratedSubmission } = require('../models/moderation.model');
-const { db } = require('../../../config');
+const { logger } = require("../utils/logger");
+const { getSubmissionsByStatus } = require("../models/submission");
+const { getComplianceRules } = require("../../../config/compliance"); // adapt from your config-service
+const { createModeratedSubmission } = require("../models/moderation.model");
+const { db } = require("../../../config");
 async function getModerationMetrics(req, res, next) {
   const requestId = crypto.randomUUID();
   const startTime = Date.now();
@@ -18,11 +18,11 @@ async function getModerationMetrics(req, res, next) {
       licensedSubmissions,
       complianceRules,
     ] = await Promise.all([
-      getSubmissionsByStatus('pending'),
-      getSubmissionsByStatus('review'),
-      getSubmissionsByStatus('approved'),
-      getSubmissionsByStatus('rejected'),
-      getSubmissionsByStatus('licensed'),
+      getSubmissionsByStatus("pending"),
+      getSubmissionsByStatus("review"),
+      getSubmissionsByStatus("approved"),
+      getSubmissionsByStatus("rejected"),
+      getSubmissionsByStatus("licensed"),
       getComplianceRules(),
     ]);
 
@@ -52,8 +52,8 @@ async function getModerationMetrics(req, res, next) {
       timestamp: new Date().toISOString(),
     };
 
-    logger.info('Moderation metrics requested', {
-      context: 'moderation-metrics',
+    logger.info("Moderation metrics requested", {
+      context: "moderation-metrics",
       requestId,
       data: metrics.submissionCounts,
       processingTime: Date.now() - startTime,
@@ -68,8 +68,8 @@ async function getModerationMetrics(req, res, next) {
       },
     });
   } catch (error) {
-    logger.error('Error fetching moderation metrics', {
-      context: 'moderation-metrics',
+    logger.error("Error fetching moderation metrics", {
+      context: "moderation-metrics",
       requestId,
       error: error.message || error,
       processingTime: Date.now() - startTime,
@@ -77,7 +77,7 @@ async function getModerationMetrics(req, res, next) {
 
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch moderation metrics',
+      error: "Failed to fetch moderation metrics",
       requestId,
     });
   }
@@ -87,8 +87,8 @@ async function createModerationSubmission(req, res, next) {
   const requestId = crypto.randomUUID();
   const startTime = Date.now();
 
-  logger.info('Moderation submission request received', {
-    context: 'moderation-api',
+  logger.info("Moderation submission request received", {
+    context: "moderation-api",
     requestId,
   });
 
@@ -98,7 +98,7 @@ async function createModerationSubmission(req, res, next) {
     if (!user) {
       return res.status(401).json({
         success: false,
-        error: 'Unauthorized',
+        error: "Unauthorized",
         requestId,
       });
     }
@@ -111,8 +111,8 @@ async function createModerationSubmission(req, res, next) {
 
     const processingTime = Date.now() - startTime;
 
-    logger.info('Moderation completed successfully', {
-      context: 'moderation-api',
+    logger.info("Moderation completed successfully", {
+      context: "moderation-api",
       requestId,
       submissionId: submission.id,
       status: submission.status,
@@ -130,8 +130,8 @@ async function createModerationSubmission(req, res, next) {
   } catch (error) {
     const processingTime = Date.now() - startTime;
 
-    logger.error('Moderation API failed', {
-      context: 'moderation-api',
+    logger.error("Moderation API failed", {
+      context: "moderation-api",
       requestId,
       error: error.message || error,
       processingTime,
@@ -139,7 +139,7 @@ async function createModerationSubmission(req, res, next) {
 
     res.status(500).json({
       success: false,
-      error: 'Failed to process submission',
+      error: "Failed to process submission",
       requestId,
     });
   }

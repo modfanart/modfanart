@@ -1,8 +1,8 @@
 // src/controllers/role.controller.js
-const Role = require('../models/role.model');
-const User = require('../../users/models/user.model');
-const { sql } = require('kysely');
-const { db } = require('../../../config');
+const Role = require("../models/role.model");
+const User = require("../../users/models/user.model");
+const { sql } = require("kysely");
+const { db } = require("../../../config");
 class RoleController {
   // ────────────────────────────────────────────────
   // Admin: List all roles
@@ -10,16 +10,16 @@ class RoleController {
   static async getAllRoles(req, res) {
     try {
       const roles = await db
-        .selectFrom('roles')
+        .selectFrom("roles")
         .selectAll()
-        .orderBy('hierarchy_level', 'desc')
-        .orderBy('name', 'asc')
+        .orderBy("hierarchy_level", "desc")
+        .orderBy("name", "asc")
         .execute();
 
       res.json(roles);
     } catch (err) {
       console.error(err);
-      res.status(500).json({ error: 'Failed to list roles' });
+      res.status(500).json({ error: "Failed to list roles" });
     }
   }
 
@@ -35,19 +35,19 @@ class RoleController {
         is_system = false,
       } = req.body;
 
-      if (!name || typeof hierarchy_level !== 'number') {
+      if (!name || typeof hierarchy_level !== "number") {
         return res
           .status(400)
-          .json({ error: 'name and hierarchy_level are required' });
+          .json({ error: "name and hierarchy_level are required" });
       }
 
       // Prevent duplicate name
       if (await Role.findByName(name)) {
-        return res.status(409).json({ error: 'Role name already exists' });
+        return res.status(409).json({ error: "Role name already exists" });
       }
 
       const role = await db
-        .insertInto('roles')
+        .insertInto("roles")
         .values({
           name,
           hierarchy_level,
@@ -61,7 +61,7 @@ class RoleController {
       res.status(201).json(role);
     } catch (err) {
       console.error(err);
-      res.status(500).json({ error: 'Failed to create role' });
+      res.status(500).json({ error: "Failed to create role" });
     }
   }
 
@@ -75,13 +75,13 @@ class RoleController {
 
       const existing = await Role.findById(id);
       if (!existing) {
-        return res.status(404).json({ error: 'Role not found' });
+        return res.status(404).json({ error: "Role not found" });
       }
 
       if (existing.is_system && req.body.is_system === false) {
         return res
           .status(403)
-          .json({ error: 'Cannot change system role flag' });
+          .json({ error: "Cannot change system role flag" });
       }
 
       const updateData = {};
@@ -92,20 +92,20 @@ class RoleController {
       if (is_system !== undefined) updateData.is_system = !!is_system;
 
       if (Object.keys(updateData).length === 0) {
-        return res.status(400).json({ error: 'No fields to update' });
+        return res.status(400).json({ error: "No fields to update" });
       }
 
       const updated = await db
-        .updateTable('roles')
+        .updateTable("roles")
         .set({ ...updateData, updated_at: sql`NOW()` })
-        .where('id', '=', id)
+        .where("id", "=", id)
         .returningAll()
         .executeTakeFirst();
 
       res.json(updated);
     } catch (err) {
       console.error(err);
-      res.status(500).json({ error: 'Failed to update role' });
+      res.status(500).json({ error: "Failed to update role" });
     }
   }
 
@@ -117,32 +117,32 @@ class RoleController {
       const { id } = req.params;
 
       const role = await Role.findById(id);
-      if (!role) return res.status(404).json({ error: 'Role not found' });
+      if (!role) return res.status(404).json({ error: "Role not found" });
 
       if (role.is_system) {
-        return res.status(403).json({ error: 'Cannot delete system role' });
+        return res.status(403).json({ error: "Cannot delete system role" });
       }
 
       // Check if any user uses this role
       const usersWithRole = await db
-        .selectFrom('users')
-        .select('id')
-        .where('role_id', '=', id)
+        .selectFrom("users")
+        .select("id")
+        .where("role_id", "=", id)
         .limit(1)
         .execute();
 
       if (usersWithRole.length > 0) {
         return res.status(409).json({
-          error: 'Cannot delete role — users are still assigned to it',
+          error: "Cannot delete role — users are still assigned to it",
         });
       }
 
-      await db.deleteFrom('roles').where('id', '=', id).execute();
+      await db.deleteFrom("roles").where("id", "=", id).execute();
 
       res.status(204).send();
     } catch (err) {
       console.error(err);
-      res.status(500).json({ error: 'Failed to delete role' });
+      res.status(500).json({ error: "Failed to delete role" });
     }
   }
 
@@ -155,17 +155,17 @@ class RoleController {
       const { roleId } = req.body;
 
       const user = await User.findById(userId);
-      if (!user) return res.status(404).json({ error: 'User not found' });
+      if (!user) return res.status(404).json({ error: "User not found" });
 
       const role = await Role.findById(roleId);
-      if (!role) return res.status(404).json({ error: 'Role not found' });
+      if (!role) return res.status(404).json({ error: "Role not found" });
 
       // Optional: prevent downgrading higher hierarchy roles (safety)
       const currentRole = await Role.findById(user.role_id);
       if (currentRole && currentRole.hierarchy_level > role.hierarchy_level) {
         return res
           .status(403)
-          .json({ error: 'Cannot assign lower hierarchy role' });
+          .json({ error: "Cannot assign lower hierarchy role" });
       }
 
       // Simple version: replace single role
@@ -178,7 +178,7 @@ class RoleController {
       res.json({ message: `Role ${role.name} assigned to user`, roleId });
     } catch (err) {
       console.error(err);
-      res.status(500).json({ error: 'Failed to assign role' });
+      res.status(500).json({ error: "Failed to assign role" });
     }
   }
 }

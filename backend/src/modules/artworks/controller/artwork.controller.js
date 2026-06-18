@@ -1,26 +1,25 @@
 // src/controllers/artwork.controller.js
-const Artwork = require('../models/artwork.model');
-const ArtworkCategory = require('../models/artworkCategory.model');
-const ArtworkPricingTier = require('../models/artworkPricingTier.model');
-const { db, s3Client } = require('../../../config');
-const path = require('path');
-const crypto = require('crypto');
 
-const { PutObjectCommand } = require('@aws-sdk/client-s3');
+const Artwork = require("../models/artwork.model");
+const ArtworkCategory = require("../models/artworkCategory.model");
+const ArtworkPricingTier = require("../models/artworkPricingTier.model");
+const CDNFile = require("../../cdn/models/cdn-file.model");
+
+const path = require("path");
+const crypto = require("crypto");
+const fs = require("fs/promises");
 
 class ArtworkController {
-  /**
-   * POST /artworks
-   * Create a new artwork (draft by default)
-   * Requires: multer middleware for file upload (req.file)
-   */
   static async createArtwork(req, res) {
     try {
       if (!req.file) {
-        return res.status(400).json({ error: 'No file uploaded' });
+        return res.status(400).json({
+          error: "No file uploaded",
+        });
       }
 
       const userId = req.user.id;
+
       const {
         title,
         description,
@@ -28,108 +27,128 @@ class ArtworkController {
         pricing_tiers = [],
       } = req.body;
 
-      if (!title || title.trim() === '') {
-        return res.status(400).json({ error: 'Title is required' });
+      if (!title?.trim()) {
+        return res.status(400).json({
+          error: "Title is required",
+        });
       }
 
       const ext = path.extname(req.file.originalname).toLowerCase();
+
       const allowed = [
-        '.jpg',
-        '.jpeg',
-        '.png',
-        '.gif',
-        '.webp',
-        '.svg',
-        '.mp4',
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".gif",
+        ".webp",
+        ".svg",
+        ".mp4",
       ];
+
       if (!allowed.includes(ext)) {
-        return res.status(400).json({ error: 'Invalid file type' });
+        return res.status(400).json({
+          error: "Invalid file type",
+        });
       }
 
-      // Upload to S3
-      const fileKey = `artworks/${userId}/${crypto.randomUUID()}${ext}`;
-      await s3Client.send(
-        new PutObjectCommand({
-          Bucket: process.env.S3_BUCKET_NAME,
-          Key: fileKey,
-          Body: req.file.buffer,
-          ContentType: req.file.mimetype,
-        })
-      );
+      // Generate filename
+      const storedName = `${crypto.randomUUID()}${ext}`;
 
-      const fileUrl = `https://amzn-artwork-images.s3.eu-north-1.amazonaws.com/${fileKey}`;
-      // Create draft artwork
+      // CDN storage path
+      const uploadPath = `/opt/cdn/cdn_mod/storage/artworks/${userId}`;
+
+      await fs.mkdir(uploadPath, {
+        recursive: true,
+      });
+
+      const filePath = `${uploadPath}/${storedName}`;
+
+      await fs.writeFile(filePath, req.file.buffer);
+
+      const fileUrl = `https://media.modfanofficial.com/storage/artworks/${userId}/${storedName}`;
+
+      // Save CDN record
+      const cdnFile = await CDNFile.create({
+        original_name: req.file.originalname,
+        stored_name: storedName,
+        mime_type: req.file.mimetype,
+        extension: ext,
+        size: req.file.size,
+        url: fileUrl,
+        path: filePath,
+        uploaded_by: userId,
+      });
+
+      // Create artwork
       const artwork = await Artwork.create(userId, {
         title: title.trim(),
         description: description?.trim() || null,
-        file_url: fileUrl,
-        thumbnail_url: fileUrl, // TODO: generate real thumbnail later
-        source_file_url: fileUrl,
-        status: 'draft',
-        moderation_status: 'pending',
+
+        file_url: cdnFile.url,
+        thumbnail_url: cdnFile.url,
+        source_file_url: cdnFile.url,
+
+        status: "draft",
+        moderation_status: "pending",
       });
 
       if (!artwork) {
-        return res
-          .status(500)
-          .json({ error: 'Failed to create artwork record' });
+        return res.status(500).json({
+          error: "Failed to create artwork",
+        });
       }
 
-      // Assign categories
-      if (Array.isArray(category_ids) && category_ids.length > 0) {
-        for (const catId of category_ids) {
-          await ArtworkCategory.assign(artwork.id, catId).catch((err) => {
-            console.warn(`Failed to assign category ${catId}:`, err);
-          });
-        }
+      // Categories
+      if (Array.isArray(category_ids) && category_ids.length) {
+        await Promise.all(
+          category_ids.map((categoryId) =>
+            ArtworkCategory.assign(artwork.id, categoryId).catch(console.error)
+          )
+        );
       }
 
-      // Create pricing tiers
-      if (Array.isArray(pricing_tiers) && pricing_tiers.length > 0) {
-        for (const tier of pricing_tiers) {
-          if (
-            ['personal', 'commercial', 'exclusive'].includes(tier.license_type)
-          ) {
-            await ArtworkPricingTier.create(artwork.id, {
+      // Pricing Tiers
+      if (Array.isArray(pricing_tiers) && pricing_tiers.length) {
+        await Promise.all(
+          pricing_tiers.map((tier) => {
+            if (
+              !["personal", "commercial", "exclusive"].includes(
+                tier.license_type
+              )
+            ) {
+              return null;
+            }
+
+            return ArtworkPricingTier.create(artwork.id, {
               license_type: tier.license_type,
-              price_inr_cents: parseInt(tier.price_inr_cents) || 0,
-              price_usd_cents: parseInt(tier.price_usd_cents) || 0,
+              price_inr_cents: Number(tier.price_inr_cents) || 0,
+              price_usd_cents: Number(tier.price_usd_cents) || 0,
               is_active: true,
-            }).catch((err) => {
-              console.warn(`Failed to create pricing tier:`, err);
-            });
-          }
-        }
+            }).catch(console.error);
+          })
+        );
       }
 
-      res.status(201).json({
-        message: 'Artwork created successfully (draft)',
+      return res.status(201).json({
+        success: true,
+        message: "Artwork created successfully",
         artwork: {
           id: artwork.id,
           title: artwork.title,
           status: artwork.status,
+
           file_url: artwork.file_url,
           thumbnail_url: artwork.thumbnail_url,
+
           created_at: artwork.created_at,
         },
       });
     } catch (error) {
-      console.error('Create artwork error:', {
-        message: error.message,
-        stack: error.stack,
-        name: error.name,
-        code: error.code, // AWS errors have .code
-        bucket: process.env.S3_BUCKET_NAME,
-        region: process.env.AWS_REGION || 'unknown',
-        hasCredentials: !!process.env.AWS_ACCESS_KEY_ID,
-        file: req.file ? 'present' : 'missing',
-        body: req.body,
-      });
+      console.error("Artwork create error:", error);
 
-      res.status(500).json({
-        error: 'Failed to create artwork',
-        message: error.message || 'Internal server error',
-        code: error.code || undefined,
+      return res.status(500).json({
+        error: "Failed to create artwork",
+        message: error.message,
       });
     }
   }
@@ -144,7 +163,7 @@ class ArtworkController {
       const artwork = await Artwork.findById(id);
 
       if (!artwork || artwork.deleted_at) {
-        return res.status(404).json({ error: 'Artwork not found or deleted' });
+        return res.status(404).json({ error: "Artwork not found or deleted" });
       }
 
       await Artwork.incrementView(id);
@@ -170,8 +189,8 @@ class ArtworkController {
         category_ids: categoryIds,
       });
     } catch (error) {
-      console.error('Get artwork error:', error);
-      res.status(500).json({ error: 'Failed to fetch artwork' });
+      console.error("Get artwork error:", error);
+      res.status(500).json({ error: "Failed to fetch artwork" });
     }
   }
 
@@ -185,30 +204,30 @@ class ArtworkController {
       const artwork = await Artwork.findById(id);
 
       if (!artwork || artwork.deleted_at) {
-        return res.status(404).json({ error: 'Artwork not found' });
+        return res.status(404).json({ error: "Artwork not found" });
       }
 
       if (artwork.creator_id !== req.user.id) {
         return res
           .status(403)
-          .json({ error: 'You can only publish your own artwork' });
+          .json({ error: "You can only publish your own artwork" });
       }
 
-      if (artwork.status !== 'draft') {
+      if (artwork.status !== "draft") {
         return res
           .status(400)
-          .json({ error: 'Only draft artworks can be published' });
+          .json({ error: "Only draft artworks can be published" });
       }
 
       await Artwork.publish(id);
 
       res.json({
-        message: 'Artwork published successfully',
-        status: 'published',
+        message: "Artwork published successfully",
+        status: "published",
       });
     } catch (error) {
-      console.error('Publish artwork error:', error);
-      res.status(500).json({ error: 'Failed to publish artwork' });
+      console.error("Publish artwork error:", error);
+      res.status(500).json({ error: "Failed to publish artwork" });
     }
   }
 
@@ -222,21 +241,21 @@ class ArtworkController {
       const artwork = await Artwork.findById(id);
 
       if (!artwork || artwork.deleted_at) {
-        return res.status(404).json({ error: 'Artwork not found' });
+        return res.status(404).json({ error: "Artwork not found" });
       }
 
       if (artwork.creator_id !== req.user.id) {
         return res
           .status(403)
-          .json({ error: 'You can only delete your own artwork' });
+          .json({ error: "You can only delete your own artwork" });
       }
 
       await Artwork.softDelete(id);
 
-      res.json({ message: 'Artwork deleted successfully' });
+      res.json({ message: "Artwork deleted successfully" });
     } catch (error) {
-      console.error('Delete artwork error:', error);
-      res.status(500).json({ error: 'Failed to delete artwork' });
+      console.error("Delete artwork error:", error);
+      res.status(500).json({ error: "Failed to delete artwork" });
     }
   }
 
@@ -244,107 +263,103 @@ class ArtworkController {
    * GET /artworks
    * Public: List published artworks (explore/discovery feed)
    */
-/**
- * GET /artworks
- * Public: List published artworks (explore/discovery feed)
- */
-static async getArtworks(req, res) {
-  try {
-    const page = Math.max(1, parseInt(req.query.page) || 1);
-    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 20));
-    const offset = (page - 1) * limit;
-    const search = req.query.search?.trim();
+  static async getArtworks(req, res) {
+    try {
+      const page = Math.max(1, parseInt(req.query.page) || 1);
+      const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 20));
+      const offset = (page - 1) * limit;
+      const search = req.query.search?.trim();
 
-    // MAIN QUERY (NO STATUS FILTER)
-    let query = db
-      .selectFrom('artworks')
-      .leftJoin('users', 'users.id', 'artworks.creator_id')
-      .select([
-        'artworks.id',
-        'artworks.title',
-        'artworks.description',
-        'artworks.thumbnail_url',
-        'artworks.views_count',
-        'artworks.favorites_count',
-        'artworks.status',
-        'artworks.created_at',
+      // MAIN QUERY (NO STATUS FILTER)
+      let query = db
+        .selectFrom("artworks")
+        .leftJoin("users", "users.id", "artworks.creator_id")
+        .select([
+          "artworks.id",
+          "artworks.title",
+          "artworks.description",
+          "artworks.thumbnail_url",
+          "artworks.views_count",
+          "artworks.favorites_count",
+          "artworks.status",
+          "artworks.created_at",
 
-        'users.id as creator_id',
-        'users.username as creator_username',
-        'users.email as creator_email',
-        'users.avatar_url as creator_avatar',
-      ])
-      .where('artworks.deleted_at', 'is', null)
-      .orderBy('artworks.created_at', 'desc');
-
-    // SEARCH FILTER
-    if (search) {
-      query = query.where((eb) =>
-        eb.or([
-          eb('artworks.title', 'ilike', `%${search}%`),
-          eb('artworks.description', 'ilike', `%${search}%`),
+          "users.id as creator_id",
+          "users.username as creator_username",
+          "users.email as creator_email",
+          "users.avatar_url as creator_avatar",
         ])
-      );
+        .where("artworks.deleted_at", "is", null)
+        .orderBy("artworks.created_at", "desc");
+
+      // SEARCH FILTER
+      if (search) {
+        query = query.where((eb) =>
+          eb.or([
+            eb("artworks.title", "ilike", `%${search}%`),
+            eb("artworks.description", "ilike", `%${search}%`),
+          ])
+        );
+      }
+
+      // COUNT QUERY (NO STATUS FILTER)
+      let countQuery = db
+        .selectFrom("artworks")
+        .where("deleted_at", "is", null);
+
+      if (search) {
+        countQuery = countQuery.where((eb) =>
+          eb.or([
+            eb("title", "ilike", `%${search}%`),
+            eb("description", "ilike", `%${search}%`),
+          ])
+        );
+      }
+
+      const countResult = await countQuery
+        .select(db.fn.count("id").as("total"))
+        .executeTakeFirst();
+
+      const total = parseInt(countResult?.total || "0");
+      const totalPages = Math.ceil(total / limit);
+
+      const rows = await query.limit(limit).offset(offset).execute();
+
+      const artworks = rows.map((a) => ({
+        id: a.id,
+        title: a.title,
+        description: a.description,
+        thumbnail_url: a.thumbnail_url,
+        views_count: a.views_count,
+        favorites_count: a.favorites_count,
+        status: a.status,
+        created_at: a.created_at,
+        creator: a.creator_id
+          ? {
+              id: a.creator_id,
+              username: a.creator_username,
+              email: a.creator_email,
+              avatar_url: a.creator_avatar,
+            }
+          : null,
+      }));
+
+      return res.json({
+        artworks,
+        pagination: {
+          page,
+          limit,
+          total,
+          total_pages: totalPages,
+          has_next: page < totalPages,
+          has_prev: page > 1,
+        },
+      });
+    } catch (error) {
+      console.error("Get artworks list error:", error);
+      return res.status(500).json({ error: "Failed to fetch artworks" });
     }
-
-    // COUNT QUERY (NO STATUS FILTER)
-    let countQuery = db
-      .selectFrom('artworks')
-      .where('deleted_at', 'is', null);
-
-    if (search) {
-      countQuery = countQuery.where((eb) =>
-        eb.or([
-          eb('title', 'ilike', `%${search}%`),
-          eb('description', 'ilike', `%${search}%`),
-        ])
-      );
-    }
-
-    const countResult = await countQuery
-      .select(db.fn.count('id').as('total'))
-      .executeTakeFirst();
-
-    const total = parseInt(countResult?.total || '0');
-    const totalPages = Math.ceil(total / limit);
-
-    const rows = await query.limit(limit).offset(offset).execute();
-
-    const artworks = rows.map((a) => ({
-      id: a.id,
-      title: a.title,
-      description: a.description,
-      thumbnail_url: a.thumbnail_url,
-      views_count: a.views_count,
-      favorites_count: a.favorites_count,
-      status: a.status,
-      created_at: a.created_at,
-      creator: a.creator_id
-        ? {
-            id: a.creator_id,
-            username: a.creator_username,
-            email: a.creator_email,
-            avatar_url: a.creator_avatar,
-          }
-        : null,
-    }));
-
-    return res.json({
-      artworks,
-      pagination: {
-        page,
-        limit,
-        total,
-        total_pages: totalPages,
-        has_next: page < totalPages,
-        has_prev: page > 1,
-      },
-    });
-  } catch (error) {
-    console.error('Get artworks list error:', error);
-    return res.status(500).json({ error: 'Failed to fetch artworks' });
   }
-}
   /**
    * GET /artworks/me
    * Authenticated: Get current user's ALL artworks (dashboard / profile management)
@@ -359,47 +374,47 @@ static async getArtworks(req, res) {
       const statusFilter = req.query.status?.trim();
 
       let query = db
-        .selectFrom('artworks')
+        .selectFrom("artworks")
         .select([
-          'id',
-          'title',
-          'description',
-          'file_url',
-          'thumbnail_url',
-          'source_file_url',
-          'status',
-          'moderation_status',
-          'views_count',
-          'favorites_count',
-          'creator_id',
-          'created_at',
-          'updated_at',
+          "id",
+          "title",
+          "description",
+          "file_url",
+          "thumbnail_url",
+          "source_file_url",
+          "status",
+          "moderation_status",
+          "views_count",
+          "favorites_count",
+          "creator_id",
+          "created_at",
+          "updated_at",
         ])
-        .where('creator_id', '=', userId)
-        .where('deleted_at', 'is', null)
-        .orderBy('created_at', 'desc');
+        .where("creator_id", "=", userId)
+        .where("deleted_at", "is", null)
+        .orderBy("created_at", "desc");
 
       if (statusFilter) {
-        const statuses = statusFilter.split(',').map((s) => s.trim());
-        query = query.where('status', 'in', statuses);
+        const statuses = statusFilter.split(",").map((s) => s.trim());
+        query = query.where("status", "in", statuses);
       }
 
       // Count query
       let countQuery = db
-        .selectFrom('artworks')
-        .where('creator_id', '=', userId)
-        .where('deleted_at', 'is', null);
+        .selectFrom("artworks")
+        .where("creator_id", "=", userId)
+        .where("deleted_at", "is", null);
 
       if (statusFilter) {
-        const statuses = statusFilter.split(',').map((s) => s.trim());
-        countQuery = countQuery.where('status', 'in', statuses);
+        const statuses = statusFilter.split(",").map((s) => s.trim());
+        countQuery = countQuery.where("status", "in", statuses);
       }
 
       const countResult = await countQuery
-        .select(db.fn.countAll().as('total'))
+        .select(db.fn.countAll().as("total"))
         .executeTakeFirst();
 
-      const total = parseInt(countResult?.total || '0');
+      const total = parseInt(countResult?.total || "0");
       const totalPages = Math.ceil(total / limit);
 
       const artworks = await query.limit(limit).offset(offset).execute();
@@ -416,15 +431,11 @@ static async getArtworks(req, res) {
         },
       });
     } catch (error) {
-      console.error('Get my artworks error:', error);
-      res.status(500).json({ error: 'Failed to fetch your artworks' });
+      console.error("Get my artworks error:", error);
+      res.status(500).json({ error: "Failed to fetch your artworks" });
     }
   }
 
-  /**
-   * GET /artworks/by-creator/:creatorId
-   * Public: Get published artworks by a specific creator
-   */
   /**
    * GET /artworks/by-creator/:creatorId
    * Public: Get ONLY published artworks by a specific creator
@@ -434,8 +445,8 @@ static async getArtworks(req, res) {
     try {
       const { creatorId } = req.params;
 
-      if (!creatorId || typeof creatorId !== 'string') {
-        return res.status(400).json({ error: 'Valid creator ID required' });
+      if (!creatorId || typeof creatorId !== "string") {
+        return res.status(400).json({ error: "Valid creator ID required" });
       }
 
       const page = Math.max(1, parseInt(req.query.page) || 1);
@@ -448,37 +459,37 @@ static async getArtworks(req, res) {
       // ────────────────────────────────────────────────
 
       let query = db
-        .selectFrom('artworks')
+        .selectFrom("artworks")
         .select([
-          'id',
-          'creator_id',
-          'title',
-          'description',
+          "id",
+          "creator_id",
+          "title",
+          "description",
 
           // ✅ IMPORTANT (frontend needs these)
-          'file_url',
-          'thumbnail_url',
-          'source_file_url',
+          "file_url",
+          "thumbnail_url",
+          "source_file_url",
 
-          'status',
-          'moderation_status',
+          "status",
+          "moderation_status",
 
-          'views_count',
-          'favorites_count',
+          "views_count",
+          "favorites_count",
 
-          'created_at',
-          'updated_at',
+          "created_at",
+          "updated_at",
         ])
-        .where('creator_id', '=', creatorId)
-        .where('status', '=', 'published') // 🔥 STRICT FILTER
-        .where('deleted_at', 'is', null)
-        .orderBy('created_at', 'desc');
+        .where("creator_id", "=", creatorId)
+        .where("status", "=", "published") // 🔥 STRICT FILTER
+        .where("deleted_at", "is", null)
+        .orderBy("created_at", "desc");
 
       if (search) {
         query = query.where((eb) =>
           eb.or([
-            eb('title', 'ilike', `%${search}%`),
-            eb('description', 'ilike', `%${search}%`),
+            eb("title", "ilike", `%${search}%`),
+            eb("description", "ilike", `%${search}%`),
           ])
         );
       }
@@ -488,25 +499,25 @@ static async getArtworks(req, res) {
       // ────────────────────────────────────────────────
 
       let countQuery = db
-        .selectFrom('artworks')
-        .where('creator_id', '=', creatorId)
-        .where('status', '=', 'published')
-        .where('deleted_at', 'is', null);
+        .selectFrom("artworks")
+        .where("creator_id", "=", creatorId)
+        .where("status", "=", "published")
+        .where("deleted_at", "is", null);
 
       if (search) {
         countQuery = countQuery.where((eb) =>
           eb.or([
-            eb('title', 'ilike', `%${search}%`),
-            eb('description', 'ilike', `%${search}%`),
+            eb("title", "ilike", `%${search}%`),
+            eb("description", "ilike", `%${search}%`),
           ])
         );
       }
 
       const countResult = await countQuery
-        .select(db.fn.count('id').as('total'))
+        .select(db.fn.count("id").as("total"))
         .executeTakeFirst();
 
-      const total = parseInt(countResult?.total || '0');
+      const total = parseInt(countResult?.total || "0");
       const totalPages = Math.ceil(total / limit);
 
       // ────────────────────────────────────────────────
@@ -531,8 +542,8 @@ static async getArtworks(req, res) {
         },
       });
     } catch (error) {
-      console.error('Get artworks by creator error:', error);
-      res.status(500).json({ error: 'Failed to fetch creator artworks' });
+      console.error("Get artworks by creator error:", error);
+      res.status(500).json({ error: "Failed to fetch creator artworks" });
     }
   }
 }

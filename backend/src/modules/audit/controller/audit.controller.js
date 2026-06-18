@@ -4,8 +4,8 @@ const {
   getAuditLogById,
   getAuditLogsByUserId,
   searchAuditLogs,
-} = require('../models/auditedEvent.model');
-const { db } = require('../../../config');
+} = require("../models/auditedEvent.model");
+const { db } = require("../../../config");
 async function createAuditLogHandler(req, res, next) {
   try {
     const log = await createAuditLog(req.body);
@@ -24,7 +24,7 @@ async function getAuditLogByIdHandler(req, res, next) {
     if (!log) {
       return res
         .status(404)
-        .json({ success: false, error: 'Audit log not found' });
+        .json({ success: false, error: "Audit log not found" });
     }
     res.json({ success: true, data: log });
   } catch (error) {

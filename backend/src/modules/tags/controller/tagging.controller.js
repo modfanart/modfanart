@@ -1,8 +1,7 @@
-// src/controllers/tagging.controller.js
-const Tag = require('../models/tag.model');
-const Tagging = require('../models/tagging.model');
-const Artwork = require('../../artworks/models/artwork.model');
-const { db } = require('../../../config');
+const Tag = require("../models/tag.model");
+const Tagging = require("../models/tagging.model");
+const Artwork = require("../../artworks/models/artwork.model");
+const { db } = require("../../../config");
 class TaggingController {
   // POST /artworks/:artworkId/tags
   static async addTag(req, res) {
@@ -12,25 +11,25 @@ class TaggingController {
 
       if (
         !tagName ||
-        typeof tagName !== 'string' ||
+        typeof tagName !== "string" ||
         tagName.trim().length < 2
       ) {
         return res
           .status(400)
-          .json({ error: 'Valid tag name required (min 2 characters)' });
+          .json({ error: "Valid tag name required (min 2 characters)" });
       }
 
       const artwork = await Artwork.findById(artworkId);
-      if (!artwork) return res.status(404).json({ error: 'Artwork not found' });
+      if (!artwork) return res.status(404).json({ error: "Artwork not found" });
 
       // Ownership or permission check
       if (
         artwork.creator_id !== req.user.id &&
-        !req.user.permissions?.['tags.manage']
+        !req.user.permissions?.["tags.manage"]
       ) {
         return res
           .status(403)
-          .json({ error: 'Not authorized to tag this artwork' });
+          .json({ error: "Not authorized to tag this artwork" });
       }
 
       let tag = await Tag.findByNameOrSlug(tagName.trim());
@@ -39,18 +38,18 @@ class TaggingController {
         const slug = tagName
           .trim()
           .toLowerCase()
-          .replace(/\s+/g, '-')
-          .replace(/[^a-z0-9-]/g, '');
+          .replace(/\s+/g, "-")
+          .replace(/[^a-z0-9-]/g, "");
         tag = await Tag.create(tagName.trim(), slug, req.user.id);
       } else {
         // Optional: only increment if new usage
         await Tag.incrementUsage(tag.id);
       }
 
-      await Tagging.addTag(tag.id, 'artwork', artworkId, req.user.id);
+      await Tagging.addTag(tag.id, "artwork", artworkId, req.user.id);
 
       res.status(201).json({
-        message: 'Tag added',
+        message: "Tag added",
         tag: {
           id: tag.id,
           name: tag.name,
@@ -60,7 +59,7 @@ class TaggingController {
       });
     } catch (error) {
       console.error(error);
-      res.status(500).json({ error: 'Failed to add tag' });
+      res.status(500).json({ error: "Failed to add tag" });
     }
   }
 
@@ -70,21 +69,21 @@ class TaggingController {
       const { artworkId, tagId } = req.params;
 
       const artwork = await Artwork.findById(artworkId);
-      if (!artwork) return res.status(404).json({ error: 'Artwork not found' });
+      if (!artwork) return res.status(404).json({ error: "Artwork not found" });
 
       if (
         artwork.creator_id !== req.user.id &&
-        !req.user.permissions?.['tags.manage']
+        !req.user.permissions?.["tags.manage"]
       ) {
-        return res.status(403).json({ error: 'Not authorized' });
+        return res.status(403).json({ error: "Not authorized" });
       }
 
-      await Tagging.removeTag(tagId, 'artwork', artworkId);
+      await Tagging.removeTag(tagId, "artwork", artworkId);
 
-      res.json({ message: 'Tag removed' });
+      res.json({ message: "Tag removed" });
     } catch (error) {
       console.error(error);
-      res.status(500).json({ error: 'Failed to remove tag' });
+      res.status(500).json({ error: "Failed to remove tag" });
     }
   }
 
@@ -93,12 +92,12 @@ class TaggingController {
     try {
       const { artworkId } = req.params;
 
-      const tags = await Tagging.getTagsForEntity('artwork', artworkId);
+      const tags = await Tagging.getTagsForEntity("artwork", artworkId);
 
       res.json({ tags });
     } catch (error) {
       console.error(error);
-      res.status(500).json({ error: 'Failed to fetch tags' });
+      res.status(500).json({ error: "Failed to fetch tags" });
     }
   }
 }

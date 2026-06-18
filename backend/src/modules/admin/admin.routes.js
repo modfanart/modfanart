@@ -1,19 +1,19 @@
 // routes/admin.js
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const ctrl = require('./controller/admin.controller');
-const { protect, adminOnly } = require('../../common/middleware/auth');
+const ctrl = require("./controller/admin.controller");
+const { protect, adminOnly } = require("../../common/middleware/auth");
 
 router.use(protect, adminOnly); // apply globally
 
-router.get('/stats', ctrl.getPlatformStats);
-router.get('/users', ctrl.getUsers);
-router.patch('/users/:id/status', ctrl.updateUserStatus);
-router.delete('/users/:id', ctrl.deleteUser);
+router.get("/stats", ctrl.getPlatformStats);
+router.get("/users", ctrl.getUsers);
+router.patch("/users/:id/status", ctrl.updateUserStatus);
+router.delete("/users/:id", ctrl.deleteUser);
 
-router.get('/brands/pending-verification', ctrl.getPendingBrandVerifications);
-router.patch('/brands/:brandId/verify', ctrl.verifyBrand);
+router.get("/brands/pending-verification", ctrl.getPendingBrandVerifications);
+router.patch("/brands/:brandId/verify", ctrl.verifyBrand);
 
-router.get('/moderation/queue', ctrl.getModerationQueue);
+router.get("/moderation/queue", ctrl.getModerationQueue);
 
 module.exports = router;

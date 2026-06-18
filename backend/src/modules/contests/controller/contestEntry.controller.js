@@ -1,9 +1,9 @@
 // src/controllers/contestEntry.controller.js
-const Contest = require('../models/contest.model');
-const ContestEntry = require('../models/contestEntry.model');
-const Artwork = require('../../artworks/models/artwork.model');
-const { sql } = require('kysely');
-const { db } = require('../../../config');
+const Contest = require("../models/contest.model");
+const ContestEntry = require("../models/contestEntry.model");
+const Artwork = require("../../artworks/models/artwork.model");
+const { sql } = require("kysely");
+const { db } = require("../../../config");
 
 class ContestEntryController {
   /**
@@ -12,37 +12,41 @@ class ContestEntryController {
   static async submitEntry(req, res) {
     try {
       const { contestId } = req.params;
-      const { artworkId, } = req.body;
+      const { artworkId } = req.body;
 
       const contest = await Contest.findById(contestId);
-      if (!contest) return res.status(404).json({ error: 'Contest not found' });
+      if (!contest) return res.status(404).json({ error: "Contest not found" });
 
-      if (contest.status !== 'live') {
-        return res.status(403).json({ error: 'Contest is not accepting submissions' });
+      if (contest.status !== "live") {
+        return res
+          .status(403)
+          .json({ error: "Contest is not accepting submissions" });
       }
 
       const now = new Date();
       if (new Date(contest.submission_end_date) < now) {
-        return res.status(403).json({ error: 'Submission period has ended' });
+        return res.status(403).json({ error: "Submission period has ended" });
       }
 
       const artwork = await Artwork.findById(artworkId);
       if (!artwork || artwork.creator_id !== req.user.id) {
-        return res.status(403).json({ error: 'Not your artwork or artwork not found' });
+        return res
+          .status(403)
+          .json({ error: "Not your artwork or artwork not found" });
       }
 
-      if (!['published', 'draft'].includes(artwork.status)) {
+      if (!["published", "draft"].includes(artwork.status)) {
         return res.status(403).json({
-          error: 'Artwork must be published or draft to submit',
+          error: "Artwork must be published or draft to submit",
         });
       }
 
       // max entries per user
       const existing = await db
-        .selectFrom('contest_entries')
-        .select('id')
-        .where('contest_id', '=', contestId)
-        .where('creator_id', '=', req.user.id)
+        .selectFrom("contest_entries")
+        .select("id")
+        .where("contest_id", "=", contestId)
+        .where("creator_id", "=", req.user.id)
         .execute();
 
       if (existing.length >= contest.max_entries_per_user) {
@@ -53,32 +57,31 @@ class ContestEntryController {
 
       // duplicate check
       const duplicate = await db
-        .selectFrom('contest_entries')
-        .select('id')
-        .where('contest_id', '=', contestId)
-        .where('artwork_id', '=', artworkId)
+        .selectFrom("contest_entries")
+        .select("id")
+        .where("contest_id", "=", contestId)
+        .where("artwork_id", "=", artworkId)
         .executeTakeFirst();
 
       if (duplicate) {
         return res.status(409).json({
-          error: 'This artwork is already submitted to this contest',
+          error: "This artwork is already submitted to this contest",
         });
       }
 
       const entry = await ContestEntry.create(
         contestId,
         artworkId,
-        req.user.id,
-
+        req.user.id
       );
 
       res.status(201).json({
-        message: 'Entry submitted successfully',
+        message: "Entry submitted successfully",
         entry,
       });
     } catch (err) {
-      console.error('Submit entry error:', err);
-      res.status(500).json({ error: 'Failed to submit entry' });
+      console.error("Submit entry error:", err);
+      res.status(500).json({ error: "Failed to submit entry" });
     }
   }
 
@@ -91,51 +94,51 @@ class ContestEntryController {
       const { status, limit = 20, offset = 0 } = req.query;
 
       const contest = await Contest.findById(contestId);
-      if (!contest) return res.status(404).json({ error: 'Contest not found' });
+      if (!contest) return res.status(404).json({ error: "Contest not found" });
 
       let query = db
-        .selectFrom('contest_entries')
-        .innerJoin('artworks', 'artworks.id', 'contest_entries.artwork_id')
-        .innerJoin('users', 'users.id', 'contest_entries.creator_id')
+        .selectFrom("contest_entries")
+        .innerJoin("artworks", "artworks.id", "contest_entries.artwork_id")
+        .innerJoin("users", "users.id", "contest_entries.creator_id")
         .select([
-          'contest_entries.id',
-          'contest_entries.status',
+          "contest_entries.id",
+          "contest_entries.status",
 
-          'contest_entries.created_at',
+          "contest_entries.created_at",
 
-          'artworks.id as artwork_id',
-          'artworks.title',
-          'artworks.thumbnail_url',
+          "artworks.id as artwork_id",
+          "artworks.title",
+          "artworks.thumbnail_url",
 
-          'users.username as creator_username',
-          'users.avatar_url as creator_avatar',
+          "users.username as creator_username",
+          "users.avatar_url as creator_avatar",
         ])
-        .where('contest_entries.contest_id', '=', contestId)
-        .orderBy('contest_entries.created_at', 'desc')
+        .where("contest_entries.contest_id", "=", contestId)
+        .orderBy("contest_entries.created_at", "desc")
         .limit(Number(limit))
         .offset(Number(offset));
 
       const isAuthorized =
         req.user &&
         (contest.brand_id === req.user.id ||
-          req.user.permissions?.['contests.moderate'] ||
-          req.user.permissions?.['contests.judge']);
+          req.user.permissions?.["contests.moderate"] ||
+          req.user.permissions?.["contests.judge"]);
 
       if (!isAuthorized) {
-        query = query.where('contest_entries.status', 'in', [
-          'approved',
-          'winner',
+        query = query.where("contest_entries.status", "in", [
+          "approved",
+          "winner",
         ]);
       } else if (status) {
-        query = query.where('contest_entries.status', '=', status);
+        query = query.where("contest_entries.status", "=", status);
       }
 
       const entries = await query.execute();
 
       res.json({ entries });
     } catch (err) {
-      console.error('Get entries error:', err);
-      res.status(500).json({ error: 'Failed to fetch contest entries' });
+      console.error("Get entries error:", err);
+      res.status(500).json({ error: "Failed to fetch contest entries" });
     }
   }
 
@@ -147,46 +150,46 @@ class ContestEntryController {
       const { contestId, entryId } = req.params;
       const { status } = req.body;
 
-      if (!['approved', 'rejected', 'disqualified'].includes(status)) {
+      if (!["approved", "rejected", "disqualified"].includes(status)) {
         return res.status(400).json({
-          error: 'Invalid status',
+          error: "Invalid status",
         });
       }
 
       const contest = await Contest.findById(contestId);
-      if (!contest) return res.status(404).json({ error: 'Contest not found' });
+      if (!contest) return res.status(404).json({ error: "Contest not found" });
 
       const entry = await db
-        .selectFrom('contest_entries')
+        .selectFrom("contest_entries")
         .selectAll()
-        .where('id', '=', entryId)
-        .where('contest_id', '=', contestId)
+        .where("id", "=", entryId)
+        .where("contest_id", "=", contestId)
         .executeTakeFirst();
 
-      if (!entry) return res.status(404).json({ error: 'Entry not found' });
+      if (!entry) return res.status(404).json({ error: "Entry not found" });
 
       const isAuthorized =
         contest.brand_id === req.user.id ||
-        req.user.permissions?.['contests.moderate'] ||
+        req.user.permissions?.["contests.moderate"] ||
         (await db
-          .selectFrom('contest_judges')
-          .select('id')
-          .where('contest_id', '=', contestId)
-          .where('judge_id', '=', req.user.id)
-          .where('accepted', '=', true)
+          .selectFrom("contest_judges")
+          .select("id")
+          .where("contest_id", "=", contestId)
+          .where("judge_id", "=", req.user.id)
+          .where("accepted", "=", true)
           .executeTakeFirst());
 
       if (!isAuthorized) {
-        return res.status(403).json({ error: 'Not authorized' });
+        return res.status(403).json({ error: "Not authorized" });
       }
 
       await db
-        .updateTable('contest_entries')
+        .updateTable("contest_entries")
         .set({
           status,
           updated_at: sql`NOW()`,
         })
-        .where('id', '=', entryId)
+        .where("id", "=", entryId)
         .execute();
 
       res.json({
@@ -194,8 +197,8 @@ class ContestEntryController {
         entryId,
       });
     } catch (err) {
-      console.error('Update entry status error:', err);
-      res.status(500).json({ error: 'Failed to update entry status' });
+      console.error("Update entry status error:", err);
+      res.status(500).json({ error: "Failed to update entry status" });
     }
   }
 
@@ -207,46 +210,49 @@ class ContestEntryController {
       const { contestId, entryId } = req.params;
 
       const entry = await db
-        .selectFrom('contest_entries')
-        .select(['id', 'creator_id'])
-        .where('id', '=', entryId)
-        .where('contest_id', '=', contestId)
+        .selectFrom("contest_entries")
+        .select(["id", "creator_id"])
+        .where("id", "=", entryId)
+        .where("contest_id", "=", contestId)
         .executeTakeFirst();
 
       if (!entry) {
-        return res.status(404).json({ error: 'Entry not found' });
+        return res.status(404).json({ error: "Entry not found" });
       }
 
       if (entry.creator_id !== req.user.id) {
         return res.status(403).json({
-          error: 'You can only delete your own entries',
+          error: "You can only delete your own entries",
         });
       }
 
       const contest = await Contest.findById(contestId);
       if (!contest) {
-        return res.status(404).json({ error: 'Contest not found' });
+        return res.status(404).json({ error: "Contest not found" });
       }
 
       const now = new Date();
-      if (contest.status !== 'live' || new Date(contest.submission_end_date) < now) {
+      if (
+        contest.status !== "live" ||
+        new Date(contest.submission_end_date) < now
+      ) {
         return res.status(403).json({
-          error: 'Cannot delete after submission period',
+          error: "Cannot delete after submission period",
         });
       }
 
       await db
-        .deleteFrom('contest_entries')
-        .where('id', '=', entryId)
+        .deleteFrom("contest_entries")
+        .where("id", "=", entryId)
         .execute();
 
       res.json({
-        message: 'Entry successfully withdrawn',
+        message: "Entry successfully withdrawn",
         entryId,
       });
     } catch (err) {
-      console.error('Delete entry error:', err);
-      res.status(500).json({ error: 'Failed to delete entry' });
+      console.error("Delete entry error:", err);
+      res.status(500).json({ error: "Failed to delete entry" });
     }
   }
 
@@ -258,28 +264,28 @@ class ContestEntryController {
       const { status, limit = 20, offset = 0 } = req.query;
 
       let query = db
-        .selectFrom('contest_entries')
-        .innerJoin('contests', 'contests.id', 'contest_entries.contest_id')
-        .innerJoin('artworks', 'artworks.id', 'contest_entries.artwork_id')
+        .selectFrom("contest_entries")
+        .innerJoin("contests", "contests.id", "contest_entries.contest_id")
+        .innerJoin("artworks", "artworks.id", "contest_entries.artwork_id")
         .select([
-          'contest_entries.id as entry_id',
-          'contest_entries.status as entry_status',
+          "contest_entries.id as entry_id",
+          "contest_entries.status as entry_status",
 
-          'contest_entries.created_at as submitted_at',
+          "contest_entries.created_at as submitted_at",
 
-          'contests.id as contest_id',
-          'contests.title as contest_title',
-          'contests.status as contest_status',
+          "contests.id as contest_id",
+          "contests.title as contest_title",
+          "contests.status as contest_status",
 
-          'artworks.id as artwork_id',
-          'artworks.title as artwork_title',
-          'artworks.thumbnail_url',
+          "artworks.id as artwork_id",
+          "artworks.title as artwork_title",
+          "artworks.thumbnail_url",
         ])
-        .where('contest_entries.creator_id', '=', req.user.id)
-        .orderBy('contest_entries.created_at', 'desc');
+        .where("contest_entries.creator_id", "=", req.user.id)
+        .orderBy("contest_entries.created_at", "desc");
 
       if (status) {
-        query = query.where('contest_entries.status', '=', status);
+        query = query.where("contest_entries.status", "=", status);
       }
 
       query = query.limit(Number(limit)).offset(Number(offset));
@@ -291,8 +297,8 @@ class ContestEntryController {
         total: entries.length,
       });
     } catch (err) {
-      console.error('Get my entries error:', err);
-      res.status(500).json({ error: 'Failed to fetch entries' });
+      console.error("Get my entries error:", err);
+      res.status(500).json({ error: "Failed to fetch entries" });
     }
   }
 }
