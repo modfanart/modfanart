@@ -116,7 +116,7 @@ export default function ForArtistsPage() {
           />
           <div className="absolute inset-0 bg-black/65" />
 
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white px-4 z-20">
+          <div className="absolute inset-0 flex flex-col items-center justify-start text-center text-white px-4 pt-24 z-20">
             <h1 className="text-5xl md:text-6xl font-black leading-tight tracking-tight">
               CREATE WHAT YOU LOVE.
               </h1>

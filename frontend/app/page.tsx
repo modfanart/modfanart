@@ -63,7 +63,7 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-black/60" />
 
         {/* HEADLINE */}
-        <div className="absolute top-[15%] left-1/2 -translate-x-1/2 text-center text-white max-w-3xl px-4 z-20 mb-10 mt-8">
+        <div className="absolute top-24 left-1/2 -translate-x-1/2 text-center text-white max-w-3xl px-4 z-20 mb-10">
           <h1 className="text-5xl font-extrabold leading-tight">
             TURN <span className="text-purple-400">FAN ART</span> INTO
             <br />
