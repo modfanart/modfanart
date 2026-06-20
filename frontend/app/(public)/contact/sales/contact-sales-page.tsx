@@ -153,7 +153,7 @@ export function ContactSalesPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-12 md:py-16">
+    <div className="container mx-auto px-4 pt-24 pb-12 md:pb-16">
       <div className="flex justify-between items-center mb-8 md:mb-12">
         <Link href="/">
           <Button variant="outline" className="flex items-center gap-2">
