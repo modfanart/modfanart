@@ -57,7 +57,7 @@ export default function PricingPage() {
   };
 
   return (
-    <div className="container py-12 md:py-24">
+    <div className="container pt-24 pb-12 md:pb-24">
       <div className="mx-auto max-w-4xl text-center">
         <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">Pricing Plans</h1>
         <p className="mt-4 text-lg text-muted-foreground">
