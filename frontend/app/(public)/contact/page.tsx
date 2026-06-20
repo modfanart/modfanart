@@ -83,7 +83,7 @@ export default function ContactPage() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <div className="container flex-1 py-10">
+      <div className="container flex-1 pt-24 pb-10">
         <div className="mx-auto max-w-2xl">
           {/* HEADER */}
           <div className="mb-8 flex items-center justify-between">
