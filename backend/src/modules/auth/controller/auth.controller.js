@@ -1,336 +1,116 @@
-const User = require("../../users/models/user.model");
-const Role = require("../../rbac/models/role.model");
-const RefreshToken = require("../models/refreshToken.model");
-const AuthToken = require("../models/authToken.model");
+const admin = require('../../../config/firebase');
+const { db } = require('../../../config');
+const { sql } = require('kysely');
+const User = require('../../users/models/user.model');
+const Role = require('../../rbac/models/role.model');
 
-const {
-  hashPassword,
-  comparePassword,
-} = require("../../../common/utils/password.util");
-const {
-  generateAccessToken,
-  generateRefreshToken,
-  verifyRefreshToken,
-} = require("../../../common/utils/jwt.util");
-
-const crypto = require("crypto");
-const { sql } = require("kysely");
-const { db } = require("../../../config");
-// Helpers (you can move to utils/email.util.js later)
-const EmailService = require("../../../common/emails/email.service");
 class AuthController {
-  // POST /auth/register
-  static async register(req, res) {
+  /**
+   * POST /api/auth/sync
+   *
+   * Called by the frontend after every Firebase sign-in.
+   * Verifies the Firebase ID token, then finds or creates the user
+   * record in our DB. Returns the full user profile with role + brands.
+   *
+   * Body (optional, used only on first sign-up):
+   *   { username?: string }
+   */
+  static async sync(req, res) {
     try {
-      const { username, email, password, signup_key } = req.body;
+      const authHeader = req.headers['authorization'];
+      const token = authHeader && authHeader.split(' ')[1];
+      if (!token) return res.status(401).json({ error: 'No token provided' });
 
-      // Basic validation (you should use zod/joi/express-validator)
-      if (!username || !email || !password) {
-        return res.status(400).json({ error: "Missing required fields" });
-      }
+      const decoded = await admin.auth().verifyIdToken(token);
+      const { uid: firebaseUid, email, name: displayName, picture } = decoded;
 
-      // For MVP restricted signup — remove or adjust later
-      if (signup_key !== process.env.SIGNUP_KEY) {
-        return res.status(403).json({ error: "Invalid signup key" });
-      }
+      // 1. Find by firebase_uid
+      let user = await User.findByFirebaseUid(firebaseUid);
 
-      // Check existing user
-      if (await User.findByEmail(email)) {
-        return res.status(409).json({ error: "Email already in use" });
-      }
-      if (await User.findByUsername(username)) {
-        return res.status(409).json({ error: "Username taken" });
-      }
-
-      const passwordHash = await hashPassword(password);
-
-      // Default role — usually 'default_user'
-      const defaultRole = await Role.findByName("user");
-      if (!defaultRole) {
-        throw new Error("Default role not found");
-      }
-
-      const user = await User.create({
-        username,
-        email,
-        password_hash: passwordHash,
-        role_id: defaultRole.id,
-        status: "pending_verification",
-      });
-
-      // Create email verification token
-      const token = crypto.randomBytes(32).toString("hex");
-      const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
-
-      await AuthToken.create(
-        user.id,
-        "email_verification",
-        tokenHash,
-        new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24h
-      );
-
-      await EmailService.sendVerificationEmail(user, token);
-
-      res.status(201).json({
-        message: "User registered. Please check your email to verify.",
-        userId: user.id,
-      });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Registration failed" });
-    }
-  }
-
-  // GET /auth/verify-email
-  static async verifyEmail(req, res) {
-    try {
-      const { token } = req.query;
-
-      if (!token) {
-        return res.status(400).json({ error: "Missing token" });
-      }
-
-      const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
-      const authToken = await AuthToken.findValid(
-        tokenHash,
-        "email_verification"
-      );
-
-      if (!authToken) {
-        return res.status(400).json({ error: "Invalid or expired token" });
-      }
-
-      await User.update(authToken.user_id, {
-        email_verified: true,
-        status: "active",
-      });
-      await AuthToken.markAsUsed(authToken.id);
-
-      res.json({ message: "Email verified successfully. You can now log in." });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Verification failed" });
-    }
-  }
-
-  // POST /auth/login
-  static async login(req, res) {
-    try {
-      const { email, password } = req.body;
-      console.log(req.body);
-      const user = await User.findByEmail(email);
-      if (!user || !user.password_hash) {
-        return res.status(401).json({ error: "Invalid credentials" });
-      }
-      console.log(user);
-      if (user.status !== "active") {
-        return res.status(403).json({ error: `Account is ${user.status}` });
-      }
-
-      const passwordMatch = await comparePassword(password, user.password_hash);
-      if (!passwordMatch) {
-        return res.status(401).json({ error: "Invalid credentials" });
-      }
-
-      // Update last login
-      await User.updateLastLogin(user.id);
-
-      const accessToken = generateAccessToken({ userId: user.id });
-      const refreshToken = generateRefreshToken({ userId: user.id });
-
-      // Store refresh token hash
-      const refreshHash = crypto
-        .createHash("sha256")
-        .update(refreshToken)
-        .digest("hex");
-      await RefreshToken.create(
-        user.id,
-        refreshHash,
-        new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-      );
-
-      res.json({
-        accessToken,
-        refreshToken,
-        user: {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          role_id: user.role_id,
-        },
-      });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Login failed" });
-    }
-  }
-
-  // POST /auth/refresh
-  static async refreshToken(req, res) {
-    try {
-      const { refreshToken } = req.body;
-
-      if (!refreshToken) {
-        return res.status(401).json({ error: "Refresh token required" });
-      }
-
-      const refreshHash = crypto
-        .createHash("sha256")
-        .update(refreshToken)
-        .digest("hex");
-      const storedToken = await db
-        .selectFrom("refresh_tokens")
-        .selectAll()
-        .where("token_hash", "=", refreshHash)
-        .where("revoked_at", "is", null)
-        .where("expires_at", ">", sql`NOW()`)
-        .executeTakeFirst();
-
-      if (!storedToken) {
-        return res
-          .status(403)
-          .json({ error: "Invalid or expired refresh token" });
-      }
-
-      const decoded = verifyRefreshToken(refreshToken);
-      const user = await User.findById(decoded.userId);
-
-      if (!user || user.status !== "active") {
-        return res.status(403).json({ error: "User not found or inactive" });
-      }
-
-      const newAccessToken = generateAccessToken({ userId: user.id });
-
-      res.json({ accessToken: newAccessToken });
-    } catch (error) {
-      console.error(error);
-      res.status(403).json({ error: "Token refresh failed" });
-    }
-  }
-
-  // POST /auth/forgot-password
-  static async forgotPassword(req, res) {
-    try {
-      const { email } = req.body;
-
-      const user = await User.findByEmail(email);
-      if (!user) {
-        // Security: don't reveal if email exists
-        return res.json({
-          message: "If the email exists, a reset link has been sent.",
-        });
-      }
-
-      const token = crypto.randomBytes(32).toString("hex");
-      const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
-
-      await AuthToken.create(
-        user.id,
-        "password_reset",
-        tokenHash,
-        new Date(Date.now() + 60 * 60 * 1000).toISOString() // 1 hour
-      );
-
-      await EmailService.sendPasswordResetEmail(user, token);
-      res.json({ message: "Password reset link sent to email." });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Error processing request" });
-    }
-  }
-
-  // POST /auth/reset-password
-  static async resetPassword(req, res) {
-    try {
-      const { token, newPassword } = req.body;
-
-      if (!token || !newPassword) {
-        return res
-          .status(400)
-          .json({ error: "Token and new password required" });
-      }
-
-      const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
-      const authToken = await AuthToken.findValid(tokenHash, "password_reset");
-
-      if (!authToken) {
-        return res.status(400).json({ error: "Invalid or expired token" });
-      }
-
-      const passwordHash = await hashPassword(newPassword);
-
-      await User.update(authToken.user_id, {
-        password_hash: passwordHash,
-      });
-
-      await AuthToken.markAsUsed(authToken.id);
-
-      // Optional: revoke all refresh tokens
-      await RefreshToken.revokeAllForUser(authToken.user_id);
-
-      res.json({ message: "Password reset successful. Please log in." });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Password reset failed" });
-    }
-  }
-
-  // POST /auth/logout
-  static async logout(req, res) {
-    try {
-      const { refreshToken } = req.body; // optional
-
-      if (refreshToken) {
-        const refreshHash = crypto
-          .createHash("sha256")
-          .update(refreshToken)
-          .digest("hex");
-
-        // Revoke specific token if provided and valid
-        const tokenRecord = await db
-          .selectFrom("refresh_tokens")
-          .select("id")
-          .where("token_hash", "=", refreshHash)
-          .where("revoked_at", "is", null)
-          .executeTakeFirst();
-
-        if (tokenRecord) {
-          await RefreshToken.revoke(tokenRecord.id);
-          console.log(
-            `Refresh token revoked for logout: ${refreshHash.substring(
-              0,
-              8
-            )}...`
-          );
+      // 2. Migration path: existing user registered before Firebase
+      if (!user && email) {
+        user = await User.findByEmail(email);
+        if (user) {
+          await db
+            .updateTable('users')
+            .set({ firebase_uid: firebaseUid, updated_at: sql`NOW()` })
+            .where('id', '=', user.id)
+            .execute();
+          user.firebase_uid = firebaseUid;
         }
       }
 
-      // You could also revoke ALL refresh tokens for the user (more aggressive)
-      // But requires authenticated request → needs access token validation first
-      // Example (if you want this behavior):
-      /*
-    const authHeader = req.headers.authorization;
-    if (authHeader?.startsWith('Bearer ')) {
-      const token = authHeader.split(' ')[1];
-      try {
-        const decoded = verifyAccessToken(token); // your util
-        await RefreshToken.revokeAllForUser(decoded.userId);
-      } catch {}
-    }
-    */
+      // 3. New user — create DB record
+      if (!user) {
+        const defaultRole = await Role.findByName('user');
+        if (!defaultRole) throw new Error('Default role not found');
 
-      // Always return success — client clears local state anyway
-      res.status(200).json({
-        success: true,
-        message: "Logged out successfully",
-      });
-    } catch (error) {
-      console.error("Logout error:", error);
-      // Still return 200 — client should clear tokens regardless
-      res.status(200).json({
-        success: true,
-        message: "Logged out (partial server cleanup)",
-      });
+        // Derive username: use provided value, or generate from email prefix
+        let username = req.body?.username?.trim().toLowerCase();
+        if (!username) {
+          const base = email.split('@')[0].replace(/[^a-z0-9_]/gi, '').toLowerCase();
+          username = base;
+        }
+
+        // Ensure username is unique — append random suffix if taken
+        const taken = await User.findByUsername(username);
+        if (taken) {
+          username = `${username}_${Math.random().toString(36).slice(2, 6)}`;
+        }
+
+        user = await User.create({
+          firebase_uid: firebaseUid,
+          username,
+          email,
+          avatar_url: picture || null,
+          role_id: defaultRole.id,
+          status: 'active',
+          email_verified: true,
+        });
+      }
+
+      // 4. Update last_login
+      await db
+        .updateTable('users')
+        .set({ last_login_at: sql`NOW()` })
+        .where('id', '=', user.id)
+        .execute();
+
+      // 5. Load role + brands for response
+      const fullUser = await db
+        .selectFrom('users as u')
+        .leftJoin('roles as r', 'r.id', 'u.role_id')
+        .select([
+          'u.id',
+          'u.username',
+          'u.email',
+          'u.avatar_url',
+          'u.status',
+          'r.name as role',
+          'r.permissions as permissions',
+        ])
+        .where('u.id', '=', user.id)
+        .executeTakeFirst();
+
+      let brands = [];
+      if (fullUser.role === 'brand_manager' || fullUser.role === 'Admin') {
+        brands = await db
+          .selectFrom('brands as b')
+          .leftJoin('brand_managers as bm', 'bm.brand_id', 'b.id')
+          .select(['b.id', 'b.name', 'b.slug', 'b.logo_url', 'b.status'])
+          .where((eb) =>
+            eb.or([
+              eb('b.user_id', '=', user.id),
+              eb('bm.user_id', '=', user.id),
+            ])
+          )
+          .execute();
+      }
+
+      res.json({ user: { ...fullUser, brands } });
+    } catch (err) {
+      console.error('Sync error:', err);
+      res.status(500).json({ error: 'Auth sync failed' });
     }
   }
 }
