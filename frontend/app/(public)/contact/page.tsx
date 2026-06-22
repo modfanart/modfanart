@@ -175,10 +175,10 @@ export default function ContactPage() {
 
               <div className="mt-2 space-y-2">
                 <p className="text-sm">
-                  <strong>Email:</strong> support@modplatform.com
+                  <strong>Email:</strong> support@modfanofficial.com
                 </p>
                 <p className="text-sm">
-                  <strong>Business Inquiries:</strong> partnerships@modplatform.com
+                  <strong>Business Inquiries:</strong> team@modfanofficial.com
                 </p>
                 <p className="text-sm">
                   <strong>Address:</strong> 123 Creative Ave, Suite 456, San Francisco, CA 94103

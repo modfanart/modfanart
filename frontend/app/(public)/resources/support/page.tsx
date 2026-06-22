@@ -133,7 +133,7 @@ export default function SupportPage() {
                 Send us a detailed message and we'll get back to you as soon as possible.
               </p>
               <Button className="w-full" asChild>
-                <Link href="mailto:support@modplatform.com">Email Us</Link>
+                <Link href="mailto:support@modfanofficial.com">Email Us</Link>
               </Button>
             </CardContent>
           </Card>
