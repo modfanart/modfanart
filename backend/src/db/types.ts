@@ -12,7 +12,7 @@ export interface UserRow {
   profile: Record<string, any>;
   avatar_url: string | null;
   banner_url: string | null;
-  bio: string | null;
+  bio: string | null; 
   location: string | null;
   website: string | null;
   payout_method: object | null;

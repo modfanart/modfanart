@@ -4,59 +4,64 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Search } from 'lucide-react';
 import pageNotFound from '../assets/images/page_not_found.png';
+
 import { LayoutWrapper } from '@/components/layout-wrapper';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 
 export default function NotFound() {
   const router = useRouter();
 
   return (
     <LayoutWrapper>
-      <div className="min-h-screen bg-white flex items-center justify-center px-6">
-        <div className="text-center max-w-xl w-full">
-          {/* 🔥 404 Image */}
-          <div className="flex justify-center mb-8">
-            <Image
-              src={pageNotFound}
-              alt="404 Not Found"
-              width={420}
-              height={420}
-              priority
-              className="select-none pointer-events-none"
-            />
-          </div>
+      <div className="min-h-screen flex items-center justify-center bg-muted/40 px-6 py-10">
+        <Card className="w-full max-w-2xl shadow-xl border rounded-2xl">
+          <CardContent className="flex flex-col items-center text-center p-8 md:p-10 space-y-6">
+            {/* Image */}
+            <div className="flex justify-center">
+              <Image
+                src={pageNotFound}
+                alt="404 Not Found"
+                width={320}
+                height={320}
+                priority
+                className="select-none pointer-events-none"
+              />
+            </div>
 
-          {/* Title */}
-          <h1 className="text-4xl font-bold text-purple-600 mb-3">404 Not Found</h1>
+            {/* Title */}
+            <div className="space-y-2">
+              <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+                404 — Page not found
+              </h1>
+              <p className="text-muted-foreground text-sm md:text-base max-w-md">
+                The page you're looking for doesn’t exist or may have been moved.
+              </p>
+            </div>
 
-          {/* Subtitle */}
-          <p className="text-gray-600 mb-8">The page you're looking for doesn't exist.</p>
+            {/* Actions */}
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              <Button
+                variant="outline"
+                onClick={() => router.back()}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Go back
+              </Button>
 
-          {/* Buttons */}
-          <div className="flex items-center justify-center gap-4 flex-wrap">
-            {/* Go Back */}
-            <button
-              onClick={() => router.back()}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-lg
-                         bg-gray-100 hover:bg-gray-200
-                         text-gray-800 border border-gray-300
-                         transition"
-            >
-              <ArrowLeft size={18} />
-              Go Back
-            </button>
+              <Button onClick={() => router.push('/explore')} className="flex items-center gap-2">
+                <Search className="w-4 h-4" />
+                Explore
+              </Button>
+            </div>
 
-            {/* Explore */}
-            <button
-              onClick={() => router.push('/explore')}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-lg
-                         bg-gradient-to-r from-purple-600 to-violet-500
-                         hover:opacity-90 text-white transition shadow-md"
-            >
-              <Search size={18} />
-              Explore
-            </button>
-          </div>
-        </div>
+            {/* Optional hint */}
+            <p className="text-xs text-muted-foreground">
+              Lost? Try exploring trending content instead.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     </LayoutWrapper>
   );

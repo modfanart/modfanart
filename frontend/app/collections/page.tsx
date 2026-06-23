@@ -6,45 +6,54 @@ import Image from 'next/image';
 import { Heart, Image as ImageIcon, Grid, Bookmark, Sparkles, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
 import { LayoutWrapper } from '@/components/layout-wrapper';
-import { CollectionRow } from '@/services/api/collectionApi';
-// RTK Query imports
-import { useGetCollectionsQuery, useCreateCollectionMutation } from '@/services/api/collectionApi';
-const savedCollections: CollectionRow[] = []; // ← explicit type
-// You probably get current user from auth context / redux / cookie
-// For demo — replace with real user data
-const CURRENT_USER_ID = 'user-uuid-from-auth'; // ← replace with real value
+import { useAuth } from '@/store/AuthContext';
+// RTK Query
+import {
+  useGetCollectionsQuery,
+  useCreateCollectionMutation,
+  CollectionRow,
+} from '@/services/api/collectionApi';
 
 type Tab = 'discover' | 'my-collections' | 'saved';
 
+const savedCollections: CollectionRow[] = [];
+
+const Stat = ({ icon: Icon, value }: any) => (
+  <div className="flex items-center gap-1.5 text-xs text-gray-500">
+    <Icon className="h-3.5 w-3.5" />
+    <span>{value}</span>
+  </div>
+);
+
 export default function CollectionsPage() {
+  const { user, loading: authLoading } = useAuth();
+  const { toast } = useToast();
+
   const [activeTab, setActiveTab] = useState<Tab>('my-collections');
 
-  // ────────────────────────────────────────────────
-  // Queries depending on active tab
-  // ────────────────────────────────────────────────
   const {
     data: myCollectionsData,
     isLoading: myLoading,
     isError: myError,
   } = useGetCollectionsQuery(
-    { owner_type: 'user', owner_id: CURRENT_USER_ID },
-    { skip: activeTab !== 'my-collections' }
+    {
+      owner_type: 'user',
+      owner_id: user?.id!,
+    },
+    {
+      skip: activeTab !== 'my-collections' || !user?.id,
+    }
   );
 
-  // For "discover" — you can later add public collections query
-  // For now we show the same data (or you can add a separate endpoint)
   const {
     data: discoverData,
     isLoading: discoverLoading,
     isError: discoverError,
-  } = useGetCollectionsQuery(
-    {}, // no filter → all public (depends on your backend)
-    { skip: activeTab !== 'discover' }
-  );
+  } = useGetCollectionsQuery({}, { skip: activeTab !== 'discover' });
 
-  // "Saved" can be a separate endpoint later (e.g. user favorites)
   const savedLoading = false;
   const savedError = false;
 
@@ -68,33 +77,52 @@ export default function CollectionsPage() {
     (activeTab === 'saved' && savedError);
 
   const handleCreateCollection = async () => {
+    if (!user?.id) return;
+
     try {
       await createCollection({
         name: 'New Collection ' + new Date().toLocaleDateString(),
         description: 'My new curated set',
         is_public: true,
         owner_type: 'user',
-        owner_id: CURRENT_USER_ID,
+        owner_id: user.id,
       }).unwrap();
 
-      alert('Collection created!'); // ← replace with toast / modal
+      toast({
+        title: 'Collection created',
+        description: 'Your collection is ready 🎉',
+      });
     } catch (err) {
-      console.error('Failed to create collection:', err);
-      alert('Failed to create collection');
+      console.error(err);
+      toast({
+        title: 'Error',
+        description: 'Failed to create collection',
+        variant: 'destructive',
+      });
     }
   };
 
-  const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
+  const tabs = [
     { id: 'discover', label: 'Discover', icon: <Sparkles className="h-4 w-4" /> },
     { id: 'my-collections', label: 'My Collections', icon: <Grid className="h-4 w-4" /> },
     { id: 'saved', label: 'Saved', icon: <Bookmark className="h-4 w-4" /> },
   ];
 
+  if (authLoading) {
+    return (
+      <LayoutWrapper>
+        <div className="p-10">
+          <Skeleton className="h-10 w-40 mb-4" />
+          <Skeleton className="h-64 w-full" />
+        </div>
+      </LayoutWrapper>
+    );
+  }
+
   return (
     <LayoutWrapper>
       <div className="min-h-screen bg-gray-50/50">
         <div className="container mx-auto px-4 py-8 md:py-12">
-          {/* Header + Tabs */}
           <div className="mb-10">
             <div className="flex items-center justify-between">
               <div>
@@ -106,7 +134,6 @@ export default function CollectionsPage() {
                 </p>
               </div>
 
-              {/* Create button (visible on My Collections tab) */}
               {activeTab === 'my-collections' && (
                 <Button
                   onClick={handleCreateCollection}
@@ -119,7 +146,6 @@ export default function CollectionsPage() {
               )}
             </div>
 
-            {/* Tabs */}
             <div className="flex flex-wrap gap-3 border-b border-gray-200 pb-1 mt-6">
               {tabs.map((tab) => (
                 <Button
@@ -131,7 +157,7 @@ export default function CollectionsPage() {
                       ? 'bg-white text-gray-900 shadow-sm border border-gray-300'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                   )}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => setActiveTab(tab.id as Tab)}
                 >
                   {tab.icon}
                   <span className="ml-2">{tab.label}</span>
@@ -140,48 +166,36 @@ export default function CollectionsPage() {
             </div>
           </div>
 
-          {/* Collections Grid / States */}
           {isLoading ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5 md:gap-6">
               {Array.from({ length: 10 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="aspect-[3/4] rounded-xl overflow-hidden bg-white shadow-sm animate-pulse"
-                >
-                  <Skeleton className="h-full w-full rounded-b-none" />
-                  <div className="p-4 space-y-2">
-                    <Skeleton className="h-5 w-4/5" />
-                    <Skeleton className="h-4 w-3/5" />
-                  </div>
+                <div key={i} className="aspect-[3/4] rounded-xl overflow-hidden bg-white shadow-sm">
+                  <Skeleton className="h-full w-full" />
                 </div>
               ))}
             </div>
           ) : isError ? (
-            <div className="col-span-full py-20 text-center">
+            <div className="py-20 text-center">
               <p className="text-red-600 text-lg font-medium">Failed to load collections</p>
               <Button variant="outline" className="mt-4">
                 Try Again
               </Button>
             </div>
           ) : collections.length === 0 ? (
-            <div className="col-span-full py-20 text-center">
+            <div className="py-20 text-center">
               <div className="mx-auto w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
                 <Grid className="h-8 w-8 text-gray-400" />
               </div>
-              <h3 className="text-xl font-medium text-gray-800 mb-2">No collections yet</h3>
+              <h3 className="text-xl font-semibold text-gray-900">Start your first collection</h3>
               <p className="text-gray-500 mb-6">
-                {activeTab === 'my-collections'
-                  ? 'Create your first collection to get started'
-                  : activeTab === 'discover'
-                    ? 'New public collections will appear here soon'
-                    : 'You haven’t saved any collections yet'}
+                Organize artworks you love into beautiful collections.
               </p>
               {activeTab === 'my-collections' && (
                 <Button
                   onClick={handleCreateCollection}
                   className="bg-indigo-600 hover:bg-indigo-700"
                 >
-                  Create your first collection
+                  Create Collection
                 </Button>
               )}
             </div>
@@ -191,60 +205,33 @@ export default function CollectionsPage() {
                 <Link
                   key={collection.id}
                   href={`/collections/${collection.slug || collection.id}`}
-                  className="group block aspect-[3/4] rounded-xl overflow-hidden bg-white border border-gray-200 hover:border-gray-300 transition-all hover:shadow-lg hover:shadow-gray-200/70"
+                  className="group block aspect-[3/4] rounded-xl overflow-hidden bg-white border border-gray-200 hover:shadow-lg"
                 >
-                  {/* Cover Image */}
-                  <div className="relative h-3/4 overflow-hidden">
+                  <div className="relative h-3/4">
                     {collection.cover_image_url ? (
                       <Image
                         src={collection.cover_image_url}
                         alt={collection.name}
                         fill
-                        className="object-cover transition-transform duration-700 group-hover:scale-105"
-                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                        className="object-cover group-hover:scale-105 transition"
                       />
                     ) : (
-                      <div className="h-full w-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                        <ImageIcon className="h-12 w-12 text-gray-400" />
+                      <div className="h-full flex items-center justify-center bg-gray-100">
+                        <ImageIcon className="h-10 w-10 text-gray-400" />
                       </div>
                     )}
-
-                    {/* Subtle overlay gradient */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
                   </div>
 
-                  {/* Info */}
-                  <div className="p-4 space-y-1.5 bg-white">
-                    <h3 className="font-medium line-clamp-2 leading-tight text-gray-900 group-hover:text-indigo-700 transition-colors">
-                      {collection.name}
-                    </h3>
+                  <div className="p-4">
+                    <h3 className="font-medium text-gray-900 line-clamp-2">{collection.name}</h3>
 
-                    <div className="flex items-center gap-5 text-xs text-gray-500">
-                      <div className="flex items-center gap-1.5">
-                        <ImageIcon className="h-3.5 w-3.5" />
-                        <span>
-                          {/* You would need item count from backend or separate query */}
-                          {/* For now placeholder */}? items
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Heart className="h-3.5 w-3.5 text-pink-500 fill-pink-100" />
-                        <span>0 likes</span> {/* ← add real like count later */}
-                      </div>
+                    <div className="flex gap-4 mt-2">
+                      <Stat icon={ImageIcon} value="? items" />
+                      <Stat icon={Heart} value="0 likes" />
                     </div>
                   </div>
                 </Link>
               ))}
-            </div>
-          )}
-
-          {/* Load more (can be replaced with infinite scroll later) */}
-          {!isLoading && collections.length > 0 && (
-            <div className="mt-12 text-center">
-              <Button variant="outline" size="lg" className="gap-2 border-gray-300">
-                Load More Collections
-                <Sparkles className="h-4 w-4" />
-              </Button>
             </div>
           )}
         </div>

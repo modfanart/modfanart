@@ -3,7 +3,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -15,46 +14,28 @@ import {
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from '@/components/ui/navigation-menu';
+
 import { UserNav } from '@/components/user-nav';
-import { userApi } from '@/services/api/userApi';
+import { cn } from '@/lib/utils';
 
 import { SearchModal } from './search-modal';
+import { useAuth } from '@/store/AuthContext';
 
 export function MainNav() {
   const pathname = usePathname();
+  const { user, loading } = useAuth();
 
-  const [shouldFetch, setShouldFetch] = useState(false);
+  const isAuthenticated = !!user && !loading;
 
-  const {
-    data: user,
-    isLoading,
-    isFetching,
-    error,
-  } = userApi.useGetCurrentUserQuery(undefined, {
-    skip: !shouldFetch,
-    refetchOnMountOrArgChange: 60,
-    refetchOnReconnect: true,
-    refetchOnFocus: true,
-  });
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const hasToken =
-      localStorage.getItem('accessToken') ||
-      document.cookie.split(';').some((c) => c.trim().startsWith('accessToken='));
-    setShouldFetch(!!hasToken);
-  }, []);
-
-  const isAuthenticated = !!user && !isLoading && !isFetching;
-  const isPending = shouldFetch && (isLoading || isFetching);
+  const isActive = (path: string) => pathname.startsWith(path);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur">
       <div className="container flex h-16 items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5">
           <Image
-            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/mod-logo-dark-gTZuJePnecraDwGyMlBCHe6E6xJgsx.png"
+            src="/mod-logo-dark.png"
             alt="MOD Logo"
             width={140}
             height={44}
@@ -63,239 +44,92 @@ export function MainNav() {
           />
         </Link>
 
-        {/* Desktop Navigation */}
+        {/* NAV */}
         <NavigationMenu className="hidden md:flex mx-auto">
           <NavigationMenuList className="gap-1">
             {isAuthenticated ? (
               <>
-                {/* ✅ AUTHENTICATED USER NAV */}
-                <NavigationMenuItem>
-                  <NavigationMenuLink
-                    asChild
-                    className={navigationMenuTriggerStyle()}
-                    active={pathname.startsWith('/explore')}
-                  >
-                    <Link href="/explore">Explore</Link>
-                  </NavigationMenuLink>
-                </NavigationMenuItem>
+                <NavItem href="/explore" active={isActive('/explore')}>
+                  Explore
+                </NavItem>
 
-                <NavigationMenuItem>
-                  <NavigationMenuLink
-                    asChild
-                    className={navigationMenuTriggerStyle()}
-                    active={pathname.startsWith('/categories')}
-                  >
-                    <Link href="/categories">Categories</Link>
-                  </NavigationMenuLink>
-                </NavigationMenuItem>
+                <NavItem href="/explore/contests" active={pathname === '/explore/contests'}>
+                  Contests
+                </NavItem>
 
-                <NavigationMenuItem>
-                  <NavigationMenuLink
-                    asChild
-                    className={navigationMenuTriggerStyle()}
-                    active={pathname === '/explore/contests'}
-                  >
-                    <Link href="/explore/contests">Contests</Link>
-                  </NavigationMenuLink>
-                </NavigationMenuItem>
+                <NavItem href="/gallery/featured" active={pathname === '/gallery/featured'}>
+                  Gallery
+                </NavItem>
 
-                <NavigationMenuItem>
-                  <NavigationMenuLink
-                    asChild
-                    className={navigationMenuTriggerStyle()}
-                    active={pathname === '/gallery/featured'}
-                  >
-                    <Link href="/gallery/featured">Gallery</Link>
-                  </NavigationMenuLink>
-                </NavigationMenuItem>
-
-                <NavigationMenuItem>
-                  <NavigationMenuLink
-                    asChild
-                    className={navigationMenuTriggerStyle()}
-                    active={pathname.startsWith('/collections')}
-                  >
-                    <Link href="/collections">Collections</Link>
-                  </NavigationMenuLink>
-                </NavigationMenuItem>
+                <NavItem href="/collections" active={isActive('/collections')}>
+                  Collections
+                </NavItem>
               </>
             ) : (
               <>
-                {/* ✅ UNAUTHENTICATED USER NAV */}
-                <NavigationMenuItem>
-                  <NavigationMenuLink
-                    asChild
-                    className={navigationMenuTriggerStyle()}
-                    active={pathname === '/'}
-                  >
-                    <Link href="/">Home</Link>
-                  </NavigationMenuLink>
-                </NavigationMenuItem>
+                <NavItem href="/" active={pathname === '/'}>
+                  Home
+                </NavItem>
 
-                {/* About (kept existing dropdown) */}
-                <NavigationMenuItem>
-                  <NavigationMenuTrigger>About</NavigationMenuTrigger>
-                  <NavigationMenuContent>
-                    <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
-                      <li>
-                        <NavigationMenuLink asChild>
-                          <Link
-                            href="/for-brands"
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                          >
-                            <div className="text-sm font-medium leading-none">For Brands</div>
-                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                              Learn how brands can protect IP and monetize fan art
-                            </p>
-                          </Link>
-                        </NavigationMenuLink>
-                      </li>
-                      <li>
-                        <NavigationMenuLink asChild>
-                          <Link
-                            href="/for-creators-info"
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                          >
-                            <div className="text-sm font-medium leading-none">For Creators</div>
-                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                              See how content creators can engage fans and earn royalties
-                            </p>
-                          </Link>
-                        </NavigationMenuLink>
-                      </li>
-                      <li>
-                        <NavigationMenuLink asChild>
-                          <Link
-                            href="/for-artists"
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                          >
-                            <div className="text-sm font-medium leading-none">For Artists</div>
-                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                              Discover how artists can license their fan art
-                            </p>
-                          </Link>
-                        </NavigationMenuLink>
-                      </li>
-                    </ul>
-                  </NavigationMenuContent>
-                </NavigationMenuItem>
+                <NavDropdown label="About">
+                  <DropdownLink
+                    href="/for-brands"
+                    title="For Brands"
+                    desc="Protect IP and monetize fan art"
+                  />
+                  <DropdownLink
+                    href="/for-creators-info"
+                    title="For Creators"
+                    desc="Engage fans and earn royalties"
+                  />
+                  <DropdownLink
+                    href="/for-artists"
+                    title="For Artists"
+                    desc="License your fan art"
+                  />
+                </NavDropdown>
 
-                {/* Contact Dropdown */}
-                <NavigationMenuItem>
-                  <NavigationMenuTrigger>Contact</NavigationMenuTrigger>
-                  <NavigationMenuContent>
-                    <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
-                      <li>
-                        <NavigationMenuLink asChild>
-                          <Link
-                            href="/contact"
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                          >
-                            <div className="text-sm font-medium leading-none">Contact</div>
-                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                              General inquiries and support
-                            </p>
-                          </Link>
-                        </NavigationMenuLink>
-                      </li>
-                      <li>
-                        <NavigationMenuLink asChild>
-                          <Link
-                            href="/contact/sales"
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                          >
-                            <div className="text-sm font-medium leading-none">Contact Sales</div>
-                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                              Brand partnerships and licensing inquiries
-                            </p>
-                          </Link>
-                        </NavigationMenuLink>
-                      </li>
-                    </ul>
-                  </NavigationMenuContent>
-                </NavigationMenuItem>
+                <NavDropdown label="Contact">
+                  <DropdownLink
+                    href="/contact"
+                    title="Contact"
+                    desc="General inquiries and support"
+                  />
+                  <DropdownLink
+                    href="/contact/sales"
+                    title="Contact Sales"
+                    desc="Brand partnerships"
+                  />
+                </NavDropdown>
 
-                {/* Resources Dropdown (Guidelines + Support only) */}
-                <NavigationMenuItem>
-                  <NavigationMenuTrigger>Resources</NavigationMenuTrigger>
-                  <NavigationMenuContent>
-                    <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
-                      <li>
-                        <NavigationMenuLink asChild>
-                          <Link
-                            href="/resources/guidelines"
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                          >
-                            <div className="text-sm font-medium leading-none">Brand Guidelines</div>
-                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                              View IP requirements and submission standards
-                            </p>
-                          </Link>
-                        </NavigationMenuLink>
-                      </li>
-                      <li>
-                        <NavigationMenuLink asChild>
-                          <Link
-                            href="/resources/support"
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                          >
-                            <div className="text-sm font-medium leading-none">Support</div>
-                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                              Get help with submissions and licensing
-                            </p>
-                          </Link>
-                        </NavigationMenuLink>
-                      </li>
-                    </ul>
-                  </NavigationMenuContent>
-                </NavigationMenuItem>
+                <NavDropdown label="Resources">
+                  <DropdownLink
+                    href="/resources/guidelines"
+                    title="Brand Guidelines"
+                    desc="Submission standards"
+                  />
+                  <DropdownLink
+                    href="/resources/support"
+                    title="Support"
+                    desc="Help & documentation"
+                  />
+                </NavDropdown>
 
-                {/* Legal Dropdown */}
-                <NavigationMenuItem>
-                  <NavigationMenuTrigger>Legal</NavigationMenuTrigger>
-                  <NavigationMenuContent>
-                    <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2">
-                      <li>
-                        <NavigationMenuLink asChild>
-                          <Link
-                            href="/legal/terms-and-service"
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                          >
-                            <div className="text-sm font-medium leading-none">
-                              Terms and Conditions
-                            </div>
-                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                              User terms and submission guidelines
-                            </p>
-                          </Link>
-                        </NavigationMenuLink>
-                      </li>
-                      <li>
-                        <NavigationMenuLink asChild>
-                          <Link
-                            href="/legal/privacy-policy"
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                          >
-                            <div className="text-sm font-medium leading-none">Privacy Policy</div>
-                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                              How we handle your data
-                            </p>
-                          </Link>
-                        </NavigationMenuLink>
-                      </li>
-                    </ul>
-                  </NavigationMenuContent>
-                </NavigationMenuItem>
+                <NavDropdown label="Legal" cols={2}>
+                  <DropdownLink href="/legal/terms-and-service" title="Terms" desc="User terms" />
+                  <DropdownLink href="/legal/privacy-policy" title="Privacy" desc="Data handling" />
+                </NavDropdown>
               </>
             )}
           </NavigationMenuList>
         </NavigationMenu>
 
+        {/* RIGHT */}
         <div className="flex items-center gap-4">
           <SearchModal />
 
-          {isPending ? (
-            <div className="h-9 w-32 animate-pulse rounded-md bg-muted/70" />
+          {loading ? (
+            <div className="h-9 w-24 animate-pulse rounded-md bg-muted" />
           ) : isAuthenticated ? (
             <UserNav />
           ) : (
@@ -305,6 +139,7 @@ export function MainNav() {
                   Log in
                 </Button>
               </Link>
+
               <Link href="/signup" className="hidden md:block">
                 <Button size="sm">Sign up</Button>
               </Link>
@@ -313,5 +148,72 @@ export function MainNav() {
         </div>
       </div>
     </header>
+  );
+}
+
+/* ---------------- Helpers ---------------- */
+
+function NavItem({
+  href,
+  active,
+  children,
+}: {
+  href: string;
+  active?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <NavigationMenuItem>
+      <NavigationMenuLink asChild>
+        <Link
+          href={href}
+          className={cn(navigationMenuTriggerStyle(), active && 'bg-accent text-accent-foreground')}
+        >
+          {children}
+        </Link>
+      </NavigationMenuLink>
+    </NavigationMenuItem>
+  );
+}
+
+function NavDropdown({
+  label,
+  children,
+  cols = 2,
+}: {
+  label: string;
+  children: React.ReactNode;
+  cols?: number;
+}) {
+  return (
+    <NavigationMenuItem>
+      <NavigationMenuTrigger>{label}</NavigationMenuTrigger>
+      <NavigationMenuContent>
+        <ul
+          className={cn(
+            'grid gap-3 p-4 w-[400px] md:w-[500px] lg:w-[600px]',
+            cols === 2 && 'md:grid-cols-2'
+          )}
+        >
+          {children}
+        </ul>
+      </NavigationMenuContent>
+    </NavigationMenuItem>
+  );
+}
+
+function DropdownLink({ href, title, desc }: { href: string; title: string; desc: string }) {
+  return (
+    <li>
+      <NavigationMenuLink asChild>
+        <Link
+          href={href}
+          className="block space-y-1 rounded-md p-3 transition-colors hover:bg-accent hover:text-accent-foreground"
+        >
+          <div className="text-sm font-medium">{title}</div>
+          <p className="text-sm text-muted-foreground line-clamp-2">{desc}</p>
+        </Link>
+      </NavigationMenuLink>
+    </li>
   );
 }
