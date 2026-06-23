@@ -27,7 +27,7 @@ class BrandVerificationRequest {
         contact_email: data.contact_email || null,
         contact_phone: data.contact_phone || null,
         description: data.description || null,
-        documents: data.documents ? JSON.stringify(data.documents) : null,
+        documents: Array.isArray(data.documents) ? data.documents : [],
         team_size: data.team_size || null,
         how_heard: data.how_heard || null,
 
@@ -60,9 +60,9 @@ class BrandVerificationRequest {
     if (data.description !== undefined)
       updateData.description = data.description;
     if (data.documents !== undefined) {
-      updateData.documents = data.documents
-        ? JSON.stringify(data.documents)
-        : null;
+      updateData.documents = Array.isArray(data.documents)
+        ? data.documents
+        : [];
     }
     if (data.team_size !== undefined) updateData.team_size = data.team_size;
     if (data.how_heard !== undefined) updateData.how_heard = data.how_heard;
