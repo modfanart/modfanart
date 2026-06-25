@@ -20,7 +20,7 @@ import question1 from '@/assets/images/icons/question1.png';
 import eye1 from '@/assets/images/icons/eye1.png';
 import { useRouter } from 'next/navigation';
 
-export const contests = [
+const contests = [
   {
     id: 1,
     contestName: "The Librarians",
