@@ -114,7 +114,7 @@ export default function ForArtistsPage() {
         />
         <div className="absolute inset-0 bg-black/65" />
 
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white px-4 z-20">
+        <div className="absolute inset-0 flex flex-col items-center justify-start text-center text-white px-4 pt-24 z-20">
           <h1 className="text-5xl md:text-6xl font-black leading-tight tracking-tight">
             CREATE WHAT YOU LOVE.
           </h1>
@@ -137,14 +137,6 @@ export default function ForArtistsPage() {
             <br />
             It's about getting access to real brand opportunities.
           </p>
-          <div className="absolute inset-0 flex flex-col items-center justify-start text-center text-white px-4 pt-24 z-20">
-            <h1 className="text-5xl md:text-6xl font-black leading-tight tracking-tight">
-              CREATE WHAT YOU LOVE.
-              </h1>
-              <h1 className="text-5xl md:text-6xl font-black leading-tight tracking-tight mt-2">
-              GET IT OFFICIALLY{" "}
-              <span className="bg-purple-600 text-white px-1 py-0 leading-none rounded-sm">LICENSED.</span>
-            </h1>
 
           <div className="mt-8 flex flex-col items-center gap-3">
             <Button
