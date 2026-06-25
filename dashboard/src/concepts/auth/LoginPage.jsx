@@ -46,10 +46,6 @@ export const LoginPage = () => {
   return (
     <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <Database weight="duotone" className="w-10 h-10 text-white" />
-          <h1 className="text-2xl font-bold text-white">SanitaryERP</h1>
-        </div>
 
         <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-8">
           <h2 className="text-xl font-semibold text-white">Welcome back</h2>

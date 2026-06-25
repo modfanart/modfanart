@@ -46,7 +46,7 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { data, isLoading } = useGetCurrentUserQuery();
 
-  const isBrandManager = data?.user?.role?.name === 'brand_manager';
+  const isBrandManager = data?.user?.role?.name === 'BRAND_MANAGER';
 
   const { data: brandsData } = useGetMyBrandsQuery(undefined, {
     skip: !isBrandManager,
