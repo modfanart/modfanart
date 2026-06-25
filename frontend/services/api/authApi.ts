@@ -36,7 +36,14 @@ export interface RegisterRequest {
   username: string;
   email: string;
   password: string;
+  accountType: 'fan' | 'artist' | 'brand';
   referral_key?: string;
+}
+
+export interface RegisterResponse {
+  message: string;
+  userId: string;
+  verificationEmailSent?: boolean;
 }
 
 export interface LoginRequest {
@@ -148,7 +155,7 @@ export const authApi = createApi({
   tagTypes: ['CurrentUser'],
 
   endpoints: (builder) => ({
-    register: builder.mutation<AuthResponse, RegisterRequest>({
+    register: builder.mutation<RegisterResponse, RegisterRequest>({
       query: (body) => ({
         url: '/register',
         method: 'POST',
