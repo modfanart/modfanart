@@ -15,23 +15,73 @@ const {
 
 const crypto = require("crypto");
 const { sql } = require("kysely");
+const { z } = require("zod");
 const { db } = require("../../../config");
 // Helpers (you can move to utils/email.util.js later)
 const EmailService = require("../../../common/emails/email.service");
+
+const ACCOUNT_TYPE_ROLE_NAMES = {
+  fan: ["fan", "user"],
+  artist: ["Artist", "artist", "creator", "user"],
+  brand: [
+    "Brand",
+    "brand",
+    "brand_owner",
+    "brand-manager",
+    "brand manager",
+    "brand_manager",
+    "user",
+  ],
+};
+
+const registerSchema = z.object({
+  username: z.string().trim().min(1, "Username is required"),
+  email: z
+    .string()
+    .trim()
+    .email("Valid email is required")
+    .transform((value) => value.toLowerCase()),
+  password: z.string().min(1, "Password is required"),
+  accountType: z.enum(["fan", "artist", "brand"]).default("fan"),
+});
+
+async function findSignupRole(accountType) {
+  const roleNames = ACCOUNT_TYPE_ROLE_NAMES[accountType];
+
+  for (const roleName of roleNames) {
+    const role = await Role.findByName(roleName);
+    if (role) return role;
+  }
+
+  return db
+    .selectFrom("roles")
+    .selectAll()
+    .where(
+      sql`LOWER(name)`,
+      "in",
+      roleNames.map((roleName) => roleName.toLowerCase())
+    )
+    .executeTakeFirst();
+}
+
 class AuthController {
   // POST /auth/register
   static async register(req, res) {
     try {
-      const { username, email, password, signup_key } = req.body;
+      const parsed = registerSchema.safeParse(req.body);
 
-      // Basic validation (you should use zod/joi/express-validator)
-      if (!username || !email || !password) {
-        return res.status(400).json({ error: "Missing required fields" });
+      if (!parsed.success) {
+        return res.status(400).json({
+          error: "Invalid registration data",
+          details: z.treeifyError(parsed.error).properties,
+        });
       }
 
-      // For MVP restricted signup — remove or adjust later
-      if (signup_key !== process.env.SIGNUP_KEY) {
-        return res.status(403).json({ error: "Invalid signup key" });
+      const { username, email, password, accountType } = parsed.data;
+
+      // Only supported public account types can be selected at signup.
+      if (!ACCOUNT_TYPE_ROLE_NAMES[accountType]) {
+        return res.status(400).json({ error: "Invalid account type" });
       }
 
       // Check existing user
@@ -44,17 +94,17 @@ class AuthController {
 
       const passwordHash = await hashPassword(password);
 
-      // Default role — usually 'default_user'
-      const defaultRole = await Role.findByName("user");
-      if (!defaultRole) {
-        throw new Error("Default role not found");
+      // Prefer the account-specific role, with "user" as a temporary fallback.
+      const signupRole = await findSignupRole(accountType);
+      if (!signupRole) {
+        throw new Error("Default user role not found");
       }
 
       const user = await User.create({
         username,
         email,
         password_hash: passwordHash,
-        role_id: defaultRole.id,
+        role_id: signupRole.id,
         status: "pending_verification",
       });
 
@@ -69,11 +119,18 @@ class AuthController {
         new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24h
       );
 
-      await EmailService.sendVerificationEmail(user, token);
+      let verificationEmailSent = true;
+      try {
+        await EmailService.sendVerificationEmail(user, token);
+      } catch (emailError) {
+        verificationEmailSent = false;
+        console.error("Registration email failed:", emailError.message);
+      }
 
       res.status(201).json({
         message: "User registered. Please check your email to verify.",
         userId: user.id,
+        verificationEmailSent,
       });
     } catch (error) {
       console.error(error);
