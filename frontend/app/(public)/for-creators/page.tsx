@@ -9,7 +9,7 @@ export default function ForCreatorsPage() {
     <div className="flex min-h-screen flex-col">
       <main className="flex-1">
         {/* HERO */}
-        <section className="w-full py-16 md:py-24 bg-gradient-to-b from-muted/40 to-background">
+        <section className="w-full pt-24 pb-16 md:pb-24 bg-gradient-to-b from-muted/40 to-background">
           <div className="container px-4 md:px-6">
             <div className="grid gap-10 lg:grid-cols-2 items-center">
               <div className="space-y-6">

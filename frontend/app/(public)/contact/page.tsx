@@ -83,7 +83,7 @@ export default function ContactPage() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <div className="container flex-1 py-10">
+      <div className="container flex-1 pt-24 pb-10">
         <div className="mx-auto max-w-2xl">
           {/* HEADER */}
           <div className="mb-8 flex items-center justify-between">
@@ -175,10 +175,10 @@ export default function ContactPage() {
 
               <div className="mt-2 space-y-2">
                 <p className="text-sm">
-                  <strong>Email:</strong> support@modplatform.com
+                  <strong>Email:</strong> support@modfanofficial.com
                 </p>
                 <p className="text-sm">
-                  <strong>Business Inquiries:</strong> partnerships@modplatform.com
+                  <strong>Business Inquiries:</strong> team@modfanofficial.com
                 </p>
                 <p className="text-sm">
                   <strong>Address:</strong> 123 Creative Ave, Suite 456, San Francisco, CA 94103
