@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { LayoutWrapper } from '@/components/layouts/layout-wrapper';
 // SafeImage: renders a real Next/Image when src exists, otherwise a placeholder div
 import { ImageProps } from 'next/image';
+// import { contests } from "@/public/testContests.tsx";
 
 //ICONS
 import arrowImg from '@/assets/images/backgrounds/back_1.png';
@@ -18,6 +19,45 @@ import checklist1 from '@/assets/images/icons/checklist1.png';
 import question1 from '@/assets/images/icons/question1.png';
 import eye1 from '@/assets/images/icons/eye1.png';
 import { useRouter } from 'next/navigation';
+
+const contests = [
+  {
+    id: 1,
+    contestName: "The Librarians",
+    brandName: "Electric Entertainment",
+    image: "/contests/librarianCard.jpg",
+  },
+  // {
+  //   id: 2,
+  //   contestName: "Tech Creator Challenge",
+  //   brandName: "Apple",
+  //   image: "/contests/apple-tech.jpg",
+  // },
+  // {
+  //   id: 3,
+  //   contestName: "Gaming Gear Sweepstakes",
+  //   brandName: "Razer",
+  //   image: "/contests/razer-gaming.jpg",
+  // },
+  // {
+  //   id: 4,
+  //   contestName: "Travel Adventure Contest",
+  //   brandName: "GoPro",
+  //   image: "/contests/gopro-travel.jpg",
+  // },
+  // {
+  //   id: 5,
+  //   contestName: "Fitness Transformation Challenge",
+  //   brandName: "Under Armour",
+  //   image: "/contests/underarmour-fitness.jpg",
+  // },
+  // {
+  //   id: 6,
+  //   contestName: "Home Makeover Giveaway",
+  //   brandName: "IKEA",
+  //   image: "/contests/ikea-home.jpg",
+  // },
+];
 
 type SafeImageProps = {
   src?: string | null;
@@ -63,7 +103,7 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-black/60" />
 
         {/* HEADLINE */}
-        <div className="absolute top-[15%] left-1/2 -translate-x-1/2 text-center text-white max-w-3xl px-4 z-20 mb-10 mt-8">
+        <div className="absolute top-24 left-1/2 -translate-x-1/2 text-center text-white max-w-3xl px-4 z-20 mb-10">
           <h1 className="text-5xl font-extrabold leading-tight">
             TURN <span className="text-purple-400">FAN ART</span> INTO
             <br />
@@ -283,26 +323,49 @@ export default function HomePage() {
               real IP holders.
             </p>
           </div>
-          {/*Refactor featured campaigns*/}
-          <div className="grid md:grid-cols-3 gap-6 mt-12">
-            {[
-              'https://res.cloudinary.com/dbsdj2f2l/image/upload/f_auto,q_auto/homepage-6_lwboni',
-              'https://res.cloudinary.com/dbsdj2f2l/image/upload/f_auto,q_auto/homepage-7_uozyzg',
-              'https://res.cloudinary.com/dbsdj2f2l/image/upload/f_auto,q_auto/homepage-8_pdl9fw',
-            ].map((i) => (
-              <div
-                key={i}
-                className="bg-gray-100 rounded-xl overflow-hidden transform hover:scale-105 transition-transform duration-300"
-              >
-                <div className="relative h-48">
-                  <SafeImage src={i} alt="" fill className="object-cover" />
+          <div className="mt-12">
+            <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-thin">
+              {contests.map((contest) => (
+                <div
+                  key={contest.id}
+                  className="
+                    flex-shrink-0
+                    w-[280px]
+                    md:w-[calc((100%-3rem)/3)]
+                    bg-gray-100
+                    rounded-xl
+                    overflow-hidden
+                    transform
+                    hover:scale-105
+                    transition-transform
+                    duration-300
+                  "
+                >
+                  <div className="relative h-48">
+                    <SafeImage
+                      src={contest.image}
+                      alt={contest.contestName}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+
+                  <div className="p-4 text-left">
+                    <p className="text-xs text-gray-500 mb-1">
+                      {contest.brandName}
+                    </p>
+
+                    <h4 className="font-medium">
+                      {contest.contestName}
+                    </h4>
+
+                    <Button className="mt-3 text-xs rounded-full">
+                      View and Enter
+                    </Button>
+                  </div>
                 </div>
-                <div className="p-4 text-left">
-                  <h4 className="font-medium">Campaign Title</h4>
-                  <Button className="mt-3 text-xs rounded-full">View and Enter</Button>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </section>
