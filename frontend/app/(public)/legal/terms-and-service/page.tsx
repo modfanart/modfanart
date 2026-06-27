@@ -18,7 +18,7 @@ export default function TermsPage() {
           <div className="mb-8 flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Terms of Service</h1>
-              <p className="text-muted-foreground">Last updated: March 6, 2025</p>
+              <p className="text-muted-foreground">Last updated: June 23, 2026</p>
             </div>
             <Button variant="outline" asChild>
               <Link href="/">Back to Home</Link>
