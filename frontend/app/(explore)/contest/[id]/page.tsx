@@ -33,7 +33,7 @@ export default function ContestDetailPage() {
   const role = user?.role?.name;
 
   let artistBase = '';
-  if (role === 'Artist') {
+  if (role === 'ARTIST') {
     const username = user?.username?.trim().toLowerCase();
     if (username) artistBase = `/artist/${username}`;
   }

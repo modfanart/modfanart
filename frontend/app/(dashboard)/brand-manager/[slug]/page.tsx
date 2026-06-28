@@ -10,7 +10,7 @@ import { Loader2, Briefcase } from 'lucide-react';
 export default function BrandDashboard() {
   return (
     <RoleGuard
-      allowedRoles={['brand_manager']}
+      allowedRoles={['BRAND_MANAGER']}
       redirectTo="/dashboard"
       fallback={
         <div className="min-h-screen flex items-center justify-center p-6">

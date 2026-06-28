@@ -31,21 +31,18 @@ class ContestJudgeController {
 
       // Brand Manager check - more forgiving
       const isBrandManager =
-        user?.role === "brand_manager" &&
+        user?.role === "BRAND_MANAGER" &&
         (user?.brands || []).some(
           (b) =>
             b.id === contest.brand_id ||
             String(b.id) === String(contest.brand_id)
         );
 
-      const hasManagePermission =
-        user?.permissions?.["contests.manage"] === true;
 
       const hasPermission =
         isPlatformAdmin ||
         isBrandOwner ||
-        isBrandManager ||
-        hasManagePermission;
+        isBrandManager ;
 
       if (!hasPermission) {
         console.log("Authorization failed for user:", {
@@ -80,11 +77,7 @@ class ContestJudgeController {
         return res.status(404).json({ error: "User not found" });
       }
 
-      if (!judge.permissions?.["contests.judge"] && judge.role !== "Admin") {
-        return res.status(400).json({
-          error: "User does not have judge permissions",
-        });
-      }
+
 
       if (["judging", "completed", "archived"].includes(contest.status)) {
         return res.status(400).json({

@@ -84,64 +84,120 @@ class ContestEntryController {
       res.status(500).json({ error: "Failed to submit entry" });
     }
   }
+/**
+ * GET /contests/:contestId/entries
+ */
+static async getEntries(req, res) {
+  try {
+    const { contestId } = req.params;
+    const { status, limit = 20, offset = 0 } = req.query;
 
-  /**
-   * GET /contests/:contestId/entries
-   */
-  static async getEntries(req, res) {
-    try {
-      const { contestId } = req.params;
-      const { status, limit = 20, offset = 0 } = req.query;
+    const contest = await Contest.findById(contestId);
 
-      const contest = await Contest.findById(contestId);
-      if (!contest) return res.status(404).json({ error: "Contest not found" });
-
-      let query = db
-        .selectFrom("contest_entries")
-        .innerJoin("artworks", "artworks.id", "contest_entries.artwork_id")
-        .innerJoin("users", "users.id", "contest_entries.creator_id")
-        .select([
-          "contest_entries.id",
-          "contest_entries.status",
-
-          "contest_entries.created_at",
-
-          "artworks.id as artwork_id",
-          "artworks.title",
-          "artworks.thumbnail_url",
-
-          "users.username as creator_username",
-          "users.avatar_url as creator_avatar",
-        ])
-        .where("contest_entries.contest_id", "=", contestId)
-        .orderBy("contest_entries.created_at", "desc")
-        .limit(Number(limit))
-        .offset(Number(offset));
-
-      const isAuthorized =
-        req.user &&
-        (contest.brand_id === req.user.id ||
-          req.user.permissions?.["contests.moderate"] ||
-          req.user.permissions?.["contests.judge"]);
-
-      if (!isAuthorized) {
-        query = query.where("contest_entries.status", "in", [
-          "approved",
-          "winner",
-        ]);
-      } else if (status) {
-        query = query.where("contest_entries.status", "=", status);
-      }
-
-      const entries = await query.execute();
-
-      res.json({ entries });
-    } catch (err) {
-      console.error("Get entries error:", err);
-      res.status(500).json({ error: "Failed to fetch contest entries" });
+    if (!contest) {
+      return res.status(404).json({
+        error: "Contest not found",
+      });
     }
-  }
 
+    let query = db
+      .selectFrom("contest_entries as ce")
+      .innerJoin("artworks as a", "a.id", "ce.artwork_id")
+      .innerJoin("users as u", "u.id", "ce.creator_id")
+      .leftJoin("contest_judge_scores as cjs", "cjs.entry_id", "ce.id")
+      .select([
+        // Entry
+        "ce.id as entry_id",
+        "ce.status as entry_status",
+        "ce.rank as entry_rank",
+        "ce.created_at as entry_created_at",
+        "ce.updated_at as entry_updated_at",
+
+        // Artwork
+        "a.id as artwork_id",
+        "a.title as artwork_title",
+        "a.description as artwork_description",
+        "a.file_url as artwork_file_url",
+        "a.thumbnail_url as artwork_thumbnail_url",
+        "a.preview_url as artwork_preview_url",
+        "a.slug as artwork_slug",
+        "a.status as artwork_status",
+        "a.moderation_status",
+        "a.views_count",
+        "a.favorites_count",
+        "a.created_at as artwork_created_at",
+        "a.updated_at as artwork_updated_at",
+
+        // Creator
+        "u.id as creator_id",
+        "u.username as creator_username",
+        "u.avatar_url as creator_avatar",
+
+        // Judge Score (null if not judged)
+        "cjs.score as judge_score",
+        "cjs.comments as judge_comments",
+      ])
+      .where("ce.contest_id", "=", contestId)
+      .orderBy("ce.created_at", "desc")
+      .limit(Number(limit))
+      .offset(Number(offset));
+
+    const isAuthorized =
+      req.user &&
+      (contest.brand_id === req.user.id ||
+        req.user.permissions?.["contests.moderate"] ||
+        req.user.permissions?.["contests.judge"]);
+
+    if (!isAuthorized) {
+      query = query.where("ce.status", "in", ["approved", "winner"]);
+    } else if (status) {
+      query = query.where("ce.status", "=", status);
+    }
+
+    const rows = await query.execute();
+
+    const entries = rows.map((row) => ({
+      id: row.entry_id,
+      status: row.entry_status,
+      rank: row.entry_rank,
+      created_at: row.entry_created_at,
+      updated_at: row.entry_updated_at,
+
+      artwork: {
+        id: row.artwork_id,
+        title: row.artwork_title,
+        description: row.artwork_description,
+        file_url: row.artwork_file_url,
+        thumbnail_url: row.artwork_thumbnail_url,
+        preview_url: row.artwork_preview_url,
+        slug: row.artwork_slug,
+        status: row.artwork_status,
+        moderation_status: row.moderation_status,
+        views_count: row.views_count,
+        favorites_count: row.favorites_count,
+        created_at: row.artwork_created_at,
+        updated_at: row.artwork_updated_at,
+      },
+
+      creator: {
+        id: row.creator_id,
+        username: row.creator_username,
+        avatar_url: row.creator_avatar,
+      },
+
+      judge_score: row.judge_score,
+      judge_comments: row.judge_comments,
+    }));
+
+    return res.json({ entries });
+  } catch (err) {
+    console.error("Get entries error:", err);
+
+    return res.status(500).json({
+      error: "Failed to fetch contest entries",
+    });
+  }
+}
   /**
    * PATCH /contests/:contestId/entries/:entryId/status
    */

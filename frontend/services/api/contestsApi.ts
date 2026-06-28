@@ -69,21 +69,40 @@ export interface GetContestsResponse {
   limit?: number;
 }
 
-export interface ContestEntry {
+export interface Artwork {
   id: string;
-  contest_id: string;
-  artwork_id: string;
-  creator_id: string;
-  submission_notes?: string | null;
-  status: 'pending' | 'approved' | 'rejected' | 'disqualified' | 'winner';
-  rank?: number | null;
-  score_public: number;
-  score_judge: number;
+  title: string;
+  description: string;
+  file_url: string;
+  thumbnail_url: string | null;
+  preview_url: string | null;
+  slug: string | null;
+  status: string;
   moderation_status: string;
-  moderated_by?: string | null;
-  moderated_at?: string | null;
+  views_count: number;
+  favorites_count: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface ArtworkCreator {
+  id: string;
+  username: string;
+  avatar_url: string | null;
+}
+
+export interface ContestEntry {
+  id: string;
+  status: 'pending' | 'approved' | 'rejected' | 'disqualified' | 'winner';
+  rank: number | null;
+  created_at: string;
+  updated_at: string;
+
+  artwork: Artwork;
+  creator: ArtworkCreator;
+
+  judge_score: number | null;
+  judge_comments: string | null;
 }
 
 // ────────────────────────────────────────────────
@@ -357,16 +376,18 @@ const contestsApi = createApi({
       ],
     }),
 
-    getContestEntries: builder.query<
-      { entries: ContestEntry[] },
-      { contestId: string; status?: string }
-    >({
-      query: ({ contestId, ...params }) => ({
-        url: `/contest/${contestId}/entries`,
-        params,
-      }),
-      providesTags: (result, error, { contestId }) => [{ type: 'ContestEntries', id: contestId }],
-    }),
+getContestEntries: builder.query<
+  { entries: ContestEntry[] },
+  { contestId: string; status?: string }
+>({
+  query: ({ contestId, ...params }) => ({
+    url: `/contest/${contestId}/entries`,
+    params,
+  }),
+  providesTags: (result, error, { contestId }) => [
+    { type: 'ContestEntries', id: contestId },
+  ],
+}),
 
     updateEntryStatus: builder.mutation<
       ContestEntry,
@@ -456,7 +477,7 @@ const contestsApi = createApi({
       { contestId: string; entryId: string; score: number; comments?: string }
     >({
       query: ({ contestId, entryId, ...body }) => ({
-        url: `/contest/${contestId}/entries/${entryId}/judge-score`,
+        url: `/contest/${contestId}/entries/${entryId}/score`,
         method: 'POST',
         body,
       }),
