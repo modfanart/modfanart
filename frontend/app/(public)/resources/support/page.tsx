@@ -34,7 +34,7 @@ export const metadata: Metadata = {
 
 export default function SupportPage() {
   return (
-    <div className="container py-12 md:py-16 lg:py-24">
+    <div className="container pt-24 pb-12 md:pb-16 lg:pb-24">
       <div className="mx-auto max-w-4xl text-center mb-16">
         <h1 className="text-4xl font-bold tracking-tight sm:text-5xl mb-4">Support Center</h1>
         <p className="text-xl text-muted-foreground">
@@ -133,7 +133,7 @@ export default function SupportPage() {
                 Send us a detailed message and we'll get back to you as soon as possible.
               </p>
               <Button className="w-full" asChild>
-                <Link href="mailto:support@modplatform.com">Email Us</Link>
+                <Link href="mailto:support@modfanofficial.com">Email Us</Link>
               </Button>
             </CardContent>
           </Card>
