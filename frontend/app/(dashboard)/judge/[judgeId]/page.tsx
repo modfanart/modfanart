@@ -10,7 +10,7 @@ import { Loader2, Gavel } from 'lucide-react';
 export default function JudgeDashboard() {
   return (
     <RoleGuard
-      allowedRoles={['judge']}
+      allowedRoles={['JUDGE']}
       redirectTo="/dashboard"
       fallback={
         <div className="min-h-screen flex items-center justify-center p-6">

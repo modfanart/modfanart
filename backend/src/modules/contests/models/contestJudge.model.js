@@ -12,8 +12,9 @@ class ContestJudge {
         invited_by: invitedBy,
         accepted: false,
       })
-      .onConflict(['contest_id', 'judge_id'])
-      .doNothing()
+.onConflict((oc) =>
+  oc.columns(['contest_id', 'judge_id']).doNothing()
+)
       .returningAll()
       .executeTakeFirst();
   }

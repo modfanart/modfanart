@@ -22,7 +22,8 @@ const router = useRouter();
 
 const [logout, { isLoading: isLoggingOut }] = useLogoutMutation();
 const { user, loading: isUserLoading } = useAuth();
-
+console.log(user);
+console.log(user?.brands);
 if (isUserLoading || !user) return null;
 
 const displayName = user.username || user.email?.split('@')[0] || 'User';

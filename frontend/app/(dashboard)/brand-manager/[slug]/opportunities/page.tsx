@@ -75,7 +75,7 @@ export default function OpportunitiesManagementPage() {
   let brandSlug: string | undefined;
   let brandBase = '';
 
-  if (user?.role?.name === 'brand_manager') {
+  if (user?.role?.name === 'BRAND_MANAGER') {
     const managedBrand = user?.brands?.[0];
 
     if (managedBrand) {
