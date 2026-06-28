@@ -108,7 +108,7 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
 
   // Fetch users with 'judge' role
   const { data: judgesPoolData, isLoading: judgesPoolLoading } = useGetUsersByRoleSlugQuery({
-    roleSlug: 'judge',
+    roleSlug: 'JUDGE',
     limit: 100,
   });
 
@@ -739,7 +739,7 @@ function EntryRow({
               {entry.artwork_title || `Entry #${entry.id.slice(0, 8)}`}
             </p>
             <p className="text-sm text-muted-foreground">
-              by @{entry.creator_username || entry.creator_id?.slice(0, 8)}
+              by @{entry.creator_username}
             </p>
           </div>
           <StatusBadge status={entry.status} />
@@ -869,14 +869,7 @@ function EntryDetailDialog({
                   </div>
                 )}
 
-                {entry.submission_notes && (
-                  <div>
-                    <p className="text-muted-foreground mb-2">Creator Notes</p>
-                    <p className="border-l-4 border-muted pl-4 italic text-muted-foreground">
-                      {entry.submission_notes}
-                    </p>
-                  </div>
-                )}
+         
               </div>
             </div>
 

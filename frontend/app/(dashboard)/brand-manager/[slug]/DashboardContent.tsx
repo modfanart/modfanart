@@ -35,7 +35,7 @@ import { useGetContestsQuery } from '@/services/api/contestsApi';
 import { useAuth } from '@/store/AuthContext';
 export default function DashboardContent() {
   const { user } = useAuth();
-  const isBrandManager = user?.role?.name === 'brand_manager';
+  const isBrandManager = user?.role?.name === 'BRAND_MANAGER';
 
   // Get the primary brand (most brand managers manage only one)
   const primaryBrand = user?.brands?.[0];

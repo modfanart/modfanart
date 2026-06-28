@@ -5,7 +5,7 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const path = require("path");
 const rateLimit = require("express-rate-limit");
-
+const fs = require("fs");
 const attachDb = require("./src/common/middleware/attachDb");
 const requestLogger = require("./src/common/middleware/requestLogger");
 const errorHandler = require("./src/common/middleware/error");
@@ -29,6 +29,7 @@ process.on("unhandledRejection", (reason, promise) => {
 // Keep process alive even if async tasks finish
 const keepAlive = setInterval(() => {}, 60 * 60 * 1000); // 1 hour
 
+const TEMP_DIR = process.env.TEMP_UPLOAD_DIR || "/tmp/cdn_uploads";
 // ====================== RATE LIMITER ======================
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -78,6 +79,9 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
+if (!fs.existsSync(TEMP_DIR)) {
+  fs.mkdirSync(TEMP_DIR, { recursive: true });
+}
 // ====================== HEALTH ======================
 app.get("/health", (req, res) => {
   res.json({ status: "ok", uptime: process.uptime() });

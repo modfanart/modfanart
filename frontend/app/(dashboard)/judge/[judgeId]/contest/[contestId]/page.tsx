@@ -159,7 +159,7 @@ export default function JudgeContestPage() {
             Contest Entries
           </h2>
 
-          <Link href={`${basePath}/review-queue/${contestId}`}>
+          <Link href={`${basePath}/contest/${contestId}/review-queue`}>
             <Button variant="outline" size="sm" className="flex items-center gap-2">
               <Eye className="h-4 w-4" />
               Review Queue

@@ -17,9 +17,12 @@ export function getBasePath(user: any) {
     return username ? `/judge/${username}` : null;
   }
 
-  // ✅ KEEP YOUR EXISTING NAV STRUCTURE
-  if (role === 'admin' || role === 'super_admin' || role === 'developer') {
-    return `/admin/${roleRaw}`; // ← IMPORTANT: keep original role casing
+  if (
+    role === 'admin' ||
+    role === 'super_admin' ||
+    role === 'developer'
+  ) {
+    return `/admin/${roleRaw}`;
   }
 
   return null;
