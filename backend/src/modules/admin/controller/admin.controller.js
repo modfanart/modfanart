@@ -1,6 +1,5 @@
 // backend/src/controllers/admin.controller.js
 const { db } = require("../../../config"); // your Kysely instance
-const { logger } = require("../../../utils/logger");
 
 /**
  * GET /admin/stats
@@ -58,15 +57,13 @@ async function getPlatformStats(req, res) {
         activeJudges: Number(activeJudgesCount?.count ?? 0),
       },
     });
-  } catch (err) {
-    logger.error("getPlatformStats failed", {
-      error: err.message,
-      stack: err.stack,
-    });
-    res
-      .status(500)
-      .json({ success: false, error: "Failed to load platform statistics" });
-  }
+  }  catch (err) {
+  console.error("getPlatformStats error:", err); // 👈 add this
+  res.status(500).json({
+    success: false,
+    error: err.message || "Failed to load platform statistics",
+  });
+}
 }
 
 /**
@@ -156,7 +153,6 @@ async function getUsers(req, res) {
       },
     });
   } catch (err) {
-    logger.error("getUsers failed", { error: err.message });
     res.status(500).json({ success: false, error: "Failed to fetch users" });
   }
 }
@@ -203,7 +199,6 @@ async function updateUserStatus(req, res) {
 
     res.json({ success: true, data: updated });
   } catch (err) {
-    logger.error("updateUserStatus failed", { error: err.message });
     res
       .status(500)
       .json({ success: false, error: "Failed to update user status" });
@@ -233,10 +228,6 @@ async function deleteUser(req, res) {
       return res.status(404).json({ success: false, error: "User not found" });
     }
 
-    // Optional: prevent deleting other admins
-    // const adminRole = await db.selectFrom('roles').where('name', '=', 'admin').select('id').executeTakeFirst();
-    // if (user.role_id === adminRole?.id) { ... }
-
     await db
       .updateTable("users")
       .set({ deleted_at: db.fn("now"), updated_at: db.fn("now") })
@@ -245,7 +236,6 @@ async function deleteUser(req, res) {
 
     res.json({ success: true, message: "User has been soft-deleted" });
   } catch (err) {
-    logger.error("deleteUser failed", { error: err.message });
     res.status(500).json({ success: false, error: "Failed to delete user" });
   }
 }
@@ -281,7 +271,6 @@ async function getPendingBrandVerifications(req, res) {
 
     res.json({ success: true, data: brands });
   } catch (err) {
-    logger.error("getPendingBrandVerifications failed", err);
     res
       .status(500)
       .json({ success: false, error: "Failed to load pending verifications" });
@@ -304,7 +293,7 @@ async function verifyBrand(req, res) {
     const request = await db
       .selectFrom("brand_verification_requests")
       .select(["id", "status"])
-      .where("brand_id", "=", brandId) // assuming you added brand_id column
+      .where("brand_id", "=", brandId)
       .executeTakeFirst();
 
     if (!request || request.status !== "pending") {
@@ -339,7 +328,6 @@ async function verifyBrand(req, res) {
 
     res.json({ success: true, message: `Brand verification ${action}d` });
   } catch (err) {
-    logger.error("verifyBrand failed", err);
     res
       .status(500)
       .json({ success: false, error: "Failed to process verification" });
@@ -367,10 +355,11 @@ async function getModerationQueue(req, res) {
 
     res.json({ success: true, data: items });
   } catch (err) {
-    logger.error("getModerationQueue failed", err);
-    res
-      .status(500)
-      .json({ success: false, error: "Failed to load moderation queue" });
+    console.error("getModerationQueue failed:", err);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to load moderation queue",
+    });
   }
 }
 
@@ -386,12 +375,4 @@ module.exports = {
   getPendingBrandVerifications,
   verifyBrand,
   getModerationQueue,
-
-  // Add more later:
-  // getPendingContests,
-  // approveContest,
-  // getReports,
-  // banUserPermanently,
-  // impersonateUser,
-  // etc.
 };

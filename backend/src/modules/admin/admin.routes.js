@@ -2,9 +2,10 @@
 const express = require("express");
 const router = express.Router();
 const ctrl = require("./controller/admin.controller");
-const { protect, adminOnly } = require("../../common/middleware/auth");
-
-router.use(protect, adminOnly); // apply globally
+const {
+  authenticateToken,
+} = require("../../common/middleware/auth.middleware");
+router.use(authenticateToken); // apply globally
 
 router.get("/stats", ctrl.getPlatformStats);
 router.get("/users", ctrl.getUsers);

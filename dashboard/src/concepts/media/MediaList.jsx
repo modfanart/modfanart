@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { 
-  Plus, 
-  Image as ImageIcon, 
-  Video, 
-  FileText, 
+import {
+  Plus,
+  Image as ImageIcon,
+  Video,
+  FileText,
   MagnifyingGlass,
   Trash,
   Download,
@@ -38,13 +38,13 @@ const MediaPage = () => {
   const [deleteMedia] = useDeleteMediaMutation();
   const [updateMedia] = useUpdateMediaMutation();
 
-  const mediaItems = mediaData?.media || mediaData || [];
+  const mediaItems = mediaData?.data || mediaData || [];
 
   // Filter media
   const filteredMedia = mediaItems.filter(item => {
     const matchesSearch = item.filename?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.title?.toLowerCase().includes(searchTerm.toLowerCase());
-    
+      item.title?.toLowerCase().includes(searchTerm.toLowerCase());
+
     if (activeTab === 'all') return matchesSearch;
     if (activeTab === 'images') return matchesSearch && item.type?.startsWith('image');
     if (activeTab === 'videos') return matchesSearch && item.type?.startsWith('video');
@@ -87,9 +87,9 @@ const MediaPage = () => {
 
   return (
     <div className="min-h-screen bg-zinc-950">
-      <Header 
-        title="Media Library" 
-        subtitle="Upload and manage your images, videos, and documents" 
+      <Header
+        title="Media Library"
+        subtitle="Upload and manage your images, videos, and documents"
       />
 
       <div className="p-4 sm:p-6 space-y-6">
@@ -130,15 +130,15 @@ const MediaPage = () => {
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                 {filteredMedia.map((item) => (
-                  <Card 
-                    key={item.id} 
+                  <Card
+                    key={item.id}
                     className="bg-zinc-900 border-zinc-800 overflow-hidden cursor-pointer hover:border-zinc-700 transition-all group"
                     onClick={() => setSelectedMedia(item)}
                   >
                     <div className="aspect-square bg-zinc-950 relative flex items-center justify-center overflow-hidden">
                       {item.type?.startsWith('image') ? (
-                        <img 
-                          src={item.url} 
+                        <img
+                          src={item.url}
                           alt={item.filename}
                           className="w-full h-full object-cover"
                         />
@@ -222,8 +222,8 @@ const MediaPage = () => {
                 {/* Preview */}
                 <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-4 flex items-center justify-center min-h-[300px]">
                   {selectedMedia.type?.startsWith('image') ? (
-                    <img 
-                      src={selectedMedia.url} 
+                    <img
+                      src={selectedMedia.url}
                       alt={selectedMedia.filename}
                       className="max-h-[400px] object-contain rounded-lg"
                     />

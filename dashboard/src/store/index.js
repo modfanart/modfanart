@@ -18,7 +18,7 @@ import categoriesApi from '../services/api/categoryApi';
 import auditApi from '../services/api/auditApi';
 import artworkApi from '../services/api/artworkApi';
 import artworkTagsApi from '../services/api/artworkTagsApi';
-import brandApi from '../services/api/brands';
+import brandApi from '../services/api/brandApi';
 import { collectionsApi } from '../services/api/collectionApi';
 import mediaApi from '../services/api/mediaApi';
 import { searchApi } from '../services/api/searchApi';

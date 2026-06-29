@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { 
+import {
   PencilSimple,
   Trash,
   ShieldCheck,
@@ -27,7 +27,7 @@ import {
   useUpdateRoleMutation,
   useDeleteRoleMutation,
   useAssignRoleToUserMutation,
-} from '@/services/api/rolesApi';
+} from '../../services/api/rolesApi';
 
 import {
   useGetAllUsersQuery,
@@ -35,10 +35,10 @@ import {
   useDeleteUserMutation,
   useUpdateUserStatusMutation,
   useCreateUserMutation,
-} from '@/services/api/userApi';
+} from '../../services/api/userApi';
 
-import { UserFormModal } from '@/components/modals/UserFormModal';
-import { RolePermissionsModal } from '@/components/modals/RolePermissionsModal';
+import { UserFormModal } from '../../components/modals/UserFormModal';
+import { RolePermissionsModal } from '../../components/modals/RolePermissionsModal';
 
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'sonner';
@@ -207,17 +207,17 @@ export const UsersPage = () => {
                         <td className="p-4 text-right space-x-2">
                           {canManageUsers && (
                             <>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
+                              <Button
+                                variant="ghost"
+                                size="icon"
                                 onClick={() => setUserModal({ open: true, user })}
                               >
                                 <PencilSimple className="w-4 h-4" />
                               </Button>
 
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
+                              <Button
+                                variant="ghost"
+                                size="icon"
                                 className="text-red-500"
                                 onClick={() => setDeleteUserConfirm({ open: true, user })}
                               >
@@ -226,9 +226,9 @@ export const UsersPage = () => {
                             </>
                           )}
 
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => setSelectedUserForRole(user)}
                           >
                             Change Role
@@ -303,17 +303,17 @@ export const UsersPage = () => {
           <div className="space-y-4">
             <div>
               <Label>Role Name</Label>
-              <Input 
-                value={newRole.name} 
-                onChange={(e) => setNewRole(prev => ({ ...prev, name: e.target.value }))} 
+              <Input
+                value={newRole.name}
+                onChange={(e) => setNewRole(prev => ({ ...prev, name: e.target.value }))}
               />
             </div>
             <div>
               <Label>Hierarchy Level</Label>
-              <Input 
-                type="number" 
-                value={newRole.hierarchy_level} 
-                onChange={(e) => setNewRole(prev => ({ ...prev, hierarchy_level: +e.target.value }))} 
+              <Input
+                type="number"
+                value={newRole.hierarchy_level}
+                onChange={(e) => setNewRole(prev => ({ ...prev, hierarchy_level: +e.target.value }))}
               />
             </div>
           </div>

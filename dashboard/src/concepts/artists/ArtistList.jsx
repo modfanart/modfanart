@@ -1,30 +1,37 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { 
-  Plus, 
-  MagnifyingGlass, 
+import {
+  Plus,
+  MagnifyingGlass,
   Palette,
   PencilSimple,
   Trash,
   Clock,
 } from '@phosphor-icons/react';
+// RTK Query Imports
+import {
+  useGetAllRolesQuery,
+  useCreateRoleMutation,
+  useUpdateRoleMutation,
+  useDeleteRoleMutation,
+  useAssignRoleToUserMutation,
+} from '../../services/api/rolesApi';
 
 import { Header } from '../../components/layout/Header';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
 import { Badge } from '../../components/ui/badge';
-import { 
-  useGetUsersByRoleSlugQuery,  
-  useUpdateUserStatusMutation, 
-  useDeleteUserMutation 
-} from '../../services/api/userApi';
-import { UserFormModal } from '../../components/modals/UserFormModal'; // adjust path
 
 import {
+  useGetUsersByRoleSlugQuery,
+  useUpdateUserStatusMutation,
+  useDeleteUserMutation,
   useCreateUserMutation,
   useUpdateUserMutation,
 } from '../../services/api/userApi';
+
+import { UserFormModal } from '../../components/modals/UserFormModal';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -32,60 +39,59 @@ export const ArtistsList = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user: currentUser, hasRole } = useAuth();
+  const { data: rolesData = [] } = useGetAllRolesQuery();
+  const roles = rolesData || [];
+
   const [modalOpen, setModalOpen] = useState(false);
-const [selectedArtist, setSelectedArtist] = useState(null);
+  const [selectedArtist, setSelectedArtist] = useState(null);
 
-const [createUser, { isLoading: creating }] = useCreateUserMutation();
-const [updateUser, { isLoading: updating }] = useUpdateUserMutation();
-  const page = parseInt(searchParams.get('page') || '1');
-  const search = searchParams.get('search') || '';
-  const status = searchParams.get('status') || 'all';
-
+  const [createUser, { isLoading: creating }] = useCreateUserMutation();
+  const [updateUser, { isLoading: updating }] = useUpdateUserMutation();
   const [updateUserStatus] = useUpdateUserStatusMutation();
   const [deleteUser] = useDeleteUserMutation();
 
   const [deleteConfirm, setDeleteConfirm] = useState({ open: false, artist: null });
   const [suspendConfirm, setSuspendConfirm] = useState({ open: false, artist: null });
 
-// Permission check
-const canManageArtists = hasRole(['SUPER_ADMIN', 'ADMIN', 'DEVELOPER']);
+  const canManageArtists = hasRole(['SUPER_ADMIN', 'ADMIN', 'DEVELOPER']);
 
-// Hooks must ALWAYS run before any conditional return
-const queryArgs = useMemo(() => ({
-  roleSlug: 'ARTIST',
-  page,
-  limit: 15,
-  ...(search.trim() && { search: search.trim() }),
-  ...(status !== 'all' && { status }),
-}), [page, search, status]);
+  const page = parseInt(searchParams.get('page') || '1');
+  const search = searchParams.get('search') || '';
+  const status = searchParams.get('status') || 'all';
 
-const {
-  data,
-  isLoading,
-  isFetching,
-} = useGetUsersByRoleSlugQuery(queryArgs, {
-  skip: !canManageArtists,
-});
+  const queryArgs = useMemo(() => ({
+    roleSlug: 'ARTIST',
+    page,
+    limit: 15,
+    ...(search.trim() && { search: search.trim() }),
+    ...(status !== 'all' && { status }),
+  }), [page, search, status]);
 
-// Now it's safe to conditionally return
-if (!canManageArtists) {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-950">
-      <div className="text-center">
-        <p className="text-red-400 text-xl">Access Denied</p>
-        <p className="text-zinc-500 mt-2">
-          You don't have permission to manage artists.
-        </p>
+  const {
+    data,
+    isLoading,
+    isFetching,
+  } = useGetUsersByRoleSlugQuery(queryArgs, {
+    skip: !canManageArtists,
+  });
+
+  if (!canManageArtists) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-zinc-950">
+        <div className="text-center">
+          <p className="text-red-400 text-xl">Access Denied</p>
+          <p className="text-zinc-500 mt-2">You don't have permission to manage artists.</p>
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
+
   const artists = data?.users ?? [];
   const pagination = data?.pagination;
 
   const updateQuery = (updates) => {
     const params = new URLSearchParams(searchParams);
-    
+
     Object.entries(updates).forEach(([key, value]) => {
       if (value === null || value === '') {
         params.delete(key);
@@ -94,7 +100,6 @@ if (!canManageArtists) {
       }
     });
 
-    // Reset to page 1 when searching or filtering
     if ('search' in updates || 'status' in updates) {
       params.set('page', '1');
     }
@@ -134,24 +139,35 @@ if (!canManageArtists) {
   const getInitials = (username) => {
     return username ? username.slice(0, 2).toUpperCase() : '??';
   };
-const openCreate = () => {
-  setSelectedArtist(null);
-  setModalOpen(true);
-};
-const handleSave = async (payload) => {
-  if (selectedArtist) {
-    await updateUser({
-      userId: selectedArtist.id,
-      ...payload,
-    }).unwrap();
-    toast.success('Artist updated');
-  } else {
-    await createUser(payload).unwrap();
-    toast.success('Artist invited');
-  }
 
-  setModalOpen(false);
-};
+  const openCreate = () => {
+    setSelectedArtist(null);
+    setModalOpen(true);
+  };
+
+  const openEdit = (artist) => {
+    setSelectedArtist(artist);
+    setModalOpen(true);
+  };
+
+  const handleSave = async (payload) => {
+    try {
+      if (selectedArtist) {
+        await updateUser({
+          userId: selectedArtist.id,
+          ...payload,
+        }).unwrap();
+        toast.success('Artist updated successfully');
+      } else {
+        await createUser(payload).unwrap();
+        toast.success('Artist invited successfully');
+      }
+      setModalOpen(false);
+    } catch (error) {
+      toast.error(error?.data?.message || 'Operation failed');
+    }
+  };
+
   return (
     <div className="min-h-screen" data-testid="artists-admin-page">
       <Header title="Artists" subtitle={`${artists.length} total artists`} />
@@ -182,7 +198,7 @@ const handleSave = async (payload) => {
               <option value="deactivated">Deactivated</option>
             </select>
 
-            <Button >
+            <Button onClick={openCreate}>
               <Plus className="w-4 h-4 mr-2" />
               Invite Artist
             </Button>
@@ -198,10 +214,10 @@ const handleSave = async (payload) => {
           <div className="flex flex-col items-center justify-center h-64 text-center bg-zinc-900 border border-zinc-800 rounded-xl">
             <Palette weight="duotone" className="w-16 h-16 text-zinc-600 mb-4" />
             <p className="text-zinc-400 text-lg">No artists found</p>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="mt-6"
-          onClick={openCreate}
+              onClick={openCreate}
             >
               Invite First Artist
             </Button>
@@ -209,8 +225,8 @@ const handleSave = async (payload) => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {artists.map((artist) => (
-              <div 
-                key={artist.id} 
+              <div
+                key={artist.id}
                 className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 hover:border-zinc-700 transition-all"
               >
                 <div className="flex justify-between items-start mb-5">
@@ -228,7 +244,7 @@ const handleSave = async (payload) => {
                     )}
 
                     <div>
-                      <div 
+                      <div
                         onClick={() => navigate(`/artist/${artist.id}`)}
                         className="font-semibold text-white hover:underline cursor-pointer"
                       >
@@ -245,12 +261,11 @@ const handleSave = async (payload) => {
 
                 <div className="flex items-center gap-2 text-xs text-zinc-500 mb-6">
                   <Clock className="w-4 h-4" />
-                  Joined {artist.created_at 
+                  Joined {artist.created_at
                     ? new Intl.DateTimeFormat('en', { month: 'short', year: 'numeric' }).format(new Date(artist.created_at))
                     : '—'}
                 </div>
 
-                {/* Action Buttons */}
                 <div className="grid grid-cols-2 gap-2">
                   <Button
                     variant="ghost"
@@ -262,10 +277,7 @@ const handleSave = async (payload) => {
                   <Button
                     variant="ghost"
                     size="sm"
-                 onClick={() => {
-  setSelectedArtist(artist);
-  setModalOpen(true);
-}}
+                    onClick={() => openEdit(artist)}
                   >
                     <PencilSimple className="w-4 h-4 mr-1" />
                     Edit
@@ -320,8 +332,7 @@ const handleSave = async (payload) => {
         )}
       </div>
 
-      {/* Delete & Suspend Dialogs */}
-      {/* (Kept same as before - cleaned up slightly) */}
+      {/* Delete & Suspend Confirmations */}
       <Dialog open={deleteConfirm.open} onOpenChange={() => setDeleteConfirm({ open: false, artist: null })}>
         <DialogContent className="bg-zinc-900 border-zinc-800">
           <DialogHeader>
@@ -353,8 +364,8 @@ const handleSave = async (payload) => {
             <Button variant="outline" onClick={() => setSuspendConfirm({ open: false, artist: null })}>
               Cancel
             </Button>
-            <Button 
-              className="bg-amber-600 hover:bg-amber-700" 
+            <Button
+              className="bg-amber-600 hover:bg-amber-700"
               onClick={() => {
                 handleSuspend(suspendConfirm.artist);
                 setSuspendConfirm({ open: false, artist: null });
@@ -365,14 +376,17 @@ const handleSave = async (payload) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Artist Form Modal - Restricted to ARTIST role */}
       <UserFormModal
-  open={modalOpen}
-  user={selectedArtist}
-  roles={[]} // optionally pass ARTIST role only or fetch roles
-  onClose={() => setModalOpen(false)}
-  onSave={handleSave}
-  isLoading={creating || updating}
-/>
+        open={modalOpen}
+        user={selectedArtist}
+        roles={roles}                  // We'll handle role inside the modal or pass ARTIST
+        onClose={() => setModalOpen(false)}
+        onSave={handleSave}
+        isLoading={creating || updating}
+        defaultRole="ARTIST"          // New prop we'll use
+      />
     </div>
   );
 };

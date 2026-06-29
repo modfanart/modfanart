@@ -11,12 +11,19 @@ import {
 } from '@/components/ui/accordion';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, XCircle, AlertTriangle, Info, Download, ExternalLink } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, Info, Download, ExternalLink, Upload } from 'lucide-react';
+import creatingCompliantImg from '@/assets/images/guidelines/creating-compliant-fan-art.jpeg';
+import characterImg from '@/assets/images/guidelines/character-guidelines.jpeg';
+import logosTrademarksImg from '@/assets/images/guidelines/logos-trademarks-guidelines.jpeg';
+import worldsSettingsImg from '@/assets/images/guidelines/worlds-settings-guidelines.jpeg';
+import storiesPlotsImg from '@/assets/images/guidelines/stories-plots-guidelines.jpeg';
 
 export const metadata = {
   title: 'Brand Guidelines | MOD Platform',
   description: 'Guidelines for submitting fan art that complies with IP holder requirements',
 };
+
+const PDF_URL = "/pdfs/FanArtistGuidelines.pdf";
 
 export default function BrandGuidelinesPage() {
   return (
@@ -57,12 +64,13 @@ export default function BrandGuidelinesPage() {
               </Alert>
             </div>
             <div className="flex items-center justify-center">
-              <div className="relative h-[300px] w-full max-w-md rounded-lg overflow-hidden">
+              <div className="w-full max-w-md rounded-lg overflow-hidden">
                 <Image
-                  src="/placeholder.svg?height=600&width=800&text=Brand+Guidelines"
+                  src={creatingCompliantImg}
                   alt="Brand Guidelines Illustration"
-                  fill
-                  className="object-cover"
+                  placeholder="blur"
+                  sizes="(min-width: 1024px) 28rem, 100vw"
+                  className="w-full h-auto"
                 />
               </div>
             </div>
@@ -225,12 +233,13 @@ export default function BrandGuidelinesPage() {
                   </ul>
                 </div>
                 <div className="flex flex-col space-y-4">
-                  <div className="relative h-[200px] rounded-lg overflow-hidden">
+                  <div className="rounded-lg overflow-hidden">
                     <Image
-                      src="/placeholder.svg?height=400&width=600&text=Character+Example"
+                      src={characterImg}
                       alt="Character Fan Art Example"
-                      fill
-                      className="object-cover"
+                      placeholder="blur"
+                      sizes="(min-width: 1024px) 50vw, 100vw"
+                      className="w-full h-auto"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
@@ -295,12 +304,13 @@ export default function BrandGuidelinesPage() {
                   </ul>
                 </div>
                 <div className="flex flex-col space-y-4">
-                  <div className="relative h-[200px] rounded-lg overflow-hidden">
+                  <div className="rounded-lg overflow-hidden">
                     <Image
-                      src="/placeholder.svg?height=400&width=600&text=Logo+Example"
+                      src={logosTrademarksImg}
                       alt="Logo Fan Art Example"
-                      fill
-                      className="object-cover"
+                      placeholder="blur"
+                      sizes="(min-width: 1024px) 50vw, 100vw"
+                      className="w-full h-auto"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
@@ -365,12 +375,13 @@ export default function BrandGuidelinesPage() {
                   </ul>
                 </div>
                 <div className="flex flex-col space-y-4">
-                  <div className="relative h-[200px] rounded-lg overflow-hidden">
+                  <div className="rounded-lg overflow-hidden">
                     <Image
-                      src="/placeholder.svg?height=400&width=600&text=World+Example"
+                      src={worldsSettingsImg}
                       alt="World Setting Fan Art Example"
-                      fill
-                      className="object-cover"
+                      placeholder="blur"
+                      sizes="(min-width: 1024px) 50vw, 100vw"
+                      className="w-full h-auto"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
@@ -435,12 +446,13 @@ export default function BrandGuidelinesPage() {
                   </ul>
                 </div>
                 <div className="flex flex-col space-y-4">
-                  <div className="relative h-[200px] rounded-lg overflow-hidden">
+                  <div className="rounded-lg overflow-hidden">
                     <Image
-                      src="/placeholder.svg?height=400&width=600&text=Story+Example"
+                      src={storiesPlotsImg}
                       alt="Story Fan Art Example"
-                      fill
-                      className="object-cover"
+                      placeholder="blur"
+                      sizes="(min-width: 1024px) 50vw, 100vw"
+                      className="w-full h-auto"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
@@ -590,7 +602,7 @@ export default function BrandGuidelinesPage() {
         </section>
 
         {/* Specific IP Guidelines */}
-        <section>
+        {/* <section>
           <h2 className="text-2xl font-bold mb-6">Popular IP-Specific Guidelines</h2>
           <p className="mb-6">
             Many major IP holders have published their own fan art guidelines. Here are links to
@@ -710,7 +722,7 @@ export default function BrandGuidelinesPage() {
               </AlertDescription>
             </Alert>
           </div>
-        </section>
+        </section> */}
 
         {/* Submission Process */}
         <section>
@@ -861,13 +873,15 @@ export default function BrandGuidelinesPage() {
                 <p className="text-sm text-muted-foreground mb-4">
                   Download our comprehensive fan art guidelines PDF for offline reference.
                 </p>
-                <Button variant="outline" className="w-full">
-                  <Download className="mr-2 h-4 w-4" />
-                  Download PDF
-                </Button>
+                <a href={PDF_URL} download>
+                  <Button variant="outline" className="w-full">
+                    <Download className="mr-2 h-4 w-4" />
+                    Download PDF
+                  </Button>
+                </a>
               </CardContent>
             </Card>
-            <Card>
+            {/* <Card>
               <CardHeader>
                 <CardTitle>Video Tutorials</CardTitle>
               </CardHeader>
@@ -880,7 +894,7 @@ export default function BrandGuidelinesPage() {
                   <Link href="/resources/tutorials">View Tutorials</Link>
                 </Button>
               </CardContent>
-            </Card>
+            </Card> */}
             <Card>
               <CardHeader>
                 <CardTitle>Artist Community</CardTitle>
@@ -891,7 +905,13 @@ export default function BrandGuidelinesPage() {
                   other.
                 </p>
                 <Button variant="outline" className="w-full" asChild>
-                  <Link href="/community">Join Community</Link>
+                  <a
+                    href="https://discord.gg/St9XvnZT8h"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Join Community
+                  </a>
                 </Button>
               </CardContent>
             </Card>
@@ -977,27 +997,50 @@ export default function BrandGuidelinesPage() {
         </section>
 
         {/* CTA */}
-        <section className="bg-[#9747ff] text-white rounded-lg p-8 text-center">
-          <h2 className="text-3xl font-bold mb-4">Ready to Submit Your Fan Art?</h2>
-          <p className="text-xl mb-6 max-w-2xl mx-auto">
-            Join thousands of artists who are legally licensing their fan art and earning royalties
-            through the MOD Platform.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/submissions/new">
-              <Button size="lg" className="bg-white text-[#9747ff] hover:bg-gray-100">
-                Submit Your Fan Art
-              </Button>
-            </Link>
-            <Link href="/signup">
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-white text-white hover:bg-white/10"
-              >
-                Create an Account
-              </Button>
-            </Link>
+        <section className="py-10">
+          <div className="relative rounded-3xl overflow-hidden bg-black text-white text-center py-16 px-8">
+            {/* purple glow */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="w-72 h-40 bg-purple-600 blur-[80px] opacity-60 rounded-full" />
+            </div>
+
+            <div className="relative z-10">
+              <h2 className="text-4xl md:text-5xl font-black leading-tight">
+                READY TO SUBMIT
+                <br />
+                YOUR FAN ART?
+              </h2>
+              <p className="mt-5 text-sm text-gray-300 max-w-xl mx-auto">
+                Join thousands of artists who are legally licensing their fan art and earning
+                royalties through the MOD Platform.
+              </p>
+
+              <div className="mt-6 flex flex-wrap justify-center gap-3">
+                {['Read the guidelines', 'Prepare your submission', 'Submit with confidence'].map(
+                  (t, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-2 bg-white/10 rounded-full px-5 py-2 text-xs font-medium hover:bg-white/20 transition-colors"
+                    >
+                      <CheckCircle size={13} className="text-purple-400" /> {t}
+                    </div>
+                  ),
+                )}
+              </div>
+
+              <div className="mt-7 flex flex-col sm:flex-row items-center justify-center gap-3">
+                <Link href="/submissions/new">
+                  <Button className="bg-purple-600 hover:bg-purple-700 rounded-full px-8 flex items-center gap-2">
+                    <Upload size={15} /> Submit Your Fan Art
+                  </Button>
+                </Link>
+                <Link href="/signup">
+                  <Button variant="outline" className="text-black rounded-full px-8">
+                    Create an Account
+                  </Button>
+                </Link>
+              </div>
+            </div>
           </div>
         </section>
       </div>

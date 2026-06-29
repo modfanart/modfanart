@@ -11,24 +11,15 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue
+  SelectValue,
 } from '../../components/ui/select';
 
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '../../components/ui/dialog';
-
-import {
   useGetContestsQuery,
-  useCreateContestMutation,
-  useUpdateContestMutation,
   useDeleteContestMutation,
-} from '@/services/api/contestsApi';
+  useUpdateContestMutation,
+} from '../../services/api/contestsApi';
 
-// -------------------- STATUS --------------------
 const statusOptions = [
   { value: 'all', label: 'All Status' },
   { value: 'draft', label: 'Draft' },
@@ -37,93 +28,31 @@ const statusOptions = [
   { value: 'completed', label: 'Completed' },
 ];
 
-const StatusBadge = ({ status }) => {
-  const statusClasses = {
-    draft: 'status-pending',
-    live: 'status-in_progress',
-    judging: 'status-ready',
-    completed: 'status-completed',
-  };
-
-  return (
-    <span className={`badge ${statusClasses[status] || ''}`}>
-      {status}
-    </span>
-  );
-};
-
 // -------------------- MAIN PAGE --------------------
 export const OpportunitiesPage = () => {
   const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState('all');
 
-  // modal states
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingContest, setEditingContest] = useState(null);
-
-  // form state
-  const [form, setForm] = useState({
-    title: '',
-    status: 'draft',
-  });
-
   const { data, isLoading } = useGetContestsQuery({ limit: 50 });
-
-  const [createContest] = useCreateContestMutation();
-  const [updateContest] = useUpdateContestMutation();
   const [deleteContest] = useDeleteContestMutation();
+  const [updateContest] = useUpdateContestMutation();
 
   const contests = data?.contests ?? [];
 
   // -------------------- FILTER --------------------
   const opportunities = useMemo(() => {
     if (statusFilter === 'all') return contests;
-    return contests.filter(c => c.status === statusFilter);
+    return contests.filter((c) => c.status === statusFilter);
   }, [contests, statusFilter]);
 
-  // -------------------- MODAL HANDLERS --------------------
-  const openCreateModal = () => {
-    setEditingContest(null);
-    setForm({ title: '', status: 'draft' });
-    setIsModalOpen(true);
-  };
-
-  const openEditModal = (contest) => {
-    setEditingContest(contest);
-    setForm({
-      title: contest.title,
-      status: contest.status,
-    });
-    setIsModalOpen(true);
-  };
-
-  const handleSubmit = async () => {
-    try {
-      if (editingContest) {
-        await updateContest({
-          id: editingContest.id,
-          ...form,
-        });
-      } else {
-        await createContest(form);
-      }
-
-      setIsModalOpen(false);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
+  // -------------------- HANDLERS --------------------
   const handleDelete = async (id) => {
     if (!confirm('Delete this contest?')) return;
     await deleteContest(id);
   };
 
   const handleStatusChange = async (id, status) => {
-    await updateContest({
-      id,
-      status,
-    });
+    await updateContest({ id, status });
   };
 
   return (
@@ -134,7 +63,6 @@ export const OpportunitiesPage = () => {
       />
 
       <div className="p-4 sm:p-6 space-y-6">
-
         {/* TOP ACTIONS */}
         <div className="flex justify-between items-center">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -142,7 +70,7 @@ export const OpportunitiesPage = () => {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {statusOptions.map(opt => (
+              {statusOptions.map((opt) => (
                 <SelectItem key={opt.value} value={opt.value}>
                   {opt.label}
                 </SelectItem>
@@ -150,7 +78,8 @@ export const OpportunitiesPage = () => {
             </SelectContent>
           </Select>
 
-          <Button onClick={openCreateModal}>
+          {/* Updated: Navigate to full form page */}
+          <Button onClick={() => navigate('/opportunity/add')}>
             <Plus className="w-4 h-4 mr-2" />
             Create Contest
           </Button>
@@ -179,7 +108,7 @@ export const OpportunitiesPage = () => {
               </thead>
 
               <tbody>
-                {opportunities.map(contest => (
+                {opportunities.map((contest) => (
                   <tr key={contest.id}>
                     <td className="text-white">{contest.title}</td>
 
@@ -187,17 +116,15 @@ export const OpportunitiesPage = () => {
                     <td>
                       <Select
                         value={contest.status}
-                        onValueChange={(val) =>
-                          handleStatusChange(contest.id, val)
-                        }
+                        onValueChange={(val) => handleStatusChange(contest.id, val)}
                       >
                         <SelectTrigger className="w-32">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           {statusOptions
-                            .filter(s => s.value !== 'all')
-                            .map(s => (
+                            .filter((s) => s.value !== 'all')
+                            .map((s) => (
                               <SelectItem key={s.value} value={s.value}>
                                 {s.label}
                               </SelectItem>
@@ -220,10 +147,11 @@ export const OpportunitiesPage = () => {
                         <Eye className="w-4 h-4" />
                       </Button>
 
+                      {/* Updated: Navigate to Edit Form Page */}
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => openEditModal(contest)}
+                        onClick={() => navigate(`/opportunity/${contest.id}/edit`)}
                       >
                         <PencilSimple className="w-4 h-4" />
                       </Button>
@@ -243,53 +171,6 @@ export const OpportunitiesPage = () => {
           )}
         </div>
       </div>
-
-      {/* CREATE / EDIT MODAL */}
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="bg-zinc-900 border border-zinc-800">
-          <DialogHeader>
-            <DialogTitle>
-              {editingContest ? 'Edit Contest' : 'Create Contest'}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4 mt-4">
-
-            <input
-              className="w-full p-2 bg-zinc-800 border border-zinc-700 rounded"
-              placeholder="Title"
-              value={form.title}
-              onChange={(e) =>
-                setForm({ ...form, title: e.target.value })
-              }
-            />
-
-            <Select
-              value={form.status}
-              onValueChange={(val) =>
-                setForm({ ...form, status: val })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {statusOptions
-                  .filter(s => s.value !== 'all')
-                  .map(s => (
-                    <SelectItem key={s.value} value={s.value}>
-                      {s.label}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-
-            <Button className="w-full" onClick={handleSubmit}>
-              {editingContest ? 'Update Contest' : 'Create Contest'}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

@@ -8,7 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Trash, PencilSimple, ShieldCheck, Check, MagnifyingGlass } from '@phosphor-icons/react';
-import { useUpdateRoleMutation } from '@/services/api/rolesApi';
+import { useUpdateRoleMutation } from '../../services/api/rolesApi';
 import { toast } from 'sonner';
 
 
@@ -45,7 +45,7 @@ export const RolePermissionsModal = ({
   const toggleModule = (module, permissionsByModule) => {
     const modulePerms = permissionsByModule[module] || [];
     const moduleIds = modulePerms.map((p) => p.id);
-    
+
     const allSelected = moduleIds.every(id => selectedPermissions.includes(id));
 
     if (allSelected) {
@@ -94,7 +94,7 @@ export const RolePermissionsModal = ({
     return (
       module.toLowerCase().includes(term) ||
       permissionsByModule[module].some((p) =>
-        p.name.toLowerCase().includes(term) || 
+        p.name.toLowerCase().includes(term) ||
         (p.description || '').toLowerCase().includes(term)
       )
     );

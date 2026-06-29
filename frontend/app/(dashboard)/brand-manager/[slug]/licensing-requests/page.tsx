@@ -113,7 +113,7 @@ export default function LicenseRequestsPage() {
       className="cursor-pointer hover:shadow-md"
       onClick={() => handleOpenDetails(request)}
     >
-      {/* ... your card content (unchanged) ... */}
+   
       <CardHeader className="flex justify-between">
         <div className="flex gap-3">
           <Avatar>

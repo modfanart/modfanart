@@ -329,7 +329,7 @@ export default function ProductDetail({ product, relatedProducts }: ProductDetai
                   The design was created by {product.artist} and is protected under copyright law.
                 </p>
                 <p>A portion of each sale goes to the original IP holder and the artist.</p>
-                <p>For licensing inquiries, please contact licensing@modplatform.com</p>
+                <p>For licensing inquiries, please contact support@modfanofficial.com</p>
               </TabsContent>
             </Tabs>
           </div>

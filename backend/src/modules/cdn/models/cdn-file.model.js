@@ -1,6 +1,6 @@
 // src/models/cdnFile.model.js
-const { db, sql } = require("../../../config");
-
+const { db} = require("../../../config");
+const { sql } = require("kysely");
 class CDNFile {
   static async create({
     original_name,
