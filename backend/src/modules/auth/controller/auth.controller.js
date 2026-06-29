@@ -22,7 +22,7 @@ const { db } = require("../../../config");
 const EmailService = require("../../../common/emails/email.service");
 
 const ACCOUNT_TYPE_ROLE_NAMES = {
-  fan: ["fan", "user"],
+  fan: ["fan", "DEFAULT_USER", "default_user", "user"],
   artist: ["Artist", "artist", "creator", "user"],
   brand: [
     "Brand",
