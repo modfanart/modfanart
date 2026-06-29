@@ -13,12 +13,13 @@ class ContestJudgeScore {
         comments,
         created_at: sql`NOW()`,
       })
-      .onConflict(['entry_id', 'judge_id'])
-      .doUpdateSet({
-        score,
-        comments,
-        created_at: sql`NOW()`,
-      })
+.onConflict((oc) =>
+  oc.columns(['entry_id', 'judge_id']).doUpdateSet({
+    score,
+    comments,
+    created_at: sql`NOW()`,
+  })
+)
       .returningAll()
       .executeTakeFirst();
   }

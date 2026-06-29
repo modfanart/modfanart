@@ -28,6 +28,7 @@ const nextConfig = {
       { protocol: 'https', hostname: 'wallpapercave.com' },
       { protocol: 'https', hostname: 'i.pinimg.com' },
       { protocol: 'https', hostname: 'res.cloudinary.com' },
+            { protocol: 'https', hostname: 'media.modfanofficial.com' },
     ],
   },
 };
