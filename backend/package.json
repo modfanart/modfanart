@@ -26,6 +26,7 @@
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "express-rate-limit": "^8.2.1",
+    "firebase-admin": "^14.0.0",
     "jsonwebtoken": "^9.0.3",
     "kysely": "^0.28.9",
     "module-alias": "^2.3.4",

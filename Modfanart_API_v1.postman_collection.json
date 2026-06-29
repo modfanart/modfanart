@@ -1,0 +1,1535 @@
+{
+  "info": {
+    "name": "Modfanart API v1",
+    "_postman_id": "modfanart-api-v1-collection",
+    "description": "Backend v1 (Express.js, port 5000). Auth via Firebase — get an ID token from Firebase SDK on the client, paste into the {{firebase_token}} collection variable. All protected routes inherit bearer auth automatically.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:5000", "type": "string" },
+    { "key": "firebase_token", "value": "", "type": "string" },
+    { "key": "user_id", "value": "", "type": "string" },
+    { "key": "artwork_id", "value": "", "type": "string" },
+    { "key": "brand_id", "value": "", "type": "string" },
+    { "key": "contest_id", "value": "", "type": "string" },
+    { "key": "collection_id", "value": "", "type": "string" },
+    { "key": "order_id", "value": "", "type": "string" },
+    { "key": "license_id", "value": "", "type": "string" },
+    { "key": "notification_id", "value": "", "type": "string" },
+    { "key": "project_id", "value": "", "type": "string" },
+    { "key": "task_id", "value": "", "type": "string" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{firebase_token}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Sync Firebase user",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/auth/sync", "host": ["{{base_url}}"], "path": ["api", "auth", "sync"] },
+            "description": "Call after every Firebase sign-in. Finds or creates the user record in our DB. Returns user profile with role + brands. Pass Firebase ID token as Bearer."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Get current user (me)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/users/me", "host": ["{{base_url}}"], "path": ["api", "users", "me"] }
+          }
+        },
+        {
+          "name": "Update my profile",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bio\": \"Digital artist from NYC\",\n  \"website\": \"https://example.com\",\n  \"social_links\": { \"instagram\": \"@handle\" }\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/users/me", "host": ["{{base_url}}"], "path": ["api", "users", "me"] }
+          }
+        },
+        {
+          "name": "Change password",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"current_password\": \"oldpass123\",\n  \"new_password\": \"newpass456\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/users/me/password", "host": ["{{base_url}}"], "path": ["api", "users", "me", "password"] }
+          }
+        },
+        {
+          "name": "Upload avatar",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "avatar", "type": "file", "src": "" }]
+            },
+            "url": { "raw": "{{base_url}}/api/users/me/avatar", "host": ["{{base_url}}"], "path": ["api", "users", "me", "avatar"] }
+          }
+        },
+        {
+          "name": "Remove avatar",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/users/me/avatar", "host": ["{{base_url}}"], "path": ["api", "users", "me", "avatar"] }
+          }
+        },
+        {
+          "name": "Get my brands",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/users/me/brands", "host": ["{{base_url}}"], "path": ["api", "users", "me", "brands"] }
+          }
+        },
+        {
+          "name": "Get user by username",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/users/by-username/johndoe", "host": ["{{base_url}}"], "path": ["api", "users", "by-username", "johndoe"] }
+          }
+        },
+        {
+          "name": "Get users by role",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/users/by-role/artist", "host": ["{{base_url}}"], "path": ["api", "users", "by-role", "artist"] }
+          }
+        },
+        {
+          "name": "Get all users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/users/all", "host": ["{{base_url}}"], "path": ["api", "users", "all"] }
+          }
+        },
+        {
+          "name": "Create user (admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"newuser\",\n  \"email\": \"newuser@example.com\",\n  \"password\": \"password123\",\n  \"role_id\": \"<role_uuid>\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/users/create", "host": ["{{base_url}}"], "path": ["api", "users", "create"] }
+          }
+        },
+        {
+          "name": "Get user by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/users/{{user_id}}", "host": ["{{base_url}}"], "path": ["api", "users", "{{user_id}}"] }
+          }
+        },
+        {
+          "name": "Update user status",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"active\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/users/{{user_id}}/status", "host": ["{{base_url}}"], "path": ["api", "users", "{{user_id}}", "status"] }
+          }
+        },
+        {
+          "name": "Update user",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"updatedname\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/users/{{user_id}}", "host": ["{{base_url}}"], "path": ["api", "users", "{{user_id}}"] }
+          }
+        },
+        {
+          "name": "Delete user",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/users/{{user_id}}", "host": ["{{base_url}}"], "path": ["api", "users", "{{user_id}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Artworks",
+      "item": [
+        {
+          "name": "List artworks",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/artwork?limit=20&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "artwork"],
+              "query": [
+                { "key": "limit", "value": "20" },
+                { "key": "offset", "value": "0" },
+                { "key": "category", "value": "", "disabled": true },
+                { "key": "sort", "value": "newest", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get my artworks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/artwork/me", "host": ["{{base_url}}"], "path": ["api", "artwork", "me"] }
+          }
+        },
+        {
+          "name": "Get artworks by creator",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/artwork/by-creator/{{user_id}}", "host": ["{{base_url}}"], "path": ["api", "artwork", "by-creator", "{{user_id}}"] }
+          }
+        },
+        {
+          "name": "Get artwork by ID",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/artwork/{{artwork_id}}", "host": ["{{base_url}}"], "path": ["api", "artwork", "{{artwork_id}}"] }
+          }
+        },
+        {
+          "name": "Create artwork",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file", "src": "" },
+                { "key": "title", "value": "My Artwork", "type": "text" },
+                { "key": "description", "value": "A cool piece", "type": "text" },
+                { "key": "tags", "value": "fanart,digital", "type": "text" }
+              ]
+            },
+            "url": { "raw": "{{base_url}}/api/artwork", "host": ["{{base_url}}"], "path": ["api", "artwork"] }
+          }
+        },
+        {
+          "name": "Publish artwork",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/artwork/{{artwork_id}}/publish", "host": ["{{base_url}}"], "path": ["api", "artwork", "{{artwork_id}}", "publish"] }
+          }
+        },
+        {
+          "name": "Delete artwork",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/artwork/{{artwork_id}}", "host": ["{{base_url}}"], "path": ["api", "artwork", "{{artwork_id}}"] }
+          }
+        },
+        {
+          "name": "Get artwork categories",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/artwork/{{artwork_id}}/categories", "host": ["{{base_url}}"], "path": ["api", "artwork", "{{artwork_id}}", "categories"] }
+          }
+        },
+        {
+          "name": "Add category to artwork",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category_id\": \"<category_uuid>\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/artwork/{{artwork_id}}/categories", "host": ["{{base_url}}"], "path": ["api", "artwork", "{{artwork_id}}", "categories"] }
+          }
+        },
+        {
+          "name": "Remove category from artwork",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/artwork/{{artwork_id}}/categories/<category_id>", "host": ["{{base_url}}"], "path": ["api", "artwork", "{{artwork_id}}", "categories", "<category_id>"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Categories",
+      "item": [
+        {
+          "name": "List all categories",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/category", "host": ["{{base_url}}"], "path": ["api", "category"] }
+          }
+        },
+        {
+          "name": "Get category by ID or slug",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/category/<identifier>", "host": ["{{base_url}}"], "path": ["api", "category", "<identifier>"] }
+          }
+        },
+        {
+          "name": "Get category by slug",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/category/slug/fan-art", "host": ["{{base_url}}"], "path": ["api", "category", "slug", "fan-art"] }
+          }
+        },
+        {
+          "name": "Create category",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Fan Art\",\n  \"slug\": \"fan-art\",\n  \"description\": \"Fan-made artwork\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/category", "host": ["{{base_url}}"], "path": ["api", "category"] }
+          }
+        },
+        {
+          "name": "Update category",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Name\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/category/<id>", "host": ["{{base_url}}"], "path": ["api", "category", "<id>"] }
+          }
+        },
+        {
+          "name": "Delete category",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/category/<id>", "host": ["{{base_url}}"], "path": ["api", "category", "<id>"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Brands",
+      "item": [
+        {
+          "name": "List brands",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/brands?limit=20&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "brands"],
+              "query": [
+                { "key": "limit", "value": "20" },
+                { "key": "offset", "value": "0" },
+                { "key": "search", "value": "", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get brand by ID",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/brands/{{brand_id}}", "host": ["{{base_url}}"], "path": ["api", "brands", "{{brand_id}}"] }
+          }
+        },
+        {
+          "name": "Get brand by slug",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/brands/slug/my-brand", "host": ["{{base_url}}"], "path": ["api", "brands", "slug", "my-brand"] }
+          }
+        },
+        {
+          "name": "Get brand artworks",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/brands/{{brand_id}}/artworks", "host": ["{{base_url}}"], "path": ["api", "brands", "{{brand_id}}", "artworks"] }
+          }
+        },
+        {
+          "name": "Get brand posts",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/brands/{{brand_id}}/posts", "host": ["{{base_url}}"], "path": ["api", "brands", "{{brand_id}}", "posts"] }
+          }
+        },
+        {
+          "name": "Get brand post",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/brands/{{brand_id}}/posts/<post_id>", "host": ["{{base_url}}"], "path": ["api", "brands", "{{brand_id}}", "posts", "<post_id>"] }
+          }
+        },
+        {
+          "name": "Get post comments",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/brands/{{brand_id}}/posts/<post_id>/comments", "host": ["{{base_url}}"], "path": ["api", "brands", "{{brand_id}}", "posts", "<post_id>", "comments"] }
+          }
+        },
+        {
+          "name": "Increment brand view",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/brands/{{brand_id}}/view", "host": ["{{base_url}}"], "path": ["api", "brands", "{{brand_id}}", "view"] }
+          }
+        },
+        {
+          "name": "Get brand managers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/brands/{{brand_id}}/managers", "host": ["{{base_url}}"], "path": ["api", "brands", "{{brand_id}}", "managers"] }
+          }
+        },
+        {
+          "name": "Assign brand manager",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": \"<user_uuid>\",\n  \"role\": \"manager\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/brands/{{brand_id}}/managers", "host": ["{{base_url}}"], "path": ["api", "brands", "{{brand_id}}", "managers"] }
+          }
+        },
+        {
+          "name": "Submit verification request",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"brand_id\": \"{{brand_id}}\",\n  \"message\": \"Please verify our brand\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/brands/verification-requests", "host": ["{{base_url}}"], "path": ["api", "brands", "verification-requests"] }
+          }
+        },
+        {
+          "name": "Follow brand",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/brands/{{brand_id}}/follow", "host": ["{{base_url}}"], "path": ["api", "brands", "{{brand_id}}", "follow"] }
+          }
+        },
+        {
+          "name": "Unfollow brand",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/brands/{{brand_id}}/follow", "host": ["{{base_url}}"], "path": ["api", "brands", "{{brand_id}}", "follow"] }
+          }
+        },
+        {
+          "name": "Check if following",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/brands/{{brand_id}}/is-following", "host": ["{{base_url}}"], "path": ["api", "brands", "{{brand_id}}", "is-following"] }
+          }
+        },
+        {
+          "name": "Like post",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/brands/{{brand_id}}/posts/<post_id>/like", "host": ["{{base_url}}"], "path": ["api", "brands", "{{brand_id}}", "posts", "<post_id>", "like"] }
+          }
+        },
+        {
+          "name": "Unlike post",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/brands/{{brand_id}}/posts/<post_id>/like", "host": ["{{base_url}}"], "path": ["api", "brands", "{{brand_id}}", "posts", "<post_id>", "like"] }
+          }
+        },
+        {
+          "name": "Create post comment",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Great post!\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/brands/{{brand_id}}/posts/<post_id>/comments", "host": ["{{base_url}}"], "path": ["api", "brands", "{{brand_id}}", "posts", "<post_id>", "comments"] }
+          }
+        },
+        {
+          "name": "Like post comment",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/brands/{{brand_id}}/posts/<post_id>/comments/<comment_id>/like", "host": ["{{base_url}}"], "path": ["api", "brands", "{{brand_id}}", "posts", "<post_id>", "comments", "<comment_id>", "like"] }
+          }
+        },
+        {
+          "name": "Get my brands",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/brands/my", "host": ["{{base_url}}"], "path": ["api", "brands", "my"] }
+          }
+        },
+        {
+          "name": "Update brand",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Brand Name\",\n  \"description\": \"New description\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/brands/{{brand_id}}", "host": ["{{base_url}}"], "path": ["api", "brands", "{{brand_id}}"] }
+          }
+        },
+        {
+          "name": "Delete brand",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/brands/{{brand_id}}", "host": ["{{base_url}}"], "path": ["api", "brands", "{{brand_id}}"] }
+          }
+        },
+        {
+          "name": "Add artwork to brand",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"artwork_id\": \"{{artwork_id}}\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/brands/{{brand_id}}/artworks", "host": ["{{base_url}}"], "path": ["api", "brands", "{{brand_id}}", "artworks"] }
+          }
+        },
+        {
+          "name": "Remove artwork from brand",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/brands/{{brand_id}}/artworks/{{artwork_id}}", "host": ["{{base_url}}"], "path": ["api", "brands", "{{brand_id}}", "artworks", "{{artwork_id}}"] }
+          }
+        },
+        {
+          "name": "Create brand post",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Exciting news!\",\n  \"content\": \"We are launching a new contest...\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/brands/{{brand_id}}/posts", "host": ["{{base_url}}"], "path": ["api", "brands", "{{brand_id}}", "posts"] }
+          }
+        },
+        {
+          "name": "Update brand post",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated title\",\n  \"content\": \"Updated content\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/brands/{{brand_id}}/posts/<post_id>", "host": ["{{base_url}}"], "path": ["api", "brands", "{{brand_id}}", "posts", "<post_id>"] }
+          }
+        },
+        {
+          "name": "Delete brand post",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/brands/{{brand_id}}/posts/<post_id>", "host": ["{{base_url}}"], "path": ["api", "brands", "{{brand_id}}", "posts", "<post_id>"] }
+          }
+        },
+        {
+          "name": "Pin/unpin brand post",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/brands/{{brand_id}}/posts/<post_id>/pin", "host": ["{{base_url}}"], "path": ["api", "brands", "{{brand_id}}", "posts", "<post_id>", "pin"] }
+          }
+        },
+        {
+          "name": "Delete post comment",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/brands/{{brand_id}}/posts/<post_id>/comments/<comment_id>", "host": ["{{base_url}}"], "path": ["api", "brands", "{{brand_id}}", "posts", "<post_id>", "comments", "<comment_id>"] }
+          }
+        },
+        {
+          "name": "Get verification requests (admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/brands/verification-requests", "host": ["{{base_url}}"], "path": ["api", "brands", "verification-requests"] }
+          }
+        },
+        {
+          "name": "Approve verification request (admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/brands/verification-requests/<request_id>/approve", "host": ["{{base_url}}"], "path": ["api", "brands", "verification-requests", "<request_id>", "approve"] }
+          }
+        },
+        {
+          "name": "Create brand (admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"My Brand\",\n  \"slug\": \"my-brand\",\n  \"description\": \"A cool brand\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/brands", "host": ["{{base_url}}"], "path": ["api", "brands"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Collections",
+      "item": [
+        {
+          "name": "Create collection",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"My Favorites\",\n  \"owner_type\": \"user\",\n  \"owner_id\": \"{{user_id}}\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/collections", "host": ["{{base_url}}"], "path": ["api", "collections"] }
+          }
+        },
+        {
+          "name": "List collections",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/collections?owner_type=user&owner_id={{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "collections"],
+              "query": [
+                { "key": "owner_type", "value": "user" },
+                { "key": "owner_id", "value": "{{user_id}}" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get collection by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/collections/{{collection_id}}", "host": ["{{base_url}}"], "path": ["api", "collections", "{{collection_id}}"] }
+          }
+        },
+        {
+          "name": "Update collection",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Collection Name\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/collections/{{collection_id}}", "host": ["{{base_url}}"], "path": ["api", "collections", "{{collection_id}}"] }
+          }
+        },
+        {
+          "name": "Delete collection",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/collections/{{collection_id}}", "host": ["{{base_url}}"], "path": ["api", "collections", "{{collection_id}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Contests",
+      "item": [
+        {
+          "name": "List contests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/contest", "host": ["{{base_url}}"], "path": ["api", "contest"] }
+          }
+        },
+        {
+          "name": "List contests by status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/contest/by-status?status=active",
+              "host": ["{{base_url}}"],
+              "path": ["api", "contest", "by-status"],
+              "query": [{ "key": "status", "value": "active" }]
+            }
+          }
+        },
+        {
+          "name": "My submitted contests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/contest/my-submitted", "host": ["{{base_url}}"], "path": ["api", "contest", "my-submitted"] }
+          }
+        },
+        {
+          "name": "Get contest by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/contest/{{contest_id}}", "host": ["{{base_url}}"], "path": ["api", "contest", "{{contest_id}}"] }
+          }
+        },
+        {
+          "name": "Get contest leaderboard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/contest/{{contest_id}}/leaderboard", "host": ["{{base_url}}"], "path": ["api", "contest", "{{contest_id}}", "leaderboard"] }
+          }
+        },
+        {
+          "name": "Create contest",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Summer Art Contest\",\n  \"description\": \"Submit your best summer artwork\",\n  \"brand_id\": \"{{brand_id}}\",\n  \"start_date\": \"2026-07-01T00:00:00Z\",\n  \"end_date\": \"2026-07-31T00:00:00Z\",\n  \"prize_pool\": 1000\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/contest", "host": ["{{base_url}}"], "path": ["api", "contest"] }
+          }
+        },
+        {
+          "name": "Update contest",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated Contest Title\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/contest/{{contest_id}}", "host": ["{{base_url}}"], "path": ["api", "contest", "{{contest_id}}"] }
+          }
+        },
+        {
+          "name": "Delete contest",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/contest/{{contest_id}}", "host": ["{{base_url}}"], "path": ["api", "contest", "{{contest_id}}"] }
+          }
+        },
+        {
+          "name": "Announce winners",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/contest/{{contest_id}}/announce-winners", "host": ["{{base_url}}"], "path": ["api", "contest", "{{contest_id}}", "announce-winners"] }
+          }
+        },
+        {
+          "name": "Distribute prizes",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/contest/{{contest_id}}/distribute-prizes", "host": ["{{base_url}}"], "path": ["api", "contest", "{{contest_id}}", "distribute-prizes"] }
+          }
+        },
+        {
+          "name": "Assign judge",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": \"<judge_user_uuid>\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/contest/{{contest_id}}/judges", "host": ["{{base_url}}"], "path": ["api", "contest", "{{contest_id}}", "judges"] }
+          }
+        },
+        {
+          "name": "Get judges",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/contest/{{contest_id}}/judges", "host": ["{{base_url}}"], "path": ["api", "contest", "{{contest_id}}", "judges"] }
+          }
+        },
+        {
+          "name": "Get my judge invitations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/contest/judge/invitations", "host": ["{{base_url}}"], "path": ["api", "contest", "judge", "invitations"] }
+          }
+        },
+        {
+          "name": "Remove judge",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/contest/{{contest_id}}/judges/<judge_id>", "host": ["{{base_url}}"], "path": ["api", "contest", "{{contest_id}}", "judges", "<judge_id>"] }
+          }
+        },
+        {
+          "name": "Accept judge invitation",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/contest/{{contest_id}}/judges/<judge_id>/accept", "host": ["{{base_url}}"], "path": ["api", "contest", "{{contest_id}}", "judges", "<judge_id>", "accept"] }
+          }
+        },
+        {
+          "name": "Get contests I'm judging",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/contest/judge/contests", "host": ["{{base_url}}"], "path": ["api", "contest", "judge", "contests"] }
+          }
+        },
+        {
+          "name": "Add contest category",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category_id\": \"<category_uuid>\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/contest/{{contest_id}}/categories", "host": ["{{base_url}}"], "path": ["api", "contest", "{{contest_id}}", "categories"] }
+          }
+        },
+        {
+          "name": "Get contest categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/contest/{{contest_id}}/categories", "host": ["{{base_url}}"], "path": ["api", "contest", "{{contest_id}}", "categories"] }
+          }
+        },
+        {
+          "name": "Remove contest category",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/contest/{{contest_id}}/categories/<category_id>", "host": ["{{base_url}}"], "path": ["api", "contest", "{{contest_id}}", "categories", "<category_id>"] }
+          }
+        },
+        {
+          "name": "Submit entry",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"artwork_id\": \"{{artwork_id}}\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/contest/{{contest_id}}/entries", "host": ["{{base_url}}"], "path": ["api", "contest", "{{contest_id}}", "entries"] }
+          }
+        },
+        {
+          "name": "Get contest entries",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/contest/{{contest_id}}/entries", "host": ["{{base_url}}"], "path": ["api", "contest", "{{contest_id}}", "entries"] }
+          }
+        },
+        {
+          "name": "Update entry status",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"approved\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/contest/{{contest_id}}/entries/<entry_id>/status", "host": ["{{base_url}}"], "path": ["api", "contest", "{{contest_id}}", "entries", "<entry_id>", "status"] }
+          }
+        },
+        {
+          "name": "Delete entry",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/contest/{{contest_id}}/entries/<entry_id>", "host": ["{{base_url}}"], "path": ["api", "contest", "{{contest_id}}", "entries", "<entry_id>"] }
+          }
+        },
+        {
+          "name": "My contest entries",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/contest/me/contest-entries", "host": ["{{base_url}}"], "path": ["api", "contest", "me", "contest-entries"] }
+          }
+        },
+        {
+          "name": "Submit judge score",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"score\": 85,\n  \"comment\": \"Strong composition\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/contest/{{contest_id}}/entries/<entry_id>/score", "host": ["{{base_url}}"], "path": ["api", "contest", "{{contest_id}}", "entries", "<entry_id>", "score"] }
+          }
+        },
+        {
+          "name": "Get scores for entry",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/contest/{{contest_id}}/entries/<entry_id>/scores", "host": ["{{base_url}}"], "path": ["api", "contest", "{{contest_id}}", "entries", "<entry_id>", "scores"] }
+          }
+        },
+        {
+          "name": "Vote on entry",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/contest/{{contest_id}}/entries/<entry_id>/vote", "host": ["{{base_url}}"], "path": ["api", "contest", "{{contest_id}}", "entries", "<entry_id>", "vote"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "Create license order",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"artwork_id\": \"{{artwork_id}}\",\n  \"pricing_tier_id\": \"<tier_uuid>\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/order", "host": ["{{base_url}}"], "path": ["api", "order"] }
+          }
+        },
+        {
+          "name": "Confirm order",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"payment_intent_id\": \"pi_xxxxx\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/order/{{order_id}}/confirm", "host": ["{{base_url}}"], "path": ["api", "order", "{{order_id}}", "confirm"] }
+          }
+        },
+        {
+          "name": "Get my orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/order/me", "host": ["{{base_url}}"], "path": ["api", "order", "me"] }
+          }
+        },
+        {
+          "name": "Get my licenses (via order)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/order/licenses/me", "host": ["{{base_url}}"], "path": ["api", "order", "licenses", "me"] }
+          }
+        },
+        {
+          "name": "Get license by ID (via order)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/order/licenses/{{license_id}}", "host": ["{{base_url}}"], "path": ["api", "order", "licenses", "{{license_id}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Licenses",
+      "item": [
+        {
+          "name": "Create checkout session",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"artwork_id\": \"{{artwork_id}}\",\n  \"pricing_tier_id\": \"<tier_uuid>\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/licenses/checkout", "host": ["{{base_url}}"], "path": ["api", "licenses", "checkout"] }
+          }
+        },
+        {
+          "name": "Get issued licenses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/licenses/issued", "host": ["{{base_url}}"], "path": ["api", "licenses", "issued"] }
+          }
+        },
+        {
+          "name": "Get my licenses",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/licenses/me", "host": ["{{base_url}}"], "path": ["api", "licenses", "me"] }
+          }
+        },
+        {
+          "name": "Get license by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/licenses/{{license_id}}", "host": ["{{base_url}}"], "path": ["api", "licenses", "{{license_id}}"] }
+          }
+        },
+        {
+          "name": "Revoke license",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/licenses/{{license_id}}/revoke", "host": ["{{base_url}}"], "path": ["api", "licenses", "{{license_id}}", "revoke"] }
+          }
+        },
+        {
+          "name": "Get all licenses (admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/licenses", "host": ["{{base_url}}"], "path": ["api", "licenses"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payout",
+      "item": [
+        {
+          "name": "Create Stripe Connect account",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/payout/connect", "host": ["{{base_url}}"], "path": ["api", "payout", "connect"] }
+          }
+        },
+        {
+          "name": "Get Connect account status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/payout/status", "host": ["{{base_url}}"], "path": ["api", "payout", "status"] }
+          }
+        },
+        {
+          "name": "Stripe webhook",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "stripe-signature", "value": "<stripe_webhook_signature>" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{ \"type\": \"payment_intent.succeeded\", \"data\": {} }"
+            },
+            "url": { "raw": "{{base_url}}/api/payout/stripe", "host": ["{{base_url}}"], "path": ["api", "payout", "stripe"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "Get notifications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/notifications?limit=20&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "notifications"],
+              "query": [
+                { "key": "limit", "value": "20" },
+                { "key": "offset", "value": "0" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get unread count",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/notifications/unread-count", "host": ["{{base_url}}"], "path": ["api", "notifications", "unread-count"] }
+          }
+        },
+        {
+          "name": "Mark notification as read",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/notifications/{{notification_id}}/read", "host": ["{{base_url}}"], "path": ["api", "notifications", "{{notification_id}}", "read"] }
+          }
+        },
+        {
+          "name": "Mark all as read",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/notifications/read-all", "host": ["{{base_url}}"], "path": ["api", "notifications", "read-all"] }
+          }
+        },
+        {
+          "name": "Delete notification",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/notifications/{{notification_id}}", "host": ["{{base_url}}"], "path": ["api", "notifications", "{{notification_id}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tags",
+      "item": [
+        {
+          "name": "Get tags for artwork",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/tags/{{artwork_id}}/tags", "host": ["{{base_url}}"], "path": ["api", "tags", "{{artwork_id}}", "tags"] }
+          }
+        },
+        {
+          "name": "Add tag to artwork",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tag_id\": \"<tag_uuid>\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/tags/{{artwork_id}}/tags", "host": ["{{base_url}}"], "path": ["api", "tags", "{{artwork_id}}", "tags"] }
+          }
+        },
+        {
+          "name": "Remove tag from artwork",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/tags/{{artwork_id}}/tags/<tag_id>", "host": ["{{base_url}}"], "path": ["api", "tags", "{{artwork_id}}", "tags", "<tag_id>"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Search",
+      "item": [
+        {
+          "name": "Global search",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/search?q=fanart&type=artwork",
+              "host": ["{{base_url}}"],
+              "path": ["api", "search"],
+              "query": [
+                { "key": "q", "value": "fanart" },
+                { "key": "type", "value": "artwork", "description": "artwork | brand | contest | user" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Contact",
+      "item": [
+        {
+          "name": "Create message",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"subject\": \"Question about licensing\",\n  \"message\": \"Hello, I have a question...\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/contact", "host": ["{{base_url}}"], "path": ["api", "contact"] }
+          }
+        },
+        {
+          "name": "Get all messages",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/contact", "host": ["{{base_url}}"], "path": ["api", "contact"] }
+          }
+        },
+        {
+          "name": "Get message by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/contact/<id>", "host": ["{{base_url}}"], "path": ["api", "contact", "<id>"] }
+          }
+        },
+        {
+          "name": "Mark message as read",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/contact/<id>/read", "host": ["{{base_url}}"], "path": ["api", "contact", "<id>", "read"] }
+          }
+        },
+        {
+          "name": "Delete message",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/contact/<id>", "host": ["{{base_url}}"], "path": ["api", "contact", "<id>"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Roles (RBAC)",
+      "item": [
+        {
+          "name": "Get all roles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/roles", "host": ["{{base_url}}"], "path": ["api", "roles"] }
+          }
+        },
+        {
+          "name": "Create role",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"artist\",\n  \"permissions\": {\n    \"artworks.create\": true,\n    \"artworks.delete\": true\n  }\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/roles", "host": ["{{base_url}}"], "path": ["api", "roles"] }
+          }
+        },
+        {
+          "name": "Update role",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"permissions\": {\n    \"artworks.create\": true\n  }\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/roles/<id>", "host": ["{{base_url}}"], "path": ["api", "roles", "<id>"] }
+          }
+        },
+        {
+          "name": "Delete role",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/roles/<id>", "host": ["{{base_url}}"], "path": ["api", "roles", "<id>"] }
+          }
+        },
+        {
+          "name": "Assign role to user",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role_id\": \"<role_uuid>\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/roles/users/{{user_id}}/roles", "host": ["{{base_url}}"], "path": ["api", "roles", "users", "{{user_id}}", "roles"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tasks",
+      "item": [
+        {
+          "name": "Create task",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"project_id\": \"{{project_id}}\",\n  \"title\": \"Design contest banner\",\n  \"description\": \"Create a banner for the summer contest\",\n  \"priority\": \"high\",\n  \"due_date\": \"2026-07-15T00:00:00Z\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/tasks", "host": ["{{base_url}}"], "path": ["api", "tasks"] }
+          }
+        },
+        {
+          "name": "Get my tasks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/tasks/my-tasks", "host": ["{{base_url}}"], "path": ["api", "tasks", "my-tasks"] }
+          }
+        },
+        {
+          "name": "Get tasks by project",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/tasks/project/{{project_id}}", "host": ["{{base_url}}"], "path": ["api", "tasks", "project", "{{project_id}}"] }
+          }
+        },
+        {
+          "name": "Get task by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/tasks/{{task_id}}", "host": ["{{base_url}}"], "path": ["api", "tasks", "{{task_id}}"] }
+          }
+        },
+        {
+          "name": "Update task",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated task title\",\n  \"description\": \"Updated description\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/tasks/{{task_id}}", "host": ["{{base_url}}"], "path": ["api", "tasks", "{{task_id}}"] }
+          }
+        },
+        {
+          "name": "Update task status",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"in_progress\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/tasks/{{task_id}}/status", "host": ["{{base_url}}"], "path": ["api", "tasks", "{{task_id}}", "status"] }
+          }
+        },
+        {
+          "name": "Assign task",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": \"{{user_id}}\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/tasks/{{task_id}}/assign", "host": ["{{base_url}}"], "path": ["api", "tasks", "{{task_id}}", "assign"] }
+          }
+        },
+        {
+          "name": "Add task comment",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"task_id\": \"{{task_id}}\",\n  \"content\": \"Working on this now\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/tasks/comments", "host": ["{{base_url}}"], "path": ["api", "tasks", "comments"] }
+          }
+        },
+        {
+          "name": "Get task comments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/tasks/{{task_id}}/comments", "host": ["{{base_url}}"], "path": ["api", "tasks", "{{task_id}}", "comments"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Projects",
+      "item": [
+        {
+          "name": "Create project",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Summer Campaign\",\n  \"description\": \"Brand campaign for summer 2026\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/projects", "host": ["{{base_url}}"], "path": ["api", "projects"] }
+          }
+        },
+        {
+          "name": "Get my projects",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/projects/my-projects", "host": ["{{base_url}}"], "path": ["api", "projects", "my-projects"] }
+          }
+        },
+        {
+          "name": "Get project by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/projects/{{project_id}}", "host": ["{{base_url}}"], "path": ["api", "projects", "{{project_id}}"] }
+          }
+        },
+        {
+          "name": "Update project",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Project Name\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/projects/{{project_id}}", "host": ["{{base_url}}"], "path": ["api", "projects", "{{project_id}}"] }
+          }
+        },
+        {
+          "name": "Get project members",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/projects/{{project_id}}/members", "host": ["{{base_url}}"], "path": ["api", "projects", "{{project_id}}", "members"] }
+          }
+        },
+        {
+          "name": "Add project member",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"role\": \"member\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/projects/{{project_id}}/members", "host": ["{{base_url}}"], "path": ["api", "projects", "{{project_id}}", "members"] }
+          }
+        },
+        {
+          "name": "Update member role",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"admin\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/projects/{{project_id}}/members/{{user_id}}/role", "host": ["{{base_url}}"], "path": ["api", "projects", "{{project_id}}", "members", "{{user_id}}", "role"] }
+          }
+        },
+        {
+          "name": "Remove project member",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{base_url}}/api/projects/{{project_id}}/members/{{user_id}}", "host": ["{{base_url}}"], "path": ["api", "projects", "{{project_id}}", "members", "{{user_id}}"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/health", "host": ["{{base_url}}"], "path": ["health"] }
+          }
+        }
+      ]
+    }
+  ]
+}
