@@ -82,7 +82,7 @@ class EmailService {
    * Email Verification
    */
   static async sendVerificationEmail(user, token) {
-    const url = `${process.env.FRONTEND_URL}/auth/verify-email?token=${token}`;
+    const url = `${process.env.FRONTEND_URL}/verify-account?token=${token}`;
 
     const html = this.generateTemplate({
       title: `Welcome ${user.username} 👋`,

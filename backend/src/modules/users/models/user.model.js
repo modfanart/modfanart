@@ -79,6 +79,11 @@ class User {
       .where("id", "=", id)
       .execute();
   }
+
+  static async update(id, data) {
+    return this.updateById(id, data);
+  }
+
   /**
    * Soft delete
    * @param {string} id
