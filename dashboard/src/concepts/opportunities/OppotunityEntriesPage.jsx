@@ -22,7 +22,7 @@ import {
   useGetContestEntriesQuery,
   useUpdateEntryStatusMutation,
   useGetContestQuery
-} from '@/services/api/contestsApi';
+} from '../../services/api/contestsApi';
 
 const entryStatusFlow = ['submitted', 'under_review', 'approved', 'rejected'];
 

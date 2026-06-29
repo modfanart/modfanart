@@ -6,7 +6,7 @@ import { Button } from '../../components/ui/button';
 import { Users, Image, Trophy, ShieldCheck } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 
-import { useGetBrandQuery, useGetBrandArtworksQuery, useGetBrandManagersQuery } from '../../services/api/brands';
+import { useGetBrandQuery, useGetBrandArtworksQuery, useGetBrandManagersQuery } from '../../services/api/brandApi';
 import { useGetContestsQuery } from '../../services/api/contestsApi';
 
 export const BrandDetailsPage = () => {

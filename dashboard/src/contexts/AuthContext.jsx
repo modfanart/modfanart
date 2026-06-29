@@ -1,13 +1,13 @@
 // src/contexts/AuthContext.jsx
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { useLoginMutation } from '@/services/api/authApi';
-import { useGetCurrentUserQuery, useLazyGetCurrentUserQuery } from '@/services/api/userApi';
+import { useLoginMutation } from '../services/api/authApi';
+import { useGetCurrentUserQuery, useLazyGetCurrentUserQuery } from '../services/api/userApi';
 
 const AuthContext = createContext({
   user: null,
   loading: true,
-  login: async () => {},
-  logout: () => {},
+  login: async () => { },
+  logout: () => { },
   hasRole: () => false,
   isLoggingIn: false,
 });
@@ -24,14 +24,14 @@ export function AuthProvider({ children }) {
 
   const user = data
     ? {
-        id: data.id,
-        email: data.email ?? '',
-        username: data.username ?? null,
-        avatar_url: data.avatar_url ?? null,
-        role: data.role,
-        permissions: data.permissions ?? {},
-        brands: data.brands ?? [],
-      }
+      id: data.id,
+      email: data.email ?? '',
+      username: data.username ?? null,
+      avatar_url: data.avatar_url ?? null,
+      role: data.role,
+      permissions: data.permissions ?? {},
+      brands: data.brands ?? [],
+    }
     : null;
 
   console.log('[AuthContext] Current user:', user ? user.username : null, '| Error:', error?.status);
@@ -47,45 +47,45 @@ export function AuthProvider({ children }) {
     }
   }, [error, refetch]);
 
-const login = useCallback(async (credentials) => {
-  setIsLoggingIn(true);
-  try {
-    const res = await loginMutation(credentials).unwrap();
+  const login = useCallback(async (credentials) => {
+    setIsLoggingIn(true);
+    try {
+      const res = await loginMutation(credentials).unwrap();
 
-    console.log('[AuthContext] Login Response:', res); // ← Add this for debugging
+      console.log('[AuthContext] Login Response:', res); // ← Add this for debugging
 
-    const accessToken = res?.accessToken || res?.data?.accessToken;
-    const refreshToken = res?.refreshToken || res?.data?.refreshToken;
+      const accessToken = res?.accessToken || res?.data?.accessToken;
+      const refreshToken = res?.refreshToken || res?.data?.refreshToken;
 
-    if (!accessToken) {
-      throw new Error('No access token received from server');
+      if (!accessToken) {
+        throw new Error('No access token received from server');
+      }
+
+      // Save tokens
+      localStorage.setItem('accessToken', accessToken);
+      if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
+
+      console.log('✅ Tokens successfully saved to localStorage');
+      console.log('Token length:', accessToken.length);
+
+      // Small delay
+      await new Promise(r => setTimeout(r, 150));
+
+      // Fetch user
+      const userResponse = await triggerGetUser(undefined, { forceRefetch: true }).unwrap();
+
+      console.log('[AuthContext] /me response:', userResponse);
+
+      return { success: true };
+    } catch (err) {
+      console.error('[AuthContext] Login failed:', err);
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      throw err;
+    } finally {
+      setIsLoggingIn(false);
     }
-
-    // Save tokens
-    localStorage.setItem('accessToken', accessToken);
-    if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
-
-    console.log('✅ Tokens successfully saved to localStorage');
-    console.log('Token length:', accessToken.length);
-
-    // Small delay
-    await new Promise(r => setTimeout(r, 150));
-
-    // Fetch user
-    const userResponse = await triggerGetUser(undefined, { forceRefetch: true }).unwrap();
-    
-    console.log('[AuthContext] /me response:', userResponse);
-
-    return { success: true };
-  } catch (err) {
-    console.error('[AuthContext] Login failed:', err);
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    throw err;
-  } finally {
-    setIsLoggingIn(false);
-  }
-}, [loginMutation, triggerGetUser]);
+  }, [loginMutation, triggerGetUser]);
   const logout = () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');

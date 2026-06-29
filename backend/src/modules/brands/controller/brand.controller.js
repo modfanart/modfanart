@@ -19,7 +19,7 @@ const {
 // ───────────────────────────────────────────────
 
 async function ensureBrandManagerOrHigher(req) {
-  const allowedRoles = ["brand_manager", "admin", "superadmin", "moderator"];
+  const allowedRoles = ['BRAND_MANAGER', "ADMIN", "SUPER_ADMIN", "DEVELOPER" ];
   if (!allowedRoles.includes(req.user.role_name)) {
     throw Object.assign(new Error("Insufficient global role"), { status: 403 });
   }
@@ -734,8 +734,7 @@ async function adminCreateBrand(req, res) {
       status: status || "pending",
     };
 
-    console.log("Admin creating brand with data:", { user_id, ...brandData });
-
+ 
     // Pass the admin ID as first argument
     const brand = await Brand.create(user_id, brandData);
 

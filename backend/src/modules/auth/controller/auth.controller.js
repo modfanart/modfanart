@@ -4,18 +4,227 @@ const { sql } = require('kysely');
 const User = require('../../users/models/user.model');
 const Role = require('../../rbac/models/role.model');
 
+const {
+  hashPassword,
+  comparePassword,
+} = require("../../../common/utils/password.util");
+const {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyRefreshToken,
+} = require("../../../common/utils/jwt.util");
+
+const crypto = require("crypto");
+const { sql } = require("kysely");
+const { z } = require("zod");
+const { db } = require("../../../config");
+// Helpers (you can move to utils/email.util.js later)
+const EmailService = require("../../../common/emails/email.service");
+
+const ACCOUNT_TYPE_ROLE_NAMES = {
+  fan: ["fan", "user"],
+  artist: ["Artist", "artist", "creator", "user"],
+  brand: [
+    "Brand",
+    "brand",
+    "brand_owner",
+    "brand-manager",
+    "brand manager",
+    "brand_manager",
+    "user",
+  ],
+};
+
+const registerSchema = z.object({
+  username: z.string().trim().min(1, "Username is required"),
+  email: z
+    .string()
+    .trim()
+    .email("Valid email is required")
+    .transform((value) => value.toLowerCase()),
+  password: z.string().min(1, "Password is required"),
+  accountType: z.enum(["fan", "artist", "brand"]).default("fan"),
+});
+
+async function findSignupRole(accountType) {
+  const roleNames = ACCOUNT_TYPE_ROLE_NAMES[accountType];
+
+  for (const roleName of roleNames) {
+    const role = await Role.findByName(roleName);
+    if (role) return role;
+  }
+
+  return db
+    .selectFrom("roles")
+    .selectAll()
+    .where(
+      sql`LOWER(name)`,
+      "in",
+      roleNames.map((roleName) => roleName.toLowerCase())
+    )
+    .executeTakeFirst();
+}
+
 class AuthController {
-  /**
-   * POST /api/auth/sync
-   *
-   * Called by the frontend after every Firebase sign-in.
-   * Verifies the Firebase ID token, then finds or creates the user
-   * record in our DB. Returns the full user profile with role + brands.
-   *
-   * Body (optional, used only on first sign-up):
-   *   { username?: string }
-   */
-  static async sync(req, res) {
+  // POST /auth/register
+  static async register(req, res) {
+    try {
+      const parsed = registerSchema.safeParse(req.body);
+
+      if (!parsed.success) {
+        return res.status(400).json({
+          error: "Invalid registration data",
+          details: z.treeifyError(parsed.error).properties,
+        });
+      }
+
+      const { username, email, password, accountType } = parsed.data;
+
+      // Only supported public account types can be selected at signup.
+      if (!ACCOUNT_TYPE_ROLE_NAMES[accountType]) {
+        return res.status(400).json({ error: "Invalid account type" });
+      }
+
+      // Check existing user
+      if (await User.findByEmail(email)) {
+        return res.status(409).json({ error: "Email already in use" });
+      }
+      if (await User.findByUsername(username)) {
+        return res.status(409).json({ error: "Username taken" });
+      }
+
+      const passwordHash = await hashPassword(password);
+
+      // Prefer the account-specific role, with "user" as a temporary fallback.
+      const signupRole = await findSignupRole(accountType);
+      if (!signupRole) {
+        throw new Error("Default user role not found");
+      }
+
+      const user = await User.create({
+        username,
+        email,
+        password_hash: passwordHash,
+        role_id: signupRole.id,
+        status: "pending_verification",
+      });
+
+      // Create email verification token
+      const token = crypto.randomBytes(32).toString("hex");
+      const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+
+      await AuthToken.create(
+        user.id,
+        "email_verification",
+        tokenHash,
+        new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24h
+      );
+
+      let verificationEmailSent = true;
+      try {
+        await EmailService.sendVerificationEmail(user, token);
+      } catch (emailError) {
+        verificationEmailSent = false;
+        console.error("Registration email failed:", emailError.message);
+      }
+
+      res.status(201).json({
+        message: "User registered. Please check your email to verify.",
+        userId: user.id,
+        verificationEmailSent,
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Registration failed" });
+    }
+  }
+
+  // GET /auth/verify-email
+  static async verifyEmail(req, res) {
+    try {
+      const { token } = req.query;
+
+      if (!token) {
+        return res.status(400).json({ error: "Missing token" });
+      }
+
+      const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+      const authToken = await AuthToken.findValid(
+        tokenHash,
+        "email_verification"
+      );
+
+      if (!authToken) {
+        return res.status(400).json({ error: "Invalid or expired token" });
+      }
+
+      await User.update(authToken.user_id, {
+        email_verified: true,
+        status: "active",
+      });
+      await AuthToken.markAsUsed(authToken.id);
+
+      res.json({ message: "Email verified successfully. You can now log in." });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Verification failed" });
+    }
+  }
+
+  // POST /auth/login
+  static async login(req, res) {
+    try {
+      const { email, password } = req.body;
+      console.log(req.body);
+      const user = await User.findByEmail(email);
+      if (!user || !user.password_hash) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+      console.log(user);
+      if (user.status !== "active") {
+        return res.status(403).json({ error: `Account is ${user.status}` });
+      }
+
+      const passwordMatch = await comparePassword(password, user.password_hash);
+      if (!passwordMatch) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+
+      // Update last login
+      await User.updateLastLogin(user.id);
+
+      const accessToken = generateAccessToken({ userId: user.id });
+      const refreshToken = generateRefreshToken({ userId: user.id });
+
+      // Store refresh token hash
+      const refreshHash = crypto
+        .createHash("sha256")
+        .update(refreshToken)
+        .digest("hex");
+      await RefreshToken.create(
+        user.id,
+        refreshHash,
+        new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+      );
+
+      res.json({
+        accessToken,
+        refreshToken,
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role_id: user.role_id,
+        },
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Login failed" });
+    }
+  }
+
+  // POST /auth/refresh
+  static async refreshToken(req, res) {
     try {
       const authHeader = req.headers['authorization'];
       const token = authHeader && authHeader.split(' ')[1];

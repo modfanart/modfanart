@@ -13,10 +13,15 @@ import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
-export function JudgeOpportunityContent({ contestId }: { contestId: string }) {
+export function JudgeOpportunityContent({
+  contestId,
+}: {
+  contestId: string;
+}) {
   const { toast } = useToast();
 
-  const { data: contest, isLoading: contestLoading } = useGetContestQuery(contestId);
+  const { data: contest, isLoading: contestLoading } =
+    useGetContestQuery(contestId);
 
   const {
     data: entriesData,
@@ -27,7 +32,8 @@ export function JudgeOpportunityContent({ contestId }: { contestId: string }) {
     status: 'approved',
   });
 
-  const [submitScore, { isLoading: isSubmitting }] = useSubmitJudgeScoreMutation();
+  const [submitScore, { isLoading: isSubmitting }] =
+    useSubmitJudgeScoreMutation();
 
   const [score, setScore] = useState<number>(0);
   const [activeEntry, setActiveEntry] = useState<string | null>(null);
@@ -62,12 +68,11 @@ export function JudgeOpportunityContent({ contestId }: { contestId: string }) {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: err?.data?.message || 'Failed to submit score',
+        description: err?.data?.error || 'Failed to submit score',
       });
     }
   };
 
-  // Loading states
   if (contestLoading || entriesLoading) {
     return <div className="p-6">Loading...</div>;
   }
@@ -91,9 +96,33 @@ export function JudgeOpportunityContent({ contestId }: { contestId: string }) {
 
         return (
           <Card key={entry.id}>
-            <CardContent className="p-4 space-y-3">
-              {/* Entry Info */}
-              <div className="font-semibold truncate">Entry: {entry.artwork_id}</div>
+            <CardContent className="space-y-4 p-4">
+
+              {/* Artwork */}
+              <img
+                src={entry.artwork.thumbnail_url || entry.artwork.file_url}
+                alt={entry.artwork.title}
+                className="aspect-square w-full rounded-md object-cover"
+              />
+
+              <div>
+                <h3 className="font-semibold">{entry.artwork.title}</h3>
+
+                <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
+                  {entry.artwork.description}
+                </p>
+
+                <p className="mt-2 text-xs text-muted-foreground">
+                  By {entry.creator.username}
+                </p>
+              </div>
+
+              {/* Existing Score */}
+              {entry.judge_score && (
+                <div className="rounded bg-muted px-3 py-2 text-sm">
+                  Your Score: <strong>{entry.judge_score}/10</strong>
+                </div>
+              )}
 
               {/* Score Input */}
               <Input
@@ -101,18 +130,17 @@ export function JudgeOpportunityContent({ contestId }: { contestId: string }) {
                 min={1}
                 max={10}
                 value={isActive ? score : ''}
-                placeholder="Score (1-10)"
+                placeholder="Enter score (1-10)"
                 onChange={(e) => {
                   setActiveEntry(entry.id);
                   setScore(Number(e.target.value));
                 }}
               />
 
-              {/* Submit Button */}
               <Button
-                onClick={() => handleScore(entry.id)}
-                disabled={!isActive || !score || isSubmitting}
                 className="w-full"
+                disabled={!isActive || !score || isSubmitting}
+                onClick={() => handleScore(entry.id)}
               >
                 {isSubmitting && isActive ? (
                   <Loader2 className="h-4 w-4 animate-spin" />

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { 
+import {
   ArrowLeft,
   ShoppingCart,
   Package,
@@ -13,7 +13,7 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { getBrands, getCategories, getProducts } from '../../lib/api';
-import { useCart } from '../../contexts/CartContext';
+
 import { toast } from 'sonner';
 
 // Brand colors for visual distinction
@@ -77,50 +77,50 @@ export const ShopPage = () => {
   const [total, setTotal] = useState(0);
 
   // Fetch brands on mount
-useEffect(() => {
-  setBrands(MOCK_BRANDS);
+  useEffect(() => {
+    setBrands(MOCK_BRANDS);
 
-  if (brandId) {
-    const brand = MOCK_BRANDS.find(b => b.id === brandId);
-    if (brand) setSelectedBrand(brand);
-  }
-
-  setLoading(false);
-}, [brandId]);
-  // Fetch categories and products when brand is selected
-useEffect(() => {
-  if (!selectedBrand) return;
-
-  setLoading(true);
-
-  try {
-    const categories = MOCK_CATEGORIES[selectedBrand.id] || [];
-    setCategories(categories);
-
-    let filteredProducts = MOCK_PRODUCTS.filter(
-      p => p.brand_id === selectedBrand.id
-    );
-
-    if (selectedCategory && selectedCategory !== 'all') {
-      filteredProducts = filteredProducts.filter(
-        p => p.category_id === selectedCategory
-      );
+    if (brandId) {
+      const brand = MOCK_BRANDS.find(b => b.id === brandId);
+      if (brand) setSelectedBrand(brand);
     }
 
-    if (search) {
-      filteredProducts = filteredProducts.filter(p =>
-        p.name.toLowerCase().includes(search.toLowerCase())
-      );
-    }
-
-    setProducts(filteredProducts);
-    setTotal(filteredProducts.length);
-  } catch (err) {
-    toast.error('Failed to load products');
-  } finally {
     setLoading(false);
-  }
-}, [selectedBrand, selectedCategory, search]);
+  }, [brandId]);
+  // Fetch categories and products when brand is selected
+  useEffect(() => {
+    if (!selectedBrand) return;
+
+    setLoading(true);
+
+    try {
+      const categories = MOCK_CATEGORIES[selectedBrand.id] || [];
+      setCategories(categories);
+
+      let filteredProducts = MOCK_PRODUCTS.filter(
+        p => p.brand_id === selectedBrand.id
+      );
+
+      if (selectedCategory && selectedCategory !== 'all') {
+        filteredProducts = filteredProducts.filter(
+          p => p.category_id === selectedCategory
+        );
+      }
+
+      if (search) {
+        filteredProducts = filteredProducts.filter(p =>
+          p.name.toLowerCase().includes(search.toLowerCase())
+        );
+      }
+
+      setProducts(filteredProducts);
+      setTotal(filteredProducts.length);
+    } catch (err) {
+      toast.error('Failed to load products');
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedBrand, selectedCategory, search]);
   const handleSelectBrand = (brand) => {
     setSelectedBrand(brand);
     setSelectedCategory('all');
@@ -143,7 +143,7 @@ useEffect(() => {
     return (
       <div className="min-h-screen" data-testid="shop-page">
         <Header title="Shop by Brand" subtitle="Select a brand to browse products" />
-        
+
         <div className="p-4 sm:p-6">
           {loading ? (
             <div className="flex items-center justify-center h-64">
@@ -188,7 +188,7 @@ useEffect(() => {
   return (
     <div className="min-h-screen" data-testid="shop-products-page">
       <Header title={selectedBrand.name} subtitle={`${total} products available`} />
-      
+
       <div className="p-6 space-y-6">
         {/* Back button and filters */}
         <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
@@ -201,7 +201,7 @@ useEffect(() => {
             <ArrowLeft className="w-4 h-4 mr-2" />
             All Brands
           </Button>
-          
+
           <div className="flex flex-col sm:flex-row flex-1 gap-4">
             <div className="relative flex-1">
               <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
@@ -213,7 +213,7 @@ useEffect(() => {
                 data-testid="shop-search"
               />
             </div>
-            
+
             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
               <SelectTrigger className="w-full sm:w-48 bg-zinc-900 border-zinc-800 text-white" data-testid="shop-category-filter">
                 <Funnel className="w-4 h-4 mr-2" />
@@ -235,11 +235,10 @@ useEffect(() => {
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setSelectedCategory('all')}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-              selectedCategory === 'all' 
-                ? 'bg-white text-black' 
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${selectedCategory === 'all'
+                ? 'bg-white text-black'
                 : 'bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700'
-            }`}
+              }`}
           >
             All
           </button>
@@ -247,11 +246,10 @@ useEffect(() => {
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                selectedCategory === cat.id 
-                  ? 'bg-white text-black' 
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${selectedCategory === cat.id
+                  ? 'bg-white text-black'
                   : 'bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700'
-              }`}
+                }`}
               data-testid={`category-chip-${cat.id}`}
             >
               {cat.name}
@@ -282,24 +280,24 @@ useEffect(() => {
                 <div className="aspect-square bg-zinc-800 flex items-center justify-center">
                   <Package weight="duotone" className="w-16 h-16 text-zinc-600" />
                 </div>
-                
+
                 {/* Product info */}
                 <div className="p-4 space-y-3">
                   <div>
                     <h3 className="font-medium text-white line-clamp-2">{product.name}</h3>
                     <p className="text-xs text-zinc-500 font-mono mt-1">{product.sku}</p>
                   </div>
-                  
+
                   <div className="flex items-center justify-between">
                     <span className="text-xl font-bold text-white">₹{product.price?.toFixed(2)}</span>
                     <span className={`text-xs px-2 py-1 rounded ${product.stock > 10 ? 'bg-green-500/20 text-green-400' : product.stock > 0 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'}`}>
                       {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
                     </span>
                   </div>
-                  
+
                   <Button
                     className="w-full bg-white text-black hover:bg-zinc-200"
-         
+
                     disabled={product.stock <= 0}
                     data-testid={`add-to-cart-${product.id}`}
                   >

@@ -34,6 +34,7 @@
     "node-fetch": "^3.3.2",
     "pdfkit": "^0.17.2",
     "pg": "^8.16.3",
+    "ssh2-sftp-client": "^12.1.1",
     "stripe": "^20.3.1",
     "uuid": "^13.0.0",
     "zod": "^4.3.5"
@@ -44,6 +45,7 @@
     "nodemon": "^3.1.11",
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.61.1"
   }
 }

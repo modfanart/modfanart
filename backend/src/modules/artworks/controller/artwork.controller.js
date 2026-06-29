@@ -4,11 +4,14 @@ const Artwork = require("../models/artwork.model");
 const ArtworkCategory = require("../models/artworkCategory.model");
 const ArtworkPricingTier = require("../models/artworkPricingTier.model");
 const CDNFile = require("../../cdn/models/cdn-file.model");
+const CDNFileService = require("../../cdn/services/cdn-file.service");
+const cdnFileModel = require("../../cdn/models/cdn-file.model");
 
+const { db } = require("../../../config");
 const path = require("path");
 const crypto = require("crypto");
 const fs = require("fs/promises");
-
+const { sql } = require("kysely");
 class ArtworkController {
   static async createArtwork(req, res) {
     try {
@@ -51,33 +54,12 @@ class ArtworkController {
         });
       }
 
-      // Generate filename
-      const storedName = `${crypto.randomUUID()}${ext}`;
+const cdnService = new CDNFileService(cdnFileModel);
 
-      // CDN storage path
-      const uploadPath = `/opt/cdn/cdn_mod/storage/artworks/${userId}`;
-
-      await fs.mkdir(uploadPath, {
-        recursive: true,
-      });
-
-      const filePath = `${uploadPath}/${storedName}`;
-
-      await fs.writeFile(filePath, req.file.buffer);
-
-      const fileUrl = `https://media.modfanofficial.com/storage/artworks/${userId}/${storedName}`;
-
-      // Save CDN record
-      const cdnFile = await CDNFile.create({
-        original_name: req.file.originalname,
-        stored_name: storedName,
-        mime_type: req.file.mimetype,
-        extension: ext,
-        size: req.file.size,
-        url: fileUrl,
-        path: filePath,
-        uploaded_by: userId,
-      });
+const cdnFile = await cdnService.createFileRecord(
+  req.file,
+  userId
+);
 
       // Create artwork
       const artwork = await Artwork.create(userId, {

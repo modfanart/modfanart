@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { useAuth } from '../../contexts/AuthContext';
 
 // RTK Query
-import { useGetLeaderboardQuery } from '@/services/api/contestsApi';
+import { useGetLeaderboardQuery } from '../../services/api/contestsApi';
 
 const RankBadge = ({ rank }) => {
   const styles = {
@@ -22,9 +22,8 @@ const RankBadge = ({ rank }) => {
 
   return (
     <span
-      className={`px-2 py-1 rounded-md text-xs font-semibold ${
-        styles[rank] || 'bg-zinc-800 text-zinc-300'
-      }`}
+      className={`px-2 py-1 rounded-md text-xs font-semibold ${styles[rank] || 'bg-zinc-800 text-zinc-300'
+        }`}
     >
       #{rank}
     </span>

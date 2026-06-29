@@ -25,8 +25,6 @@ import { toast } from '@/components/ui/use-toast';
 
 import { useRegisterMutation } from '@/services/api/authApi'; // Your auth registration
 import { useSubmitBrandVerificationRequestMutation } from '@/services/api/brands';
-import { useDispatch } from 'react-redux';
-import { setCredentials } from '@/services/api/features/authSlice';
 
 // ====================== SCHEMAS ======================
 const personalInfoSchema = z.object({
@@ -70,7 +68,6 @@ type BrandRequestValues = z.infer<typeof brandRequestSchema>;
 
 export default function SignupPage() {
   const router = useRouter();
-  const dispatch = useDispatch();
 
   const [step, setStep] = useState<number>(1);
   const [personalInfo, setPersonalInfo] = useState<PersonalInfoValues | null>(null);
@@ -133,18 +130,10 @@ export default function SignupPage() {
         username: values.username.trim(),
         email: personalInfo.email.trim(),
         password: values.password,
-        // Optional: You can pass role hint if your backend supports it
-        // role: selectedAccountType,
+        accountType: selectedAccountType,
       };
 
-      const response = await register(payload).unwrap();
-
-      dispatch(
-        setCredentials({
-          accessToken: response.accessToken,
-          user: response.user,
-        })
-      );
+      await register(payload).unwrap();
 
       if (selectedAccountType === 'brand') {
         // Pre-fill brand form
@@ -163,7 +152,7 @@ export default function SignupPage() {
       console.error('Signup failed:', err);
       toast({
         title: 'Registration Failed',
-        description: err?.data?.message || 'Something went wrong. Please try again.',
+        description: err?.data?.message || err?.data?.error || 'Something went wrong. Please try again.',
         variant: 'destructive',
       });
     }

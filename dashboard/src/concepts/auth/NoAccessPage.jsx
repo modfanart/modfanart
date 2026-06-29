@@ -15,12 +15,12 @@ export const NoAccessPage = () => {
 
   const getStatusMessage = () => {
     if (!user) return 'Your session has expired.';
-    
+
     const issues = [];
     if (!user.is_active) issues.push('Your account is not yet activated');
     if (!user.email_verified) issues.push('Your email is not verified');
-    
-    return issues.length > 0 
+
+    return issues.length > 0
       ? issues.join(' and ') + '.'
       : 'You do not have access to this system.';
   };
