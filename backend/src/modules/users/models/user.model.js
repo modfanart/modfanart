@@ -46,6 +46,15 @@ class User {
       .executeTakeFirst();
   }
 
+  static async findByFirebaseUid(firebaseUid) {
+    return db
+      .selectFrom("users")
+      .selectAll()
+      .where("firebase_uid", "=", firebaseUid)
+      .where("deleted_at", "is", null)
+      .executeTakeFirst();
+  }
+
   /**
    * @param {Partial<UserRow> & { password_hash?: string }} data
    */
