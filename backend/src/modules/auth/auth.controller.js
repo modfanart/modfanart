@@ -54,7 +54,11 @@ class AuthController {
 
       // 3. New user — create DB record
       if (!user) {
-        const accountType = req.body?.accountType || 'fan';
+        const accountType = req.body?.accountType;
+        if (!accountType) {
+          return res.json({ user: null, isNewUser: true });
+        }
+
         const signupRole = await findSignupRole(accountType);
         if (!signupRole) throw new Error('Default role not found in DB');
 
