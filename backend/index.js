@@ -51,6 +51,7 @@ const allowedOrigins = [
   "https://www.modfanofficial.com",
   "https://modfanofficial.com",
   "https://workspace.modfanofficial.com",
+  "http://nzncosjnx8014zyshs22q40y.2.25.128.115.sslip.io/"
 ];
 
 app.use(
