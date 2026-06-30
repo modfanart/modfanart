@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -83,6 +83,15 @@ export default function SignupPage() {
 
   const [submitBrandRequest, { isLoading: isBrandSubmitting }] =
     useSubmitBrandVerificationRequestMutation();
+
+  useEffect(() => {
+    const pendingToken = sessionStorage.getItem('pendingGoogleIdToken');
+    if (pendingToken) {
+      sessionStorage.removeItem('pendingGoogleIdToken');
+      setGoogleIdToken(pendingToken);
+      setStep(2);
+    }
+  }, []);
 
   const personalForm = useForm<PersonalInfoValues>({
     resolver: zodResolver(personalInfoSchema),

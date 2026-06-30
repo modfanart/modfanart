@@ -102,7 +102,14 @@ export default function LoginPage() {
 
       if (!syncRes.ok) throw new Error('Auth sync failed');
 
-      const { user } = await syncRes.json();
+      const { user, isNewUser } = await syncRes.json();
+
+      if (isNewUser) {
+        sessionStorage.setItem('pendingGoogleIdToken', idToken);
+        router.push('/signup');
+        return;
+      }
+
       dispatch(setCredentials({ accessToken: idToken, user }));
       router.push('/');
     } catch (err: any) {
