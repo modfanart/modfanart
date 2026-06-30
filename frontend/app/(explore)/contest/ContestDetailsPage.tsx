@@ -1,7 +1,11 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import type { ContestData } from './contest.types.js';
+import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import type { ContestData } from './contest.types';
 
 
 
@@ -319,48 +323,6 @@ function FullDetails({ contest, legalPoints }: { contest: ContestData; legalPoin
   );
 }
 
-/* ── Submission form replica (used only when no submissionSlot is provided) ── */
-function SubmissionFormReplica({ contest }: { contest: ContestData }) {
-  const brand = contest.brand.name;
-  const Field = ({ label, ph, req, wide, type = 'text' }:
-    { label: string; ph: string; req?: boolean; wide?: boolean; type?: string }) => (
-    <div className={`esf__field ${wide ? 'esf__field--wide' : ''}`}>
-      <label>{label}{req && ' *'}</label>
-      {type === 'textarea'
-        ? <textarea placeholder={ph} rows={3} />
-        : <input type={type} placeholder={ph} />}
-    </div>
-  );
-  return (
-    <div className="esf">
-      <div className="esf__head">{brand} {contest.contestType}</div>
-      <div className="esf__caption">Fill out the form below to submit your design for the contest.</div>
-      <div className="esf__grid">
-        <Field label="First Name" ph="Enter your first name" req />
-        <Field label="Last Name" ph="Enter your last name" req />
-        <Field label="Preferred Name/Alias" ph="Enter your artist name or alias" req wide />
-        <Field label="Age" ph="Enter your age" req type="number" />
-        <Field label="Country/Region" ph="Enter your country or region" req />
-        <Field label="Email Address" ph="Enter your email" req type="email" />
-        <Field label="Phone Number" ph="+1" type="tel" />
-        <Field label="Social Media Links" ph="Share your preferred social media handles and links here" wide />
-        <div className="esf__field esf__field--wide">
-          <label>Upload {brand} Design *</label>
-          <div className="esf__hint">Please upload a single or multiple image files for your submission (jpg, png, or zip).</div>
-          <div className="esf__drop"><span className="esf__droplink">Choose file</span> <span className="esf__droptxt">or drop here</span></div>
-        </div>
-        <Field label="Design Description" ph="Give a description or explainer of the design." req wide type="textarea" />
-        <Field label={`Note to ${brand}`} ph="Send a message to the team or cast about the series or contest." wide type="textarea" />
-      </div>
-      <label className="esf__consent">
-        <input type="checkbox" />
-        <span>I agree to the <a href={contest.termsUrl} target="_blank" rel="noreferrer">Terms and Conditions</a> and I own the rights to the uploaded image.</span>
-      </label>
-      <button type="button" className="esf__submit">Submit</button>
-    </div>
-  );
-}
-
 /* ── FAQ ─────────────────────────────────────────────────────────────────── */
 function Faq({ items }: { items: ContestData['faq'] }) {
   const [open, setOpen] = useState(-1);
@@ -391,6 +353,12 @@ export default function ContestDetailPage({
   const target = useMemo(() => new Date(contest.submissionDeadlineIso).getTime(), [contest.submissionDeadlineIso]);
   const t = useCountdown(target);
   const money = firstMoney(contest);
+
+  // Submission is open when the status is active AND the deadline hasn't passed.
+  const isOpen = ['open', 'live', 'published'].includes(contest.status) && !t.done;
+  const isClosed = !isOpen;
+  // Prefer an explicit submitUrl; otherwise route to the in-app submission page.
+  const submitHref = contest.submitUrl ?? `/submissions/new?opportunity=${contest.id}`;
 
   const images = gallery
     ?? (contest.brief.referenceImages.length ? contest.brief.referenceImages.map((r) => r.url) : [])
@@ -494,9 +462,28 @@ export default function ContestDetailPage({
         </div>
       </div>
 
-      {/* SUBMISSION FORM */}
-      <div className="page-width esf-wrap">
-        {submissionSlot ?? <SubmissionFormReplica contest={contest} />}
+      <div className="mod-countdown" aria-label="Submission form">
+        {submissionSlot ?? (
+          <div className="mod-countdown__wrap" style={{ textAlign: 'center', padding: '40px 24px' }}>
+            {isClosed ? (
+              <Button disabled size="lg" className="esf-submit-btn esf-submit-btn--closed w-full max-w-md h-14 text-lg">
+                Submissions Closed
+              </Button>
+            ) : (
+              <Button asChild size="lg" className="esf-submit-btn w-full max-w-md h-14 text-lg">
+                <Link href={`/submissions/new?contest=${contest.id}`}>
+                  Submit Your Artwork
+                  <ArrowRight className="ml-3 h-5 w-5" />
+                </Link>
+              </Button>
+            )}
+            <p className="mt-4 text-sm" style={{ color: 'rgba(255,255,255,.7)' }}>
+              {isClosed
+                ? 'The submission period has ended.'
+                : 'Submission will open in your dashboard'}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* FAQ */}
@@ -619,37 +606,27 @@ const CSS = `
 .mfa .mod-countdown__done{ margin-top:12px; padding:10px 12px; border-radius:12px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.10); font-weight:600; color:#fff; }
 @media (max-width:640px){ .mfa .mod-countdown__timer{ grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; } .mfa .mod-countdown__num{ font-size:26px; } }
 
-/* SUBMISSION FORM (replica) */
-.mfa .esf-wrap{ margin:24px auto; }
-.mfa .esf{ max-width:800px; margin:0 auto; background:#111; border-radius:24px; padding:40px; color:#fff; box-shadow:0 18px 50px rgba(0,0,0,.3); }
-.mfa .esf__head{ font-size:26px; font-weight:800; }
-.mfa .esf__caption{ margin:6px 0 24px; color:rgba(255,255,255,.7); font-size:15px; }
-.mfa .esf__grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-.mfa .esf__field{ display:flex; flex-direction:column; gap:6px; }
-.mfa .esf__field--wide{ grid-column:1 / -1; }
-.mfa .esf__field label{ font-size:14px; font-weight:600; }
-.mfa .esf__hint{ font-size:12.5px; color:rgba(255,255,255,.6); margin-top:-2px; }
-.mfa .esf__field input,
-.mfa .esf__field textarea{
-  width:100%;
-  border:1px solid #555;
-  border-radius:4px;
-  padding:10px 12px;
-  font-size:15px;
-  background:#3a3a3a;   /* field background */
-  color:#f1f1f1;        /* user-entered text */
-  font-family:inherit;
-  resize:vertical;
+/* SUBMISSION CTA BUTTON */
+.mfa .esf-submit-btn{
+  background:rgba(255,255,255,.10);
+  border:1px solid rgba(255,255,255,.18);
+  color:#fff;
+  margin:0 auto;
+  transition:background .15s ease, border-color .15s ease;
 }
-.mfa .esf__field input::placeholder, .mfa .esf__field textarea::placeholder{ color:#bdbdbd; }
-.mfa .esf__drop{ border:1px dashed rgba(255,255,255,.35); border-radius:6px; padding:18px 14px; font-size:14px; color:rgba(255,255,255,.75); background:rgba(255,255,255,.03); }
-.mfa .esf__droplink{ color:#7fb2ff; font-weight:700; cursor:pointer; }
-.mfa .esf__consent{ display:flex; gap:10px; align-items:flex-start; margin:20px 0 22px; font-size:14px; color:rgba(255,255,255,.85); }
-.mfa .esf__consent input{ margin-top:3px; }
-.mfa .esf__consent a{ color:#7fb2ff; }
-.mfa .esf__submit{ background:#09418b; color:#fff; border:2px solid transparent; border-radius:4px; padding:10px 22px; font-weight:700; font-size:15px; cursor:pointer; }
-.mfa .esf__submit:hover{ filter:brightness(1.08); }
-@media (max-width:640px){ .mfa .esf{ padding:24px; } .mfa .esf__grid{ grid-template-columns:1fr; } }
+.mfa .esf-submit-btn:hover{
+  background:rgba(255,255,255,.16);
+  border-color:rgba(255,255,255,.30);
+}
+.mfa .esf-submit-btn--closed{
+  background:rgba(255,255,255,.06);
+  color:rgba(255,255,255,.55);
+  cursor:not-allowed;
+}
+.mfa .esf-submit-btn--closed:hover{
+  background:rgba(255,255,255,.06);
+  border-color:rgba(255,255,255,.18);
+}
 
 /* FAQ */
 .mfa .mod-faq{ max-width:980px; margin:0 auto; padding:24px 0 56px; }
@@ -667,3 +644,4 @@ const CSS = `
 .mfa :focus-visible{ outline:2px solid #09418b; outline-offset:2px; }
 @media (prefers-reduced-motion:reduce){ .mfa *{ transition:none !important; } }
 `;
+
