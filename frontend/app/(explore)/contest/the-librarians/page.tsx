@@ -1,7 +1,5 @@
 'use client';
 
-// Example route, e.g. app/opportunities/the-librarians/page.tsx
-// Shows how to render the generic ContestDetailPage for The Librarians,
 // passing the bits that live outside the unified ContestData shape.
 
 import ContestDetailPage, { LegalPoint } from '../ContestDetailsPage';

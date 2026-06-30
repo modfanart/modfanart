@@ -19,6 +19,7 @@ import checklist1 from '@/assets/images/icons/checklist1.png';
 import question1 from '@/assets/images/icons/question1.png';
 import eye1 from '@/assets/images/icons/eye1.png';
 import { useRouter } from 'next/navigation';
+import Link from 'next/dist/client/link';
 
 const contests = [
   {
@@ -26,6 +27,7 @@ const contests = [
     contestName: "The Librarians",
     brandName: "Electric Entertainment",
     image: "/contests/librarianCard.jpg",
+    link: "/contest/contest_the_librarians_2026",
   },
   // {
   //   id: 2,
@@ -359,9 +361,11 @@ export default function HomePage() {
                       {contest.contestName}
                     </h4>
 
-                    <Button className="mt-3 text-xs rounded-full">
-                      View and Enter
-                    </Button>
+                    <Link href={contest.link}>
+                      <Button className="mt-3 text-xs rounded-full">
+                        View and Enter
+                      </Button>
+                    </Link>
                   </div>
                 </div>
               ))}
