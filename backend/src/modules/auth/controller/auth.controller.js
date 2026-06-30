@@ -5,22 +5,14 @@ const User = require('../../users/models/user.model');
 const Role = require('../../rbac/models/role.model');
 
 const ACCOUNT_TYPE_ROLE_NAMES = {
-  fan: ['fan', 'DEFAULT_USER', 'default_user', 'user'],
-  artist: ['Artist', 'artist', 'creator', 'user'],
-  brand: ['Brand', 'brand', 'brand_owner', 'brand-manager', 'brand manager', 'brand_manager', 'user'],
+  fan: 'DEFAULT_USER',
+  artist: 'ARTIST',
+  brand: 'BRAND_MANAGER',
 };
 
 async function findSignupRole(accountType) {
-  const roleNames = ACCOUNT_TYPE_ROLE_NAMES[accountType] || ACCOUNT_TYPE_ROLE_NAMES.fan;
-  for (const roleName of roleNames) {
-    const role = await Role.findByName(roleName);
-    if (role) return role;
-  }
-  return db
-    .selectFrom('roles')
-    .selectAll()
-    .where(sql`LOWER(name)`, 'in', roleNames.map((n) => n.toLowerCase()))
-    .executeTakeFirst();
+  const roleName = ACCOUNT_TYPE_ROLE_NAMES[accountType] || ACCOUNT_TYPE_ROLE_NAMES.fan;
+  return Role.findByName(roleName);
 }
 
 class AuthController {
