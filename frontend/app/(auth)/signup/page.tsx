@@ -132,6 +132,25 @@ export default function SignupPage() {
       const provider = new GoogleAuthProvider();
       const credential = await signInWithPopup(firebaseAuth, provider);
       const idToken = await credential.user.getIdToken();
+
+      const syncRes = await fetch(`${API_BASE_URL}/auth/sync`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!syncRes.ok) throw new Error('Auth sync failed');
+
+      const { user, isNewUser } = await syncRes.json();
+
+      if (!isNewUser) {
+        dispatch(setCredentials({ accessToken: idToken, user }));
+        router.push('/');
+        return;
+      }
+
       setGoogleIdToken(idToken);
       setStep(2);
     } catch (err: any) {
