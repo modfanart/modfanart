@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -14,14 +15,13 @@ DropdownMenuSeparator,
 DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-import { useLogoutMutation } from '@/services/api/authApi';
 import { useAuth } from '@/store/AuthContext';
 
 export function UserNav() {
 const router = useRouter();
 
-const [logout, { isLoading: isLoggingOut }] = useLogoutMutation();
-const { user, loading: isUserLoading } = useAuth();
+const { user, loading: isUserLoading, logout } = useAuth();
+const [isLoggingOut, setIsLoggingOut] = useState(false);
 console.log(user);
 console.log(user?.brands);
 if (isUserLoading || !user) return null;
@@ -80,12 +80,14 @@ const isEligibleForDashboard = [
 ].includes(roleName);
 
 const handleLogout = async () => {
-try {
-await logout().unwrap();
-router.push('/login');
-} catch (err) {
-console.error('Logout failed:', err);
-}
+  setIsLoggingOut(true);
+  try {
+    await logout();
+  } catch (err) {
+    console.error('Logout failed:', err);
+  } finally {
+    setIsLoggingOut(false);
+  }
 };
 
 return ( <div className="flex items-center gap-3"> <div className="hidden md:block text-right"> <p className="text-sm font-medium leading-none text-gray-900">
