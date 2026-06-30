@@ -21,25 +21,25 @@ export const librariansContest: ContestData = {
     'https://files.elfsightcdn.com/10f57fcd-29bb-4da4-9c09-61ea49a5bf6e/f9fd66d7-884a-41d1-8a22-e5b04a52551b/Updated_Motion_Fan-Creators.mp4',
   title: 'The Librarians Official Fan Art Contest',
   tagline: 'BRING YOUR CREATIVITY INTO THE WORLD OF THE LIBRARIANS!',
-  contestType: 'Fan Art Contest', // from the title "Official Fan Art Contest"
-  region: 'Global', // NOT a standalone field; from "sold to fans worldwide" / "Global distribution"
+  contestType: 'Fan Art Contest', 
+  region: 'Global',
   ageRequirement: '18+',
 
-  submissionDeadlineDisplay: 'July 15, 2026', // OVERRIDE
+  submissionDeadlineDisplay: 'July 31, 2026', 
   winnersCount: 10,
-  prizeModel: 'Cash + Royalties + Licensing', // NOT a standalone field; from $100 + 5% royalties + licensing
-  productFocus: 'Apparel', // NOT a standalone field; from DTG/apparel print guidance
-  startDateDisplay: 'March 2nd, 2026 12:00 PM EST',
+  prizeModel: 'Cash + Royalties + Licensing', 
+  productFocus: 'Apparel', 
+  startDateDisplay: 'July 1, 2026 12:00 PM EST',
 
-  submissionDeadlineIso: '2026-07-15', // OVERRIDE (new date has no stated time)
-  submissionDeadlineAt: null, // new July 15 date has no time-of-day on record
-  startDateAt: '2026-03-02T12:00:00-05:00', // from "March 2nd, 2026 12:00 PM EST"
+  submissionDeadlineIso: '2026-07-31', 
+  submissionDeadlineAt: null, 
+  startDateAt: '2026-07-01T12:00:00-05:00', // from "July 1st, 2026 12:00 PM EST"
   timezone: 'America/New_York',
 
-  winnersAnnouncedDisplay: 'July 31, 2026', // OVERRIDE
+  winnersAnnouncedDisplay: 'August 11-14, 2026', 
   eligibilityLabel: 'Participants must be 18 years or older.',
 
-  // "What You Get" list (verbatim)
+  // "What You Get" list 
   prizeSummary: {
     headline:
       'Each winner receives $100 plus 5% royalties from every sale of their design.',
@@ -49,20 +49,20 @@ export const librariansContest: ContestData = {
       'Your design recognized and sold as part of the Official Librarians Fan Merch Collection.',
     ],
   },
-  // Hero stats + key facts (verbatim)
+  // Hero stats + key facts 
   submissionSnapshot: [
     '10 artists selected',
     '$100 USD cash prize per winner',
     '5% royalties from every sale of their design',
     'Participants must be 18 years or older',
   ],
-  // "Prizes and compensation" -> WINNERS (verbatim)
+  // "Prizes and compensation" -> WINNERS 
   commercialIntent: [
     '10 selected submissions',
     'Officially licensed artwork',
     'Global distribution via the official collection',
   ],
-  // Hero intro + overview statements + details intro (verbatim)
+  // Hero intro + overview statements + details intro 
   overviewParagraphs: [
     'For the first time ever, fan artists are invited to submit original artwork inspired by The Librarians universe — with the opportunity to have your work officially licensed, turned into real merchandise, and sold to fans worldwide.',
     'This is your chance to move from fan art to canon.',
@@ -72,34 +72,34 @@ export const librariansContest: ContestData = {
 
   brief: {
     guidelinesPdfUrl: null,
-    // "What to submit" intro + "Draw inspiration from" (verbatim)
+    // "What to submit" intro + "Draw inspiration from" 
     theme:
       "We're looking for original fan art inspired by The Librarians universe — past, present, or future. Draw inspiration from: Characters, Magical artifacts, The Library, Iconic moments & lore, Symbols, themes, or quotes.",
-    // "Styles welcome" + closing (verbatim)
+    // "Styles welcome" + closing 
     styleDirection:
       'Styles welcome: Illustration, Graphic design, Typography, Poster style art, Modern or nostalgic. If it feels authentically Librarians — we want to see it.',
     targetAudience: null,
-    // Rules tab -> "What we want you to make" (verbatim)
+    // Rules tab -> "What we want you to make" 
     referenceNotes:
       'Create artwork that feels authentically Librarians. You can draw inspiration from characters, artifacts, the Library, iconic moments, symbols, lore, and themes from any era of the series. Illustration, graphic design, typography, poster style. Modern or nostalgic. Recognizable elements fans instantly know.',
     referenceImages: [],
   },
 
   requirements: {
-    // Overview -> ALLOWED (verbatim)
+    // Overview -> ALLOWED
     allowed: [
       'Original fan art in your own style',
       'Recognizable Librarians inspired elements',
       'Respectful, on brand interpretations',
     ],
-    // Rules tab -> "Not allowed" (verbatim; fuller than the Overview list, which it covers)
+    // Rules tab -> "Not allowed" 
     notAllowed: [
       'No AI generated art',
       'No copyrighted material from other franchises',
       'No copied official key art',
       'No explicit, hateful, or harmful content',
     ],
-    // Overview -> CHECK FIRST (verbatim)
+    // Overview -> CHECKLIST
     remember: [
       'Explicit content',
       'Hate, harassment, or harmful depictions',
@@ -120,7 +120,7 @@ export const librariansContest: ContestData = {
   },
 
   submissionRules: {
-    maxEntriesPerArtist: null, // NOT ON PAGE
+    maxEntriesPerArtist: null,
     aiPolicy: 'prohibited',
     aiPolicyLabel: 'No AI generated art',
   },
@@ -131,7 +131,7 @@ export const librariansContest: ContestData = {
       'Your design recognized and sold as part of the Official Librarians Fan Merch Collection.',
   },
 
-  // "Prizes and compensation" -> PAYOUT (verbatim)
+  // "Prizes and compensation" -> PAYOUT 
   prizes: [
     {
       place: 'Winners',
@@ -148,9 +148,9 @@ export const librariansContest: ContestData = {
     'Royalty payments are handled through the winner licensing agreement after selection.',
 
   timeline: [
-    { label: 'Submissions open', date: 'March 2nd, 2026 12:00 PM EST' },
-    { label: 'Submission deadline', date: 'July 15, 2026' }, // OVERRIDE (page: March 31st, 2026 11:59 PM EST)
-    { label: 'Winners announced', date: 'July 31, 2026' }, // OVERRIDE (page: April 2026)
+    { label: 'Submissions open', date: 'July 1st, 2026 12:00 PM EST' },
+    { label: 'Submission deadline', date: 'July 31st, 2026' }, // 
+    { label: 'Winners announced', date: 'August 11-14, 2026' }, // 
     { label: 'Merch launch', date: 'Shortly after selection' },
   ],
 
@@ -185,7 +185,7 @@ export const librariansContest: ContestData = {
   ],
 
   judging: {
-    // Page states one sentence, not per-criterion descriptions (verbatim)
+    // Page states one sentence, not per-criterion descriptions 
     criteria: [
       {
         title: 'Review criteria',
@@ -193,8 +193,8 @@ export const librariansContest: ContestData = {
           'Submissions are reviewed for creativity, quality, and fit with the franchise.',
       },
     ],
-    selectionType: null, // NOT ON PAGE
-    reviewTeam: null, // NOT ON PAGE
+    selectionType: null, 
+    reviewTeam: null, 
   },
 
   // Legal sub-fields hold the closest-matching points VERBATIM.
@@ -254,9 +254,8 @@ export const librariansContest: ContestData = {
     },
     {
       question: 'What is the deadline and when are winners announced?',
-      // Page originally: "Submissions open: Now; Submission deadline: February 29th, 2026; Winners announced: March 5th, 2026; Merch launch: Shortly after selection."
       answer:
-        'Submissions open: Now; Submission deadline: July 15, 2026; Winners announced: July 31, 2026; Merch launch: Shortly after selection.',
+        'Submissions open: Now; Submission deadline: July 31, 2026; Winners announced: August 11th-14th, 2026; Merch launch: Shortly after selection.',
     },
     {
       question: 'Where can I read the full legal terms and conditions?',
@@ -265,7 +264,7 @@ export const librariansContest: ContestData = {
     },
   ],
 
-  // Rules tab -> "Must be true" (verbatim) used as the checklist
+  // Rules tab -> "Must be true" used as the checklist
   submissionChecklist: [
     'Submissions must be original artwork',
     'Artwork must be inspired by The Librarians IP',
