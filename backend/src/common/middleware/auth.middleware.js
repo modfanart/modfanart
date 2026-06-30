@@ -1,4 +1,4 @@
-const admin = require('../../config/firebase');
+const getAuth = require('../../config/firebase');
 const { db } = require('../../config');
 
 async function authenticateToken(req, res, next) {
@@ -10,7 +10,7 @@ async function authenticateToken(req, res, next) {
   }
 
   try {
-    const decoded = await admin.auth().verifyIdToken(token);
+    const decoded = await getAuth().verifyIdToken(token);
 
     // Load user + role in one query, matched by Firebase UID
     const user = await db
