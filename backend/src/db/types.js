@@ -17,6 +17,7 @@
  * @property {string} username
  * @property {string} email               (citext)
  * @property {boolean} email_verified
+ * @property {string | null} firebase_uid
  * @property {string | null} password_hash
  * @property {string} role_id             (references roles.id)
  * @property {'active' | 'suspended' | 'pending_verification' | 'deactivated'} status

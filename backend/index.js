@@ -13,6 +13,7 @@ const errorHandler = require("./src/common/middleware/error");
 dotenv.config();
 /** */
 const app = express();
+app.set('trust proxy', 1);
 
 // ====================== GLOBAL ERROR HANDLERS ======================
 process.on("uncaughtException", (err) => {

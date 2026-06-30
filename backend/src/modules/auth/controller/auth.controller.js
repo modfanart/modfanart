@@ -1,4 +1,4 @@
-const admin = require('../../../config/firebase');
+const getAuth = require('../../../config/firebase');
 const { db } = require('../../../config');
 const { sql } = require('kysely');
 const User = require('../../users/models/user.model');
@@ -30,7 +30,7 @@ class AuthController {
       const token = authHeader && authHeader.split(' ')[1];
       if (!token) return res.status(401).json({ error: 'No token provided' });
 
-      const decoded = await admin.auth().verifyIdToken(token);
+      const decoded = await getAuth().verifyIdToken(token);
       const { uid: firebaseUid, email, picture } = decoded;
 
       let user = await User.findByFirebaseUid(firebaseUid);
