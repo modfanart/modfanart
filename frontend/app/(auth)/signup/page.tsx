@@ -7,6 +7,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { ArrowLeft, Eye, EyeOff, Palette, Building2, Heart } from 'lucide-react';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { firebaseAuth } from '@/lib/firebase';
+import { API_BASE_URL } from '@/services';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -22,11 +25,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/use-toast';
-
-import { useRegisterMutation } from '@/services/api/authApi'; // Your auth registration
 import { useSubmitBrandVerificationRequestMutation } from '@/services/api/brands';
+import { useAppDispatch } from '@/store/hooks';
+import { setCredentials } from '@/services/api/features/authSlice';
 
-// ====================== SCHEMAS ======================
 const personalInfoSchema = z.object({
   firstName: z.string().min(2, 'First name must be at least 2 characters.'),
   lastName: z.string().min(2, 'Last name must be at least 2 characters.'),
@@ -68,21 +70,18 @@ type BrandRequestValues = z.infer<typeof brandRequestSchema>;
 
 export default function SignupPage() {
   const router = useRouter();
+  const dispatch = useAppDispatch();
 
   const [step, setStep] = useState<number>(1);
   const [personalInfo, setPersonalInfo] = useState<PersonalInfoValues | null>(null);
-  const [selectedAccountType, setSelectedAccountType] = useState<'fan' | 'artist' | 'brand' | null>(
-    null
-  );
-
+  const [selectedAccountType, setSelectedAccountType] = useState<'fan' | 'artist' | 'brand' | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
 
-  const [register, { isLoading: isRegistering }] = useRegisterMutation();
   const [submitBrandRequest, { isLoading: isBrandSubmitting }] =
     useSubmitBrandVerificationRequestMutation();
 
-  // Forms
   const personalForm = useForm<PersonalInfoValues>({
     resolver: zodResolver(personalInfoSchema),
     defaultValues: { firstName: '', lastName: '', email: '' },
@@ -111,7 +110,6 @@ export default function SignupPage() {
     },
   });
 
-  // ====================== HANDLERS ======================
   const onPersonalSubmit = (values: PersonalInfoValues) => {
     setPersonalInfo(values);
     setStep(2);
@@ -124,37 +122,56 @@ export default function SignupPage() {
 
   const onAccountSubmit = async (values: AccountInfoValues) => {
     if (!personalInfo || !selectedAccountType) return;
+    setIsRegistering(true);
 
     try {
-      const payload = {
-        username: values.username.trim(),
-        email: personalInfo.email.trim(),
-        password: values.password,
-        accountType: selectedAccountType,
-      };
+      const credential = await createUserWithEmailAndPassword(
+        firebaseAuth,
+        personalInfo.email.trim(),
+        values.password
+      );
 
-      await register(payload).unwrap();
+      const idToken = await credential.user.getIdToken();
+
+      const syncRes = await fetch(`${API_BASE_URL}/auth/sync`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: values.username.trim().toLowerCase(),
+          accountType: selectedAccountType,
+        }),
+      });
+
+      if (!syncRes.ok) throw new Error('Auth sync failed');
+
+      const { user } = await syncRes.json();
+      dispatch(setCredentials({ accessToken: idToken, user }));
 
       if (selectedAccountType === 'brand') {
-        // Pre-fill brand form
         brandForm.setValue('companyName', `${personalInfo.firstName} ${personalInfo.lastName}`);
         brandForm.setValue('contactEmail', personalInfo.email);
         setStep(4);
       } else {
-        // Fan or Artist
         toast({
-          title: 'Account Created Successfully!',
-          description: 'A confirmation email has been sent to your inbox.',
+          title: 'Account Created!',
+          description: 'Welcome to Modfanart.',
         });
-        router.push('/login');
+        router.push('/');
       }
     } catch (err: any) {
-      console.error('Signup failed:', err);
-      toast({
-        title: 'Registration Failed',
-        description: err?.data?.message || err?.data?.error || 'Something went wrong. Please try again.',
-        variant: 'destructive',
-      });
+      const message =
+        err?.code === 'auth/email-already-in-use'
+          ? 'An account with this email already exists.'
+          : err?.code === 'auth/weak-password'
+          ? 'Password is too weak.'
+          : err?.message || 'Registration failed. Please try again.';
+
+      toast({ title: 'Registration Failed', description: message, variant: 'destructive' });
+    } finally {
+      setIsRegistering(false);
     }
   };
 
@@ -172,10 +189,10 @@ export default function SignupPage() {
 
       toast({
         title: 'Brand Verification Request Submitted',
-        description: 'Our team will review your request shortly. You will be notified via email.',
+        description: 'Our team will review your request shortly.',
       });
 
-      setTimeout(() => router.push('/login'), 2000);
+      setTimeout(() => router.push('/'), 2000);
     } catch (err: any) {
       toast({
         title: 'Submission Failed',
@@ -185,36 +202,26 @@ export default function SignupPage() {
     }
   };
 
-  // Helper functions for Step 3
   const getStep3Title = () => {
     switch (selectedAccountType) {
-      case 'fan':
-        return 'Join as a Fan';
-      case 'artist':
-        return 'Set up your Artist Profile';
-      case 'brand':
-        return 'Set up your Brand Account';
-      default:
-        return 'Finish Setup';
+      case 'fan': return 'Join as a Fan';
+      case 'artist': return 'Set up your Artist Profile';
+      case 'brand': return 'Set up your Brand Account';
+      default: return 'Finish Setup';
     }
   };
 
   const getStep3Description = () => {
     switch (selectedAccountType) {
-      case 'fan':
-        return 'Create your fan account to discover and support amazing fan art.';
-      case 'artist':
-        return 'Set up your username and password to start submitting fan art.';
-      case 'brand':
-        return 'Your user account will be created first. Then tell us about your brand for verification.';
-      default:
-        return '';
+      case 'fan': return 'Create your fan account to discover and support amazing fan art.';
+      case 'artist': return 'Set up your username and password to start submitting fan art.';
+      case 'brand': return 'Your user account will be created first. Then tell us about your brand for verification.';
+      default: return '';
     }
   };
 
   return (
     <div className="max-w-2xl mx-auto space-y-8 py-12 px-4">
-      {/* Back Button */}
       {step > 1 && step < 4 && (
         <button
           type="button"
@@ -242,9 +249,7 @@ export default function SignupPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>First Name</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
+                      <FormControl><Input {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -255,9 +260,7 @@ export default function SignupPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Last Name</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
+                      <FormControl><Input {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -270,9 +273,7 @@ export default function SignupPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input type="email" {...field} />
-                    </FormControl>
+                    <FormControl><Input type="email" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -286,7 +287,7 @@ export default function SignupPage() {
         </>
       )}
 
-      {/* Step 2: Choose Account Type */}
+      {/* Step 2: Account Type */}
       {step === 2 && (
         <>
           <div className="text-center">
@@ -302,12 +303,7 @@ export default function SignupPage() {
                 render={({ field }) => (
                   <FormItem className="space-y-4">
                     <FormControl>
-                      <RadioGroup
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        className="space-y-4"
-                      >
-                        {/* Fan Card */}
+                      <RadioGroup onValueChange={field.onChange} value={field.value} className="space-y-4">
                         <Card
                           className={`cursor-pointer border-2 transition-all ${field.value === 'fan' ? 'border-violet-600' : 'border-gray-200'}`}
                           onClick={() => field.onChange('fan')}
@@ -318,15 +314,12 @@ export default function SignupPage() {
                               <Heart className="h-6 w-6 text-pink-600" />
                             </div>
                             <div>
-                              <label htmlFor="fan" className="font-medium text-lg cursor-pointer">
-                                Fan
-                              </label>
+                              <label htmlFor="fan" className="font-medium text-lg cursor-pointer">Fan</label>
                               <p className="text-sm text-gray-500">Discover and support fan art</p>
                             </div>
                           </CardContent>
                         </Card>
 
-                        {/* Artist Card */}
                         <Card
                           className={`cursor-pointer border-2 transition-all ${field.value === 'artist' ? 'border-violet-600' : 'border-gray-200'}`}
                           onClick={() => field.onChange('artist')}
@@ -337,18 +330,12 @@ export default function SignupPage() {
                               <Palette className="h-6 w-6 text-purple-600" />
                             </div>
                             <div>
-                              <label
-                                htmlFor="artist"
-                                className="font-medium text-lg cursor-pointer"
-                              >
-                                Artist
-                              </label>
+                              <label htmlFor="artist" className="font-medium text-lg cursor-pointer">Artist</label>
                               <p className="text-sm text-gray-500">Create and submit fan art</p>
                             </div>
                           </CardContent>
                         </Card>
 
-                        {/* Brand Card */}
                         <Card
                           className={`cursor-pointer border-2 transition-all ${field.value === 'brand' ? 'border-violet-600' : 'border-gray-200'}`}
                           onClick={() => field.onChange('brand')}
@@ -359,12 +346,8 @@ export default function SignupPage() {
                               <Building2 className="h-6 w-6 text-blue-600" />
                             </div>
                             <div>
-                              <label htmlFor="brand" className="font-medium text-lg cursor-pointer">
-                                Brand / IP Holder
-                              </label>
-                              <p className="text-sm text-gray-500">
-                                License fan creations & protect your IP
-                              </p>
+                              <label htmlFor="brand" className="font-medium text-lg cursor-pointer">Brand / IP Holder</label>
+                              <p className="text-sm text-gray-500">License fan creations & protect your IP</p>
                             </div>
                           </CardContent>
                         </Card>
@@ -399,9 +382,7 @@ export default function SignupPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Username</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
+                    <FormControl><Input {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -416,11 +397,7 @@ export default function SignupPage() {
                     <FormControl>
                       <div className="relative">
                         <Input type={showPassword ? 'text' : 'password'} {...field} />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2"
-                        >
+                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2">
                           {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                         </button>
                       </div>
@@ -439,11 +416,7 @@ export default function SignupPage() {
                     <FormControl>
                       <div className="relative">
                         <Input type={showConfirmPassword ? 'text' : 'password'} {...field} />
-                        <button
-                          type="button"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                          className="absolute right-3 top-1/2 -translate-y-1/2"
-                        >
+                        <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2">
                           {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                         </button>
                       </div>
@@ -453,11 +426,7 @@ export default function SignupPage() {
                 )}
               />
 
-              <Button
-                type="submit"
-                disabled={isRegistering}
-                className="w-full bg-black hover:bg-gray-900 h-12"
-              >
+              <Button type="submit" disabled={isRegistering} className="w-full bg-black hover:bg-gray-900 h-12">
                 {isRegistering ? 'Creating Account...' : 'Create Account'}
               </Button>
             </form>
@@ -471,14 +440,12 @@ export default function SignupPage() {
           <div className="text-center mb-10">
             <h1 className="text-3xl font-bold">Almost There!</h1>
             <p className="text-gray-600 mt-3 text-lg">
-              Your user account has been created. Now please provide details about your brand for
-              verification.
+              Your user account has been created. Now please provide details about your brand for verification.
             </p>
           </div>
 
           <Form {...brandForm}>
             <form onSubmit={brandForm.handleSubmit(onBrandRequestSubmit)} className="space-y-6">
-              {/* Brand Form Fields - Same as before */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={brandForm.control}
@@ -486,23 +453,18 @@ export default function SignupPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Brand / Company Name *</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
+                      <FormControl><Input {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={brandForm.control}
                   name="website"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Website (optional)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="https://yourbrand.com" {...field} />
-                      </FormControl>
+                      <FormControl><Input placeholder="https://yourbrand.com" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -516,23 +478,18 @@ export default function SignupPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Contact Email *</FormLabel>
-                      <FormControl>
-                        <Input type="email" {...field} />
-                      </FormControl>
+                      <FormControl><Input type="email" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={brandForm.control}
                   name="contactPhone"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Contact Phone (optional)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="+91 98765 43210" {...field} />
-                      </FormControl>
+                      <FormControl><Input placeholder="+91 98765 43210" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -590,16 +547,12 @@ export default function SignupPage() {
                       value={field.value}
                       className="grid grid-cols-2 sm:grid-cols-3 gap-4"
                     >
-                      {['search', 'social', 'referral', 'event', 'article', 'other'].map(
-                        (option) => (
-                          <div key={option} className="flex items-center space-x-2">
-                            <RadioGroupItem value={option} id={option} />
-                            <label htmlFor={option} className="capitalize cursor-pointer text-sm">
-                              {option}
-                            </label>
-                          </div>
-                        )
-                      )}
+                      {['search', 'social', 'referral', 'event', 'article', 'other'].map((option) => (
+                        <div key={option} className="flex items-center space-x-2">
+                          <RadioGroupItem value={option} id={option} />
+                          <label htmlFor={option} className="capitalize cursor-pointer text-sm">{option}</label>
+                        </div>
+                      ))}
                     </RadioGroup>
                     <FormMessage />
                   </FormItem>
@@ -621,9 +574,7 @@ export default function SignupPage() {
       {step !== 4 && (
         <p className="text-center text-sm text-gray-600 mt-8">
           Already have an account?{' '}
-          <Link href="/login" className="text-violet-600 hover:underline">
-            Sign in
-          </Link>
+          <Link href="/login" className="text-violet-600 hover:underline">Sign in</Link>
         </p>
       )}
     </div>

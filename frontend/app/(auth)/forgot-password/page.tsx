@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { sendPasswordResetEmail } from 'firebase/auth';
+import { firebaseAuth } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -18,9 +20,7 @@ import { Input } from '@/components/ui/input';
 import { ArrowLeft } from 'lucide-react';
 
 const formSchema = z.object({
-  email: z.string().email({
-    message: 'Please enter a valid email address.',
-  }),
+  email: z.string().email({ message: 'Please enter a valid email address.' }),
 });
 
 export default function ForgotPasswordPage() {
@@ -30,20 +30,22 @@ export default function ForgotPasswordPage() {
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: '',
-    },
+    defaultValues: { email: '' },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    setUserEmail(values.email);
-
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      await sendPasswordResetEmail(firebaseAuth, values.email);
+      setUserEmail(values.email);
       setIsSubmitted(true);
-    }, 1500);
+    } catch (err: any) {
+      // Don't reveal whether email exists — always show success
+      setUserEmail(values.email);
+      setIsSubmitted(true);
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -56,11 +58,9 @@ export default function ForgotPasswordPage() {
         <div>
           <h1 className="text-3xl font-bold mb-2">Check your email</h1>
           <p className="text-gray-600 mb-6">
-            We've sent a password reset link to <span className="font-medium">{userEmail}</span>
+            We&apos;ve sent a password reset link to <span className="font-medium">{userEmail}</span>
           </p>
-          <p className="mb-8">
-            Please check your email and follow the instructions to reset your password.
-          </p>
+          <p className="mb-8">Please check your email and follow the instructions to reset your password.</p>
           <Link href="/login">
             <Button className="w-full h-12 bg-black hover:bg-gray-800 text-white">
               Back to Sign in
@@ -70,7 +70,7 @@ export default function ForgotPasswordPage() {
       ) : (
         <div>
           <h1 className="text-3xl font-bold mb-2">Forgot password?</h1>
-          <p className="text-gray-600 mb-8">No worries, we'll send you reset instructions.</p>
+          <p className="text-gray-600 mb-8">No worries, we&apos;ll send you reset instructions.</p>
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -81,12 +81,7 @@ export default function ForgotPasswordPage() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="Your email address"
-                        type="email"
-                        {...field}
-                        className="h-12"
-                      />
+                      <Input placeholder="Your email address" type="email" {...field} className="h-12" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

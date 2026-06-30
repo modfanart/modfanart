@@ -1,10 +1,9 @@
-// src/store/features/authSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import type { UserProfile as User } from '../userApi'; // ← this is your UserProfile type
+import type { SyncedUser } from '../authApi';
 
 interface AuthState {
   accessToken: string | null;
-  user: User | null;
+  user: SyncedUser | null;
 }
 
 const initialState: AuthState = {
@@ -16,19 +15,19 @@ export const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    // Allow user to be null (for re-auth preservation or edge cases)
-    setCredentials: (state, action: PayloadAction<{ accessToken: string; user: User | null }>) => {
+    setCredentials: (state, action: PayloadAction<{ accessToken: string; user: SyncedUser | null }>) => {
       state.accessToken = action.payload.accessToken;
       state.user = action.payload.user;
+    },
+    setToken: (state, action: PayloadAction<string | null>) => {
+      state.accessToken = action.payload;
     },
     logout: (state) => {
       state.accessToken = null;
       state.user = null;
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken'); // ← add this for completeness
     },
   },
 });
 
-export const { setCredentials, logout } = authSlice.actions;
+export const { setCredentials, setToken, logout } = authSlice.actions;
 export default authSlice.reducer;

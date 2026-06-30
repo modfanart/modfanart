@@ -30,20 +30,8 @@ import authReducer from '@/services/api/features/authSlice';
 import { adminApi } from '@/services/api/adminApi';
 // import otherSliceReducer from '@/features/other/otherSlice';  // add more as needed
 
-// ────────────────────────────────────────────────
-// Persist access token from localStorage (critical for auth surviving reload)
-// ────────────────────────────────────────────────
-const persistedAccessToken =
-  typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-
-const preloadedState = persistedAccessToken
-  ? {
-      auth: {
-        accessToken: persistedAccessToken,
-        user: null, // user will be populated via getCurrentUser query after reload
-      },
-    }
-  : undefined;
+// Auth state is restored via the Firebase onIdTokenChanged listener in Providers.tsx.
+// No localStorage preload needed — Firebase SDK handles session persistence.
 
 // ────────────────────────────────────────────────
 // Create the store
@@ -103,9 +91,6 @@ export const store = configureStore({
       notifyApi.middleware
       // add more .middleware when you create new api slices
     ),
-
-  // Restore persisted auth state on app start
-  preloadedState,
 
   // Enable Redux DevTools in development only
   devTools: process.env.NODE_ENV !== 'production',

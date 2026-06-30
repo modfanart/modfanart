@@ -1,11 +1,14 @@
 'use client';
 
 import React, { createContext, useContext } from 'react';
+import { useSelector } from 'react-redux';
+import { signOut } from 'firebase/auth';
+import { firebaseAuth } from '@/lib/firebase';
 import { useGetCurrentUserQuery, useGetMyBrandsQuery, Brand } from '@/services/api/userApi';
+import { logout as reduxLogout } from '@/services/api/features/authSlice';
+import { useAppDispatch } from '@/store/hooks';
+import type { RootState } from '@/store';
 
-/**
- * Role shape (frontend safe)
- */
 export interface RoleRow {
   id: string;
   name: string;
@@ -15,15 +18,11 @@ export interface RoleRow {
   created_at: string;
 }
 
-/**
- * Frontend-safe user
- */
 export interface AuthUser {
   id: string;
-  email: string; // always normalized to string
+  email: string;
   username: string | null;
   avatar_url: string | null;
-
   role?: RoleRow;
   brands?: Brand[];
 }
@@ -31,20 +30,22 @@ export interface AuthUser {
 interface AuthContextType {
   user: AuthUser | null;
   loading: boolean;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
-  logout: () => {},
+  logout: async () => {},
 });
 
-/**
- * Provider
- */
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { data, isLoading } = useGetCurrentUserQuery();
+  const dispatch = useAppDispatch();
+  const accessToken = useSelector((state: RootState) => state.auth.accessToken);
+
+  const { data, isLoading } = useGetCurrentUserQuery(undefined, {
+    skip: !accessToken,
+  });
 
   const isBrandManager = data?.user?.role?.name === 'BRAND_MANAGER';
 
@@ -52,44 +53,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     skip: !isBrandManager,
   });
 
-  /**
-   * Logout handler
-   */
-  const logout = () => {
-    localStorage.removeItem('token');
+  const handleLogout = async () => {
+    await signOut(firebaseAuth);
+    dispatch(reduxLogout());
     window.location.href = '/login';
   };
 
-  /**
-   * Normalize backend → frontend
-   */
   const user: AuthUser | null = data?.user
     ? {
         id: data.user.id,
-
-        // ✅ FIX: always string
         email: data.user.email ?? '',
-
         username: data.user.username ?? null,
         avatar_url: data.user.avatar_url ?? null,
-
-        /**
-         * Role normalization
-         */
         ...(data.user.role && {
           role: {
             id: data.user.role.id,
             name: data.user.role.name,
             hierarchy_level: data.user.role.hierarchy_level ?? 0,
-            is_system: false, // fallback (backend not sending)
-            permissions: {}, // fallback
-            created_at: '', // fallback
+            is_system: false,
+            permissions: {},
+            created_at: '',
           },
         }),
-
-        /**
-         * Brands (only for brand manager)
-         */
         ...(isBrandManager && {
           brands: brandsData?.brands ?? [],
         }),
@@ -97,19 +82,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     : null;
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        loading: isLoading,
-        logout,
-      }}
-    >
+    <AuthContext.Provider value={{ user, loading: isLoading && !!accessToken, logout: handleLogout }}>
       {children}
     </AuthContext.Provider>
   );
 }
 
-/**
- * Hook
- */
 export const useAuth = () => useContext(AuthContext);
