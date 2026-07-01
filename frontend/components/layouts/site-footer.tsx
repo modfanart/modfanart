@@ -31,6 +31,12 @@ export function SiteFooter() {
             Privacy
           </Link>
           <Link
+            href="/legal/submission-terms"
+            className="text-sm text-muted-foreground underline underline-offset-4"
+          >
+            Submission Terms
+          </Link>
+          <Link
             href="/contact"
             className="text-sm text-muted-foreground underline underline-offset-4"
           >
