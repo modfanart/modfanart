@@ -1,6 +1,11 @@
-// app/submissions/new/page.tsx
-export { default } from '@/components/submissions/new-submission';
+import { Suspense } from 'react';
 
-import { NewSubmissionLink } from '@/components/submissions/new-submission-link';
+import NewSubmission from '@/components/submissions/new-submission';
 
-<NewSubmissionLink />
+export default function NewSubmissionPage() {
+  return (
+    <Suspense fallback={null}>
+      <NewSubmission />
+    </Suspense>
+  );
+}
