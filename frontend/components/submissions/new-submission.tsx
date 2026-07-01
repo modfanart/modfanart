@@ -238,13 +238,20 @@ const contestError = useStub ? undefined : contestErrorRaw;
       }
 
       // 3. Submit to Contest
-      await submitContestEntry({
+      const payload: {
+        contestId: string;
+        artworkId: string;
+        submissionNotes?: string | null;
+      } = {
         contestId,
         artworkId: artwork.id,
-        submissionNotes: values.originalIp
-          ? `Fandom / Original IP: ${values.originalIp.trim()}`
-          : undefined,
-      }).unwrap();
+      };
+
+      if (values.originalIp?.trim()) {
+        payload.submissionNotes = `Fandom / Original IP: ${values.originalIp.trim()}`;
+      }
+
+      await submitContestEntry(payload).unwrap();
 
       // Success feedback + redirect
       // You can add a toast / full-page success here if preferred
