@@ -5,12 +5,11 @@ import type {
   ContestData,
   ContestStatus,
   Visibility,
-  AIPolicy,
-  ContestPrize,
+  PrizeTier,
   TimelineEntry,
   JudgingCriterion,
-  FAQItem,
-} from './contestTypes';
+  FaqItem,
+} from '@/app/(explore)/contest/contest.types';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -342,7 +341,7 @@ export default function NewContestForm() {
                 {select('Visibility', 'visibility', [
                   { value: 'public', label: 'Public' },
                   { value: 'private', label: 'Private' },
-                  { value: 'invite_only', label: 'Invite Only' },
+                  { value: 'unlisted', label: 'Unlisted' },
                 ])}
               </div>
               <div className="ncf-grid-2">
@@ -460,9 +459,9 @@ export default function NewContestForm() {
                   placeholder: '3',
                 })}
                 {select('AI Policy', 'submissionRules.aiPolicy', [
-                  { value: 'not_allowed', label: 'Not Allowed' },
-                  { value: 'disclosure_required', label: 'Allowed With Disclosure' },
                   { value: 'allowed', label: 'Fully Allowed' },
+                  { value: 'disclosure_required', label: 'Allowed With Disclosure' },
+                  { value: 'prohibited', label: 'Not Allowed' },
                 ])}
               </div>
               {field('AI Policy Display Label', 'submissionRules.aiPolicyLabel', {
@@ -584,7 +583,7 @@ export default function NewContestForm() {
                         value={prize.place}
                         onChange={(e) => {
                           const p = [...form.prizes];
-                          p[i] = { ...p[i], place: e.target.value } as ContestPrize;
+                          p[i] = { ...p[i], place: e.target.value } as PrizeTier  ;
                           set('prizes', p);
                         }}
                       />
@@ -597,7 +596,7 @@ export default function NewContestForm() {
                         placeholder="$1,000"
                         onChange={(e) => {
                           const p = [...form.prizes];
-                          p[i] = { ...p[i], amount: e.target.value } as ContestPrize;
+                          p[i] = { ...p[i], amount: e.target.value } as PrizeTier;
                           set('prizes', p);
                         }}
                       />
@@ -609,7 +608,7 @@ export default function NewContestForm() {
                         value={prize.description}
                         onChange={(e) => {
                           const p = [...form.prizes];
-                          p[i] = { ...p[i], description: e.target.value } as ContestPrize;
+                          p[i] = { ...p[i], description: e.target.value } as PrizeTier;
                           set('prizes', p);
                         }}
                       />
@@ -768,7 +767,7 @@ export default function NewContestForm() {
                       value={item.question}
                       onChange={(e) => {
                         const f = [...form.faq];
-                        f[i] = { ...f[i], question: e.target.value } as FAQItem;
+                        f[i] = { ...f[i], question: e.target.value } as FaqItem;
                         set('faq', f);
                       }}
                     />
@@ -783,7 +782,7 @@ export default function NewContestForm() {
                         value={item.answer}
                         onChange={(e) => {
                           const f = [...form.faq];
-                          f[i] = { ...f[i], answer: e.target.value } as FAQItem;
+                          f[i] = { ...f[i], answer: e.target.value } as FaqItem;
                           set('faq', f);
                         }}
                       />
