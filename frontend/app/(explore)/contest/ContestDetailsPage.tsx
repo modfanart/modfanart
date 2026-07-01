@@ -4,10 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import type { ContestData } from './contest.types';
-
-
 
 export interface LegalPoint {
   label: string;
@@ -16,19 +13,13 @@ export interface LegalPoint {
 
 export interface ContestDetailPageProps {
   contest: ContestData;
-  /** Carousel images. Falls back to brief.referenceImages, then [heroImageUrl]. */
   gallery?: string[];
-  /** "Draw inspiration from" items. Falls back to parsing brief.theme. */
   drawInspiration?: string[];
-  /** "Styles welcome" items. Falls back to parsing brief.styleDirection. */
   stylesWelcome?: string[];
-  /** Full legal list. Falls back to the fields present on contest.legal. */
   legalPoints?: LegalPoint[];
-  /** Real submission form (e.g. Elfsight embed). Replaces the static replica. */
   submissionSlot?: React.ReactNode;
 }
 
-/* ── helpers ─────────────────────────────────────────────────────────────── */
 const pad = (n: number) => String(n).padStart(2, '0');
 
 interface CountdownState {
@@ -55,8 +46,6 @@ function calc(target: number): CountdownState {
 }
 
 function useCountdown(target: number): CountdownState {
-  // Start from a stable placeholder so server and first client render match,
-  // then begin ticking after mount (avoids hydration mismatch in Next.js).
   const [t, setT] = useState<CountdownState>({
     done: false, days: '00', hours: '00', minutes: '00', seconds: '00',
   });
@@ -69,25 +58,21 @@ function useCountdown(target: number): CountdownState {
   return t;
 }
 
-/** Split a "Label: a, b, c. trailing prose" string into [a, b, c].
- *  NOTE: comma-delimited, so an item containing its own commas (e.g.
- *  "Symbols, themes, or quotes") will over-split — pass the array as a prop
- *  in that case. */
 function parseList(src: string | null | undefined, label: string): string[] {
   if (!src) return [];
   const i = src.indexOf(label);
   let body = (i === -1 ? src : src.slice(i + label.length)).trim();
   const dot = body.indexOf('. ');
-  if (dot !== -1) body = body.slice(0, dot); // drop any trailing sentence
+  if (dot !== -1) body = body.slice(0, dot);
   return body.replace(/\.$/, '').split(',').map((x) => x.trim()).filter(Boolean);
 }
 
 function firstMoney(contest: ContestData): string {
   const snap = contest.submissionSnapshot.find((x) => x.includes('$'));
   const m = snap?.match(/\$[\d,]+(?:\s?USD)?/i);
-  if (m) return m[0];
+  if (m) return m[0] ?? '';
   const m2 = contest.prizes[0]?.amount?.match(/\$[\d,]+/);
-  return m2 ? m2[0] : '';
+  return m2?.[0] ?? '';
 }
 
 function deriveLegalPoints(legal: ContestData['legal']): LegalPoint[] {
@@ -102,7 +87,6 @@ function deriveLegalPoints(legal: ContestData['legal']): LegalPoint[] {
   return out;
 }
 
-/* ── Cast carousel ───────────────────────────────────────────────────────── */
 function CastCarousel({ images }: { images: string[] }) {
   const [i, setI] = useState(0);
   const hover = useRef(false);
@@ -140,7 +124,6 @@ function CastCarousel({ images }: { images: string[] }) {
   );
 }
 
-/* ── modfd accordion row ─────────────────────────────────────────────────── */
 interface AccRowProps {
   id: string;
   icon: React.ReactNode;
@@ -162,7 +145,6 @@ function AccRow({ id, icon, title, open, onToggle, children }: AccRowProps) {
   );
 }
 
-/* ── Full details tabs ───────────────────────────────────────────────────── */
 function FullDetails({ contest, legalPoints }: { contest: ContestData; legalPoints: LegalPoint[] }) {
   const TABS: [string, string][] = [
     ['overview', 'Overview'], ['how', 'How It Works'], ['prizes', 'Prizes'],
@@ -180,7 +162,7 @@ function FullDetails({ contest, legalPoints }: { contest: ContestData; legalPoin
     <div id="mod-full-details" className="modfd">
       <div className="modfd__wrap">
         <h2 className="modfd__title">FULL DETAILS AND GUIDELINES</h2>
-        <p className="modfd__subtitle">{contest.overviewParagraphs[3]}</p>
+        <p className="modfd__subtitle">{contest.overviewParagraphs[3] ?? ''}</p>
 
         <div className="modfd__tabs" role="tablist" aria-label="Full details and guidelines tabs">
           {TABS.map(([id, label]) => (
@@ -189,11 +171,10 @@ function FullDetails({ contest, legalPoints }: { contest: ContestData; legalPoin
           ))}
         </div>
 
-        {/* Overview */}
         <div className={`modfd__panel ${tab === 'overview' ? 'is-active' : ''}`} role="tabpanel">
           <div className="modfd__card">
             <h3 className="modfd__cardTitle">Quick reference</h3>
-            <p className="modfd__muted">{contest.overviewParagraphs[2]}<br /><br /><strong>Eligibility:</strong> {contest.eligibilityLabel}</p>
+            <p className="modfd__muted">{contest.overviewParagraphs[2] ?? ''}<br /><br /><strong>Eligibility:</strong> {contest.eligibilityLabel}</p>
             <div className="modfd__grid3">
               <div className="modfd__miniCard modfd__miniCard--green">
                 <div className="modfd__pill modfd__pill--green">ALLOWED</div>
@@ -211,7 +192,6 @@ function FullDetails({ contest, legalPoints }: { contest: ContestData; legalPoin
           </div>
         </div>
 
-        {/* How it works */}
         <div className={`modfd__panel ${tab === 'how' ? 'is-active' : ''}`} role="tabpanel">
           <div className="modfd__card">
             <h3 className="modfd__cardTitle">How it works</h3>
@@ -225,7 +205,6 @@ function FullDetails({ contest, legalPoints }: { contest: ContestData; legalPoin
           </div>
         </div>
 
-        {/* Prizes */}
         <div className={`modfd__panel ${tab === 'prizes' ? 'is-active' : ''}`} role="tabpanel">
           <div className="modfd__card">
             <h3 className="modfd__cardTitle">Prizes and compensation</h3>
@@ -243,20 +222,18 @@ function FullDetails({ contest, legalPoints }: { contest: ContestData; legalPoin
           </div>
         </div>
 
-        {/* Timeline */}
         <div className={`modfd__panel ${tab === 'timeline' ? 'is-active' : ''}`} role="tabpanel">
           <div className="modfd__card">
             <h3 className="modfd__cardTitle">Timeline</h3>
             <p className="modfd__muted">Key dates for this contest.</p>
             <div className="modfd__accordion">
               <AccRow id="time-1" icon="📅" title="Dates" open={!!open['time-1']} onToggle={() => toggle('time-1')}>
-                <ul className="modfd__list">{contest.timeline.map((t, i) => <li key={i}><strong>{t.label}:</strong> {t.date}</li>)}</ul>
+                <ul className="modfd__list">{contest.timeline.map((tl, i) => <li key={i}><strong>{tl.label}:</strong> {tl.date}</li>)}</ul>
               </AccRow>
             </div>
           </div>
         </div>
 
-        {/* Rules */}
         <div className={`modfd__panel ${tab === 'rules' ? 'is-active' : ''}`} role="tabpanel">
           <div className="modfd__card">
             <h3 className="modfd__cardTitle">Contest rules</h3>
@@ -278,7 +255,6 @@ function FullDetails({ contest, legalPoints }: { contest: ContestData; legalPoin
           </div>
         </div>
 
-        {/* Submission specs */}
         <div className={`modfd__panel ${tab === 'specs' ? 'is-active' : ''}`} role="tabpanel">
           <div className="modfd__card">
             <h3 className="modfd__cardTitle">Submission specs</h3>
@@ -303,7 +279,6 @@ function FullDetails({ contest, legalPoints }: { contest: ContestData; legalPoin
           </div>
         </div>
 
-        {/* Legal */}
         <div className={`modfd__panel ${tab === 'legal' ? 'is-active' : ''}`} role="tabpanel">
           <div className="modfd__card">
             <h3 className="modfd__cardTitle">LEGAL</h3>
@@ -323,7 +298,6 @@ function FullDetails({ contest, legalPoints }: { contest: ContestData; legalPoin
   );
 }
 
-/* ── FAQ ─────────────────────────────────────────────────────────────────── */
 function Faq({ items }: { items: ContestData['faq'] }) {
   const [open, setOpen] = useState(-1);
   return (
@@ -346,7 +320,6 @@ function Faq({ items }: { items: ContestData['faq'] }) {
   );
 }
 
-/* ── Page ────────────────────────────────────────────────────────────────── */
 export default function ContestDetailPage({
   contest, gallery, drawInspiration, stylesWelcome, legalPoints, submissionSlot,
 }: ContestDetailPageProps) {
@@ -354,27 +327,23 @@ export default function ContestDetailPage({
   const t = useCountdown(target);
   const money = firstMoney(contest);
 
-  // Submission is open when the status is active AND the deadline hasn't passed.
   const isOpen = ['open', 'live', 'published'].includes(contest.status) && !t.done;
   const isClosed = !isOpen;
-  // Prefer an explicit submitUrl; otherwise route to the in-app submission page.
-  const submitHref = contest.submitUrl ?? `/submissions/new?opportunity=${contest.id}`;
+  const submitHref = contest.submitUrl ?? `/submissions/new?contest=${contest.id}`;
 
   const images = gallery
-    ?? (contest.brief.referenceImages.length ? contest.brief.referenceImages.map((r) => r.url) : [])
-    ?? [];
+    ?? (contest.brief.referenceImages.length ? contest.brief.referenceImages.map((r) => r.url) : []);
   const heroFallback = images.length ? images : (contest.heroImageUrl ? [contest.heroImageUrl] : []);
 
   const inspiration = drawInspiration ?? parseList(contest.brief.theme, 'Draw inspiration from:');
   const styles = stylesWelcome ?? parseList(contest.brief.styleDirection, 'Styles welcome:');
   const legal = legalPoints ?? deriveLegalPoints(contest.legal);
-  const leadSentence = contest.brief.theme.split('Draw inspiration from:')[0].trim();
+  const leadSentence = (contest.brief.theme.split('Draw inspiration from:')[0] ?? contest.brief.theme).trim();
 
   return (
     <div className="mfa">
       <style>{CSS}</style>
 
-      {/* HERO VIDEO */}
       <section className="hero">
         {contest.heroVideoUrl ? (
           <video className="hero__media" autoPlay muted loop playsInline poster={contest.heroImageUrl}
@@ -388,14 +357,13 @@ export default function ContestDetailPage({
         <div className="hero__text"><h2 className="hero__title">{contest.title}</h2></div>
       </section>
 
-      {/* CONTEST INFO BOX */}
       <div className="page-width">
         <section className="mod-contest-box" aria-label={`${contest.brand.name} contest details`}>
           <div className="mod-contest-box__inner">
             <div className="mod-contest-box__header">
               <h2 className="mod-contest-box__title">{contest.tagline}</h2>
-              <p className="mod-contest-box__lead">{contest.overviewParagraphs[0]}</p>
-              <p className="mod-contest-box__sub">{contest.overviewParagraphs[1]}</p>
+              <p className="mod-contest-box__lead">{contest.overviewParagraphs[0] ?? ''}</p>
+              <p className="mod-contest-box__sub">{contest.overviewParagraphs[1] ?? ''}</p>
             </div>
             <div className="mod-contest-box__grid">
               <div className="mod-contest-box__highlight">
@@ -415,7 +383,6 @@ export default function ContestDetailPage({
         </section>
       </div>
 
-      {/* CAST CAROUSEL + WHAT TO SUBMIT */}
       <section className="lib-contest-wrap" aria-label="Contest inspiration">
         {heroFallback.length > 0 && <CastCarousel images={heroFallback} />}
         <div className="lib-copy">
@@ -439,10 +406,8 @@ export default function ContestDetailPage({
         </div>
       </section>
 
-      {/* FULL DETAILS */}
       <div className="page-width"><FullDetails contest={contest} legalPoints={legal} /></div>
 
-      {/* COUNTDOWN */}
       <div className="mod-countdown" aria-label="Submission deadline countdown">
         <div className="mod-countdown__wrap">
           <h3 className="mod-countdown__title">Submission Deadline</h3>
@@ -471,7 +436,7 @@ export default function ContestDetailPage({
               </Button>
             ) : (
               <Button asChild size="lg" className="esf-submit-btn w-full max-w-md h-14 text-lg">
-                <Link href={`/submissions/new?contest=${contest.id}`}>
+                <Link href={submitHref}>
                   Submit Your Artwork
                   <ArrowRight className="ml-3 h-5 w-5" />
                 </Link>
@@ -486,27 +451,21 @@ export default function ContestDetailPage({
         )}
       </div>
 
-      {/* FAQ */}
       <div className="page-width"><Faq items={contest.faq} /></div>
     </div>
   );
 }
 
-
 const CSS = `
 .mfa{ background:#fff; color:#111; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height:1.6; }
 .mfa *{ box-sizing:border-box; }
 .mfa .page-width{ max-width:1200px; margin:0 auto; padding:0 18px; }
-
-/* HERO */
 .mfa .hero{ position:relative; min-height:550px; display:flex; align-items:center; justify-content:center; overflow:hidden; background:#0b0f19; }
 .mfa .hero__media{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
 .mfa .hero__scrim{ position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.55)); }
 .mfa .hero__text{ position:relative; padding:24px; text-align:center; }
 .mfa .hero__title{ margin:0; color:#fff; text-transform:uppercase; font-weight:900; letter-spacing:.01em; line-height:1.04; font-size:40px; text-shadow:0 4px 30px rgba(0,0,0,.6); max-width:16ch; }
 @media (min-width:769px){ .mfa .hero__title{ font-size:80px; } }
-
-/* CONTEST INFO BOX */
 .mfa .mod-contest-box{ --bg:#0b0f19; --panel:rgba(255,255,255,.06); --border:rgba(255,255,255,.14); --text:rgba(255,255,255,.92); --muted:rgba(255,255,255,.72);
   width:100%; margin:36px 0; background:radial-gradient(1200px 600px at 10% 0%, rgba(255,204,0,.16), transparent 55%), radial-gradient(900px 500px at 90% 20%, rgba(80,140,255,.16), transparent 60%), var(--bg);
   border:1px solid var(--border); border-radius:18px; padding:45px; box-shadow:0 18px 50px rgba(0,0,0,.38); }
@@ -522,8 +481,6 @@ const CSS = `
 .mfa .mod-contest-box__list{ margin:0; padding-left:18px; color:var(--muted); line-height:1.5; font-size:15px; }
 .mfa .mod-contest-box__list li{ margin:8px 0; }
 @media (max-width:900px){ .mfa .mod-contest-box{ padding:18px; } .mfa .mod-contest-box__grid{ grid-template-columns:1fr; } }
-
-/* CAST CAROUSEL + WHAT TO SUBMIT */
 .mfa .lib-contest-wrap{ width:100%; max-width:1200px; margin:0 auto; padding:22px 18px 8px; color:#111; }
 .mfa .lib-carousel{ position:relative; border-radius:22px; background:#f7f5ee; overflow:hidden; box-shadow:0 18px 50px rgba(0,0,0,.10); }
 .mfa .lib-viewport{ width:100%; height:460px; overflow:hidden; outline:none; }
@@ -547,8 +504,6 @@ const CSS = `
 .mfa .lib-footer{ margin:20px 0 0; font-size:22px; color:#555; font-weight:600; }
 @media (max-width:980px){ .mfa .lib-viewport{ height:360px; } .mfa .lib-h2{ font-size:42px; } .mfa .lib-sub{ font-size:18px; } .mfa .lib-card h3{ font-size:22px; } .mfa .lib-card ul{ font-size:18px; } .mfa .lib-footer{ font-size:18px; } }
 @media (max-width:760px){ .mfa .lib-cards{ grid-template-columns:1fr; gap:18px; } .mfa .lib-card{ padding:20px; } .mfa .lib-nav{ width:48px; height:48px; font-size:28px; } .mfa .lib-prev{ left:12px; } .mfa .lib-next{ right:12px; } }
-
-/* FULL DETAILS (modfd) */
 .mfa #mod-full-details.modfd{ font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; color:#121212; }
 .mfa #mod-full-details .modfd__wrap{ max-width:1200px; margin:0 auto; padding:28px 0; }
 .mfa #mod-full-details .modfd__title{ font-size:44px; line-height:1.05; margin:0 0 10px; letter-spacing:.5px; font-weight:900; text-transform:uppercase; }
@@ -593,8 +548,6 @@ const CSS = `
 .mfa #mod-full-details .modfd__btn{ display:inline-flex; align-items:center; justify-content:center; padding:14px 22px; border-radius:999px; background:#0f0f10; border:1px solid rgba(255,255,255,.12); font-weight:900; font-size:16px; text-decoration:none; box-shadow:0 18px 40px rgba(0,0,0,.18); color:#fff; transition:transform .12s ease, box-shadow .12s ease; }
 .mfa #mod-full-details .modfd__btn:hover{ transform:translateY(-1px); box-shadow:0 22px 46px rgba(0,0,0,.22); color:#fff; }
 @media (max-width:980px){ .mfa #mod-full-details .modfd__grid3{ grid-template-columns:1fr; } .mfa #mod-full-details .modfd__grid2{ grid-template-columns:1fr; } .mfa #mod-full-details .modfd__title{ font-size:34px; } }
-
-/* COUNTDOWN */
 .mfa .mod-countdown{ max-width:980px; margin:16px auto 20px; padding:0 16px; }
 .mfa .mod-countdown__wrap{ background:linear-gradient(180deg,#0b0b0f,#141420); border:1px solid rgba(255,255,255,.10); border-radius:20px; padding:18px 20px 16px; box-shadow:0 10px 26px rgba(0,0,0,.22); color:#fff; }
 .mfa .mod-countdown__title{ margin:0 0 6px; font-size:20px; letter-spacing:.3px; text-transform:uppercase; }
@@ -605,30 +558,10 @@ const CSS = `
 .mfa .mod-countdown__label{ margin-top:6px; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:rgba(255,255,255,.65); }
 .mfa .mod-countdown__done{ margin-top:12px; padding:10px 12px; border-radius:12px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.10); font-weight:600; color:#fff; }
 @media (max-width:640px){ .mfa .mod-countdown__timer{ grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; } .mfa .mod-countdown__num{ font-size:26px; } }
-
-/* SUBMISSION CTA BUTTON */
-.mfa .esf-submit-btn{
-  background:rgba(255,255,255,.10);
-  border:1px solid rgba(255,255,255,.18);
-  color:#fff;
-  margin:0 auto;
-  transition:background .15s ease, border-color .15s ease;
-}
-.mfa .esf-submit-btn:hover{
-  background:rgba(255,255,255,.16);
-  border-color:rgba(255,255,255,.30);
-}
-.mfa .esf-submit-btn--closed{
-  background:rgba(255,255,255,.06);
-  color:rgba(255,255,255,.55);
-  cursor:not-allowed;
-}
-.mfa .esf-submit-btn--closed:hover{
-  background:rgba(255,255,255,.06);
-  border-color:rgba(255,255,255,.18);
-}
-
-/* FAQ */
+.mfa .esf-submit-btn{ background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.18); color:#fff; margin:0 auto; transition:background .15s ease, border-color .15s ease; }
+.mfa .esf-submit-btn:hover{ background:rgba(255,255,255,.16); border-color:rgba(255,255,255,.30); }
+.mfa .esf-submit-btn--closed{ background:rgba(255,255,255,.06); color:rgba(255,255,255,.55); cursor:not-allowed; }
+.mfa .esf-submit-btn--closed:hover{ background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.18); }
 .mfa .mod-faq{ max-width:980px; margin:0 auto; padding:24px 0 56px; }
 .mfa .mod-faq__title{ text-align:center; font-size:clamp(26px,4vw,36px); margin:0 0 18px; }
 .mfa .mod-faq__intro{ text-align:center; color:#666; margin:0 0 28px; }
@@ -640,8 +573,6 @@ const CSS = `
 .mfa .mod-faq details[open] .mod-faq__icon{ transform:rotate(45deg); background:#f5f5f5; }
 .mfa .mod-faq__content{ padding:0 22px 18px; color:#333; font-size:16px; line-height:1.6; }
 .mfa .mod-faq__content p{ margin:8px 0; }
-
 .mfa :focus-visible{ outline:2px solid #09418b; outline-offset:2px; }
 @media (prefers-reduced-motion:reduce){ .mfa *{ transition:none !important; } }
 `;
-
