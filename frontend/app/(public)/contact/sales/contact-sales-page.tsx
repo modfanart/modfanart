@@ -52,26 +52,39 @@ import { toast } from '@/components/ui/use-toast';
 // ────────────────────────────────────────────────
 // Zod schema – matches BrandVerificationRequest backend
 // ────────────────────────────────────────────────
-const brandRequestSchema = z.object({
-  companyName: z
-    .string()
-    .min(2, { message: 'Brand / company name is required (min 2 characters).' }),
-  website: z.string().url({ message: 'Please enter a valid URL' }).optional().or(z.literal('')),
-  contactEmail: z.string().email({ message: 'Valid email is required.' }),
-  contactPhone: z.string().optional(),
-  description: z
-    .string()
-    .min(30, { message: 'Please tell us more about your brand (min 30 characters).' }),
-  teamSize: z.string(),
-  howHeard: z.string(),
-  // documents: z.array(z.string()).optional(), // ← add later with file upload
-});
+const brandRequestSchema = z
+  .object({
+    companyName: z
+      .string()
+      .min(2, { message: 'Brand / company name is required (min 2 characters).' }),
+    website: z.string().url({ message: 'Please enter a valid URL' }).optional().or(z.literal('')),
+    contactEmail: z.string().email({ message: 'Valid email is required.' }),
+    contactPhone: z.string().optional(),
+    description: z
+      .string()
+      .min(30, { message: 'Please tell us more about your brand (min 30 characters).' }),
+    teamSize: z.string(),
+    howHeard: z.string(),
+    howHeardOther: z.string().optional(),
+    // documents: z.array(z.string()).optional(), // ← add later with file upload
+  })
+  .superRefine((data, ctx) => {
+    // When "Other" is selected, require the free-text detail.
+    if (data.howHeard === 'other' && !data.howHeardOther?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['howHeardOther'],
+        message: 'Please tell us how you heard about us.',
+      });
+    }
+  });
 
 type BrandRequestValues = z.infer<typeof brandRequestSchema>;
 
 const defaultValues: Partial<BrandRequestValues> = {
   teamSize: '1-10',
   howHeard: 'search',
+  howHeardOther: '',
 };
 
 export function ContactSalesPage() {
@@ -97,6 +110,7 @@ export function ContactSalesPage() {
       //   contact_email: data.contactEmail,
       //   contact_phone: data.contactPhone || undefined,
       //   description: data.description,
+      //   how_heard: data.howHeard === 'other' ? data.howHeardOther : data.howHeard,
       //   // documents: uploadedUrls,
       // }).unwrap()
 
@@ -401,6 +415,15 @@ export function ContactSalesPage() {
 
                               <FormItem className="flex items-center space-x-3 space-y-0">
                                 <FormControl>
+                                  <RadioGroupItem value="discord" />
+                                </FormControl>
+                                <FormLabel className="font-normal">
+                                  Discord
+                                </FormLabel>
+                              </FormItem>
+
+                              <FormItem className="flex items-center space-x-3 space-y-0">
+                                <FormControl>
                                   <RadioGroupItem value="referral" />
                                 </FormControl>
                                 <FormLabel className="font-normal">
@@ -441,6 +464,26 @@ export function ContactSalesPage() {
                         </FormItem>
                       )}
                     />
+
+                    {/* Other detail - shown only when "Other" is selected */}
+                    {form.watch('howHeard') === 'other' && (
+                      <FormField
+                        control={form.control}
+                        name="howHeardOther"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Please specify</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="How did you hear about us?"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
 
                     {/* What Happens Next */}
 
