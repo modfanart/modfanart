@@ -4,7 +4,6 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
 import {
   Building,
   CalendarDays,
@@ -48,44 +47,11 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/components/ui/use-toast';
-
-// ────────────────────────────────────────────────
-// Zod schema – matches BrandVerificationRequest backend
-// ────────────────────────────────────────────────
-const brandRequestSchema = z
-  .object({
-    companyName: z
-      .string()
-      .min(2, { message: 'Brand / company name is required (min 2 characters).' }),
-    website: z.string().url({ message: 'Please enter a valid URL' }).optional().or(z.literal('')),
-    contactEmail: z.string().email({ message: 'Valid email is required.' }),
-    contactPhone: z.string().optional(),
-    description: z
-      .string()
-      .min(30, { message: 'Please tell us more about your brand (min 30 characters).' }),
-    teamSize: z.string(),
-    howHeard: z.string(),
-    howHeardOther: z.string().optional(),
-    // documents: z.array(z.string()).optional(), // ← add later with file upload
-  })
-  .superRefine((data, ctx) => {
-    // When "Other" is selected, require the free-text detail.
-    if (data.howHeard === 'other' && !data.howHeardOther?.trim()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['howHeardOther'],
-        message: 'Please tell us how you heard about us.',
-      });
-    }
-  });
-
-type BrandRequestValues = z.infer<typeof brandRequestSchema>;
-
-const defaultValues: Partial<BrandRequestValues> = {
-  teamSize: '1-10',
-  howHeard: 'search',
-  howHeardOther: '',
-};
+import {
+  brandRequestSchema,
+  brandRequestDefaultValues,
+  type BrandRequestValues,
+} from './contact-sales-schema';
 
 export function ContactSalesPage() {
   const [activeTab, setActiveTab] = useState('request');
@@ -94,7 +60,7 @@ export function ContactSalesPage() {
 
   const form = useForm<BrandRequestValues>({
     resolver: zodResolver(brandRequestSchema),
-    defaultValues,
+    defaultValues: brandRequestDefaultValues,
   });
 
   async function onSubmit(data: BrandRequestValues) {
