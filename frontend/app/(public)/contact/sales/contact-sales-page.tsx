@@ -47,6 +47,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/components/ui/use-toast';
+import { useSubmitBrandVerificationRequestMutation } from '@/services/api/brands';
 import {
   brandRequestSchema,
   brandRequestDefaultValues,
@@ -63,25 +64,22 @@ export function ContactSalesPage() {
     defaultValues: brandRequestDefaultValues,
   });
 
+  const [submitBrandRequest] = useSubmitBrandVerificationRequestMutation();
+
   async function onSubmit(data: BrandRequestValues) {
     setIsSubmitting(true);
 
     try {
-      // ────────────────────────────────────────────────
-      // In real app → replace with RTK Query mutation
-      // const [submitRequest] = useSubmitBrandVerificationRequestMutation()
-      // await submitRequest({
-      //   company_name: data.companyName,
-      //   website: data.website || undefined,
-      //   contact_email: data.contactEmail,
-      //   contact_phone: data.contactPhone || undefined,
-      //   description: data.description,
-      //   how_heard: data.howHeard === 'other' ? data.howHeardOther : data.howHeard,
-      //   // documents: uploadedUrls,
-      // }).unwrap()
-
-      // Simulate API delay (remove in production)
-      await new Promise((resolve) => setTimeout(resolve, 1400));
+      await submitBrandRequest({
+        company_name: data.companyName,
+        website: data.website || null,
+        contact_email: data.contactEmail,
+        contact_phone: data.contactPhone || null,
+        description: data.description,
+        team_size: data.teamSize,
+        // For "Other", send the free-text detail; otherwise the selected source.
+        how_heard: data.howHeard === 'other' ? data.howHeardOther : data.howHeard,
+      }).unwrap();
 
       toast({
         title: 'Brand request received',
