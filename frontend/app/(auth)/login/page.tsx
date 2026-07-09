@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -33,6 +33,14 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginPageInner />
+    </Suspense>
+  );
+}
+
+function LoginPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
