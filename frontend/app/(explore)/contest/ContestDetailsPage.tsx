@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/store/AuthContext';
 import type { ContestData } from './contest.types';
 
 export interface LegalPoint {
@@ -327,9 +328,11 @@ export default function ContestDetailPage({
   const t = useCountdown(target);
   const money = firstMoney(contest);
 
+  const { user } = useAuth();
   const isOpen = ['open', 'live', 'published'].includes(contest.status) && !t.done;
   const isClosed = !isOpen;
-  const submitHref = contest.submitUrl ?? `/submissions/new?contest=${contest.id}`;
+  const submissionHref = contest.submitUrl ?? `/submissions/new?contest=${contest.id}`;
+  const submitHref = user ? submissionHref : `/signup?redirect=${encodeURIComponent(submissionHref)}`;
 
   const images = gallery
     ?? (contest.brief.referenceImages.length ? contest.brief.referenceImages.map((r) => r.url) : []);

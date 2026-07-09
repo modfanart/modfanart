@@ -7,9 +7,9 @@ export function getBasePath(user: any) {
     return username ? `/artist/${username}` : null;
   }
 
-  if (role === 'brand_manager') {
-    const brandId = user?.brands?.[0]?.id;
-    return brandId ? `/brand-manager/${brandId}` : null;
+  if (role === 'brand_manager' || role === 'brand_owner') {
+    const brandSlug = user?.brands?.[0]?.slug;
+    return brandSlug ? `/brand-manager/${brandSlug}` : null;
   }
 
   if (role === 'judge') {

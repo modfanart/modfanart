@@ -42,11 +42,12 @@ dashboardPath = `/artist/${user.username}`;
 break;
 
 
-case 'brand_manager': {
+case 'brand_manager':
+case 'brand_owner': {
   const brand = user?.brands?.[0];
 
-  if (brand?.id) {
-    dashboardPath = `/brand-manager/${brand.id}`;
+  if (brand?.slug) {
+    dashboardPath = `/brand-manager/${brand.slug}`;
   } else {
     dashboardPath = '/brand-manager';
   }
@@ -73,6 +74,7 @@ default:
 const isEligibleForDashboard = [
 'artist',
 'brand_manager',
+'brand_owner',
 'judge',
 'admin',
 'superadmin',

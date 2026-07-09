@@ -410,7 +410,7 @@ getContestEntries: builder.query<
       { status?: string; limit?: number; offset?: number } | void
     >({
       query: (params) => ({
-        url: '/me/contest-entries',
+        url: '/contest/me/contest-entries',
         params: params || {},
       }),
       providesTags: ['MyContestEntries'],

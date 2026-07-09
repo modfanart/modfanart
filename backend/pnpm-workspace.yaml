@@ -1,0 +1,8 @@
+allowBuilds:
+  protobufjs: true
+onlyBuiltDependencies:
+  - '@firebase/util'
+  - cpu-features
+  - esbuild
+  - protobufjs
+  - ssh2

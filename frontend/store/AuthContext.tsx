@@ -47,10 +47,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     skip: !accessToken,
   });
 
-  const isBrandManager = data?.user?.role?.name === 'BRAND_MANAGER';
+  const hasBrandRole = ['BRAND_MANAGER', 'BRAND_OWNER', 'BRAND_EDITOR', 'BRAND_MEMBER'].includes(
+    data?.user?.role?.name ?? ''
+  );
 
   const { data: brandsData } = useGetMyBrandsQuery(undefined, {
-    skip: !isBrandManager,
+    skip: !hasBrandRole,
   });
 
   const handleLogout = async () => {
@@ -75,7 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             created_at: '',
           },
         }),
-        ...(isBrandManager && {
+        ...(hasBrandRole && {
           brands: brandsData?.brands ?? [],
         }),
       }

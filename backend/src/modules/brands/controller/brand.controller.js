@@ -302,11 +302,20 @@ async function getMyBrands(req, res) {
   try {
     const managed = await BrandManager.findByUser(req.user.id);
 
-    if (managed.length === 0) {
+    const owned = await db
+      .selectFrom("brands")
+      .select(["id"])
+      .where("user_id", "=", req.user.id)
+      .where("deleted_at", "is", null)
+      .execute();
+
+    const brandIds = [
+      ...new Set([...managed.map((m) => m.brand_id), ...owned.map((b) => b.id)]),
+    ];
+
+    if (brandIds.length === 0) {
       return res.json([]);
     }
-
-    const brandIds = managed.map((m) => m.brand_id);
 
     const brands = await db
       .selectFrom("brands")
@@ -320,7 +329,7 @@ async function getMyBrands(req, res) {
       const relation = managed.find((m) => m.brand_id === brand.id);
       return {
         ...brand,
-        my_role: relation?.role || null,
+        my_role: relation?.role || (brand.user_id === req.user.id ? "owner" : null),
       };
     });
 
