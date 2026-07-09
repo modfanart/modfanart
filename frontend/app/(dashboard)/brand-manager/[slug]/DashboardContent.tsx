@@ -33,9 +33,10 @@ import {
 import { useGetContestsQuery } from '@/services/api/contestsApi';
 
 import { useAuth } from '@/store/AuthContext';
+import { PendingEntriesReview } from '@/components/submissions/pending-entries-review';
 export default function DashboardContent() {
   const { user } = useAuth();
-  const isBrandManager = user?.role?.name === 'BRAND_MANAGER';
+  const isBrandManager = ['BRAND_MANAGER', 'BRAND_OWNER'].includes(user?.role?.name ?? '');
 
   // Get the primary brand (most brand managers manage only one)
   const primaryBrand = user?.brands?.[0];
@@ -294,6 +295,8 @@ export default function DashboardContent() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        <PendingEntriesReview />
       </main>
     </div>
   );

@@ -24,13 +24,27 @@ import {
 
 import { LucideIcon } from 'lucide-react';
 
-type Role = 'artist' | 'brand_manager' | 'judge' | 'admin';
+type Role = 'artist' | 'brand_manager' | 'brand_owner' | 'judge' | 'admin';
 
 type NavItem = {
   name: string;
   href: string;
   icon: LucideIcon;
 };
+
+const brandNavItems = (base: string): NavItem[] => [
+  { name: 'Overview', href: `${base}`, icon: LayoutDashboard },
+  { name: 'Brand Profile', href: `${base}/profile`, icon: Store },
+  { name: 'Opportunities', href: `${base}/opportunities`, icon: Megaphone },
+  { name: 'Submissions', href: '#', icon: ClipboardList },
+  { name: 'Licensing', href: `${base}/licensing-requests`, icon: FileText },
+  { name: 'Asset Hub', href: '#', icon: Layers },
+  { name: 'Storefront', href: `#`, icon: ShoppingBag },
+  { name: 'Content', href: `#`, icon: Newspaper },
+  { name: 'Analytics', href: '#', icon: BarChart3 },
+  { name: 'Automation', href: '#', icon: Bot },
+  { name: 'Settings', href: `${base}/settings`, icon: Settings },
+];
 
 export const sidebarConfig: Record<Role, (base: string) => NavItem[]> = {
   artist: (base: string) => [
@@ -43,19 +57,8 @@ export const sidebarConfig: Record<Role, (base: string) => NavItem[]> = {
     { name: 'Analytics', href: `#`, icon: BarChart3 },
   ],
 
-  brand_manager: (base: string) => [
-    { name: 'Overview', href: `${base}`, icon: LayoutDashboard },
-    { name: 'Brand Profile', href: `${base}/profile`, icon: Store },
-    { name: 'Opportunities', href: `${base}/opportunities`, icon: Megaphone },
-    { name: 'Submissions', href: '#', icon: ClipboardList },
-    { name: 'Licensing', href: `${base}/licensing-requests`, icon: FileText },
-    { name: 'Asset Hub', href: '#', icon: Layers },
-    { name: 'Storefront', href: `#`, icon: ShoppingBag },
-    { name: 'Content', href: `#`, icon: Newspaper },
-    { name: 'Analytics', href: '#', icon: BarChart3 },
-    { name: 'Automation', href: '#', icon: Bot },
-    { name: 'Settings', href: `${base}/settings`, icon: Settings },
-  ],
+  brand_manager: brandNavItems,
+  brand_owner: brandNavItems,
 
   judge: (base: string) => [
     { name: 'Overview', href: `${base}`, icon: LayoutDashboard },

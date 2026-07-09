@@ -27,7 +27,7 @@ class ContestJudgeController {
       // === Improved Authorization Logic ===
       const user = req.user;
       const isPlatformAdmin = user?.role === "Admin";
-      const isBrandOwner = contest.brand_id === user?.id;
+      const isBrandOwner = (user?.brands || []).some((b) => b.id === contest.brand_id);
 
       // Brand Manager check - more forgiving
       const isBrandManager =

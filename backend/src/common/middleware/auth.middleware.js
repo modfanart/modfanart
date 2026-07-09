@@ -37,7 +37,10 @@ async function authenticateToken(req, res, next) {
 
     let brands = [];
 
-    if (user.role === 'brand_manager' || user.role === 'Admin') {
+    const BRAND_ROLES = ['BRAND_OWNER', 'BRAND_MANAGER', 'BRAND_EDITOR', 'BRAND_MEMBER'];
+    const ADMIN_ROLES = ['ADMIN', 'SUPERADMIN'];
+
+    if (BRAND_ROLES.includes(user.role) || ADMIN_ROLES.includes(user.role)) {
       brands = await db
         .selectFrom('brands as b')
         .leftJoin('brand_managers as bm', 'bm.brand_id', 'b.id')

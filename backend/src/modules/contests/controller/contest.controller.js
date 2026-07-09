@@ -366,7 +366,7 @@ class ContestController {
       if (!contest) return res.status(404).json({ error: "Contest not found" });
 
       const isAuthorized =
-        contest.brand_id === req.user.id ||
+        (req.user.brands || []).some((brand) => brand.id === contest.brand_id) ||
         req.user?.permissions?.["contests.manage"];
       if (!isAuthorized)
         return res.status(403).json({ error: "Not authorized" });
@@ -408,7 +408,7 @@ class ContestController {
       if (!contest) return res.status(404).json({ error: "Contest not found" });
 
       const isAuthorized =
-        contest.brand_id === req.user.id ||
+        (req.user.brands || []).some((brand) => brand.id === contest.brand_id) ||
         req.user?.permissions?.["contests.manage"];
       if (!isAuthorized)
         return res.status(403).json({ error: "Not authorized" });

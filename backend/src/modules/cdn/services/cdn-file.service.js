@@ -1,44 +1,41 @@
 // services/cdn-file.service.js
 const path = require("path");
 const fs = require("fs").promises;
-const Client = require("ssh2-sftp-client");
-const { sql } = require("kysely");
-const config = {
-  host: process.env.CDN_HOST,
-  port: 22,
-  username: process.env.CDN_USERNAME,
-  password: process.env.CDN_PASSWORD,
-};
+const { S3Client, PutObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 
-const REMOTE_BASE_PATH = process.env.CDN_REMOTE_PATH || "/opt/cdn/cdn_mod/storage";
-const CDN_BASE_URL = process.env.CDN_BASE_URL || "https://media.modfanofficial.com";
+const s3 = new S3Client({ region: process.env.AWS_REGION });
+
+const S3_BUCKET_NAME = process.env.S3_BUCKET_NAME;
+const S3_KEY_PREFIX = process.env.S3_KEY_PREFIX || "artworks";
+const CDN_BASE_URL =
+  process.env.CDN_BASE_URL || `https://${S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com`;
 
 class CDNFileService {
   constructor(cdnFileModel) {
     this.cdnFileModel = cdnFileModel;
   }
 
-  async uploadToCDN(localFilePath, remoteFilename) {
-    const sftp = new Client();
-    try {
-      await sftp.connect(config);
+  async uploadToCDN(localFilePath, remoteFilename, mimeType) {
+    const key = `${S3_KEY_PREFIX}/${remoteFilename}`;
+    const body = await fs.readFile(localFilePath);
 
-      const remoteFullPath = `${REMOTE_BASE_PATH}/${remoteFilename}`;
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: S3_BUCKET_NAME,
+        Key: key,
+        Body: body,
+        ContentType: mimeType,
+      })
+    );
 
-      await sftp.mkdir(REMOTE_BASE_PATH, true);   // Create directory if not exists
-      await sftp.put(localFilePath, remoteFullPath);
-
-      return `${CDN_BASE_URL}/${remoteFilename}`;
-    } finally {
-      await sftp.end();
-    }
+    return `${CDN_BASE_URL}/${key}`;
   }
 
   async createFileRecord(file, uploadedBy = null) {
     const remoteFilename = file.filename;
-    
-    // Upload file to remote CDN via SFTP
-    const url = await this.uploadToCDN(file.path, remoteFilename);
+
+    // Upload file to S3
+    const url = await this.uploadToCDN(file.path, remoteFilename, file.mimetype);
 
     const record = {
       original_name: file.originalname,
@@ -71,15 +68,11 @@ class CDNFileService {
     const file = await this.cdnFileModel.findById(id);
     if (!file) return false;
 
-    const sftp = new Client();
     try {
-      await sftp.connect(config);
-      const remotePath = `${REMOTE_BASE_PATH}/${file.stored_name}`;
-      await sftp.delete(remotePath);
+      const key = `${S3_KEY_PREFIX}/${file.stored_name}`;
+      await s3.send(new DeleteObjectCommand({ Bucket: S3_BUCKET_NAME, Key: key }));
     } catch (err) {
       console.warn("Failed to delete from CDN:", err.message);
-    } finally {
-      await sftp.end();
     }
 
     return this.cdnFileModel.delete(id);
