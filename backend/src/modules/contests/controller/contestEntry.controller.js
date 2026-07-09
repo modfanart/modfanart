@@ -144,7 +144,7 @@ static async getEntries(req, res) {
 
     const isAuthorized =
       req.user &&
-      (contest.brand_id === req.user.id ||
+      ((req.user.brands || []).some((brand) => brand.id === contest.brand_id) ||
         req.user.permissions?.["contests.moderate"] ||
         req.user.permissions?.["contests.judge"]);
 
@@ -225,7 +225,7 @@ static async getEntries(req, res) {
       if (!entry) return res.status(404).json({ error: "Entry not found" });
 
       const isAuthorized =
-        contest.brand_id === req.user.id ||
+        (req.user.brands || []).some((brand) => brand.id === contest.brand_id) ||
         req.user.permissions?.["contests.moderate"] ||
         (await db
           .selectFrom("contest_judges")

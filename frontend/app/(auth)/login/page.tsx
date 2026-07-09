@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -33,8 +33,18 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginPageInner />
+    </Suspense>
+  );
+}
+
+function LoginPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
+  const redirectTo = searchParams.get('redirect') || '/';
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -65,10 +75,17 @@ export default function LoginPage() {
 
       if (!syncRes.ok) throw new Error('Auth sync failed');
 
-      const { user } = await syncRes.json();
+      const { user, isNewUser } = await syncRes.json();
+
+      if (isNewUser || !user) {
+        sessionStorage.setItem('pendingGoogleIdToken', idToken);
+        router.push('/signup');
+        return;
+      }
+
       dispatch(setCredentials({ accessToken: idToken, user }));
 
-      router.push('/');
+      router.push(redirectTo);
     } catch (err: any) {
       const message =
         err?.code === 'auth/invalid-credential' || err?.code === 'auth/wrong-password'

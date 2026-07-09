@@ -15,90 +15,19 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { Suspense } from 'react';
+import { useGetMyContestEntriesQuery } from '@/services/api/contestsApi';
 
-// Sample data for submissions with actual fan art
-const submissions = [
-  {
-    id: '64db6ca4-4336-495c-a873-10967141e292',
-    title: 'Squid Game Player 456',
-    imageUrl: '/placeholder.svg?height=500&width=500&text=Squid+Game+456',
-    status: 'pending',
-    submittedAt: '2023-03-15T12:30:00Z',
-    artist: 'Min-Ji Park',
-    description: 'Fan art of Player 456 from Squid Game in his iconic green tracksuit',
-    ipOwner: 'Netflix',
-  },
-  {
-    id: '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d',
-    title: 'Ahsoka Tano Portrait',
-    imageUrl: '/placeholder.svg?height=500&width=500&text=Ahsoka+Tano',
-    status: 'approved',
-    submittedAt: '2023-03-14T09:15:00Z',
-    artist: 'Alex Rodriguez',
-    description: 'Digital painting of Ahsoka Tano from Star Wars: The Clone Wars',
-    ipOwner: 'Disney/Lucasfilm',
-  },
-  {
-    id: '1dc6e36c-2644-4695-812b-f4d95929680f',
-    title: 'Watercolor Samurai',
-    imageUrl: '/placeholder.svg?height=500&width=500&text=Samurai+Watercolor',
-    status: 'licensed',
-    submittedAt: '2023-03-12T15:45:00Z',
-    artist: 'Hiroshi Tanaka',
-    description: 'Traditional watercolor painting of a samurai warrior in battle stance',
-    ipOwner: 'Original Creation',
-  },
-  {
-    id: '7729424a-c947-4017-8959-34950780159f',
-    title: 'Cytus II - Cherry',
-    imageUrl: '/placeholder.svg?height=500&width=500&text=Cytus+II+Cherry',
-    status: 'rejected',
-    submittedAt: '2023-03-10T11:00:00Z',
-    artist: 'Wei Chen',
-    description: 'Fan art of Cherry character from the rhythm game Cytus II',
-    ipOwner: 'Rayark Inc.',
-  },
-  {
-    id: '5f28c6a7-3a67-4f8d-b85e-9a3dc1f8b5a2',
-    title: 'Jujutsu Kaisen Character',
-    imageUrl: '/placeholder.svg?height=500&width=500&text=Jujutsu+Kaisen',
-    status: 'pending',
-    submittedAt: '2023-03-08T14:20:00Z',
-    artist: 'Kenji Yamamoto',
-    description: 'Digital illustration of a character from Jujutsu Kaisen anime series',
-    ipOwner: 'MAPPA/Shueisha',
-  },
-  {
-    id: '3e7d8f9c-2b1a-4c5d-9e6f-7g8h9i0j1k2l',
-    title: 'Street Fighter Chun-Li',
-    imageUrl: '/placeholder.svg?height=500&width=500&text=Chun-Li',
-    status: 'approved',
-    submittedAt: '2023-03-05T10:30:00Z',
-    artist: 'Carlos Mendez',
-    description: 'Dynamic illustration of Chun-Li from the Street Fighter game series',
-    ipOwner: 'Capcom',
-  },
-  {
-    id: '2a3b4c5d-6e7f-8g9h-0i1j-2k3l4m5n6o7p',
-    title: 'Deathwing Dragon',
-    imageUrl: '/placeholder.svg?height=500&width=500&text=Deathwing',
-    status: 'licensed',
-    submittedAt: '2023-03-03T16:45:00Z',
-    artist: 'Sarah Johnson',
-    description: 'Epic digital painting of Deathwing from World of Warcraft',
-    ipOwner: 'Blizzard Entertainment',
-  },
-  {
-    id: '8q9r0s1t-2u3v-4w5x-6y7z-8a9b0c1d2e3f',
-    title: 'Batman Dark Knight',
-    imageUrl: '/placeholder.svg?height=500&width=500&text=Batman',
-    status: 'pending',
-    submittedAt: '2023-03-01T09:15:00Z',
-    artist: 'Michael Brown',
-    description: 'Noir-style illustration of Batman overlooking Gotham City',
-    ipOwner: 'DC Comics',
-  },
-];
+// entry_status from the backend is 'pending' | 'approved' | 'rejected' | 'disqualified'
+function mapEntryToSubmission(entry: any) {
+  return {
+    id: entry.entry_id,
+    title: entry.artwork_title || entry.contest_title || 'Untitled',
+    imageUrl: entry.thumbnail_url || '/placeholder.svg',
+    status: entry.entry_status,
+    submittedAt: entry.submitted_at,
+    artist: entry.contest_title,
+  };
+}
 
 // In a real app, this would come from your database
 // Define user information with proper defaults to avoid undefined errors
@@ -113,7 +42,24 @@ const userData = {
 };
 
 export default function DashboardContent() {
-  console.log('Dashboard content component rendering');
+  const { data, isLoading } = useGetMyContestEntriesQuery({ limit: 100 });
+  const submissions = (data?.entries || []).map(mapEntryToSubmission);
+
+  const totalCount = submissions.length;
+  const approvedCount = submissions.filter((s) => s.status === 'approved').length;
+  const rejectedCount = submissions.filter((s) => s.status === 'rejected').length;
+
+  const recentSubmissions = submissions
+    .filter((s) => s.status === 'pending')
+    .slice(0, 5)
+    .map((s) => ({
+      id: s.id,
+      title: s.title,
+      artist: { name: s.artist || 'You', image: '', initials: 'YOU' },
+      date: new Date(s.submittedAt).toLocaleDateString(),
+      status: s.status,
+    }));
+
   return (
     <div className="flex-1 space-y-6 p-6">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -124,7 +70,7 @@ export default function DashboardContent() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Link href="/submissions/new">
+          <Link href="/">
             <Button className="bg-[#9747ff] hover:bg-[#8035e0]">
               <PlusCircle className="mr-2 h-4 w-4" />
               New Submission
@@ -140,8 +86,7 @@ export default function DashboardContent() {
             <ImageIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">142</div>
-            <p className="text-xs text-muted-foreground">+22% from last month</p>
+            <div className="text-2xl font-bold">{isLoading ? '—' : totalCount}</div>
           </CardContent>
         </Card>
         <Card>
@@ -150,8 +95,7 @@ export default function DashboardContent() {
             <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">89</div>
-            <p className="text-xs text-muted-foreground">+15% from last month</p>
+            <div className="text-2xl font-bold">{isLoading ? '—' : approvedCount}</div>
           </CardContent>
         </Card>
         <Card>
@@ -160,8 +104,7 @@ export default function DashboardContent() {
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
-            <p className="text-xs text-muted-foreground">-5% from last month</p>
+            <div className="text-2xl font-bold">{isLoading ? '—' : rejectedCount}</div>
           </CardContent>
         </Card>
         <Card>
@@ -191,10 +134,10 @@ export default function DashboardContent() {
           <Card className="md:col-span-1">
             <CardHeader>
               <CardTitle>Recent Submissions</CardTitle>
-              <CardDescription>Submissions awaiting your review.</CardDescription>
+              <CardDescription>Your submissions awaiting moderation.</CardDescription>
             </CardHeader>
             <CardContent className="p-0">
-              <RecentSubmissions />
+              <RecentSubmissions submissions={recentSubmissions} />
             </CardContent>
           </Card>
 
@@ -312,7 +255,7 @@ export default function DashboardContent() {
                   <p className="text-muted-foreground mb-4 max-w-md">
                     Start by creating your first fan art submission to begin the licensing process.
                   </p>
-                  <Link href="/submissions/new">
+                  <Link href="/">
                     <Button className="bg-[#9747ff] hover:bg-[#8035e0]">
                       <PlusCircle className="mr-2 h-4 w-4" />
                       Create New Submission

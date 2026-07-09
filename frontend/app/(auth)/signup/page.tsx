@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -69,8 +69,18 @@ type AccountInfoValues = z.infer<typeof accountInfoSchema>;
 type BrandRequestValues = z.infer<typeof brandRequestSchema>;
 
 export default function SignupPage() {
+  return (
+    <Suspense fallback={null}>
+      <SignupPageInner />
+    </Suspense>
+  );
+}
+
+function SignupPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
+  const redirectTo = searchParams.get('redirect') || '/';
 
   const [step, setStep] = useState<number>(1);
   const [personalInfo, setPersonalInfo] = useState<PersonalInfoValues | null>(null);
@@ -147,7 +157,7 @@ export default function SignupPage() {
 
       if (!isNewUser) {
         dispatch(setCredentials({ accessToken: idToken, user }));
-        router.push('/');
+        router.push(redirectTo);
         return;
       }
 
@@ -192,7 +202,7 @@ export default function SignupPage() {
         setStep(4);
       } else {
         toast({ title: 'Account Created!', description: 'Welcome to Modfanart.' });
-        router.push('/');
+        router.push(redirectTo);
       }
     } catch (err: any) {
       toast({ title: 'Registration Failed', description: 'Please try again.', variant: 'destructive' });
@@ -240,7 +250,7 @@ export default function SignupPage() {
           title: 'Account Created!',
           description: 'Welcome to Modfanart.',
         });
-        router.push('/');
+        router.push(redirectTo);
       }
     } catch (err: any) {
       const message =

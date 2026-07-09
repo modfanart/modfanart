@@ -93,14 +93,13 @@ export default function NewContestSubmissionPage() {
   const [addTagToArtwork] = useAddTagToArtworkMutation();
   const [submitContestEntry, { isLoading: isSubmittingEntry }] = useSubmitEntryMutation();
 
-  // UNCOMMENT ONCE YOU HAVE A REAL BACKEND TO TEST AGAINST
-  // const {
-  //   data: contest,
-  //   isLoading: contestLoading,
-  //   error: contestError,
-  // } = useGetContestQuery(contestId!, {
-  //   skip: !contestId,
-  // });
+  const {
+    data: contest,
+    isLoading: contestLoading,
+    error: contestError,
+  } = useGetContestQuery(contestId!, {
+    skip: !contestId,
+  });
 
   const { data: categoriesResponse, isLoading: categoriesLoading } = useGetAllCategoriesQuery();
   const categories = categoriesResponse?.categories || [];
@@ -158,34 +157,6 @@ export default function NewContestSubmissionPage() {
     setSelectedTags((prev) => prev.filter((t) => t !== tagToRemove));
   };
 
-  // top of the component, after you read contestId
-const HARDCODED_CONTEST_ID = 'contest_the_librarians_2026';
-
-const HARDCODED_CONTESTS: Record<string, any> = {
-  'contest_the_librarians_2026': {
-    id: 'contest_the_librarians_2026',
-    title: 'The Librarians Official Fan Art Contest',
-    status: 'live',                              // so any active-checks pass
-    submission_end_date: '2026-07-31T23:59:59-04:00',
-    max_entries_per_user: 1,
-    // add any other fields this page reads off `contest`
-  },
-};
-
-const useStub = Boolean(contestId && HARDCODED_CONTESTS[contestId]);
-
-const {
-  data: fetchedContest,
-  isLoading: contestLoadingRaw,
-  error: contestErrorRaw,
-} = useGetContestQuery(contestId!, {
-  skip: !contestId || useStub,   // <-- don't call the API when stubbing
-});
-
-const contest = useStub ? HARDCODED_CONTESTS[contestId!] : fetchedContest;
-const contestLoading = useStub ? false : contestLoadingRaw;
-const contestError = useStub ? undefined : contestErrorRaw;
-
   // ─── Form Submission ───
   const onSubmit = async (values: FormValues) => {
     if (!file) {
@@ -210,19 +181,6 @@ const contestError = useStub ? undefined : contestErrorRaw;
 
       const artworkResult = (await createArtwork(formData).unwrap()) as any;
       const artwork = artworkResult.artwork;
-      console.log('[DEBUG] Full artworkResult:', artworkResult);
-      console.log('[DEBUG] artworkResult keys:', Object.keys(artworkResult || {}));
-      console.log('[DEBUG] artworkResult.data:', artworkResult?.data);
-      if (!artwork?.id) {
-        console.error('[ERROR] No id found in artwork response', {
-          fullResponse: artworkResult,
-          extracted: artwork,
-        });
-        throw new Error('Artwork created successfully but no ID was returned');
-      }
-
-      console.log('[SUCCESS] Artwork ID:', artwork.id);
-
       if (!artwork?.id) {
         throw new Error('Artwork created successfully but no ID was returned');
       }
@@ -254,16 +212,14 @@ const contestError = useStub ? undefined : contestErrorRaw;
       await submitContestEntry(payload).unwrap();
 
       // Success feedback + redirect
-      // You can add a toast / full-page success here if preferred
       setTimeout(() => {
-        router.push(`/opportunities/${contestId}`);
-        // Alternative: router.push(`/contests/${contestId}/entries/${newEntryId}`) if your API returns entry
+        router.push('/');
       }, 1800);
     } catch (err: any) {
       console.error('Contest submission failed:', err);
       // You can set a form-level error state here
       form.setError('root', {
-        message: err?.data?.message || 'Failed to submit entry. Please try again.',
+        message: err?.data?.error || err?.data?.message || 'Failed to submit entry. Please try again.',
       });
     }
   };

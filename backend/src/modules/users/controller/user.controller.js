@@ -785,21 +785,33 @@ class UserController {
         });
       }
 
-      // Check if user is assigned as a brand manager or owner
+      // Check if user is assigned as a brand manager, or directly owns a brand
       const managerRows = await req.db
         .selectFrom("brand_managers")
         .select(["brand_id", "role"])
         .where("user_id", "=", userId)
         .execute();
 
-      if (managerRows.length === 0) {
+      const ownedRows = await req.db
+        .selectFrom("brands")
+        .select(["id as brand_id"])
+        .where("user_id", "=", userId)
+        .where("deleted_at", "is", null)
+        .execute();
+
+      const brandIds = [
+        ...new Set([
+          ...managerRows.map((m) => m.brand_id),
+          ...ownedRows.map((b) => b.brand_id),
+        ]),
+      ];
+
+      if (brandIds.length === 0) {
         return res.status(403).json({
           success: false,
           message: "You are not managing any brands",
         });
       }
-
-      const brandIds = managerRows.map((m) => m.brand_id);
 
       // Fetch the brands this user manages
       const brands = await req.db
