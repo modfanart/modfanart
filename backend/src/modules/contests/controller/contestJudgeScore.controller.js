@@ -104,7 +104,7 @@ class ContestJudgeScoreController {
 
       // Authorization: brand owner, admin/moderator, or any assigned judge
       const isAuthorized =
-        contest.brand_id === req.user.id ||
+        (req.user.brands || []).some((brand) => brand.id === contest.brand_id) ||
         req.user.permissions?.["contests.view_scores"] ||
         req.user.permissions?.["contests.judge"] ||
         (await db
