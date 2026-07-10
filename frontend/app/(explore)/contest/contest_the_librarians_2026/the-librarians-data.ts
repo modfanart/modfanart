@@ -2,7 +2,7 @@ import type { ContestData } from '../contest.types.js';
 
 
 export const librariansContest: ContestData = {
-  id: 'd56343d5-47b3-489a-891e-f347a161e764', // real contests.id (uuid) in the database
+  id: '187a7316-1861-45a3-8d2c-c3e8700de210', // real contests.id (uuid) in the production database
   status: 'open', // NOT ON PAGE as a field; July 15 deadline is in the future. See "closed" notice preserved below.
   visibility: 'public', // NOT ON PAGE
 
