@@ -44,7 +44,7 @@ export default function RoleGuard({
 }: RoleGuardProps) {
   const { user, loading } = useAuth() as { user: AuthUser | null; loading: boolean };
   const router = useRouter();
-  console.log(user);
+
   // Memoize the check so it doesn't re-run unnecessarily
   const hasAccess = useMemo(() => {
     if (loading) return true; // don't decide yet
