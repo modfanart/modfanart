@@ -42,6 +42,7 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const dispatch = useAppDispatch();
   const accessToken = useSelector((state: RootState) => state.auth.accessToken);
+  const initialized = useSelector((state: RootState) => state.auth.initialized);
 
   const { data, isLoading } = useGetCurrentUserQuery(undefined, {
     skip: !accessToken,
@@ -82,7 +83,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     : null;
 
   return (
-    <AuthContext.Provider value={{ user, loading: isLoading && !!accessToken, logout: handleLogout }}>
+    <AuthContext.Provider
+      value={{
+        // Stay "loading" until Firebase has reported at least once, so guards
+        // don't treat the pre-rehydration window as logged out. After that,
+        // only loading while the current-user query is in flight.
+        user,
+        loading: !initialized || (isLoading && !!accessToken),
+        logout: handleLogout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

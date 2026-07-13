@@ -5,7 +5,7 @@ import { Provider, useDispatch } from 'react-redux';
 import { store } from '@/store';
 import { onIdTokenChanged } from 'firebase/auth';
 import { firebaseAuth } from '@/lib/firebase';
-import { setCredentials, logout } from '@/services/api/features/authSlice';
+import { setCredentials, logout, setInitialized } from '@/services/api/features/authSlice';
 import { API_BASE_URL } from '@/services';
 
 function FirebaseAuthSync() {
@@ -13,12 +13,12 @@ function FirebaseAuthSync() {
 
   useEffect(() => {
     const unsubscribe = onIdTokenChanged(firebaseAuth, async (firebaseUser) => {
-      if (!firebaseUser) {
-        dispatch(logout());
-        return;
-      }
-
       try {
+        if (!firebaseUser) {
+          dispatch(logout());
+          return;
+        }
+
         const token = await firebaseUser.getIdToken();
 
         const syncRes = await fetch(`${API_BASE_URL}/auth/sync`, {
@@ -38,6 +38,10 @@ function FirebaseAuthSync() {
         }
       } catch {
         dispatch(logout());
+      } finally {
+        // Auth has now resolved (with or without a session) — let guards stop
+        // showing "loading" and decide. Fires once per callback, all paths.
+        dispatch(setInitialized());
       }
     });
 
