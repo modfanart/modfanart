@@ -4,6 +4,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/store/AuthContext';
+import { loginWithReturnTo } from '@/lib/auth/redirect';
 import type { ContestData } from './contest.types';
 
 export interface LegalPoint {
@@ -331,6 +333,12 @@ export default function ContestDetailPage({
   const isClosed = !isOpen;
   const submitHref = contest.submitUrl ?? `/submissions/new?contest=${contest.id}`;
 
+  // Gate submission on auth: signed-out visitors go to login and return here
+  // after signing in; signed-in visitors go straight to the submission flow.
+  // The page itself stays public (shareable / indexable) — only the action is gated.
+  const { user, loading: authLoading } = useAuth();
+  const submitTarget = user ? submitHref : loginWithReturnTo(submitHref);
+
   const images = gallery
     ?? (contest.brief.referenceImages.length ? contest.brief.referenceImages.map((r) => r.url) : []);
   const heroFallback = images.length ? images : (contest.heroImageUrl ? [contest.heroImageUrl] : []);
@@ -434,9 +442,15 @@ export default function ContestDetailPage({
               <Button disabled size="lg" className="esf-submit-btn esf-submit-btn--closed w-full max-w-md h-14 text-lg">
                 Submissions Closed
               </Button>
+            ) : authLoading ? (
+              // Auth still resolving — keep the CTA inert so a signed-in visitor
+              // isn't briefly routed to login during the rehydration window.
+              <Button disabled size="lg" className="esf-submit-btn w-full max-w-md h-14 text-lg">
+                Submit Your Artwork
+              </Button>
             ) : (
               <Button asChild size="lg" className="esf-submit-btn w-full max-w-md h-14 text-lg">
-                <Link href={submitHref}>
+                <Link href={submitTarget}>
                   Submit Your Artwork
                   <ArrowRight className="ml-3 h-5 w-5" />
                 </Link>
@@ -445,7 +459,9 @@ export default function ContestDetailPage({
             <p className="mt-4 text-sm" style={{ color: 'rgba(255,255,255,.7)' }}>
               {isClosed
                 ? 'The submission period has ended.'
-                : 'Submission will open in your dashboard'}
+                : !authLoading && !user
+                  ? 'Log in to submit your artwork'
+                  : 'Submission will open in your dashboard'}
             </p>
           </div>
         )}
