@@ -208,7 +208,7 @@ export const librariansContest: ContestData = {
     aiPolicy:
       'AI generated art is not allowed for this contest. Submissions must be created by the artist.',
     ageRequirement: 'Eligibility: Participants must be 18 years or older.',
-    termsUrl: 'https://modfanart.com/pages/submission-terms-and-conditions',
+    termsUrl: '/legal/submission-terms',
   },
 
   faq: [
@@ -260,7 +260,7 @@ export const librariansContest: ContestData = {
     {
       question: 'Where can I read the full legal terms and conditions?',
       answer:
-        'You can view the full legal terms here: Submission Terms and Conditions (https://modfanart.com/pages/submission-terms-and-conditions).',
+        'You can view the full legal terms here: Submission Terms and Conditions (/legal/submission-terms).',
     },
   ],
 
@@ -274,5 +274,5 @@ export const librariansContest: ContestData = {
   inspirationNote: 'If it feels authentically Librarians — we want to see it.',
 
   submitUrl: null, // no active submit link captured
-  termsUrl: 'https://modfanart.com/pages/submission-terms-and-conditions',
+  termsUrl: '/legal/submission-terms',
 };
