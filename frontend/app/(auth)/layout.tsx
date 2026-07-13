@@ -4,18 +4,16 @@ import Image from 'next/image';
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen">
-      {/* Left side - Gradient background with logo */}
-      <div className="hidden md:flex md:w-1/2 bg-gradient-to-br from-blue-900 via-purple-800 to-pink-400 items-center justify-center p-8">
-        <div className="w-full max-w-md flex flex-col items-center">
-          <Image
-            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/mod-logo-dark-gTZuJePnecraDwGyMlBCHe6E6xJgsx.png"
-            alt="MOD Logo"
-            width={200}
-            height={80}
-            className="h-auto w-48 mb-4"
-          />
-          <p className="text-white text-center opacity-80 mt-2">merch on demand</p>
-        </div>
+      {/* Left side - Branded hero image */}
+      <div className="relative hidden md:block md:w-1/2">
+        <Image
+          src="/auth-hero.jpg"
+          alt="MOD Fan Official — official fan licensing, built for the next era of fandom"
+          fill
+          priority
+          sizes="50vw"
+          className="object-cover"
+        />
       </div>
 
       {/* Right side - Auth form */}
@@ -24,7 +22,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           {/* Mobile logo - only visible on small screens */}
           <div className="flex md:hidden justify-center mb-8">
             <Image
-              src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/mod-logo-dark-gTZuJePnecraDwGyMlBCHe6E6xJgsx.png"
+              src="/mod-logo-dark.png"
               alt="MOD Logo"
               width={150}
               height={60}
