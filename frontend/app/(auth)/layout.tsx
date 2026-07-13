@@ -8,7 +8,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       <div className="relative hidden md:block md:w-1/2">
         <Image
           src="/auth-hero.jpg"
-          alt="MOD Fan Official — official fan licensing, built for the next era of fandom"
+          alt="MOD Fan Official - official fan licensing, built for the next era of fandom"
           fill
           priority
           sizes="50vw"
