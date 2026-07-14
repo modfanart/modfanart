@@ -18,9 +18,7 @@ export default function SubmissionTermsPage() {
           <div className="mb-8 flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">Contest &amp; Submission Terms</h1>
-              <p className="text-muted-foreground">
-                Terms governing participation in MOD Fan Official contests and submissions
-              </p>
+              <p className="text-muted-foreground">Last updated: June 23, 2026</p>
             </div>
             <Button variant="outline" asChild>
               <Link href="/">Back to Home</Link>
