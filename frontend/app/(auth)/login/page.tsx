@@ -22,6 +22,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Eye, EyeOff } from 'lucide-react';
 import { useAppDispatch } from '@/store/hooks';
 import { setCredentials } from '@/services/api/features/authSlice';
+import { resolvePostLoginRedirect } from '@/lib/auth/redirect';
 import { API_BASE_URL } from '@/services';
 
 const formSchema = z.object({
@@ -68,7 +69,11 @@ export default function LoginPage() {
       const { user } = await syncRes.json();
       dispatch(setCredentials({ accessToken: idToken, user }));
 
-      router.push('/');
+      // Return the user to wherever a guard sent them from (e.g. the contest
+      // submit CTA), falling back to home. Read at submit time to avoid the
+      // useSearchParams() Suspense requirement.
+      const from = new URLSearchParams(window.location.search).get('from');
+      router.push(resolvePostLoginRedirect(from));
     } catch (err: any) {
       const message =
         err?.code === 'auth/invalid-credential' || err?.code === 'auth/wrong-password'
@@ -111,7 +116,8 @@ export default function LoginPage() {
       }
 
       dispatch(setCredentials({ accessToken: idToken, user }));
-      router.push('/');
+      const from = new URLSearchParams(window.location.search).get('from');
+      router.push(resolvePostLoginRedirect(from));
     } catch (err: any) {
       if (err?.code !== 'auth/popup-closed-by-user') {
         form.setError('root', { type: 'manual', message: 'Google sign-in failed. Please try again.' });
