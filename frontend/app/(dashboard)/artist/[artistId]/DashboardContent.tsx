@@ -107,7 +107,7 @@ export default function DashboardContent() {
             <div className="text-2xl font-bold">{isLoading ? '—' : rejectedCount}</div>
           </CardContent>
         </Card>
-        <Card>
+        {/* <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Revenue</CardTitle>
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
@@ -116,12 +116,12 @@ export default function DashboardContent() {
             <div className="text-2xl font-bold">$4,891</div>
             <p className="text-xs text-muted-foreground">+18% from last month</p>
           </CardContent>
-        </Card>
+        </Card> */}
       </div>
 
       <div className="grid gap-4 md:grid-cols-12">
         <div className="col-span-12 md:col-span-8 grid gap-4 md:grid-cols-2">
-          <Card className="col-span-2">
+          {/* <Card className="col-span-2">
             <CardHeader>
               <CardTitle>Overview</CardTitle>
               <CardDescription>Monthly earnings from licensed fan art.</CardDescription>
@@ -129,7 +129,7 @@ export default function DashboardContent() {
             <CardContent className="pl-2">
               <Overview />
             </CardContent>
-          </Card>
+          </Card> */}
 
           <Card className="md:col-span-1">
             <CardHeader>
@@ -161,7 +161,7 @@ export default function DashboardContent() {
           </Card>
         </div>
 
-        <Card className="col-span-12 md:col-span-4">
+        {/* <Card className="col-span-12 md:col-span-4">
           <CardHeader>
             <CardTitle>AI Moderation Insights</CardTitle>
             <CardDescription>Performance of your submissions against AI screening.</CardDescription>
@@ -225,7 +225,7 @@ export default function DashboardContent() {
               </div>
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
       </div>
 
       <div>
