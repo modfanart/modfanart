@@ -18,9 +18,9 @@ const MENU_ITEMS = [
   { id: 'profile', label: 'Profile' },
   { id: 'account', label: 'Account' },
   { id: 'notifications', label: 'Notifications' },
-  { id: 'security', label: 'Security' },
-  { id: 'billing', label: 'Billing' },
-  { id: 'api', label: 'API' },
+  // { id: 'security', label: 'Security' },
+  // { id: 'billing', label: 'Billing' },
+  // { id: 'api', label: 'API' },
 ] as const;
 
 type TabId = (typeof MENU_ITEMS)[number]['id'];
@@ -53,12 +53,12 @@ export default function SettingsPage() {
         return <AccountSection />;
       case 'notifications':
         return <NotificationsSection />;
-      case 'security':
-        return <SecuritySection />;
-      case 'billing':
-        return <BillingSection />;
-      case 'api':
-        return <ApiSection />;
+      // case 'security':
+      //   return <SecuritySection />;
+      // case 'billing':
+      //   return <BillingSection />;
+      // case 'api':
+      //   return <ApiSection />;
       default:
         return (
           <div className="text-center py-12 text-muted-foreground">
