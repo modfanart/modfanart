@@ -4,7 +4,6 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
 import {
   Building,
   CalendarDays,
@@ -48,31 +47,12 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/components/ui/use-toast';
-
-// ────────────────────────────────────────────────
-// Zod schema – matches BrandVerificationRequest backend
-// ────────────────────────────────────────────────
-const brandRequestSchema = z.object({
-  companyName: z
-    .string()
-    .min(2, { message: 'Brand / company name is required (min 2 characters).' }),
-  website: z.string().url({ message: 'Please enter a valid URL' }).optional().or(z.literal('')),
-  contactEmail: z.string().email({ message: 'Valid email is required.' }),
-  contactPhone: z.string().optional(),
-  description: z
-    .string()
-    .min(30, { message: 'Please tell us more about your brand (min 30 characters).' }),
-  teamSize: z.string(),
-  howHeard: z.string(),
-  // documents: z.array(z.string()).optional(), // ← add later with file upload
-});
-
-type BrandRequestValues = z.infer<typeof brandRequestSchema>;
-
-const defaultValues: Partial<BrandRequestValues> = {
-  teamSize: '1-10',
-  howHeard: 'search',
-};
+import { useSubmitBrandVerificationRequestMutation } from '@/services/api/brands';
+import {
+  brandRequestSchema,
+  brandRequestDefaultValues,
+  type BrandRequestValues,
+} from './contact-sales-schema';
 
 export function ContactSalesPage() {
   const [activeTab, setActiveTab] = useState('request');
@@ -81,27 +61,25 @@ export function ContactSalesPage() {
 
   const form = useForm<BrandRequestValues>({
     resolver: zodResolver(brandRequestSchema),
-    defaultValues,
+    defaultValues: brandRequestDefaultValues,
   });
+
+  const [submitBrandRequest] = useSubmitBrandVerificationRequestMutation();
 
   async function onSubmit(data: BrandRequestValues) {
     setIsSubmitting(true);
 
     try {
-      // ────────────────────────────────────────────────
-      // In real app → replace with RTK Query mutation
-      // const [submitRequest] = useSubmitBrandVerificationRequestMutation()
-      // await submitRequest({
-      //   company_name: data.companyName,
-      //   website: data.website || undefined,
-      //   contact_email: data.contactEmail,
-      //   contact_phone: data.contactPhone || undefined,
-      //   description: data.description,
-      //   // documents: uploadedUrls,
-      // }).unwrap()
-
-      // Simulate API delay (remove in production)
-      await new Promise((resolve) => setTimeout(resolve, 1400));
+      await submitBrandRequest({
+        company_name: data.companyName,
+        website: data.website || null,
+        contact_email: data.contactEmail,
+        contact_phone: data.contactPhone || null,
+        description: data.description,
+        team_size: data.teamSize,
+        // For "Other", send the free-text detail; otherwise the selected source.
+        how_heard: data.howHeard === 'other' ? data.howHeardOther : data.howHeard,
+      }).unwrap();
 
       toast({
         title: 'Brand request received',
@@ -401,6 +379,15 @@ export function ContactSalesPage() {
 
                               <FormItem className="flex items-center space-x-3 space-y-0">
                                 <FormControl>
+                                  <RadioGroupItem value="discord" />
+                                </FormControl>
+                                <FormLabel className="font-normal">
+                                  Discord
+                                </FormLabel>
+                              </FormItem>
+
+                              <FormItem className="flex items-center space-x-3 space-y-0">
+                                <FormControl>
                                   <RadioGroupItem value="referral" />
                                 </FormControl>
                                 <FormLabel className="font-normal">
@@ -441,6 +428,26 @@ export function ContactSalesPage() {
                         </FormItem>
                       )}
                     />
+
+                    {/* Other detail - shown only when "Other" is selected */}
+                    {form.watch('howHeard') === 'other' && (
+                      <FormField
+                        control={form.control}
+                        name="howHeardOther"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Please specify</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="How did you hear about us?"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
 
                     {/* What Happens Next */}
 
