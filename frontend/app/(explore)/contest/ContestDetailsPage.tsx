@@ -341,6 +341,12 @@ export default function ContestDetailPage({
   const { user, loading: authLoading } = useAuth();
   const submitTarget = user ? submitHref : loginWithReturnTo(submitHref);
 
+  // Gate submission on auth: signed-out visitors go to login and return here
+  // after signing in; signed-in visitors go straight to the submission flow.
+  // The page itself stays public (shareable / indexable) — only the action is gated.
+  const { user, loading: authLoading } = useAuth();
+  const submitTarget = user ? submitHref : loginWithReturnTo(submitHref);
+
   const images = gallery
     ?? (contest.brief.referenceImages.length ? contest.brief.referenceImages.map((r) => r.url) : []);
   const heroFallback = images.length ? images : (contest.heroImageUrl ? [contest.heroImageUrl] : []);
