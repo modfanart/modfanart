@@ -338,14 +338,9 @@ export default function ContestDetailPage({
   // Gate submission on auth: signed-out visitors go to login and return here
   // after signing in; signed-in visitors go straight to the submission flow.
   // The page itself stays public (shareable / indexable) — only the action is gated.
-  const { user, loading: authLoading } = useAuth();
+  const { loading: authLoading } = useAuth();
   const submitTarget = user ? submitHref : loginWithReturnTo(submitHref);
 
-  // Gate submission on auth: signed-out visitors go to login and return here
-  // after signing in; signed-in visitors go straight to the submission flow.
-  // The page itself stays public (shareable / indexable) — only the action is gated.
-  const { user, loading: authLoading } = useAuth();
-  const submitTarget = user ? submitHref : loginWithReturnTo(submitHref);
 
   const images = gallery
     ?? (contest.brief.referenceImages.length ? contest.brief.referenceImages.map((r) => r.url) : []);
