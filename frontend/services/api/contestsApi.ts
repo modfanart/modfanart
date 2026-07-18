@@ -407,7 +407,7 @@ getContestEntries: builder.query<
 
     getMyContestEntries: builder.query<
       { entries: any[]; total?: number },
-      { status?: string; limit?: number; offset?: number } | void
+      { status?: string; contestId?: string; limit?: number; offset?: number } | void
     >({
       query: (params) => ({
         url: '/contest/me/contest-entries',

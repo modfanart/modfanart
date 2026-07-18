@@ -23,8 +23,10 @@ import 'swiper/css';
 import 'swiper/css/navigation';
 
 import { useAuth } from '@/store/AuthContext';
-import { useGetContestQuery } from '@/services/api/contestsApi';
+import { useGetContestQuery, useGetMyContestEntriesQuery } from '@/services/api/contestsApi';
 import type { Contest } from '@/services/api/contestsApi';
+
+const ACTIVE_ENTRY_STATUSES = ['pending', 'approved', 'winner'];
 
 export default function ContestDetailPage() {
   const params = useParams<{ id: string }>();
@@ -46,6 +48,18 @@ export default function ContestDetailPage() {
   });
 
   const contest = data ?? null;
+
+  const { data: myEntriesData } = useGetMyContestEntriesQuery(
+    { contestId: contestId! },
+    { skip: !contestId || role !== 'ARTIST' }
+  );
+
+  const myEntriesUsed = (myEntriesData?.entries ?? []).filter((entry) =>
+    ACTIVE_ENTRY_STATUSES.includes(entry.entry_status)
+  ).length;
+
+  const maxEntries = contest?.max_entries_per_user ?? 1;
+  const atEntryCap = role === 'ARTIST' && myEntriesUsed >= maxEntries;
 
   // Safe parsing for gallery and prizes
   const galleryImages: string[] = Array.isArray(contest?.gallery)
@@ -363,7 +377,10 @@ export default function ContestDetailPage() {
               ) : (
                 <ul className="space-y-3 list-disc pl-5">
                   <li>Artwork must be 100% original — no AI, tracing, or copied content</li>
-                  <li>Maximum {contest.max_entries_per_user ?? '—'} entries per participant</li>
+                  <li>
+                    Maximum {contest.max_entries_per_user ?? '—'} entries per participant
+                    {role === 'ARTIST' && ` (you've used ${myEntriesUsed} of ${maxEntries})`}
+                  </li>
                   <li>No NSFW, violent, hateful, or brand-damaging content</li>
                   <li>
                     Submissions close on{' '}
@@ -430,7 +447,11 @@ export default function ContestDetailPage() {
         {/* Submit CTA - Now correctly respects isActive */}
         <Card className="mt-16 border-2 border-primary/30 bg-primary/5">
           <CardContent className="p-10 md:p-16 text-center">
-            {isActive ? (
+            {isActive && atEntryCap ? (
+              <Button disabled size="lg" className="w-full max-w-md h-14 text-lg">
+                You've used all {maxEntries} entries
+              </Button>
+            ) : isActive ? (
               <Button asChild size="lg" className="w-full max-w-md h-14 text-lg">
                 <Link href={`${artistBase}/my-artworks/new?contest=${contest.id}`}>
                   Submit Your Artwork
@@ -443,9 +464,11 @@ export default function ContestDetailPage() {
               </Button>
             )}
             <p className="mt-4 text-sm text-muted-foreground">
-              {isActive
-                ? 'You must be logged in as an Artist to submit'
-                : 'The submission period has ended.'}
+              {!isActive
+                ? 'The submission period has ended.'
+                : atEntryCap
+                  ? `You've reached the maximum of ${maxEntries} entries for this contest.`
+                  : 'You must be logged in as an Artist to submit'}
             </p>
           </CardContent>
         </Card>
