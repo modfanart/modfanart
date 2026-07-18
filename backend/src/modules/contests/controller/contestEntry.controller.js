@@ -41,12 +41,13 @@ class ContestEntryController {
         });
       }
 
-      // max entries per user
+      // max entries per user (rejected/disqualified entries don't count against the cap)
       const existing = await db
         .selectFrom("contest_entries")
         .select("id")
         .where("contest_id", "=", contestId)
         .where("creator_id", "=", req.user.id)
+        .where("status", "in", ["pending", "approved", "winner"])
         .execute();
 
       if (existing.length >= contest.max_entries_per_user) {
@@ -317,7 +318,7 @@ static async getEntries(req, res) {
    */
   static async getAllMyEntries(req, res) {
     try {
-      const { status, limit = 20, offset = 0 } = req.query;
+      const { status, contestId, limit = 20, offset = 0 } = req.query;
 
       let query = db
         .selectFrom("contest_entries")
@@ -342,6 +343,10 @@ static async getEntries(req, res) {
 
       if (status) {
         query = query.where("contest_entries.status", "=", status);
+      }
+
+      if (contestId) {
+        query = query.where("contest_entries.contest_id", "=", contestId);
       }
 
       query = query.limit(Number(limit)).offset(Number(offset));

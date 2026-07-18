@@ -94,7 +94,7 @@ class ContestController {
         submission_end_date,
         visibility = "public",
         status = "draft",
-        max_entries_per_user = 1,
+        max_entries_per_user = 3,
         entry_requirements,
         judging_criteria,
         hero_image,
@@ -282,6 +282,16 @@ class ContestController {
         !Array.isArray(updateData.gallery)
       ) {
         return res.status(400).json({ error: "gallery must be an array" });
+      }
+
+      if (updateData.max_entries_per_user !== undefined) {
+        const maxEntries = Number(updateData.max_entries_per_user);
+        if (!Number.isInteger(maxEntries) || maxEntries < 1) {
+          return res
+            .status(400)
+            .json({ error: "max_entries_per_user must be an integer >= 1" });
+        }
+        updateData.max_entries_per_user = maxEntries;
       }
 
       const updated = await db
