@@ -181,7 +181,7 @@ async function showStatus(migrator) {
       ? `✅ Applied (${new Date(m.executedAt).toLocaleString()})`
       : "⏳ Pending";
 
-    console.log(`${status} → ${m.migration}`);
+    console.log(`${status} → ${m.name}`);
   }
 }
 
