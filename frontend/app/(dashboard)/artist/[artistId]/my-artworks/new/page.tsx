@@ -55,13 +55,20 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useCreateArtworkMutation } from '@/services/api/artworkApi';
 import { useGetAllCategoriesQuery } from '@/services/api/categoriesApi';
 import { useSearchTagsQuery, useAddTagToArtworkMutation } from '@/services/api/artworkTagsApi';
-import { useGetContestQuery, useSubmitEntryMutation } from '@/services/api/contestsApi';
+import {
+  useGetContestQuery,
+  useSubmitEntryMutation,
+  useGetMyContestEntriesQuery,
+} from '@/services/api/contestsApi';
+
+const ACTIVE_ENTRY_STATUSES = ['pending', 'approved', 'winner'];
+const VALID_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 // ────────────────────────────────────────────────
-// Zod Schema
+// Zod Schema (title is per-file now, handled outside react-hook-form)
 // ────────────────────────────────────────────────
 const formSchema = z.object({
-  title: z.string().min(3, 'Title must be at least 3 characters').max(100),
   description: z.string().min(10, 'Description must be at least 10 characters').max(500).optional(),
   category: z.string().min(1, 'Please select a category'),
   originalIp: z.string().min(2, 'Fandom / Original IP is required').max(100),
@@ -69,6 +76,15 @@ const formSchema = z.object({
 });
 
 type FormValues = z.infer<typeof formSchema>;
+
+type BatchItem = {
+  id: string;
+  file: File;
+  previewUrl: string;
+  title: string;
+  status: 'pending' | 'uploading' | 'success' | 'error';
+  error?: string | undefined;
+};
 
 export default function NewContestSubmissionPage() {
   const router = useRouter();
@@ -78,9 +94,11 @@ export default function NewContestSubmissionPage() {
 
   const username = user?.username?.toLowerCase() || 'anonymous';
   const artistBase = `/artist/${username}`;
-  const [file, setFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  const [items, setItems] = useState<BatchItem[]>([]);
   const [fileError, setFileError] = useState<string | null>(null);
+  const [isBatchSubmitting, setIsBatchSubmitting] = useState(false);
+  const [progress, setProgress] = useState({ done: 0, total: 0 });
 
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [tagSearch, setTagSearch] = useState('');
@@ -89,9 +107,9 @@ export default function NewContestSubmissionPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ─── API Mutations & Queries ───
-  const [createArtwork, { isLoading: isCreatingArtwork }] = useCreateArtworkMutation();
+  const [createArtwork] = useCreateArtworkMutation();
   const [addTagToArtwork] = useAddTagToArtworkMutation();
-  const [submitContestEntry, { isLoading: isSubmittingEntry }] = useSubmitEntryMutation();
+  const [submitContestEntry] = useSubmitEntryMutation();
 
   const {
     data: contest,
@@ -100,6 +118,17 @@ export default function NewContestSubmissionPage() {
   } = useGetContestQuery(contestId!, {
     skip: !contestId,
   });
+
+  const { data: myEntriesData } = useGetMyContestEntriesQuery(
+    { contestId: contestId! },
+    { skip: !contestId }
+  );
+
+  const usedCount = (myEntriesData?.entries ?? []).filter((entry: any) =>
+    ACTIVE_ENTRY_STATUSES.includes(entry.entry_status)
+  ).length;
+  const maxEntries = contest?.max_entries_per_user ?? 1;
+  const remaining = Math.max(0, maxEntries - usedCount - items.length);
 
   const { data: categoriesResponse, isLoading: categoriesLoading } = useGetAllCategoriesQuery();
   const categories = categoriesResponse?.categories || [];
@@ -112,7 +141,6 @@ export default function NewContestSubmissionPage() {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      title: '',
       description: '',
       category: '',
       originalIp: '',
@@ -122,27 +150,56 @@ export default function NewContestSubmissionPage() {
 
   // ─── File Handling ───
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selected = e.target.files?.[0];
-    setFileError(null);
+    const selected = Array.from(e.target.files || []);
+    e.target.value = '';
+    if (!selected.length) return;
 
-    if (!selected) return;
+    const problems: string[] = [];
+    const accepted: File[] = [];
 
-    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    if (!validTypes.includes(selected.type)) {
-      setFileError('Only JPEG, PNG, GIF, WEBP files are allowed');
-      return;
+    for (const f of selected) {
+      if (!VALID_IMAGE_TYPES.includes(f.type)) {
+        problems.push(`${f.name}: unsupported file type`);
+        continue;
+      }
+      if (f.size > MAX_FILE_SIZE) {
+        problems.push(`${f.name}: exceeds 5MB`);
+        continue;
+      }
+      accepted.push(f);
     }
 
-    if (selected.size > 5 * 1024 * 1024) {
-      setFileError('File size must be ≤ 5MB');
-      return;
+    let toAdd = accepted;
+    if (accepted.length > remaining) {
+      toAdd = accepted.slice(0, remaining);
+      problems.push(
+        `${accepted.length - toAdd.length} file(s) skipped — only ${remaining} entr${remaining === 1 ? 'y' : 'ies'} left for this contest`
+      );
     }
 
-    setFile(selected);
-    const url = URL.createObjectURL(selected);
-    setPreviewUrl(url);
+    setFileError(problems.length ? problems.join('; ') : null);
 
-    return () => URL.revokeObjectURL(url);
+    const newItems: BatchItem[] = toAdd.map((f) => ({
+      id: crypto.randomUUID(),
+      file: f,
+      previewUrl: URL.createObjectURL(f),
+      title: f.name.replace(/\.[^/.]+$/, ''),
+      status: 'pending',
+    }));
+
+    setItems((prev) => [...prev, ...newItems]);
+  };
+
+  const removeItem = (id: string) => {
+    setItems((prev) => {
+      const target = prev.find((it) => it.id === id);
+      if (target) URL.revokeObjectURL(target.previewUrl);
+      return prev.filter((it) => it.id !== id);
+    });
+  };
+
+  const updateItemTitle = (id: string, title: string) => {
+    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, title } : it)));
   };
 
   const handleAddTag = (tagName: string) => {
@@ -157,10 +214,72 @@ export default function NewContestSubmissionPage() {
     setSelectedTags((prev) => prev.filter((t) => t !== tagToRemove));
   };
 
-  // ─── Form Submission ───
+  // ─── Batch Submission ───
+  const runBatch = async (targets: BatchItem[], values: FormValues) => {
+    setIsBatchSubmitting(true);
+    setProgress({ done: 0, total: targets.length });
+    let failedCount = 0;
+
+    for (const target of targets) {
+      setItems((prev) =>
+        prev.map((it): BatchItem => (it.id === target.id ? { ...it, status: 'uploading', error: undefined } : it))
+      );
+
+      try {
+        const formData = new FormData();
+        formData.append('file', target.file);
+        formData.append('title', target.title.trim() || target.file.name);
+        formData.append('description', values.description?.trim() || '');
+        formData.append('category_ids', JSON.stringify([values.category]));
+
+        const artworkResult = (await createArtwork(formData).unwrap()) as any;
+        const artwork = artworkResult.artwork;
+        if (!artwork?.id) {
+          throw new Error('Artwork created successfully but no ID was returned');
+        }
+
+        if (selectedTags.length > 0) {
+          for (const tagName of selectedTags) {
+            await addTagToArtwork({ artworkId: artwork.id, name: tagName }).unwrap();
+          }
+        }
+
+        const payload: { contestId: string; artworkId: string; submissionNotes?: string | null } = {
+          contestId: contestId!,
+          artworkId: artwork.id,
+        };
+        if (values.originalIp?.trim()) {
+          payload.submissionNotes = `Fandom / Original IP: ${values.originalIp.trim()}`;
+        }
+
+        await submitContestEntry(payload).unwrap();
+
+        setItems((prev) => prev.map((it) => (it.id === target.id ? { ...it, status: 'success' } : it)));
+      } catch (err: any) {
+        failedCount += 1;
+        setItems((prev) =>
+          prev.map((it) =>
+            it.id === target.id
+              ? {
+                  ...it,
+                  status: 'error',
+                  error: err?.data?.error || err?.data?.message || 'Failed to submit entry',
+                }
+              : it
+          )
+        );
+      }
+
+      setProgress((p) => ({ ...p, done: p.done + 1 }));
+    }
+
+    setIsBatchSubmitting(false);
+    return { failedCount };
+  };
+
   const onSubmit = async (values: FormValues) => {
-    if (!file) {
-      setFileError('Please upload an image');
+    if (items.length === 0) {
+      setFileError('Please add at least one image');
       return;
     }
 
@@ -169,69 +288,22 @@ export default function NewContestSubmissionPage() {
       return;
     }
 
-    try {
-      // 1. Create Artwork
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('title', values.title.trim());
-      formData.append('description', values.description?.trim() || '');
-      formData.append('category_ids', JSON.stringify([values.category]));
-      // Optional: store original IP / fandom in artwork metadata if your backend supports it
-      // formData.append('original_ip', values.originalIp);
+    const targets = items.filter((it) => it.status !== 'success');
+    const { failedCount } = await runBatch(targets, values);
 
-      const artworkResult = (await createArtwork(formData).unwrap()) as any;
-      const artwork = artworkResult.artwork;
-
-      if (!artwork?.id) {
-        console.error('[ERROR] No id found in artwork response', {
-          fullResponse: artworkResult,
-          extracted: artwork,
-        });
-        throw new Error('Artwork created successfully but no ID was returned');
-      }
-
-      if (!artwork?.id) {
-        throw new Error('Artwork created successfully but no ID was returned');
-      }
-
-      // 2. Add Tags
-      if (selectedTags.length > 0) {
-        for (const tagName of selectedTags) {
-          await addTagToArtwork({
-            artworkId: artwork.id,
-            name: tagName,
-          }).unwrap();
-        }
-      }
-
-      // 3. Submit to Contest
-      const payload: {
-        contestId: string;
-        artworkId: string;
-        submissionNotes?: string | null;
-      } = {
-        contestId,
-        artworkId: artwork.id,
-      };
-
-      if (values.originalIp?.trim()) {
-        payload.submissionNotes = `Fandom / Original IP: ${values.originalIp.trim()}`;
-      }
-
-      await submitContestEntry(payload);
-      // Success feedback + redirect
-      // You can add a toast / full-page success here if preferred
+    if (failedCount === 0) {
       setTimeout(() => {
         router.push(`/${artistBase}/my-artworks`);
       }, 1800);
-    } catch (err: any) {
-      console.error('Contest submission failed:', err);
-      // You can set a form-level error state here
+    } else {
       form.setError('root', {
-        message: err?.data?.message || 'Failed to submit entry. Please try again.',
+        message: `${failedCount} ${failedCount === 1 ? 'entry' : 'entries'} failed to submit. Fix and resubmit to retry just those.`,
       });
     }
   };
+
+  const failedItems = items.filter((it) => it.status === 'error');
+  const capReached = remaining <= 0 && items.length === 0;
 
   if (!contestId) {
     return (
@@ -279,9 +351,9 @@ export default function NewContestSubmissionPage() {
       {contest && (
         <div className="mb-8 space-y-2 text-sm text-muted-foreground">
           <p>Submissions close: {new Date(contest.submission_end_date).toLocaleDateString()}</p>
-          {contest.max_entries_per_user > 1 && (
-            <p>You may submit up to {contest.max_entries_per_user} entries in this contest</p>
-          )}
+          <p>
+            You've used {usedCount} of {maxEntries} entries in this contest
+          </p>
         </div>
       )}
 
@@ -289,7 +361,8 @@ export default function NewContestSubmissionPage() {
         <CardHeader>
           <CardTitle>Upload Your Fan Art</CardTitle>
           <CardDescription>
-            All entries are reviewed for compliance with contest rules and IP guidelines.
+            All entries are reviewed for compliance with contest rules and IP guidelines. Select
+            multiple images to submit several entries at once.
           </CardDescription>
         </CardHeader>
 
@@ -299,76 +372,94 @@ export default function NewContestSubmissionPage() {
               {/* ─── Image Upload ─── */}
               <div className="space-y-3">
                 <FormLabel>
-                  Artwork Image <span className="text-red-500">*</span> (max 5MB)
+                  Artwork Images <span className="text-red-500">*</span> (max 5MB each)
                 </FormLabel>
-                <div
-                  className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition
-                    ${fileError ? 'border-red-400 bg-red-50/60' : 'border-gray-300 hover:border-primary/70 hover:bg-gray-50/70'}`}
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/jpeg,image/png,image/gif,image/webp"
-                    className="hidden"
-                    onChange={handleFileChange}
-                  />
 
-                  {previewUrl ? (
-                    <div className="space-y-4">
-                      <div className="relative mx-auto w-full max-w-md aspect-video sm:aspect-square rounded-lg overflow-hidden border shadow-sm">
-                        <img
-                          src={previewUrl}
-                          alt="Preview"
-                          className="object-cover w-full h-full"
-                        />
+                {capReached ? (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Entry limit reached</AlertTitle>
+                    <AlertDescription>
+                      You've already used all {maxEntries} entries allowed for this contest.
+                    </AlertDescription>
+                  </Alert>
+                ) : (
+                  <>
+                    {items.length > 0 && (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                        {items.map((item) => (
+                          <div key={item.id} className="relative border rounded-lg overflow-hidden">
+                            <div className="aspect-square relative bg-muted">
+                              <img
+                                src={item.previewUrl}
+                                alt={item.title}
+                                className="object-cover w-full h-full"
+                              />
+                              {item.status === 'uploading' && (
+                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                  <Loader2 className="h-6 w-6 text-white animate-spin" />
+                                </div>
+                              )}
+                              {item.status === 'success' && (
+                                <div className="absolute top-1 right-1 bg-white rounded-full">
+                                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                                </div>
+                              )}
+                              {!isBatchSubmitting && item.status !== 'success' && (
+                                <button
+                                  type="button"
+                                  onClick={() => removeItem(item.id)}
+                                  className="absolute top-1 right-1 bg-black/60 hover:bg-black/80 rounded-full p-1"
+                                >
+                                  <X className="h-3 w-3 text-white" />
+                                </button>
+                              )}
+                            </div>
+                            <Input
+                              value={item.title}
+                              onChange={(e) => updateItemTitle(item.id, e.target.value)}
+                              disabled={item.status === 'success' || isBatchSubmitting}
+                              placeholder="Title"
+                              className="border-0 rounded-none text-xs h-8 focus-visible:ring-0"
+                            />
+                            {item.status === 'error' && (
+                              <p className="text-[11px] text-red-600 px-2 pb-1">{item.error}</p>
+                            )}
+                          </div>
+                        ))}
                       </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          fileInputRef.current?.click();
-                        }}
+                    )}
+
+                    {remaining > 0 && !isBatchSubmitting && (
+                      <div
+                        className="border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition border-gray-300 hover:border-primary/70 hover:bg-gray-50/70"
+                        onClick={() => fileInputRef.current?.click()}
                       >
-                        Change image
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="space-y-3 py-10">
-                      <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
-                      <div>
-                        <p className="text-base font-medium">Click or drag & drop your artwork</p>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          JPEG, PNG, GIF, WEBP • max 5MB
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/jpeg,image/png,image/gif,image/webp"
+                          multiple
+                          className="hidden"
+                          onChange={handleFileChange}
+                        />
+                        <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
+                        <p className="text-sm font-medium mt-2">
+                          {items.length === 0
+                            ? 'Click or drag & drop your artwork (select multiple files)'
+                            : `Add more (${remaining} left)`}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          JPEG, PNG, GIF, WEBP • max 5MB each
                         </p>
                       </div>
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </>
+                )}
                 {fileError && <p className="text-sm text-red-600 font-medium">{fileError}</p>}
               </div>
 
               <Separator />
-
-              {/* Title */}
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Title *</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="e.g. Spider-Man: Across the Multiverse – Final Battle"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
 
               {/* Description */}
               <FormField
@@ -384,6 +475,7 @@ export default function NewContestSubmissionPage() {
                         {...field}
                       />
                     </FormControl>
+                    <FormDescription>Applied to every entry in this batch.</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -517,7 +609,7 @@ export default function NewContestSubmissionPage() {
               {form.formState.errors.root && (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Submission failed</AlertTitle>
+                  <AlertTitle>Some entries failed</AlertTitle>
                   <AlertDescription>{form.formState.errors.root.message}</AlertDescription>
                 </Alert>
               )}
@@ -525,17 +617,17 @@ export default function NewContestSubmissionPage() {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={
-                  isCreatingArtwork || isSubmittingEntry || !file || form.formState.isSubmitting
-                }
+                disabled={isBatchSubmitting || items.length === 0 || form.formState.isSubmitting}
               >
-                {isCreatingArtwork || isSubmittingEntry ? (
+                {isBatchSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Submitting Entry...
+                    Submitting {progress.done} of {progress.total}…
                   </>
+                ) : failedItems.length > 0 ? (
+                  `Retry ${failedItems.length} Failed`
                 ) : (
-                  'Submit to Contest'
+                  `Submit ${items.length || ''} ${items.length === 1 ? 'Entry' : 'Entries'}`.trim()
                 )}
               </Button>
             </form>
