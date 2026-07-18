@@ -32,12 +32,15 @@ function FirebaseAuthSync() {
         if (syncRes.ok) {
           const { user } = await syncRes.json();
           dispatch(setCredentials({ accessToken: token, user }));
-        } else {
-          // Sync failed (e.g. server down) — still set token so UI isn't stuck
-          dispatch(setCredentials({ accessToken: token, user: null }));
         }
+        // A failed sync here (e.g. transient server hiccup) doesn't mean
+        // Firebase signed the user out — leave existing credentials alone
+        // rather than clobbering a session another caller (login/signup
+        // page) may have just established. Only `!firebaseUser` above,
+        // Firebase's own signal, should ever log the user out.
       } catch {
-        dispatch(logout());
+        // Same reasoning as above: a thrown fetch/getIdToken error isn't a
+        // sign-out signal, so don't dispatch logout() here either.
       } finally {
         // Auth has now resolved (with or without a session) — let guards stop
         // showing "loading" and decide. Fires once per callback, all paths.
