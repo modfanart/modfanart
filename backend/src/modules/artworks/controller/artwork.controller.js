@@ -46,6 +46,7 @@ class ArtworkController {
         ".webp",
         ".svg",
         ".mp4",
+        ".pdf",
       ];
 
       if (!allowed.includes(ext)) {
