@@ -8,7 +8,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Loader2, Upload, AlertCircle, CheckCircle2, X } from 'lucide-react';
+import { Loader2, Upload, AlertCircle, CheckCircle2, X, FileText } from 'lucide-react';
 import { useAuth } from '@/store/AuthContext';
 import { Button } from '@/components/ui/button';
 import {
@@ -62,7 +62,7 @@ import {
 } from '@/services/api/contestsApi';
 
 const ACTIVE_ENTRY_STATUSES = ['pending', 'approved', 'winner'];
-const VALID_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+const VALID_FILE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 // ────────────────────────────────────────────────
@@ -158,7 +158,7 @@ export default function NewContestSubmissionPage() {
     const accepted: File[] = [];
 
     for (const f of selected) {
-      if (!VALID_IMAGE_TYPES.includes(f.type)) {
+      if (!VALID_FILE_TYPES.includes(f.type)) {
         problems.push(`${f.name}: unsupported file type`);
         continue;
       }
@@ -372,7 +372,7 @@ export default function NewContestSubmissionPage() {
               {/* ─── Image Upload ─── */}
               <div className="space-y-3">
                 <FormLabel>
-                  Artwork Images <span className="text-red-500">*</span> (max 5MB each)
+                  Artwork Files <span className="text-red-500">*</span> (max 5MB each)
                 </FormLabel>
 
                 {capReached ? (
@@ -390,11 +390,18 @@ export default function NewContestSubmissionPage() {
                         {items.map((item) => (
                           <div key={item.id} className="relative border rounded-lg overflow-hidden">
                             <div className="aspect-square relative bg-muted">
-                              <img
-                                src={item.previewUrl}
-                                alt={item.title}
-                                className="object-cover w-full h-full"
-                              />
+                              {item.file.type === 'application/pdf' ? (
+                                <div className="flex flex-col items-center justify-center gap-2 w-full h-full text-muted-foreground">
+                                  <FileText className="h-10 w-10" />
+                                  <span className="text-xs">PDF</span>
+                                </div>
+                              ) : (
+                                <img
+                                  src={item.previewUrl}
+                                  alt={item.title}
+                                  className="object-cover w-full h-full"
+                                />
+                              )}
                               {item.status === 'uploading' && (
                                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                                   <Loader2 className="h-6 w-6 text-white animate-spin" />
@@ -438,7 +445,7 @@ export default function NewContestSubmissionPage() {
                         <input
                           ref={fileInputRef}
                           type="file"
-                          accept="image/jpeg,image/png,image/gif,image/webp"
+                          accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
                           multiple
                           className="hidden"
                           onChange={handleFileChange}
@@ -450,7 +457,7 @@ export default function NewContestSubmissionPage() {
                             : `Add more (${remaining} left)`}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          JPEG, PNG, GIF, WEBP • max 5MB each
+                          JPEG, PNG, GIF, WEBP, or PDF • max 5MB each
                         </p>
                       </div>
                     )}
