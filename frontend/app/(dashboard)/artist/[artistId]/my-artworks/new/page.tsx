@@ -63,7 +63,7 @@ import {
 
 const ACTIVE_ENTRY_STATUSES = ['pending', 'approved', 'winner'];
 const VALID_FILE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const MAX_FILE_SIZE = 20 * 1024 * 1024;
 
 // ────────────────────────────────────────────────
 // Zod Schema (title is per-file now, handled outside react-hook-form)
@@ -163,7 +163,7 @@ export default function NewContestSubmissionPage() {
         continue;
       }
       if (f.size > MAX_FILE_SIZE) {
-        problems.push(`${f.name}: exceeds 5MB`);
+        problems.push(`${f.name}: exceeds 20MB`);
         continue;
       }
       accepted.push(f);
@@ -372,7 +372,7 @@ export default function NewContestSubmissionPage() {
               {/* ─── Image Upload ─── */}
               <div className="space-y-3">
                 <FormLabel>
-                  Artwork Files <span className="text-red-500">*</span> (max 5MB each)
+                  Artwork Files <span className="text-red-500">*</span> (max 20MB each)
                 </FormLabel>
 
                 {capReached ? (
@@ -457,7 +457,7 @@ export default function NewContestSubmissionPage() {
                             : `Add more (${remaining} left)`}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          JPEG, PNG, GIF, WEBP, or PDF • max 5MB each
+                          JPEG, PNG, GIF, WEBP, or PDF • max 20MB each
                         </p>
                       </div>
                     )}
