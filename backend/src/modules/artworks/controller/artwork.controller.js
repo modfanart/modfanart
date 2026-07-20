@@ -6,6 +6,7 @@ const ArtworkPricingTier = require("../models/artworkPricingTier.model");
 const CDNFile = require("../../cdn/models/cdn-file.model");
 const CDNFileService = require("../../cdn/services/cdn-file.service");
 const cdnFileModel = require("../../cdn/models/cdn-file.model");
+const { applyPublicArtworkFilter } = require("../artwork.visibility");
 
 const { db } = require("../../../config");
 const path = require("path");
@@ -253,7 +254,7 @@ const cdnFile = await cdnService.createFileRecord(
       const offset = (page - 1) * limit;
       const search = req.query.search?.trim();
 
-      // MAIN QUERY (NO STATUS FILTER)
+      // MAIN QUERY (public visibility filter applied below)
       let query = db
         .selectFrom("artworks")
         .leftJoin("users", "users.id", "artworks.creator_id")
@@ -275,6 +276,10 @@ const cdnFile = await cdnService.createFileRecord(
         .where("artworks.deleted_at", "is", null)
         .orderBy("artworks.created_at", "desc");
 
+      // PUBLIC VISIBILITY FILTER — must stay identical to the count query
+      // below, or pagination totals disagree with the rows returned.
+      query = applyPublicArtworkFilter(query);
+
       // SEARCH FILTER
       if (search) {
         query = query.where((eb) =>
@@ -285,10 +290,12 @@ const cdnFile = await cdnService.createFileRecord(
         );
       }
 
-      // COUNT QUERY (NO STATUS FILTER)
+      // COUNT QUERY (public visibility filter applied below)
       let countQuery = db
         .selectFrom("artworks")
         .where("deleted_at", "is", null);
+
+      countQuery = applyPublicArtworkFilter(countQuery);
 
       if (search) {
         countQuery = countQuery.where((eb) =>
