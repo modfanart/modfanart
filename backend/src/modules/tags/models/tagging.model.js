@@ -13,8 +13,13 @@ class Tagging {
         created_by: createdBy,
         created_at: sql`NOW()`,
       })
-      .onConflict(["tag_id", "taggable_type", "taggable_id"])
-      .doNothing()
+      // Kysely's onConflict takes a callback. The array form threw
+      // "callback is not a function" at query-build time, so every tag
+      // attachment failed before reaching the database. Columns match the
+      // taggings_pk composite primary key.
+      .onConflict((oc) =>
+        oc.columns(["tag_id", "taggable_type", "taggable_id"]).doNothing()
+      )
       .execute();
   }
 
