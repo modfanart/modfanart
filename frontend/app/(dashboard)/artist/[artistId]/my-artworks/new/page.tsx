@@ -64,6 +64,9 @@ import {
 const ACTIVE_ENTRY_STATUSES = ['pending', 'approved', 'winner'];
 const VALID_FILE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
+// Kept in sync with MAX_SUBMISSION_NOTES_LENGTH in contestEntry.controller.js,
+// which allows an extra 200 chars for the appended Fandom / Original IP line.
+const MAX_NOTE_LENGTH = 1000;
 
 // ────────────────────────────────────────────────
 // Zod Schema (title is per-file now, handled outside react-hook-form)
@@ -72,6 +75,10 @@ const formSchema = z.object({
   description: z.string().min(10, 'Description must be at least 10 characters').max(500).optional(),
   category: z.string().min(1, 'Please select a category'),
   originalIp: z.string().min(2, 'Fandom / Original IP is required').max(100),
+  submissionNotes: z
+    .string()
+    .max(MAX_NOTE_LENGTH, `Note must be ${MAX_NOTE_LENGTH} characters or fewer`)
+    .optional(),
   tagsInput: z.string().optional(),
 });
 
@@ -144,6 +151,7 @@ export default function NewContestSubmissionPage() {
       description: '',
       category: '',
       originalIp: '',
+      submissionNotes: '',
       tagsInput: '',
     },
   });
@@ -248,8 +256,17 @@ export default function NewContestSubmissionPage() {
           contestId: contestId!,
           artworkId: artwork.id,
         };
+        // The entrant's note and the IP share one submission_notes column, so
+        // both are packed in with the note first, since judges read top-down.
+        const noteParts = [];
+        if (values.submissionNotes?.trim()) {
+          noteParts.push(values.submissionNotes.trim());
+        }
         if (values.originalIp?.trim()) {
-          payload.submissionNotes = `Fandom / Original IP: ${values.originalIp.trim()}`;
+          noteParts.push(`Fandom / Original IP: ${values.originalIp.trim()}`);
+        }
+        if (noteParts.length > 0) {
+          payload.submissionNotes = noteParts.join('\n\n');
         }
 
         await submitContestEntry(payload).unwrap();
@@ -535,6 +552,28 @@ export default function NewContestSubmissionPage() {
                     </FormControl>
                     <FormDescription>
                       Used to help moderators and viewers understand the context
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Note to judges */}
+              <FormField
+                control={form.control}
+                name="submissionNotes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Note to judges (optional)</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Anything you'd like the judges to know - your inspiration, process, or what you were going for..."
+                        className="min-h-32"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Only visible to contest judges. Applied to every entry in this batch.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

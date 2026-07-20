@@ -5,6 +5,11 @@ const Artwork = require("../../artworks/models/artwork.model");
 const { sql } = require("kysely");
 const { db } = require("../../../config");
 
+// The client caps the entrant's own note at 1000 chars, then appends a
+// "Fandom / Original IP: ..." line (the IP itself is capped at 100). This bound
+// leaves headroom for that suffix so a max-length note is never rejected.
+const MAX_SUBMISSION_NOTES_LENGTH = 1200;
+
 class ContestEntryController {
   /**
    * POST /contests/:contestId/entries
@@ -12,7 +17,20 @@ class ContestEntryController {
   static async submitEntry(req, res) {
     try {
       const { contestId } = req.params;
-      const { artworkId } = req.body;
+      const { artworkId, submissionNotes } = req.body;
+
+      if (submissionNotes != null && typeof submissionNotes !== "string") {
+        return res
+          .status(400)
+          .json({ error: "submissionNotes must be a string" });
+      }
+
+      const trimmedNotes = submissionNotes?.trim() || null;
+      if (trimmedNotes && trimmedNotes.length > MAX_SUBMISSION_NOTES_LENGTH) {
+        return res.status(400).json({
+          error: `Submission notes must be ${MAX_SUBMISSION_NOTES_LENGTH} characters or fewer`,
+        });
+      }
 
       const contest = await Contest.findById(contestId);
       if (!contest) return res.status(404).json({ error: "Contest not found" });
@@ -73,7 +91,8 @@ class ContestEntryController {
       const entry = await ContestEntry.create(
         contestId,
         artworkId,
-        req.user.id
+        req.user.id,
+        trimmedNotes
       );
 
       res.status(201).json({
@@ -111,6 +130,7 @@ static async getEntries(req, res) {
         "ce.id as entry_id",
         "ce.status as entry_status",
         "ce.rank as entry_rank",
+        "ce.submission_notes as entry_submission_notes",
         "ce.created_at as entry_created_at",
         "ce.updated_at as entry_updated_at",
 
@@ -161,6 +181,7 @@ static async getEntries(req, res) {
       id: row.entry_id,
       status: row.entry_status,
       rank: row.entry_rank,
+      submission_notes: row.entry_submission_notes,
       created_at: row.entry_created_at,
       updated_at: row.entry_updated_at,
 
