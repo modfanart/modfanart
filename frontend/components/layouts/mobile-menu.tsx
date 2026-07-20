@@ -19,7 +19,6 @@ export function MobileMenu() {
         <div className="flex flex-col gap-4 mt-6">
           <Link href="/">Home</Link>
           <Link href="/for-brands">For Brands</Link>
-          <Link href="/for-creators-info">For Creators</Link>
           <Link href="/for-artists">For Artists</Link>
           <Link href="/contact">Contact</Link>
         </div>
