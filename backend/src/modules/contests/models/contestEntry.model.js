@@ -3,13 +3,20 @@ const { db } = require('../../../config');
 const { sql } = require('kysely');
 
 class ContestEntry {
-  static async create(contestId, artworkId, creatorId) {
+  /**
+   * @param {string} contestId
+   * @param {string} artworkId
+   * @param {string} creatorId
+   * @param {string | null} [submissionNotes] Freeform note from the entrant, shown to judges.
+   */
+  static async create(contestId, artworkId, creatorId, submissionNotes = null) {
     return db
       .insertInto('contest_entries')
       .values({
         contest_id: contestId,
         artwork_id: artworkId,
         creator_id: creatorId,
+        submission_notes: submissionNotes,
         status: 'pending',
         created_at: sql`NOW()`,
         updated_at: sql`NOW()`,

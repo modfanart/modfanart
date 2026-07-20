@@ -48,6 +48,7 @@ import {
   CommandItem,
 } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { MAX_NOTE_LENGTH, packSubmissionNotes } from '@/lib/contest-notes';
 
 // ────────────────────────────────────────────────
 // API Hooks
@@ -72,6 +73,10 @@ const formSchema = z.object({
   description: z.string().min(10, 'Description must be at least 10 characters').max(500).optional(),
   category: z.string().min(1, 'Please select a category'),
   originalIp: z.string().min(2, 'Fandom / Original IP is required').max(100),
+  submissionNotes: z
+    .string()
+    .max(MAX_NOTE_LENGTH, `Note must be ${MAX_NOTE_LENGTH} characters or fewer`)
+    .optional(),
   tagsInput: z.string().optional(),
 });
 
@@ -144,6 +149,7 @@ export default function NewContestSubmissionPage() {
       description: '',
       category: '',
       originalIp: '',
+      submissionNotes: '',
       tagsInput: '',
     },
   });
@@ -248,8 +254,9 @@ export default function NewContestSubmissionPage() {
           contestId: contestId!,
           artworkId: artwork.id,
         };
-        if (values.originalIp?.trim()) {
-          payload.submissionNotes = `Fandom / Original IP: ${values.originalIp.trim()}`;
+        const packedNotes = packSubmissionNotes(values.submissionNotes, values.originalIp);
+        if (packedNotes) {
+          payload.submissionNotes = packedNotes;
         }
 
         await submitContestEntry(payload).unwrap();
@@ -535,6 +542,28 @@ export default function NewContestSubmissionPage() {
                     </FormControl>
                     <FormDescription>
                       Used to help moderators and viewers understand the context
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Note to judges */}
+              <FormField
+                control={form.control}
+                name="submissionNotes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Note to judges (optional)</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Anything you'd like the judges to know - your inspiration, process, or what you were going for..."
+                        className="min-h-32"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Only visible to contest judges. Applied to every entry in this batch.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
