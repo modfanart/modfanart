@@ -3,9 +3,7 @@ const UserController = require("./controller/user.controller");
 const {
   authenticateToken,
 } = require("../../common/middleware/auth.middleware");
-const multer = require("multer");
-
-const upload = multer({ storage: multer.memoryStorage() });
+const { singleAvatarUpload } = require("../../common/middleware/upload");
 
 const router = express.Router();
 
@@ -19,7 +17,7 @@ router.get("/me", UserController.getCurrentUser);
 router.patch("/me", UserController.updateProfile);
 router.patch("/me/password", UserController.changePassword);
 
-router.post("/me/avatar", upload.single("avatar"), UserController.uploadAvatar);
+router.post("/me/avatar", singleAvatarUpload("avatar"), UserController.uploadAvatar);
 router.delete("/me/avatar", UserController.removeAvatar);
 
 router.get("/me/brands", UserController.getMyBrands);

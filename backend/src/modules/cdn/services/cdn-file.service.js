@@ -15,8 +15,8 @@ class CDNFileService {
     this.cdnFileModel = cdnFileModel;
   }
 
-  async uploadToCDN(localFilePath, remoteFilename, mimeType) {
-    const key = `${S3_KEY_PREFIX}/${remoteFilename}`;
+  async uploadToCDN(localFilePath, remoteFilename, mimeType, keyPrefix = S3_KEY_PREFIX) {
+    const key = `${keyPrefix}/${remoteFilename}`;
     const body = await fs.readFile(localFilePath);
 
     await s3.send(
@@ -31,11 +31,11 @@ class CDNFileService {
     return `${CDN_BASE_URL}/${key}`;
   }
 
-  async createFileRecord(file, uploadedBy = null) {
+  async createFileRecord(file, uploadedBy = null, keyPrefix = S3_KEY_PREFIX) {
     const remoteFilename = file.filename;
 
     // Upload file to S3
-    const url = await this.uploadToCDN(file.path, remoteFilename, file.mimetype);
+    const url = await this.uploadToCDN(file.path, remoteFilename, file.mimetype, keyPrefix);
 
     const record = {
       original_name: file.originalname,
@@ -64,12 +64,20 @@ class CDNFileService {
     }
   }
 
+  // Objects can live under different prefixes (artworks, avatars), so recover the
+  // key from the stored URL instead of assuming the default prefix.
+  keyFromUrl(url) {
+    return url?.startsWith(`${CDN_BASE_URL}/`)
+      ? url.slice(CDN_BASE_URL.length + 1)
+      : null;
+  }
+
   async deleteFile(id) {
     const file = await this.cdnFileModel.findById(id);
     if (!file) return false;
 
     try {
-      const key = `${S3_KEY_PREFIX}/${file.stored_name}`;
+      const key = this.keyFromUrl(file.url) || `${S3_KEY_PREFIX}/${file.stored_name}`;
       await s3.send(new DeleteObjectCommand({ Bucket: S3_BUCKET_NAME, Key: key }));
     } catch (err) {
       console.warn("Failed to delete from CDN:", err.message);
