@@ -22,8 +22,7 @@ const router = useRouter();
 
 const { user, loading: isUserLoading, logout } = useAuth();
 const [isLoggingOut, setIsLoggingOut] = useState(false);
-console.log(user);
-console.log(user?.brands);
+
 if (isUserLoading || !user) return null;
 
 const displayName = user.username || user.email?.split('@')[0] || 'User';
@@ -92,9 +91,18 @@ const handleLogout = async () => {
   }
 };
 
-return ( <div className="flex items-center gap-3"> <div className="hidden md:block text-right"> <p className="text-sm font-medium leading-none text-gray-900">
-{displayName} </p> <p className="text-xs text-gray-500">
-{user.role?.name || 'Member'} </p> </div>
+return (
+  <div className="flex items-center gap-3">
+    {/* Own backdrop: the nav is transparent and overlays dark hero images on
+        several routes, so contrast cannot depend on the page behind it. */}
+    <div className="hidden md:block text-right bg-white/90 backdrop-blur rounded-full px-4 py-1.5 border border-gray-200/60">
+      <p className="text-sm font-medium leading-none text-gray-900">
+        {displayName}
+      </p>
+      <p className="text-xs text-gray-500">
+        {user.role?.name || 'Member'}
+      </p>
+    </div>
 
 
   <DropdownMenu>
