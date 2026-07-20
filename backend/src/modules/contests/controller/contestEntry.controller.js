@@ -140,8 +140,6 @@ static async getEntries(req, res) {
         "a.description as artwork_description",
         "a.file_url as artwork_file_url",
         "a.thumbnail_url as artwork_thumbnail_url",
-        "a.preview_url as artwork_preview_url",
-        "a.slug as artwork_slug",
         "a.status as artwork_status",
         "a.moderation_status",
         "a.views_count",
@@ -191,8 +189,13 @@ static async getEntries(req, res) {
         description: row.artwork_description,
         file_url: row.artwork_file_url,
         thumbnail_url: row.artwork_thumbnail_url,
-        preview_url: row.artwork_preview_url,
-        slug: row.artwork_slug,
+        // artworks has no preview_url column (it is absent from the DB and from
+        // schema_new.sql), so selecting it made this endpoint fail outright.
+        // Kept in the response as null to preserve the shape clients expect.
+        preview_url: null,
+        // Same as preview_url below: artworks has no slug column, so selecting
+        // it broke the query. Null keeps the response shape intact.
+        slug: null,
         status: row.artwork_status,
         moderation_status: row.moderation_status,
         views_count: row.views_count,
