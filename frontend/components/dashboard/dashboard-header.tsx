@@ -37,7 +37,7 @@ export default function DashboardHeader({ onMenuClick }: { onMenuClick?: () => v
           </Button>
 
           {/* LOGO */}
-          <Link href="/dashboard" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2">
             <div className="h-8 w-8 bg-primary rounded-md flex items-center justify-center text-white font-bold">
               M
             </div>
