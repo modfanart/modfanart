@@ -193,8 +193,8 @@ static async getEntries(req, res) {
         // schema_new.sql), so selecting it made this endpoint fail outright.
         // Kept in the response as null to preserve the shape clients expect.
         preview_url: null,
-        // Same as preview_url below: artworks has no slug column, so selecting
-        // it broke the query. Null keeps the response shape intact.
+        // artworks has no slug column either, so selecting it broke the query.
+        // Null keeps the response shape intact.
         slug: null,
         status: row.artwork_status,
         moderation_status: row.moderation_status,
@@ -389,3 +389,6 @@ static async getEntries(req, res) {
 }
 
 module.exports = ContestEntryController;
+// Exposed so tests assert against the real bound rather than a copied literal
+// that could drift out of sync with it.
+module.exports.MAX_SUBMISSION_NOTES_LENGTH = MAX_SUBMISSION_NOTES_LENGTH;
