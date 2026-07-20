@@ -37,7 +37,30 @@ const upload = multer({
   },
 });
 
+// Avatars are displayed at thumbnail size, so they get a much tighter cap and
+// an image-only allowlist rather than the general upload's media/PDF set.
+const AVATAR_MAX_BYTES = 2 * 1024 * 1024; // 2MB
+
+const avatarUpload = multer({
+  storage,
+  limits: {
+    fileSize: AVATAR_MAX_BYTES,
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedMimes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+
+    if (allowedMimes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      const err = new Error("Invalid file type. Allowed: JPG, PNG, GIF, WEBP.");
+      err.status = 400;
+      cb(err, false);
+    }
+  },
+});
+
 module.exports = {
   singleUpload: (fieldName = "file") => upload.single(fieldName),
   multipleUpload: (fieldName = "files", maxCount = 10) => upload.array(fieldName, maxCount),
+  singleAvatarUpload: (fieldName = "avatar") => avatarUpload.single(fieldName),
 };

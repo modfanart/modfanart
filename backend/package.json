@@ -11,7 +11,8 @@
     "migrate:status": "tsx src/scripts/migrate.ts --status",
     "dev": "node index.js",
     "build": "tsc",
-    "start": "node index.js"
+    "start": "node index.js",
+    "test": "node --test tests/"
   },
   "keywords": [],
   "author": "",
