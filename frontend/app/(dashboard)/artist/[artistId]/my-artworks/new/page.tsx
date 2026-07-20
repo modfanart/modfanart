@@ -48,6 +48,7 @@ import {
   CommandItem,
 } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { MAX_NOTE_LENGTH, packSubmissionNotes } from '@/lib/contest-notes';
 
 // ────────────────────────────────────────────────
 // API Hooks
@@ -64,9 +65,6 @@ import {
 const ACTIVE_ENTRY_STATUSES = ['pending', 'approved', 'winner'];
 const VALID_FILE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
-// Kept in sync with MAX_SUBMISSION_NOTES_LENGTH in contestEntry.controller.js,
-// which allows an extra 200 chars for the appended Fandom / Original IP line.
-const MAX_NOTE_LENGTH = 1000;
 
 // ────────────────────────────────────────────────
 // Zod Schema (title is per-file now, handled outside react-hook-form)
@@ -256,17 +254,9 @@ export default function NewContestSubmissionPage() {
           contestId: contestId!,
           artworkId: artwork.id,
         };
-        // The entrant's note and the IP share one submission_notes column, so
-        // both are packed in with the note first, since judges read top-down.
-        const noteParts = [];
-        if (values.submissionNotes?.trim()) {
-          noteParts.push(values.submissionNotes.trim());
-        }
-        if (values.originalIp?.trim()) {
-          noteParts.push(`Fandom / Original IP: ${values.originalIp.trim()}`);
-        }
-        if (noteParts.length > 0) {
-          payload.submissionNotes = noteParts.join('\n\n');
+        const packedNotes = packSubmissionNotes(values.submissionNotes, values.originalIp);
+        if (packedNotes) {
+          payload.submissionNotes = packedNotes;
         }
 
         await submitContestEntry(payload).unwrap();
