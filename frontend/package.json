@@ -6,6 +6,7 @@
   "scripts": {
     "build": "next build",
     "dev": "next dev",
+    "test": "node --test tests/",
     "lint": "eslint ./src --ext .ts,.tsx,.js,.jsx --fix",
     "lint:check": "eslint ./src --ext .ts,.tsx,.js,.jsx",
     "start": "next start"
