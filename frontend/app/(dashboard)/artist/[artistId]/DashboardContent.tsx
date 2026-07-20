@@ -141,7 +141,7 @@ export default function DashboardContent() {
             </CardContent>
           </Card>
 
-          <Card className="md:col-span-1">
+          {/* <Card className="md:col-span-1">
             <CardHeader className="pb-2">
               <CardTitle>Subscription</CardTitle>
               <CardDescription>Your current plan and status.</CardDescription>
@@ -158,7 +158,7 @@ export default function DashboardContent() {
                 customerId={userData.stripeCustomerId}
               />
             </CardContent>
-          </Card>
+          </Card> */}
         </div>
 
         {/* <Card className="col-span-12 md:col-span-4">

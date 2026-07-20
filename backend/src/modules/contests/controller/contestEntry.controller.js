@@ -5,6 +5,11 @@ const Artwork = require("../../artworks/models/artwork.model");
 const { sql } = require("kysely");
 const { db } = require("../../../config");
 
+// The client caps the entrant's own note at 1000 chars, then appends a
+// "Fandom / Original IP: ..." line (the IP itself is capped at 100). This bound
+// leaves headroom for that suffix so a max-length note is never rejected.
+const MAX_SUBMISSION_NOTES_LENGTH = 1200;
+
 class ContestEntryController {
   /**
    * POST /contests/:contestId/entries
@@ -12,7 +17,20 @@ class ContestEntryController {
   static async submitEntry(req, res) {
     try {
       const { contestId } = req.params;
-      const { artworkId } = req.body;
+      const { artworkId, submissionNotes } = req.body;
+
+      if (submissionNotes != null && typeof submissionNotes !== "string") {
+        return res
+          .status(400)
+          .json({ error: "submissionNotes must be a string" });
+      }
+
+      const trimmedNotes = submissionNotes?.trim() || null;
+      if (trimmedNotes && trimmedNotes.length > MAX_SUBMISSION_NOTES_LENGTH) {
+        return res.status(400).json({
+          error: `Submission notes must be ${MAX_SUBMISSION_NOTES_LENGTH} characters or fewer`,
+        });
+      }
 
       const contest = await Contest.findById(contestId);
       if (!contest) return res.status(404).json({ error: "Contest not found" });
@@ -73,7 +91,8 @@ class ContestEntryController {
       const entry = await ContestEntry.create(
         contestId,
         artworkId,
-        req.user.id
+        req.user.id,
+        trimmedNotes
       );
 
       res.status(201).json({
@@ -111,6 +130,7 @@ static async getEntries(req, res) {
         "ce.id as entry_id",
         "ce.status as entry_status",
         "ce.rank as entry_rank",
+        "ce.submission_notes as entry_submission_notes",
         "ce.created_at as entry_created_at",
         "ce.updated_at as entry_updated_at",
 
@@ -120,8 +140,6 @@ static async getEntries(req, res) {
         "a.description as artwork_description",
         "a.file_url as artwork_file_url",
         "a.thumbnail_url as artwork_thumbnail_url",
-        "a.preview_url as artwork_preview_url",
-        "a.slug as artwork_slug",
         "a.status as artwork_status",
         "a.moderation_status",
         "a.views_count",
@@ -161,6 +179,7 @@ static async getEntries(req, res) {
       id: row.entry_id,
       status: row.entry_status,
       rank: row.entry_rank,
+      submission_notes: row.entry_submission_notes,
       created_at: row.entry_created_at,
       updated_at: row.entry_updated_at,
 
@@ -170,8 +189,13 @@ static async getEntries(req, res) {
         description: row.artwork_description,
         file_url: row.artwork_file_url,
         thumbnail_url: row.artwork_thumbnail_url,
-        preview_url: row.artwork_preview_url,
-        slug: row.artwork_slug,
+        // artworks has no preview_url column (it is absent from the DB and from
+        // schema_new.sql), so selecting it made this endpoint fail outright.
+        // Kept in the response as null to preserve the shape clients expect.
+        preview_url: null,
+        // artworks has no slug column either, so selecting it broke the query.
+        // Null keeps the response shape intact.
+        slug: null,
         status: row.artwork_status,
         moderation_status: row.moderation_status,
         views_count: row.views_count,
@@ -365,3 +389,6 @@ static async getEntries(req, res) {
 }
 
 module.exports = ContestEntryController;
+// Exposed so tests assert against the real bound rather than a copied literal
+// that could drift out of sync with it.
+module.exports.MAX_SUBMISSION_NOTES_LENGTH = MAX_SUBMISSION_NOTES_LENGTH;
