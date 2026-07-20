@@ -40,12 +40,19 @@ class Tag {
 
     const term = (query || '').trim();
     if (term) {
-      q = q.where((eb) =>
-        eb.or([
-          eb('name', 'ilike', `%${term}%`),
-          eb('slug', 'ilike', `%${slugifyTag(term)}%`),
-        ])
-      );
+      // % and _ are LIKE wildcards; without escaping, a search for "a%"
+      // matches everything starting with "a".
+      const escaped = term.replace(/[\\%_]/g, (ch) => `\\${ch}`);
+      const slug = slugifyTag(term);
+
+      q = q.where((eb) => {
+        const predicates = [eb('name', 'ilike', `%${escaped}%`)];
+        // Only match on slug when the term actually slugifies to something.
+        // An all-punctuation or non-latin term slugifies to '', and
+        // `slug ilike '%%'` would match every row.
+        if (slug) predicates.push(eb('slug', 'ilike', `%${slug}%`));
+        return eb.or(predicates);
+      });
     }
 
     if (approvedOnly) q = q.where('approved', '=', true);
@@ -83,9 +90,10 @@ class Tag {
   static async incrementUsage(tagId, increment = 1) {
     return db
       .updateTable('tags')
-      .set((eb) => ({
-        usage_count: eb.ref('usage_count').plus(increment),
-      }))
+      // eb.ref().plus() does not exist in kysely 0.28; it threw
+      // "eb.ref(...).plus is not a function", which meant selecting any
+      // already-existing tag 500'd before the tag could be attached.
+      .set({ usage_count: sql`usage_count + ${increment}` })
       .where('id', '=', tagId)
       .execute();
   }

@@ -21,6 +21,9 @@ router.delete(
   authenticateToken,
   TaggingController.removeTag
 );
-router.get("/:artworkId/tags", authenticateToken, TaggingController.getTags);
+// Public: artwork detail pages are viewable logged out, and they render the
+// artwork's tags. Guarding this would blank the tag list for anonymous
+// visitors.
+router.get("/:artworkId/tags", TaggingController.getTags);
 
 module.exports = router;
