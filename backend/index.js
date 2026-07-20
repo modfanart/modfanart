@@ -91,7 +91,12 @@ app.get("/health", (req, res) => {
 
 // ====================== ROUTES ======================
 const routes = [
-  { path: "/api/tags", module: "./src/modules/tags/tagging.routes.js" },
+  // Tag vocabulary (search/autocomplete).
+  { path: "/api/tags", module: "./src/modules/tags/tag.routes.js" },
+  // Artwork<->tag attachment, nested under the artwork it belongs to. This
+  // was previously mounted at /api/tags, which produced the unreachable
+  // /api/tags/:artworkId/tags and left every tag call 404ing.
+  { path: "/api/artwork", module: "./src/modules/tags/tagging.routes.js" },
   { path: "/api/contest", module: "./src/modules/contests/contest.routes.js" },
   { path: "/api/order", module: "./src/modules/licenses/order.routes.js" },
   {

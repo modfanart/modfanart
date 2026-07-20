@@ -44,10 +44,9 @@ import {
   Command,
   CommandEmpty,
   CommandGroup,
-  CommandInput,
   CommandItem,
 } from '@/components/ui/command';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Popover, PopoverContent, PopoverAnchor } from '@/components/ui/popover';
 
 
 
@@ -101,7 +100,15 @@ export default function NewContestSubmissionPage() {
 
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [tagSearch, setTagSearch] = useState('');
+  const [debouncedTagSearch, setDebouncedTagSearch] = useState('');
   const [openTagPopover, setOpenTagPopover] = useState(false);
+  const [tagWarning, setTagWarning] = useState<string | null>(null);
+
+  // Debounced so typing does not fire a request per keystroke.
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedTagSearch(tagSearch), 250);
+    return () => clearTimeout(t);
+  }, [tagSearch]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -133,8 +140,8 @@ export default function NewContestSubmissionPage() {
   const categories = categoriesResponse?.categories || [];
 
   const { data: tagSuggestions = [] } = useSearchTagsQuery(
-    { query: tagSearch, limit: 8, approvedOnly: true },
-    { skip: tagSearch.length < 2 }
+    { query: debouncedTagSearch, limit: 8, approvedOnly: true },
+    { skip: debouncedTagSearch.trim().length < 2 }
   );
 
   const form = useForm<FormValues>({
@@ -202,10 +209,18 @@ export default function NewContestSubmissionPage() {
   };
 
   const handleAddTag = (tagName: string) => {
-    if (!selectedTags.includes(tagName) && tagName.trim()) {
-      setSelectedTags((prev) => [...prev, tagName.trim()]);
+    const next = tagName.trim();
+    // Case-insensitive, since the backend resolves "Sci Fi" and "sci-fi" to
+    // the same tag anyway.
+    const alreadyPicked = selectedTags.some(
+      (t) => t.toLowerCase() === next.toLowerCase()
+    );
+
+    if (next && !alreadyPicked) {
+      setSelectedTags((prev) => [...prev, next]);
     }
     setTagSearch('');
+    setDebouncedTagSearch('');
     setOpenTagPopover(false);
   };
 
@@ -213,11 +228,38 @@ export default function NewContestSubmissionPage() {
     setSelectedTags((prev) => prev.filter((t) => t !== tagToRemove));
   };
 
+  // The field sits inside the submission <form>, so Enter would otherwise
+  // trigger implicit form submission instead of adding the tag the helper
+  // text tells the user to add.
+  const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (tagSearch.trim().length >= 2) handleAddTag(tagSearch);
+      return;
+    }
+
+    if (e.key === 'Escape') {
+      setOpenTagPopover(false);
+      return;
+    }
+
+    // Backspace on an empty field removes the last chip.
+    if (e.key === 'Backspace' && !tagSearch && selectedTags.length) {
+      setSelectedTags((prev) => prev.slice(0, -1));
+    }
+  };
+
   // ─── Batch Submission ───
   const runBatch = async (targets: BatchItem[], values: FormValues) => {
     setIsBatchSubmitting(true);
     setProgress({ done: 0, total: targets.length });
+    // Clear any warning from a previous run so it cannot be misread as
+    // applying to this one.
+    setTagWarning(null);
     let failedCount = 0;
+    // Collected across the whole batch: setting this per item would leave only
+    // the last item's failures visible.
+    const failedTags = new Set<string>();
 
     for (const target of targets) {
       setItems((prev) =>
@@ -237,9 +279,14 @@ export default function NewContestSubmissionPage() {
           throw new Error('Artwork created successfully but no ID was returned');
         }
 
-        if (selectedTags.length > 0) {
-          for (const tagName of selectedTags) {
+        // Tagging must never block the entry itself. Previously a failing tag
+        // call threw here and the contest submission below never ran, leaving
+        // an orphaned artwork and no entry.
+        for (const tagName of selectedTags) {
+          try {
             await addTagToArtwork({ artworkId: artwork.id, name: tagName }).unwrap();
+          } catch {
+            failedTags.add(tagName);
           }
         }
 
@@ -270,6 +317,12 @@ export default function NewContestSubmissionPage() {
       }
 
       setProgress((p) => ({ ...p, done: p.done + 1 }));
+    }
+
+    if (failedTags.size) {
+      setTagWarning(
+        `These tags could not be saved: ${[...failedTags].join(', ')}. The entries themselves went through; you can add the tags later from the artwork page.`
+      );
     }
 
     setIsBatchSubmitting(false);
@@ -545,7 +598,9 @@ export default function NewContestSubmissionPage() {
               <div className="space-y-2">
                 <FormLabel>Tags (optional)</FormLabel>
                 <Popover open={openTagPopover} onOpenChange={setOpenTagPopover}>
-                  <PopoverTrigger asChild>
+                  {/* Anchor, not Trigger: Trigger toggles the popover on click,
+                      which fought with the text field nested inside it. */}
+                  <PopoverAnchor asChild>
                     <div className="border rounded-md p-2 min-h-[42px] flex flex-wrap gap-2 focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
                       {selectedTags.map((tag) => (
                         <Badge key={tag} variant="secondary" className="gap-1 pr-1">
@@ -571,20 +626,19 @@ export default function NewContestSubmissionPage() {
                           setOpenTagPopover(true);
                         }}
                         onFocus={() => setOpenTagPopover(true)}
+                        onKeyDown={handleTagKeyDown}
                         className="border-0 shadow-none focus-visible:ring-0 p-0 h-8 flex-1 min-w-[180px]"
                       />
                     </div>
-                  </PopoverTrigger>
+                  </PopoverAnchor>
                   <PopoverContent
                     className="w-[var(--radix-popover-trigger-width)] p-0"
                     align="start"
+                    // Keep the caret in the field above; Radix would otherwise
+                    // pull focus into the list on every keystroke that opens it.
+                    onOpenAutoFocus={(e) => e.preventDefault()}
                   >
                     <Command shouldFilter={false}>
-                      <CommandInput
-                        placeholder="Search tags..."
-                        value={tagSearch}
-                        onValueChange={setTagSearch}
-                      />
                       <CommandEmpty>No matching tags found.</CommandEmpty>
                       <CommandGroup>
                         {tagSuggestions.map((tag) => (
@@ -608,9 +662,19 @@ export default function NewContestSubmissionPage() {
                   </PopoverContent>
                 </Popover>
                 <p className="text-xs text-muted-foreground">
-                  Select from suggestions or type a new tag and press enter
+                  Select from suggestions or type a new tag and press enter. New tags
+                  are reviewed before they appear in search.
                 </p>
               </div>
+
+              {/* Tags are best-effort: the entry still goes through if they fail */}
+              {tagWarning && (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Entry submitted, tags incomplete</AlertTitle>
+                  <AlertDescription>{tagWarning}</AlertDescription>
+                </Alert>
+              )}
 
               {/* Root form error */}
               {form.formState.errors.root && (
