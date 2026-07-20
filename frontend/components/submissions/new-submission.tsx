@@ -259,7 +259,13 @@ export default function NewContestSubmissionPage() {
   const runBatch = async (targets: BatchItem[], values: FormValues) => {
     setIsBatchSubmitting(true);
     setProgress({ done: 0, total: targets.length });
+    // Clear any warning from a previous run so it cannot be misread as
+    // applying to this one.
+    setTagWarning(null);
     let failedCount = 0;
+    // Collected across the whole batch: setting this per item would leave only
+    // the last item's failures visible.
+    const failedTags = new Set<string>();
 
     for (const target of targets) {
       setItems((prev) =>
@@ -282,21 +288,11 @@ export default function NewContestSubmissionPage() {
         // Tagging must never block the entry itself. Previously a failing tag
         // call threw here and the contest submission below never ran, leaving
         // an orphaned artwork and no entry.
-        if (selectedTags.length > 0) {
-          const failedTags: string[] = [];
-
-          for (const tagName of selectedTags) {
-            try {
-              await addTagToArtwork({ artworkId: artwork.id, name: tagName }).unwrap();
-            } catch {
-              failedTags.push(tagName);
-            }
-          }
-
-          if (failedTags.length) {
-            setTagWarning(
-              `Submitted, but these tags could not be saved: ${failedTags.join(', ')}. You can add them later from the artwork page.`
-            );
+        for (const tagName of selectedTags) {
+          try {
+            await addTagToArtwork({ artworkId: artwork.id, name: tagName }).unwrap();
+          } catch {
+            failedTags.add(tagName);
           }
         }
 
@@ -328,6 +324,12 @@ export default function NewContestSubmissionPage() {
       }
 
       setProgress((p) => ({ ...p, done: p.done + 1 }));
+    }
+
+    if (failedTags.size) {
+      setTagWarning(
+        `These tags could not be saved: ${[...failedTags].join(', ')}. The entries themselves went through; you can add the tags later from the artwork page.`
+      );
     }
 
     setIsBatchSubmitting(false);
