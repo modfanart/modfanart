@@ -4,7 +4,7 @@ const { sql } = require("kysely");
 
 class Tagging {
   static async addTag(tagId, taggableType, taggableId, createdBy) {
-    return db
+    const result = await db
       .insertInto("taggings")
       .values({
         tag_id: tagId,
@@ -20,7 +20,12 @@ class Tagging {
       .onConflict((oc) =>
         oc.columns(["tag_id", "taggable_type", "taggable_id"]).doNothing()
       )
-      .execute();
+      .executeTakeFirst();
+
+    // Report whether a row was actually inserted. The caller uses this to
+    // decide whether to count a usage, so replaying the same request cannot
+    // inflate usage_count.
+    return Number(result?.numInsertedOrUpdatedRows ?? 0) > 0;
   }
 
   static async removeTag(tagId, taggableType, taggableId) {
@@ -42,7 +47,9 @@ class Tagging {
         "tags.slug",
         "tags.approved",
         "taggings.created_at",
-        "taggings.created_by",
+        // taggings.created_by is deliberately not selected. This endpoint is
+        // public (artwork detail pages render tags while logged out), and the
+        // column is a users.id that no client reads.
       ])
       .where("taggings.taggable_type", "=", taggableType)
       .where("taggings.taggable_id", "=", taggableId)

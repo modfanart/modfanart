@@ -56,12 +56,22 @@ class TaggingController {
           tag = await Tag.findByNameOrSlug(slug);
           if (!tag) throw err;
         }
-      } else {
-        // Optional: only increment if new usage
-        await Tag.incrementUsage(tag.id);
       }
 
-      await Tagging.addTag(tag.id, "artwork", artworkId, req.user.id);
+      // Count a usage only when the tag was genuinely newly attached to this
+      // artwork. Incrementing before the insert meant replaying the same
+      // request inflated usage_count without attaching anything, which skews
+      // the autocomplete ordering, and newly created tags never counted at all.
+      const attached = await Tagging.addTag(
+        tag.id,
+        "artwork",
+        artworkId,
+        req.user.id
+      );
+
+      if (attached) {
+        await Tag.incrementUsage(tag.id);
+      }
 
       res.status(201).json({
         message: "Tag added",
