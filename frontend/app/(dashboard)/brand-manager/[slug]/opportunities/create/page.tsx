@@ -263,6 +263,10 @@ export default function CreateOpportunityPage() {
                   value={form.hero_image || ''}
                   onChange={(e) => updateField('hero_image', e.target.value)}
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Must be a direct link to an image file (ending in .jpg, .png, etc.), not a
+                  search results or gallery page URL. Unsplash and Pexels links work well.
+                </p>
               </div>
 
               <div>
@@ -288,24 +292,28 @@ export default function CreateOpportunityPage() {
               <div>
                 <Label>Start Date *</Label>
                 <SingleDatePicker
+                  date={form.start_date ? new Date(form.start_date) : undefined}
                   onDateChange={(d) => updateField('start_date', d ? toISODate(d)! : '')}
                 />
               </div>
               <div>
                 <Label>Submission End Date *</Label>
                 <SingleDatePicker
+                  date={form.submission_end_date ? new Date(form.submission_end_date) : undefined}
                   onDateChange={(d) => updateField('submission_end_date', d ? toISODate(d)! : '')}
                 />
               </div>
               <div>
                 <Label>Voting End Date (Optional)</Label>
                 <SingleDatePicker
+                  date={form.voting_end_date ? new Date(form.voting_end_date) : undefined}
                   onDateChange={(d) => updateField('voting_end_date', d ? toISODate(d) : null)}
                 />
               </div>
               <div>
                 <Label>Judging End Date (Optional)</Label>
                 <SingleDatePicker
+                  date={form.judging_end_date ? new Date(form.judging_end_date) : undefined}
                   onDateChange={(d) => updateField('judging_end_date', d ? toISODate(d) : null)}
                 />
               </div>

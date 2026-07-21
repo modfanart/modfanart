@@ -121,7 +121,7 @@ export default function DashboardContent() {
               </Link>
             </Button>
             <Button asChild>
-              <Link href={`/dashboard/brand/${brandSlug}/${user?.id}/contests/new`}>
+              <Link href={`/brand-manager/${brandSlug}/opportunities/create`}>
                 <PlusCircle className="mr-2 h-4 w-4" />
                 New Campaign
               </Link>
@@ -268,7 +268,7 @@ export default function DashboardContent() {
                   <div className="text-center py-12 text-muted-foreground">
                     No active campaigns right now.
                     <Button className="mt-4" variant="outline" asChild>
-                      <Link href={`/dashboard/brand/${brandSlug}/${user?.id}/contests/new`}>
+                      <Link href={`/brand-manager/${brandSlug}/opportunities/create`}>
                         Create New Campaign
                       </Link>
                     </Button>

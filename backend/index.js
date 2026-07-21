@@ -43,9 +43,10 @@ const limiter = rateLimit({
   legacyHeaders: false,
 });
 
-app.use(limiter);
-
 // ====================== CORS ======================
+// Registered before the rate limiter so CORS headers are always present,
+// even on a 429 response — otherwise the browser reports a rate-limited
+// request as a CORS failure instead of showing the real status.
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:5173",
@@ -69,6 +70,9 @@ app.use(
     credentials: true,
   })
 );
+
+app.use(limiter);
+
 // ====================== MIDDLEWARE ======================
 app.use(express.json());
 app.use(requestLogger);
