@@ -144,6 +144,14 @@ class ContestController {
 
       if (!brand) return res.status(404).json({ error: "Brand not found" });
 
+      const isAuthorized =
+        (req.user.brands || []).some((b) => b.id === brand_id) ||
+        req.user.permissions?.["contests.manage"];
+
+      if (!isAuthorized) {
+        return res.status(403).json({ error: "Not authorized to create contests for this brand" });
+      }
+
       // Slug generation & uniqueness
       let slug = providedSlug?.trim();
       if (!slug) {
@@ -180,6 +188,11 @@ class ContestController {
           .status(400)
           .json({ error: "entry_requirements must be an object" });
       }
+      if (judging_criteria && typeof judging_criteria !== "object") {
+        return res
+          .status(400)
+          .json({ error: "judging_criteria must be an object" });
+      }
       if (gallery && !Array.isArray(gallery)) {
         return res.status(400).json({ error: "gallery must be an array" });
       }
@@ -207,7 +220,7 @@ class ContestController {
             status,
             max_entries_per_user: Number(max_entries_per_user) || 1,
 
-            judging_criteria: judging_criteria?.trim() || null,
+            judging_criteria: judging_criteria ? JSON.stringify(judging_criteria) : null,
 
             prizes: prizes ? JSON.stringify(prizes) : null,
             entry_requirements: entry_requirements
