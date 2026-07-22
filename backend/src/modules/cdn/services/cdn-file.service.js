@@ -3,7 +3,15 @@ const path = require("path");
 const fs = require("fs").promises;
 const { S3Client, PutObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 
-const s3 = new S3Client({ region: process.env.AWS_REGION });
+// S3_ENDPOINT lets this point at an S3-compatible provider (e.g. Cloudflare
+// R2) instead of real AWS. R2 requires path-style addressing (no
+// <bucket>.<account>.r2.cloudflarestorage.com virtual-hosted style), so
+// forcePathStyle is tied to whether a custom endpoint is set at all.
+const s3 = new S3Client({
+  region: process.env.AWS_REGION || "auto",
+  endpoint: process.env.S3_ENDPOINT,
+  forcePathStyle: !!process.env.S3_ENDPOINT,
+});
 
 const S3_BUCKET_NAME = process.env.S3_BUCKET_NAME;
 const S3_KEY_PREFIX = process.env.S3_KEY_PREFIX || "artworks";
