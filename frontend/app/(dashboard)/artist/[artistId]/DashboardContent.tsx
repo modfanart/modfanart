@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Suspense } from 'react';
 import { useGetMyContestEntriesQuery } from '@/services/api/contestsApi';
+import { useAuth } from '@/store/AuthContext';
 
 // entry_status from the backend is 'pending' | 'approved' | 'rejected' | 'disqualified'
 function mapEntryToSubmission(entry: any) {
@@ -29,21 +30,13 @@ function mapEntryToSubmission(entry: any) {
   };
 }
 
-// In a real app, this would come from your database
-// Define user information with proper defaults to avoid undefined errors
-const userData = {
-  role: 'artist', // Could be "artist", "creator", or "brand"
-  name: 'Joe Artist',
-  email: 'joe@example.com',
-  subscriptionTier: 'premium_artist', // Could be "free", "premium_artist", "creator", or "enterprise"
-  subscriptionStatus: 'active', // Could be "active", "inactive", "past_due", or "canceled"
-  subscriptionRenewalDate: '2024-12-31',
-  stripeCustomerId: 'cus_123456789',
-};
-
 export default function DashboardContent() {
+  const { user, loading: authLoading } = useAuth();
   const { data, isLoading } = useGetMyContestEntriesQuery({ limit: 100 });
   const submissions = (data?.entries || []).map(mapEntryToSubmission);
+
+  const username = user?.username?.toLowerCase() || 'anonymous';
+  const displayName = authLoading ? '...' : (user?.username ?? 'there');
 
   const totalCount = submissions.length;
   const approvedCount = submissions.filter((s) => s.status === 'approved').length;
@@ -66,11 +59,11 @@ export default function DashboardContent() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground">
-            Welcome back, {userData.name}! Here's an overview of your fan art licensing activity.
+            Welcome back, {displayName}! Here's an overview of your fan art licensing activity.
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Link href="/">
+          <Link href="/submissions/new">
             <Button className="bg-[#9747ff] hover:bg-[#8035e0]">
               <PlusCircle className="mr-2 h-4 w-4" />
               New Submission
@@ -238,7 +231,7 @@ export default function DashboardContent() {
               <TabsTrigger value="licensed">Licensed</TabsTrigger>
             </TabsList>
             <div className="flex items-center gap-2">
-              <Link href="/submissions/manage">
+              <Link href={`/artist/${username}/my-artworks`}>
                 <Button variant="outline" size="sm">
                   View All
                   <ArrowUpRight className="ml-2 h-4 w-4" />
@@ -255,7 +248,7 @@ export default function DashboardContent() {
                   <p className="text-muted-foreground mb-4 max-w-md">
                     Start by creating your first fan art submission to begin the licensing process.
                   </p>
-                  <Link href="/">
+                  <Link href="/submissions/new">
                     <Button className="bg-[#9747ff] hover:bg-[#8035e0]">
                       <PlusCircle className="mr-2 h-4 w-4" />
                       Create New Submission
@@ -266,7 +259,7 @@ export default function DashboardContent() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {submissions.map((submission) => (
-                  <Link href={`/submissions/${submission.id}`} key={submission.id}>
+                  <Link href={`/artwork/${submission.id}`} key={submission.id}>
                     <Card className="overflow-hidden hover:shadow-md transition-shadow">
                       <div className="aspect-square relative">
                         <Image
@@ -312,7 +305,7 @@ export default function DashboardContent() {
               {submissions
                 .filter((submission) => submission.status === 'pending')
                 .map((submission) => (
-                  <Link href={`/submissions/${submission.id}`} key={submission.id}>
+                  <Link href={`/artwork/${submission.id}`} key={submission.id}>
                     <Card className="overflow-hidden hover:shadow-md transition-shadow">
                       <div className="aspect-square relative">
                         <Image
@@ -346,7 +339,7 @@ export default function DashboardContent() {
               {submissions
                 .filter((submission) => submission.status === 'approved')
                 .map((submission) => (
-                  <Link href={`/submissions/${submission.id}`} key={submission.id}>
+                  <Link href={`/artwork/${submission.id}`} key={submission.id}>
                     <Card className="overflow-hidden hover:shadow-md transition-shadow">
                       <div className="aspect-square relative">
                         <Image
@@ -380,7 +373,7 @@ export default function DashboardContent() {
               {submissions
                 .filter((submission) => submission.status === 'licensed')
                 .map((submission) => (
-                  <Link href={`/submissions/${submission.id}`} key={submission.id}>
+                  <Link href={`/artwork/${submission.id}`} key={submission.id}>
                     <Card className="overflow-hidden hover:shadow-md transition-shadow">
                       <div className="aspect-square relative">
                         <Image
