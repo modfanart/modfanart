@@ -146,8 +146,15 @@ function LoginPageInner() {
 
   return (
     <>
+      
       <h1 className="text-3xl font-bold mb-2">Sign in</h1>
       <p className="text-gray-600 mb-8">Welcome back! Please enter your information.</p>
+      <Link
+        href="/"
+        className="text-sm text-gray-500 mb-1 hover:text-gray-700 transition-colors"
+      >
+        Home
+      </Link>
 
       {form.formState.errors.root && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
