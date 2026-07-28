@@ -30,18 +30,12 @@ interface ApiSuccessResponse {
   data?: any;
 }
 
-// Two common patterns — decide based on your backend
-export interface AddTagByNameRequest {
+// The backend resolves tags by name only: it matches an existing tag or
+// creates one. There is no attach-by-id path, so this does not offer one.
+export interface AddTagRequest {
   artworkId: string;
-  name: string; // free-text → backend may create or match existing
+  name: string; // free-text → backend matches existing or creates
 }
-
-export interface AddTagByIdRequest {
-  artworkId: string;
-  tagId: string; // attaching existing approved tag
-}
-
-export type AddTagRequest = AddTagByNameRequest | AddTagByIdRequest;
 
 export interface RemoveTagRequest {
   artworkId: string;
@@ -75,7 +69,10 @@ const artworkTagsApi = createApi({
     // GET    /artworks/:artworkId/tags
     // → usually returns full Tag objects (with name, slug, usage_count, etc.)
     getArtworkTags: builder.query<Tag[], string>({
-      query: (artworkId) => `/artworks/${artworkId}/tags`,
+      query: (artworkId) => `/artwork/${artworkId}/tags`,
+      // Backend wraps the list as { tags: [...] }.
+      transformResponse: (response: { tags: Tag[] } | Tag[]) =>
+        Array.isArray(response) ? response : (response?.tags ?? []),
       providesTags: (result, error, artworkId) => [
         { type: 'ArtworkTags', id: artworkId },
         ...(result ? result.map(({ id }) => ({ type: 'ArtworkTags', id }) as const) : []),
@@ -86,7 +83,7 @@ const artworkTagsApi = createApi({
     // Supports both: { name: "sunset vibe" } or { tagId: "uuid-xxx" }
     addTagToArtwork: builder.mutation<CreatedTagResponse | ApiSuccessResponse, AddTagRequest>({
       query: ({ artworkId, ...payload }) => ({
-        url: `/artworks/${artworkId}/tags`,
+        url: `/artwork/${artworkId}/tags`,
         method: 'POST',
         body: payload, // { name: string } or { tagId: string }
       }),
@@ -101,7 +98,7 @@ const artworkTagsApi = createApi({
     // DELETE /artworks/:artworkId/tags/:tagId
     removeTagFromArtwork: builder.mutation<ApiSuccessResponse, RemoveTagRequest>({
       query: ({ artworkId, tagId }) => ({
-        url: `/artworks/${artworkId}/tags/${tagId}`,
+        url: `/artwork/${artworkId}/tags/${tagId}`,
         method: 'DELETE',
       }),
 
@@ -122,9 +119,12 @@ const artworkTagsApi = createApi({
         params: {
           search: query,
           limit,
-          approved: approvedOnly ? 'true' : undefined,
+          approved: approvedOnly ? 'true' : 'false',
         },
       }),
+      // Backend wraps the list as { tags: [...] }.
+      transformResponse: (response: { tags: Tag[] } | Tag[]) =>
+        Array.isArray(response) ? response : (response?.tags ?? []),
       providesTags: ['Tags'],
     }),
   }),
