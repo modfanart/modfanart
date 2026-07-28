@@ -15,25 +15,42 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { Suspense } from 'react';
-import { useGetMyContestEntriesQuery } from '@/services/api/contestsApi';
+import { useGetMyContestEntriesQuery, ContestEntry } from '@/services/api/contestsApi';
 import { useAuth } from '@/store/AuthContext';
 
-// entry_status from the backend is 'pending' | 'approved' | 'rejected' | 'disqualified'
-function mapEntryToSubmission(entry: any) {
+// entry.status is 'pending' | 'approved' | 'rejected' | 'disqualified' | 'winner'
+// entry.artwork can theoretically be missing/null for a malformed or orphaned entry —
+// guard against it rather than trusting the (loosely-typed) API response blindly.
+function mapEntryToSubmission(entry: ContestEntry) {
+  if (!entry?.artwork) {
+    console.warn('Contest entry missing artwork data, skipping:', entry?.id);
+    return null;
+  }
+
   return {
-    id: entry.entry_id,
-    title: entry.artwork_title || entry.contest_title || 'Untitled',
-    imageUrl: entry.thumbnail_url || '/placeholder.svg',
-    status: entry.entry_status,
-    submittedAt: entry.submitted_at,
-    artist: entry.contest_title,
+    id: entry.artwork.id,
+    title: entry.artwork.title || 'Untitled',
+    imageUrl: entry.artwork.thumbnail_url || entry.artwork.file_url || '/placeholder.svg',
+    status: entry.status,
+    submittedAt: entry.created_at,
+    artist: entry.creator?.username ?? 'You',
   };
 }
+
+const STATUS_BADGE: Record<ContestEntry['status'], string> = {
+  approved: 'bg-green-100 text-green-800',
+  pending: 'bg-yellow-100 text-yellow-800',
+  winner: 'bg-amber-100 text-amber-800',
+  rejected: 'bg-red-100 text-red-800',
+  disqualified: 'bg-red-100 text-red-800',
+};
 
 export default function DashboardContent() {
   const { user, loading: authLoading } = useAuth();
   const { data, isLoading } = useGetMyContestEntriesQuery({ limit: 100 });
-  const submissions = (data?.entries || []).map(mapEntryToSubmission);
+  const submissions = (data?.entries || [])
+    .map(mapEntryToSubmission)
+    .filter((s): s is NonNullable<typeof s> => s !== null);
 
   const username = user?.username?.toLowerCase() || 'anonymous';
   const displayName = authLoading ? '...' : (user?.username ?? 'there');
@@ -228,7 +245,7 @@ export default function DashboardContent() {
               <TabsTrigger value="all">All Submissions</TabsTrigger>
               <TabsTrigger value="pending">Pending</TabsTrigger>
               <TabsTrigger value="approved">Approved</TabsTrigger>
-              <TabsTrigger value="licensed">Licensed</TabsTrigger>
+              <TabsTrigger value="winner">Winners</TabsTrigger>
             </TabsList>
             <div className="flex items-center gap-2">
               <Link href={`/artist/${username}/my-artworks`}>
@@ -276,17 +293,9 @@ export default function DashboardContent() {
                           <p className="text-xs text-muted-foreground">
                             {new Date(submission.submittedAt).toLocaleDateString()}
                           </p>
-                          <div className="mt-1">
+                           <div className="mt-1">
                             <span
-                              className={`text-xs px-2 py-1 rounded-full ${
-                                submission.status === 'approved'
-                                  ? 'bg-green-100 text-green-800'
-                                  : submission.status === 'pending'
-                                    ? 'bg-yellow-100 text-yellow-800'
-                                    : submission.status === 'licensed'
-                                      ? 'bg-blue-100 text-blue-800'
-                                      : 'bg-red-100 text-red-800'
-                              }`}
+                              className={`text-xs px-2 py-1 rounded-full ${STATUS_BADGE[submission.status]}`}
                             >
                               {submission.status.charAt(0).toUpperCase() +
                                 submission.status.slice(1)}
@@ -368,10 +377,10 @@ export default function DashboardContent() {
                 ))}
             </div>
           </TabsContent>
-          <TabsContent value="licensed" className="mt-6">
+          <TabsContent value="winner" className="mt-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {submissions
-                .filter((submission) => submission.status === 'licensed')
+                .filter((submission) => submission.status === 'winner')
                 .map((submission) => (
                   <Link href={`/artwork/${submission.id}`} key={submission.id}>
                     <Card className="overflow-hidden hover:shadow-md transition-shadow">
@@ -391,8 +400,8 @@ export default function DashboardContent() {
                             {new Date(submission.submittedAt).toLocaleDateString()}
                           </p>
                           <div className="mt-1">
-                            <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800">
-                              Licensed
+                            <span className="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-800">
+                              Winner
                             </span>
                           </div>
                         </div>

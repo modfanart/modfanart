@@ -18,6 +18,7 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'amzn-artwork-images.s3.undefined.amazonaws.com',
       },
+      { protocol: 'https', hostname: 'pub-bc028dede49c432da3e40f2c5fd199f4.r2.dev' },
       { protocol: 'https', hostname: 'www.thefilmcatalogue.com' },
       {
         protocol: 'https',
