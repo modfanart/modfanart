@@ -1,21 +1,22 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
   Calendar,
   Clock,
-  Download,
-  Edit,
   Eye,
-  MessageSquare,
-  Share2,
+  Heart,
+  ExternalLink,
+  Rocket,
   Tag,
-  User,
+  Trash2,
+  Trophy,
 } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -29,335 +30,128 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
-interface SubmissionPageProps {
-  params: {
-    id: string;
-  };
+import { useAuth } from '@/store/AuthContext';
+import {
+  useGetArtworkQuery,
+  useGetArtworkCategoriesQuery,
+  useDeleteArtworkMutation,
+  usePublishArtworkMutation,
+} from '@/services/api/artworkApi';
+import { useGetArtworkTagsQuery } from '@/services/api/artworkTagsApi';
+import { useGetIssuedLicensesQuery, useRevokeLicenseMutation } from '@/services/api/licenseApi';
+import { useGetMyContestEntriesQuery } from '@/services/api/contestsApi';
+
+// ────────────────────────────────────────────────
+// Status display
+// ────────────────────────────────────────────────
+
+type ArtworkStatus = 'draft' | 'published' | 'archived' | 'moderation_pending' | 'rejected';
+
+const STATUS_STYLES: Record<ArtworkStatus, { label: string; className: string }> = {
+  draft: { label: 'Draft', className: 'bg-yellow-100 text-yellow-800' },
+  published: { label: 'Published', className: 'bg-green-100 text-green-800' },
+  archived: { label: 'Archived', className: 'bg-gray-100 text-gray-800' },
+  moderation_pending: { label: 'Pending Review', className: 'bg-orange-100 text-orange-800' },
+  rejected: { label: 'Rejected', className: 'bg-red-100 text-red-800' },
+};
+
+const formatCents = (cents: number, currency: 'INR' | 'USD') =>
+  new Intl.NumberFormat(currency === 'INR' ? 'en-IN' : 'en-US', {
+    style: 'currency',
+    currency,
+  }).format(cents / 100);
+
+interface Props {
+  id: string;
+  slug: string;
 }
 
-// Import the sample data
-const fanArtSubmissions = [
-  {
-    id: 'sub-001',
-    title: 'Squid Game Player 456',
-    description: 'Fan art of Player 456 from Squid Game in his iconic green tracksuit',
-    imageUrl: '/placeholder.svg?height=400&width=400&text=Squid+Game',
-    status: 'approved',
-    submittedAt: '2023-06-15T12:30:00Z',
-    updatedAt: '2023-06-16T09:45:00Z',
-    views: 245,
-    change: 12,
-    ipOwner: 'Netflix',
-    category: 'Character Art',
-    tags: ['squid game', 'tv series', 'character', 'digital art'],
-    artist: 'Jane Cooper',
-    artistEmail: 'jane.cooper@example.com',
-    licenseType: 'Non-Commercial',
-    reviewNotes:
-      'Great work capturing the essence of the character. Approved for non-commercial use.',
-    reviewedBy: 'Mark Wilson',
-    reviewedAt: '2023-06-16T09:45:00Z',
-    comments: [
-      {
-        id: 'comment-001',
-        user: 'Mark Wilson',
-        role: 'IP Reviewer',
-        content:
-          'Great attention to detail in this piece. The color palette matches the show perfectly.',
-        timestamp: '2023-06-15T14:30:00Z',
-      },
-      {
-        id: 'comment-002',
-        user: 'Sarah Johnson',
-        role: 'Community Manager',
-        content: 'This is one of our favorite submissions this month!',
-        timestamp: '2023-06-16T08:15:00Z',
-      },
-    ],
-  },
-  {
-    id: 'sub-002',
-    title: 'Ahsoka Tano Portrait',
-    description: 'Digital painting of Ahsoka Tano from Star Wars: The Clone Wars',
-    imageUrl: '/placeholder.svg?height=400&width=400&text=Ahsoka+Tano',
-    status: 'licensed',
-    submittedAt: '2023-05-22T14:20:00Z',
-    updatedAt: '2023-05-30T11:15:00Z',
-    views: 512,
-    change: 28,
-    ipOwner: 'Disney/Lucasfilm',
-    category: 'Character Art',
-    tags: ['star wars', 'ahsoka', 'character', 'digital painting'],
-    artist: 'Alex Morgan',
-    artistEmail: 'alex.morgan@example.com',
-    licenseType: 'Commercial Limited',
-    reviewNotes:
-      'Excellent portrayal of the character. Approved for limited commercial use with attribution.',
-    reviewedBy: 'John Smith',
-    reviewedAt: '2023-05-25T10:30:00Z',
-    comments: [
-      {
-        id: 'comment-003',
-        user: 'John Smith',
-        role: 'IP Reviewer',
-        content: 'The likeness is spot on. Great work with the facial markings and expressions.',
-        timestamp: '2023-05-23T11:45:00Z',
-      },
-    ],
-    licenseDetails: {
-      licenseId: 'LIC-2023-0042',
-      issuedDate: '2023-05-30T11:15:00Z',
-      expiryDate: '2024-05-30T11:15:00Z',
-      terms:
-        'Commercial use limited to online merchandise with maximum revenue cap of $10,000. Attribution required.',
-      royaltyRate: '8%',
-    },
-  },
-  {
-    id: 'sub-003',
-    title: 'Samurai Watercolor',
-    description: 'Traditional watercolor painting of a samurai warrior in battle stance',
-    imageUrl: '/placeholder.svg?height=400&width=400&text=Samurai',
-    status: 'pending',
-    submittedAt: '2023-07-03T09:10:00Z',
-    updatedAt: '2023-07-03T09:10:00Z',
-    views: 87,
-    change: 87,
-    ipOwner: 'Original Creation',
-    category: 'Traditional Art',
-    tags: ['samurai', 'watercolor', 'traditional', 'warrior'],
-    artist: 'Kenji Tanaka',
-    artistEmail: 'kenji.tanaka@example.com',
-    licenseType: 'N/A',
-    reviewNotes: '',
-    reviewedBy: '',
-    reviewedAt: '',
-    comments: [],
-  },
-  {
-    id: 'sub-004',
-    title: 'Cytus II - Cherry',
-    description: 'Fan art of Cherry character from the rhythm game Cytus II',
-    imageUrl: '/placeholder.svg?height=400&width=400&text=Cytus+II',
-    status: 'pending',
-    submittedAt: '2023-07-01T16:45:00Z',
-    updatedAt: '2023-07-01T16:45:00Z',
-    views: 124,
-    change: 15,
-    ipOwner: 'Rayark Inc.',
-    category: 'Game Art',
-    tags: ['cytus', 'rhythm game', 'character', 'digital art'],
-    artist: 'Mei Lin',
-    artistEmail: 'mei.lin@example.com',
-    licenseType: 'N/A',
-    reviewNotes: '',
-    reviewedBy: '',
-    reviewedAt: '',
-    comments: [],
-  },
-  {
-    id: 'sub-005',
-    title: 'Jujutsu Kaisen Character',
-    description: 'Digital illustration of Satoru Gojo from Jujutsu Kaisen anime',
-    imageUrl: '/placeholder.svg?height=400&width=400&text=Jujutsu+Kaisen',
-    status: 'approved',
-    submittedAt: '2023-06-10T11:30:00Z',
-    updatedAt: '2023-06-12T14:20:00Z',
-    views: 378,
-    change: 22,
-    ipOwner: 'MAPPA/Shueisha',
-    category: 'Anime Art',
-    tags: ['jujutsu kaisen', 'anime', 'character', 'digital illustration'],
-    artist: 'Hiroshi Nakamura',
-    artistEmail: 'hiroshi.nakamura@example.com',
-    licenseType: 'Non-Commercial',
-    reviewNotes: 'Excellent representation of the character. Approved for non-commercial use only.',
-    reviewedBy: 'Emily Chen',
-    reviewedAt: '2023-06-12T14:20:00Z',
-    comments: [
-      {
-        id: 'comment-004',
-        user: 'Emily Chen',
-        role: 'IP Reviewer',
-        content: 'The art style is very faithful to the original. Great work on the details.',
-        timestamp: '2023-06-11T13:20:00Z',
-      },
-    ],
-  },
-  {
-    id: 'sub-006',
-    title: 'Street Fighter - Chun-Li',
-    description: 'Digital painting of Chun-Li from the Street Fighter game series',
-    imageUrl: '/placeholder.svg?height=400&width=400&text=Chun-Li',
-    status: 'rejected',
-    submittedAt: '2023-05-05T10:15:00Z',
-    updatedAt: '2023-05-07T09:30:00Z',
-    views: 92,
-    change: -5,
-    ipOwner: 'Capcom',
-    category: 'Game Art',
-    tags: ['street fighter', 'chun-li', 'game', 'character'],
-    artist: 'Carlos Rodriguez',
-    artistEmail: 'carlos.rodriguez@example.com',
-    licenseType: 'N/A',
-    reviewNotes:
-      'The submission contains elements that are too similar to official promotional artwork. Please revise with a more original interpretation.',
-    reviewedBy: 'David Park',
-    reviewedAt: '2023-05-07T09:30:00Z',
-    comments: [
-      {
-        id: 'comment-005',
-        user: 'David Park',
-        role: 'IP Reviewer',
-        content:
-          "While the quality is good, this appears to be too derivative of Capcom's official artwork. Please submit a more transformative work.",
-        timestamp: '2023-05-06T15:45:00Z',
-      },
-    ],
-  },
-  {
-    id: 'sub-007',
-    title: 'Deathwing Dragon',
-    description: 'Digital illustration of Deathwing from World of Warcraft',
-    imageUrl: '/placeholder.svg?height=400&width=400&text=Deathwing',
-    status: 'licensed',
-    submittedAt: '2023-04-18T13:40:00Z',
-    updatedAt: '2023-04-25T15:20:00Z',
-    views: 423,
-    change: 18,
-    ipOwner: 'Blizzard Entertainment',
-    category: 'Game Art',
-    tags: ['world of warcraft', 'dragon', 'deathwing', 'digital art'],
-    artist: 'Sarah Johnson',
-    artistEmail: 'sarah.johnson@example.com',
-    licenseType: 'Commercial Full',
-    reviewNotes:
-      'Outstanding work that captures the essence of the character. Approved for full commercial licensing.',
-    reviewedBy: 'Michael Brown',
-    reviewedAt: '2023-04-20T11:15:00Z',
-    comments: [
-      {
-        id: 'comment-006',
-        user: 'Michael Brown',
-        role: 'IP Reviewer',
-        content:
-          'This is exceptional work. The details on the scales and the lighting effects are particularly impressive.',
-        timestamp: '2023-04-19T10:30:00Z',
-      },
-      {
-        id: 'comment-007',
-        user: 'Lisa Wong',
-        role: 'Licensing Manager',
-        content:
-          "We'd like to offer a full commercial license for this piece. Please check your email for details.",
-        timestamp: '2023-04-22T14:15:00Z',
-      },
-    ],
-    licenseDetails: {
-      licenseId: 'LIC-2023-0078',
-      issuedDate: '2023-04-25T15:20:00Z',
-      expiryDate: '2025-04-25T15:20:00Z',
-      terms:
-        'Full commercial use including merchandise, prints, and digital distribution. Attribution required.',
-      royaltyRate: '12%',
-    },
-  },
-  {
-    id: 'sub-008',
-    title: 'Batman Dark Knight',
-    description: 'Noir-style illustration of Batman from DC Comics',
-    imageUrl: '/placeholder.svg?height=400&width=400&text=Batman',
-    status: 'pending',
-    submittedAt: '2023-07-05T08:20:00Z',
-    updatedAt: '2023-07-05T08:20:00Z',
-    views: 56,
-    change: 56,
-    ipOwner: 'DC Comics',
-    category: 'Comic Art',
-    tags: ['batman', 'dc comics', 'superhero', 'noir'],
-    artist: 'Michael Brown',
-    artistEmail: 'michael.brown@example.com',
-    licenseType: 'N/A',
-    reviewNotes: '',
-    reviewedBy: '',
-    reviewedAt: '',
-    comments: [],
-  },
-  {
-    id: 'sub-009',
-    title: 'Superman Abstract',
-    description: 'Abstract interpretation of Superman in flight',
-    imageUrl: '/placeholder.svg?height=400&width=400&text=Superman',
-    status: 'approved',
-    submittedAt: '2023-06-20T09:50:00Z',
-    updatedAt: '2023-06-22T11:30:00Z',
-    views: 187,
-    change: 14,
-    ipOwner: 'DC Comics',
-    category: 'Comic Art',
-    tags: ['superman', 'dc comics', 'abstract', 'superhero'],
-    artist: 'Emma Wilson',
-    artistEmail: 'emma.wilson@example.com',
-    licenseType: 'Non-Commercial',
-    reviewNotes:
-      'Creative abstract interpretation that maintains the essence of the character. Approved for non-commercial use.',
-    reviewedBy: 'Thomas Lee',
-    reviewedAt: '2023-06-22T11:30:00Z',
-    comments: [
-      {
-        id: 'comment-008',
-        user: 'Thomas Lee',
-        role: 'IP Reviewer',
-        content:
-          'I appreciate the abstract approach while still making the subject recognizable. Good use of color and movement.',
-        timestamp: '2023-06-21T13:40:00Z',
-      },
-    ],
-  },
-];
-
-function SubmissionDetailPageContent({ id }: { id: string }) {
+function SubmissionDetailPageContent({ id, slug }: Props) {
   const router = useRouter();
-  const [submission, setSubmission] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, loading: authLoading } = useAuth();
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [revokeLicenseId, setRevokeLicenseId] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchSubmission = async () => {
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+  const backHref = `/brand-manager/${slug}/submissions`;
 
-      // Find the submission in our sample data
-      const foundSubmission = fanArtSubmissions.find((sub) => sub.id === id);
+  const {
+    data: artwork,
+    isLoading: artworkLoading,
+    isError,
+    error,
+    refetch,
+  } = useGetArtworkQuery(id, { skip: !id });
 
-      if (foundSubmission) {
-        setSubmission(foundSubmission);
-      } else {
-        // If not found, redirect to 404
-        router.push('/submissions/not-found');
-      }
+  const { data: tags = [], isLoading: tagsLoading } = useGetArtworkTagsQuery(id, { skip: !id });
 
-      setIsLoading(false);
-    };
+  const { data: categories = [], isLoading: categoriesLoading } = useGetArtworkCategoriesQuery(
+    id,
+    { skip: !id }
+  );
 
-    fetchSubmission();
-  }, [id, router]);
+  const { data: issuedLicenses = [], isLoading: licensesLoading } = useGetIssuedLicensesQuery();
 
-  // Get status badge styling
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'approved':
-        return 'bg-green-100 text-green-800 hover:bg-green-100 hover:text-green-800';
-      case 'rejected':
-        return 'bg-red-100 text-red-800 hover:bg-red-100 hover:text-red-800';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800 hover:bg-yellow-100 hover:text-yellow-800';
-      case 'licensed':
-        return 'bg-blue-100 text-blue-800 hover:bg-blue-100 hover:text-blue-800';
-      default:
-        return 'bg-gray-100 text-gray-800 hover:bg-gray-100 hover:text-gray-800';
+  const { data: entriesResponse, isLoading: entriesLoading } = useGetMyContestEntriesQuery();
+
+  const [deleteArtwork, { isLoading: isDeleting }] = useDeleteArtworkMutation();
+  const [publishArtwork, { isLoading: isPublishing }] = usePublishArtworkMutation();
+  const [revokeLicense, { isLoading: isRevoking }] = useRevokeLicenseMutation();
+
+  const artworkLicenses = issuedLicenses.filter((l) => l.artwork_id === id);
+  const contestEntry = entriesResponse?.entries?.find((e: any) => e.artwork_id === id);
+
+  const isLoading =
+    authLoading || artworkLoading || tagsLoading || categoriesLoading || licensesLoading || entriesLoading;
+
+  const isOwner = !!user && !!artwork && artwork.creator_id === user.id;
+
+  // ────────────────────────────────────────────────
+  // Actions
+  // ────────────────────────────────────────────────
+
+  const handleDelete = async () => {
+    try {
+      await deleteArtwork(id).unwrap();
+      router.push(backHref);
+    } catch (err) {
+      console.error('Delete failed:', err);
+      setDeleteOpen(false);
     }
   };
+
+  const handlePublish = async () => {
+    try {
+      await publishArtwork(id).unwrap();
+    } catch (err) {
+      console.error('Publish failed:', err);
+    }
+  };
+
+  const handleRevoke = async () => {
+    if (!revokeLicenseId) return;
+    try {
+      await revokeLicense({ id: revokeLicenseId }).unwrap();
+      setRevokeLicenseId(null);
+    } catch (err) {
+      console.error('Revoke failed:', err);
+    }
+  };
+
+  // ────────────────────────────────────────────────
+  // Loading state
+  // ────────────────────────────────────────────────
 
   if (isLoading) {
     return (
@@ -368,7 +162,6 @@ function SubmissionDetailPageContent({ id }: { id: string }) {
             <Skeleton className="h-4 w-20" />
           </Button>
         </div>
-
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-2 space-y-6">
             <Card>
@@ -382,7 +175,6 @@ function SubmissionDetailPageContent({ id }: { id: string }) {
                 </div>
               </CardContent>
             </Card>
-
             <Card>
               <CardHeader>
                 <Skeleton className="h-6 w-40" />
@@ -394,7 +186,6 @@ function SubmissionDetailPageContent({ id }: { id: string }) {
               </CardContent>
             </Card>
           </div>
-
           <div className="space-y-6">
             <Card>
               <CardHeader>
@@ -405,27 +196,6 @@ function SubmissionDetailPageContent({ id }: { id: string }) {
                   <Skeleton className="h-4 w-20" />
                   <Skeleton className="h-4 w-24" />
                 </div>
-                <div className="flex justify-between">
-                  <Skeleton className="h-4 w-20" />
-                  <Skeleton className="h-4 w-24" />
-                </div>
-                <div className="flex justify-between">
-                  <Skeleton className="h-4 w-20" />
-                  <Skeleton className="h-4 w-24" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <Skeleton className="h-6 w-24" />
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  <Skeleton className="h-6 w-16 rounded-full" />
-                  <Skeleton className="h-6 w-20 rounded-full" />
-                  <Skeleton className="h-6 w-24 rounded-full" />
-                </div>
               </CardContent>
             </Card>
           </div>
@@ -434,61 +204,153 @@ function SubmissionDetailPageContent({ id }: { id: string }) {
     );
   }
 
-  if (!submission) {
-    return null;
+  // ────────────────────────────────────────────────
+  // Error / not-found state
+  // ────────────────────────────────────────────────
+
+  if (isError || !artwork) {
+    const notFound = (error as { status?: number })?.status === 404;
+
+    return (
+      <div className="container mx-auto py-6 px-4 md:px-6">
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <p className="text-muted-foreground mb-4">
+            {notFound
+              ? "This submission doesn't exist or may have been removed."
+              : 'Something went wrong loading this submission. Please try again.'}
+          </p>
+          <div className="flex gap-2">
+            <Link href={backHref}>
+              <Button variant="outline">Back to Submissions</Button>
+            </Link>
+            {!notFound && <Button onClick={() => refetch()}>Try Again</Button>}
+          </div>
+        </div>
+      </div>
+    );
   }
+
+  // ────────────────────────────────────────────────
+  // Not the owner
+  // ────────────────────────────────────────────────
+
+  if (!isOwner) {
+    return (
+      <div className="container mx-auto py-6 px-4 md:px-6">
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <p className="text-muted-foreground mb-4">
+            You don't have permission to manage this submission.
+          </p>
+          <Link href={backHref}>
+            <Button variant="outline">Back to Submissions</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // ────────────────────────────────────────────────
+  // Loaded state
+  // ────────────────────────────────────────────────
+
+  const statusInfo = STATUS_STYLES[artwork.status] ?? STATUS_STYLES.draft;
+  const activePricingTiers = (artwork.pricing_tiers ?? []).filter((t) => t.is_active);
+  const sortedCategories = [...categories].sort((a, b) => a.name.localeCompare(b.name));
+  const isWinner = contestEntry?.rank === 1;
 
   return (
     <div className="container mx-auto py-6 px-4 md:px-6">
-      <div className="flex items-center mb-6">
-        <Link href="/submissions/manage">
+      <div className="flex items-center gap-2 mb-6 flex-wrap">
+        <Link href={backHref}>
           <Button variant="ghost" size="sm" className="mr-2">
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back to Submissions
           </Button>
         </Link>
-        <Badge className={getStatusBadge(submission.status)}>
-          {submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
+        <Badge className={`${statusInfo.className} hover:${statusInfo.className}`}>
+          {statusInfo.label}
         </Badge>
+        {artwork.moderation_status && artwork.moderation_status !== artwork.status && (
+          <Badge variant="outline">{artwork.moderation_status}</Badge>
+        )}
+        {isWinner && (
+          <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100 flex items-center gap-1">
+            <Trophy className="h-3 w-3" />
+            Contest Winner
+          </Badge>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>{submission.title}</CardTitle>
-              <CardDescription>{submission.description}</CardDescription>
+              <CardTitle>{artwork.title}</CardTitle>
+              {artwork.description && <CardDescription>{artwork.description}</CardDescription>}
             </CardHeader>
             <CardContent>
               <div className="aspect-square relative rounded-md overflow-hidden">
                 <Image
-                  src={submission.imageUrl || '/placeholder.svg'}
-                  alt={submission.title}
+                  src={artwork.file_url || artwork.thumbnail_url || '/placeholder.svg'}
+                  alt={artwork.title}
                   fill
                   className="object-contain"
                 />
               </div>
             </CardContent>
-            <CardFooter className="flex justify-between">
-              <div className="flex items-center text-sm text-muted-foreground">
-                <Eye className="h-4 w-4 mr-1" />
-                {submission.views} views
+            <CardFooter className="flex justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <span className="flex items-center">
+                  <Eye className="h-4 w-4 mr-1" />
+                  {artwork.views_count} views
+                </span>
+                <span className="flex items-center">
+                  <Heart className="h-4 w-4 mr-1" />
+                  {artwork.favorites_count} favorites
+                </span>
               </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm">
-                  <Share2 className="h-4 w-4 mr-1" />
-                  Share
-                </Button>
-                <Button variant="outline" size="sm">
-                  <Download className="h-4 w-4 mr-1" />
-                  Download
-                </Button>
-                {submission.status !== 'licensed' && (
-                  <Button variant="outline" size="sm">
-                    <Edit className="h-4 w-4 mr-1" />
-                    Edit
+              <div className="flex gap-2 flex-wrap">
+                {artwork.status === 'published' && (
+                  <Link href={`/artwork/${artwork.id}`}>
+                    <Button variant="outline" size="sm">
+                      <ExternalLink className="h-4 w-4 mr-1" />
+                      View Public Page
+                    </Button>
+                  </Link>
+                )}
+                {artwork.status === 'draft' && (
+                  <Button size="sm" onClick={handlePublish} disabled={isPublishing}>
+                    <Rocket className="h-4 w-4 mr-1" />
+                    {isPublishing ? 'Publishing...' : 'Publish'}
                   </Button>
                 )}
+                <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm">
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Delete
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete this artwork?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. The artwork and its listing will be
+                        permanently removed.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        className="bg-red-600 hover:bg-red-700"
+                        disabled={isDeleting}
+                        onClick={handleDelete}
+                      >
+                        {isDeleting ? 'Deleting...' : 'Delete'}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </CardFooter>
           </Card>
@@ -496,12 +358,10 @@ function SubmissionDetailPageContent({ id }: { id: string }) {
           <Tabs defaultValue="details">
             <TabsList>
               <TabsTrigger value="details">Details</TabsTrigger>
-              <TabsTrigger value="comments">
-                Comments ({submission.comments?.length || 0})
-              </TabsTrigger>
-              {submission.status === 'licensed' && (
-                <TabsTrigger value="license">License Info</TabsTrigger>
+              {activePricingTiers.length > 0 && (
+                <TabsTrigger value="pricing">Licensing</TabsTrigger>
               )}
+              {contestEntry && <TabsTrigger value="contest">Contest</TabsTrigger>}
             </TabsList>
 
             <TabsContent value="details" className="mt-4">
@@ -512,52 +372,47 @@ function SubmissionDetailPageContent({ id }: { id: string }) {
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <h4 className="text-sm font-medium">Artist</h4>
-                      <p className="text-sm text-muted-foreground flex items-center">
-                        <User className="h-3.5 w-3.5 mr-1" />
-                        {submission.artist}
-                      </p>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-medium">Category</h4>
-                      <p className="text-sm text-muted-foreground">{submission.category}</p>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-medium">IP Owner</h4>
-                      <p className="text-sm text-muted-foreground">{submission.ipOwner}</p>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-medium">License Type</h4>
-                      <p className="text-sm text-muted-foreground">{submission.licenseType}</p>
-                    </div>
-                    <div>
                       <h4 className="text-sm font-medium">Submitted</h4>
                       <p className="text-sm text-muted-foreground flex items-center">
                         <Calendar className="h-3.5 w-3.5 mr-1" />
-                        {new Date(submission.submittedAt).toLocaleDateString()}
+                        {new Date(artwork.created_at).toLocaleDateString()}
                       </p>
                     </div>
                     <div>
                       <h4 className="text-sm font-medium">Last Updated</h4>
                       <p className="text-sm text-muted-foreground flex items-center">
                         <Clock className="h-3.5 w-3.5 mr-1" />
-                        {new Date(submission.updatedAt).toLocaleDateString()}
+                        {new Date(artwork.updated_at).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
 
-                  {submission.reviewNotes && (
+                  {sortedCategories.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-medium mb-2">Categories</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {sortedCategories.map((cat) => (
+                          <Badge key={cat.id} variant="outline">
+                            {cat.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {artwork.moderation_notes && (
                     <>
                       <Separator />
                       <div>
-                        <h4 className="text-sm font-medium mb-2">Review Notes</h4>
+                        <h4 className="text-sm font-medium mb-2">Moderation Notes</h4>
                         <div className="bg-muted p-3 rounded-md text-sm">
-                          {submission.reviewNotes}
+                          {artwork.moderation_notes}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          Reviewed by {submission.reviewedBy} on{' '}
-                          {new Date(submission.reviewedAt).toLocaleDateString()}
-                        </p>
+                        {artwork.moderated_at && (
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Reviewed on {new Date(artwork.moderated_at).toLocaleDateString()}
+                          </p>
+                        )}
                       </div>
                     </>
                   )}
@@ -565,88 +420,140 @@ function SubmissionDetailPageContent({ id }: { id: string }) {
               </Card>
             </TabsContent>
 
-            <TabsContent value="comments" className="mt-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Comments</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {submission.comments && submission.comments.length > 0 ? (
-                    <div className="space-y-4">
-                      {submission.comments.map((comment: any) => (
-                        <div key={comment.id} className="border rounded-md p-4">
-                          <div className="flex justify-between items-start mb-2">
-                            <div>
-                              <p className="font-medium">{comment.user}</p>
-                              <p className="text-xs text-muted-foreground">{comment.role}</p>
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                              {new Date(comment.timestamp).toLocaleString()}
-                            </p>
-                          </div>
-                          <p className="text-sm">{comment.content}</p>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground text-center py-6">No comments yet</p>
-                  )}
-                </CardContent>
-                <CardFooter>
-                  <Button className="w-full">
-                    <MessageSquare className="h-4 w-4 mr-2" />
-                    Add Comment
-                  </Button>
-                </CardFooter>
-              </Card>
-            </TabsContent>
-
-            {submission.status === 'licensed' && (
-              <TabsContent value="license" className="mt-4">
+            {activePricingTiers.length > 0 && (
+              <TabsContent value="pricing" className="mt-4 space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle>License Information</CardTitle>
-                    <CardDescription>
-                      License ID: {submission.licenseDetails.licenseId}
-                    </CardDescription>
+                    <CardTitle>Licensing & Pricing</CardTitle>
+                    <CardDescription>License tiers available on your public listing</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <h4 className="text-sm font-medium">Issued Date</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(submission.licenseDetails.issuedDate).toLocaleDateString()}
-                        </p>
+                    {activePricingTiers.map((tier) => (
+                      <div
+                        key={tier.id}
+                        className="border rounded-md p-4 flex justify-between items-center"
+                      >
+                        <p className="font-medium capitalize">{tier.license_type}</p>
+                        <div className="text-right text-sm">
+                          <p className="font-medium">{formatCents(tier.price_usd_cents, 'USD')}</p>
+                          <p className="text-muted-foreground">
+                            {formatCents(tier.price_inr_cents, 'INR')}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="text-sm font-medium">Expiry Date</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(submission.licenseDetails.expiryDate).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-medium">Royalty Rate</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {submission.licenseDetails.royaltyRate}
-                        </p>
-                      </div>
-                    </div>
+                    ))}
+                  </CardContent>
+                </Card>
 
-                    <Separator />
+                {artworkLicenses.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Issued Licenses</CardTitle>
+                      <CardDescription>Buyers who currently hold a license for this piece</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {artworkLicenses.map((license) => (
+                        <div
+                          key={license.id}
+                          className="border rounded-md p-4 flex justify-between items-center flex-wrap gap-2"
+                        >
+                          <div>
+                            <p className="font-medium">
+                              {license.buyer?.username ?? 'Unknown buyer'}
+                            </p>
+                            <p className="text-xs text-muted-foreground capitalize">
+                              {license.license_type} •{' '}
+                              {license.is_active ? 'Active' : 'Revoked'} •{' '}
+                              Issued {new Date(license.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
+                            <a href={license.contract_pdf_url} target="_blank" rel="noreferrer">
+                              <Button variant="outline" size="sm">
+                                View Contract
+                              </Button>
+                            </a>
+                            {license.is_active && (
+                              <AlertDialog
+                                open={revokeLicenseId === license.id}
+                                onOpenChange={(open) => !open && setRevokeLicenseId(null)}
+                              >
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() => setRevokeLicenseId(license.id)}
+                                  >
+                                    Revoke
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Revoke this license?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      The buyer will lose their usage rights to this artwork.
+                                      This cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      className="bg-red-600 hover:bg-red-700"
+                                      disabled={isRevoking}
+                                      onClick={handleRevoke}
+                                    >
+                                      {isRevoking ? 'Revoking...' : 'Revoke'}
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
+              </TabsContent>
+            )}
 
-                    <div>
-                      <h4 className="text-sm font-medium mb-2">License Terms</h4>
-                      <div className="bg-muted p-3 rounded-md text-sm">
-                        {submission.licenseDetails.terms}
+            {contestEntry && (
+              <TabsContent value="contest" className="mt-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Contest Entry</CardTitle>
+                    {contestEntry.contest_title && (
+                      <CardDescription>{contestEntry.contest_title}</CardDescription>
+                    )}
+                  </CardHeader>
+                  <CardContent className="space-y-2 text-sm">
+                    {contestEntry.status && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Entry Status</span>
+                        <span className="font-medium capitalize">{contestEntry.status}</span>
                       </div>
-                    </div>
-
-                    <div className="flex justify-end">
-                      <Button variant="outline" size="sm">
-                        <Download className="h-4 w-4 mr-1" />
-                        Download License Agreement
-                      </Button>
-                    </div>
+                    )}
+                    {contestEntry.rank != null && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Rank</span>
+                        <span className="font-medium">#{contestEntry.rank}</span>
+                      </div>
+                    )}
+                    {contestEntry.judge_score != null && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Judge Score</span>
+                        <span className="font-medium">{contestEntry.judge_score}</span>
+                      </div>
+                    )}
+                    {contestEntry.judge_comments && (
+                      <>
+                        <Separator className="my-2" />
+                        <div>
+                          <p className="text-muted-foreground mb-1">Judge Comments</p>
+                          <p>{contestEntry.judge_comments}</p>
+                        </div>
+                      </>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -663,42 +570,41 @@ function SubmissionDetailPageContent({ id }: { id: string }) {
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span className="text-sm">Views</span>
-                  <span className="font-medium">{submission.views}</span>
+                  <span className="font-medium">{artwork.views_count}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm">Change</span>
-                  <span
-                    className={`font-medium ${submission.change > 0 ? 'text-green-500' : 'text-red-500'}`}
-                  >
-                    {submission.change > 0 ? '+' : ''}
-                    {submission.change}%
-                  </span>
+                  <span className="text-sm">Favorites</span>
+                  <span className="font-medium">{artwork.favorites_count}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm">Comments</span>
-                  <span className="font-medium">{submission.comments?.length || 0}</span>
-                </div>
+                {artworkLicenses.length > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-sm">Licenses Issued</span>
+                    <span className="font-medium">{artworkLicenses.length}</span>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Tags</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {submission.tags.map((tag: string) => (
-                  <Badge key={tag} variant="secondary" className="flex items-center">
-                    <Tag className="h-3 w-3 mr-1" />
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          {tags.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Tags</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {tags.map((tag) => (
+                    <Badge key={tag.id} variant="secondary" className="flex items-center">
+                      <Tag className="h-3 w-3 mr-1" />
+                      {tag.name}
+                    </Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-          {submission.status === 'pending' && (
+          {artwork.status === 'moderation_pending' && (
             <Card>
               <CardHeader>
                 <CardTitle>Submission Status</CardTitle>
@@ -716,20 +622,17 @@ function SubmissionDetailPageContent({ id }: { id: string }) {
             </Card>
           )}
 
-          {submission.status === 'approved' && !submission.licenseDetails && (
-            <Card className="bg-green-50 dark:bg-green-950">
+          {artwork.status === 'rejected' && artwork.moderation_notes && (
+            <Card className="bg-red-50 dark:bg-red-950">
               <CardHeader>
-                <CardTitle className="text-green-800 dark:text-green-300">
-                  Ready for Licensing
+                <CardTitle className="text-red-800 dark:text-red-300 text-base">
+                  Submission Rejected
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-green-700 dark:text-green-400 mb-4">
-                  Your submission has been approved and is ready for licensing!
+                <p className="text-sm text-red-700 dark:text-red-400">
+                  See moderation notes above for details on why this was rejected.
                 </p>
-                <Button className="w-full bg-green-600 hover:bg-green-700">
-                  Apply for License
-                </Button>
               </CardContent>
             </Card>
           )}
