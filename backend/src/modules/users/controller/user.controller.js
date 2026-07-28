@@ -5,13 +5,15 @@ const {
   hashPassword,
   comparePassword,
 } = require("../../../common/utils/password.util");
-const { s3Client } = require("../../../config");
-const { PutObjectCommand } = require("@aws-sdk/client-s3");
-const crypto = require("crypto");
-const path = require("path");
 const { db } = require("../../../config");
 const { sql } = require("kysely"); // ← Critical fix for sql`NOW()`
 const UserStatsService = require("../services/userStats.service");
+const CDNFileService = require("../../cdn/services/cdn-file.service");
+const CDNFile = require("../../cdn/models/cdn-file.model");
+
+const cdnService = new CDNFileService(CDNFile);
+const AVATAR_KEY_PREFIX = process.env.S3_AVATAR_KEY_PREFIX || "avatars";
+
 class UserController {
   /**
    * GET /users/me
@@ -343,42 +345,47 @@ class UserController {
       }
 
       const userId = req.user.id;
-      const file = req.file;
-      const ext = path.extname(file.originalname).toLowerCase();
-      const allowed = [".jpg", ".jpeg", ".png", ".gif", ".webp"];
 
-      if (!allowed.includes(ext)) {
-        return res
-          .status(400)
-          .json({ error: "Invalid file type. Allowed: jpg, png, gif, webp" });
-      }
+      // Captured before the swap so the replaced object can be cleaned up after.
+      const previous = await User.findById(userId);
 
-      const key = `avatars/${userId}/${crypto.randomUUID()}${ext}`;
-
-      await s3Client.send(
-        new PutObjectCommand({
-          Bucket: process.env.S3_BUCKET_NAME,
-          Key: key,
-          Body: file.buffer,
-          ContentType: file.mimetype,
-        })
+      const cdnFile = await cdnService.createFileRecord(
+        req.file,
+        userId,
+        AVATAR_KEY_PREFIX
       );
-
-      const avatarUrl = `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
 
       await db
         .updateTable("users")
         .set({
-          avatar_url: avatarUrl,
+          avatar_url: cdnFile.url,
           updated_at: sql`NOW()`,
         })
         .where("id", "=", userId)
         .execute();
 
-      res.json({ message: "Avatar updated", avatar_url: avatarUrl });
+      await UserController.deleteAvatarFile(previous?.avatar_url);
+
+      res.json({ message: "Avatar updated", avatar_url: cdnFile.url });
     } catch (error) {
       console.error("Avatar upload error:", error);
       res.status(500).json({ error: "Failed to upload avatar" });
+    }
+  }
+
+  /**
+   * Removes the CDN file backing an avatar URL, if one is on record.
+   * Best-effort: a missing record must not fail the surrounding request.
+   */
+  static async deleteAvatarFile(avatarUrl) {
+    if (!avatarUrl) return;
+
+    try {
+      const storedName = avatarUrl.split("/").pop();
+      const record = await CDNFile.findByStoredName(storedName);
+      if (record) await cdnService.deleteFile(record.id);
+    } catch (error) {
+      console.warn("Failed to delete avatar file:", error.message);
     }
   }
 
@@ -400,6 +407,8 @@ class UserController {
         })
         .where("id", "=", req.user.id)
         .execute();
+
+      await UserController.deleteAvatarFile(user.avatar_url);
 
       res.json({ message: "Avatar removed" });
     } catch (error) {
