@@ -3,7 +3,7 @@ import SubmissionDetailPageContent from './submission-detail-page';
 import { notFound, redirect } from 'next/navigation';
 
 interface SubmissionPageProps {
-  params: Promise<{ id: string }>; // <-- params is now a Promise
+  params: Promise<{ slug: string; id: string }>;
 }
 
 export const metadata: Metadata = {
@@ -12,19 +12,16 @@ export const metadata: Metadata = {
 };
 
 export default async function SubmissionPage({ params }: SubmissionPageProps) {
-  const { id } = await params; // <-- Await the promise to get the actual object
+  const { slug, id } = await params;
 
-  // Redirect to new submission page if ID is "new"
   if (id === 'new') {
-    redirect('/submissions/new');
+    redirect(`/brand-manager/${slug}/submissions/new`);
     return null;
   }
 
-  // Validate ID
   if (!id) {
     return notFound();
   }
 
-  // You can also fetch data here if needed before rendering
-  return <SubmissionDetailPageContent id={id} />;
+  return <SubmissionDetailPageContent id={id} slug={slug} />;
 }

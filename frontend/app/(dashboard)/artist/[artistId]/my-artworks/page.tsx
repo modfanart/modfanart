@@ -107,10 +107,10 @@ const StatusUI = ({ status }: { status?: string }) => {
 
 // ────────────────────────────────────────────────
 
+type SubmissionTab = 'all' | 'draft' | 'pending' | 'published' | 'rejected' | 'in-contests';
+
 export default function ManageSubmissionsPage() {
-  const [activeTab, setActiveTab] = useState<
-    'all' | 'draft' | 'pending' | 'published' | 'rejected' | 'in-contests'
-  >('all');
+  const [activeTab, setActiveTab] = useState<SubmissionTab>('all');
 
   const { user, loading: authLoading } = useAuth();
 
@@ -232,7 +232,7 @@ export default function ManageSubmissionsPage() {
 
                   {/* Actions */}
                   <CardFooter className="flex justify-between gap-2">
-                    <Link href={`/artworks/${item.id}`}>
+                    <Link href={`/artwork/${item.id}`}>
                       <Button size="sm" variant="outline">
                         <Eye className="h-4 w-4" />
                       </Button>
