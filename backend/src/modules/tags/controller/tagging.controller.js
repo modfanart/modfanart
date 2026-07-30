@@ -1,4 +1,5 @@
 const Tag = require("../models/tag.model");
+const { slugifyTag } = require("../models/tag.model");
 const Tagging = require("../models/tagging.model");
 const Artwork = require("../../artworks/models/artwork.model");
 const { db } = require("../../../config");
@@ -7,7 +8,9 @@ class TaggingController {
   static async addTag(req, res) {
     try {
       const { artworkId } = req.params;
-      const { tagName } = req.body;
+      // Accept either key: the client sends `name`, older callers send
+      // `tagName`. Supporting both avoids a lockstep frontend/backend deploy.
+      const tagName = req.body.tagName ?? req.body.name;
 
       if (
         !tagName ||
@@ -32,21 +35,43 @@ class TaggingController {
           .json({ error: "Not authorized to tag this artwork" });
       }
 
-      let tag = await Tag.findByNameOrSlug(tagName.trim());
+      const trimmed = tagName.trim();
+      let tag = await Tag.findByNameOrSlug(trimmed);
 
       if (!tag) {
-        const slug = tagName
-          .trim()
-          .toLowerCase()
-          .replace(/\s+/g, "-")
-          .replace(/[^a-z0-9-]/g, "");
-        tag = await Tag.create(tagName.trim(), slug, req.user.id);
-      } else {
-        // Optional: only increment if new usage
-        await Tag.incrementUsage(tag.id);
+        const slug = slugifyTag(trimmed);
+
+        if (!slug) {
+          return res
+            .status(400)
+            .json({ error: "Tag name must contain letters or numbers" });
+        }
+
+        try {
+          tag = await Tag.create(trimmed, slug, req.user.id);
+        } catch (err) {
+          // Two requests can race the tags_slug_key unique index. Losing that
+          // race is not an error — the tag we wanted now exists.
+          if (err?.code !== "23505") throw err;
+          tag = await Tag.findByNameOrSlug(slug);
+          if (!tag) throw err;
+        }
       }
 
-      await Tagging.addTag(tag.id, "artwork", artworkId, req.user.id);
+      // Count a usage only when the tag was genuinely newly attached to this
+      // artwork. Incrementing before the insert meant replaying the same
+      // request inflated usage_count without attaching anything, which skews
+      // the autocomplete ordering, and newly created tags never counted at all.
+      const attached = await Tagging.addTag(
+        tag.id,
+        "artwork",
+        artworkId,
+        req.user.id
+      );
+
+      if (attached) {
+        await Tag.incrementUsage(tag.id);
+      }
 
       res.status(201).json({
         message: "Tag added",
