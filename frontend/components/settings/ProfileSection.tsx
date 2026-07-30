@@ -27,6 +27,10 @@ import {
   useRemoveAvatarMutation,
 } from '../../services/api/userApi';
 
+// Kept in step with the server-side avatar limits in common/middleware/upload.js.
+const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+const MAX_AVATAR_BYTES = 2 * 1024 * 1024; // 2MB
+
 // ── Schema matching backend UserProfile ────────────────────────────────
 const profileFormSchema = z.object({
   username: z.string().min(2, { message: 'Minimum 2 characters' }).max(30),
@@ -111,36 +115,45 @@ export default function ProfileSection() {
     } catch (err: any) {
       toast({
         title: 'Update failed',
-        description: err?.data?.message || 'An error occurred. Please try again.',
+        description: err?.data?.error || 'An error occurred. Please try again.',
         variant: 'destructive',
       });
     }
   };
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const input = e.target;
+    const file = input.files?.[0];
     if (!file) return;
 
-    // Optional: client-side size/type validation
-    if (file.size > 2 * 1024 * 1024) {
+    // Mirrors the server-side allowlist in common/middleware/upload.js.
+    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+      toast({
+        title: 'Unsupported file type',
+        description: 'Please choose a JPG, PNG, GIF or WEBP image.',
+        variant: 'destructive',
+      });
+    } else if (file.size > MAX_AVATAR_BYTES) {
       toast({
         title: 'File too large',
         description: 'Maximum file size is 2MB.',
         variant: 'destructive',
       });
-      return;
+    } else {
+      try {
+        await uploadAvatar(file).unwrap();
+        toast({ title: 'Avatar updated' });
+      } catch (err: any) {
+        toast({
+          title: 'Upload failed',
+          description: err?.data?.error || 'Failed to upload avatar.',
+          variant: 'destructive',
+        });
+      }
     }
 
-    try {
-      await uploadAvatar(file).unwrap();
-      toast({ title: 'Avatar updated' });
-    } catch (err: any) {
-      toast({
-        title: 'Upload failed',
-        description: err?.data?.message || 'Failed to upload avatar.',
-        variant: 'destructive',
-      });
-    }
+    // Clear the input so re-picking the same file still fires a change event.
+    input.value = '';
   };
 
   const handleRemoveAvatar = async () => {
@@ -150,7 +163,7 @@ export default function ProfileSection() {
     } catch (err: any) {
       toast({
         title: 'Failed to remove avatar',
-        description: err?.data?.message || 'Please try again.',
+        description: err?.data?.error || 'Please try again.',
         variant: 'destructive',
       });
     }
@@ -165,7 +178,7 @@ export default function ProfileSection() {
       {/* Avatar Section */}
       <section className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
         <Avatar className="h-24 w-24 border-2 border-border">
-          <AvatarImage src={user?.avatar_url ?? '/avatars/placeholder.png'} alt={user?.username} />
+          {user?.avatar_url && <AvatarImage src={user.avatar_url} alt={user?.username} />}
           <AvatarFallback className="text-3xl bg-primary/10 text-primary">
             {(user?.username?.[0] ?? '?').toUpperCase()}
           </AvatarFallback>
@@ -175,7 +188,7 @@ export default function ProfileSection() {
           <div>
             <h3 className="font-medium text-lg">Profile Picture</h3>
             <p className="text-sm text-muted-foreground">
-              Recommended: square image, 400×400 or larger. Max 2MB. Formats: JPG, PNG, GIF.
+              Recommended: square image, 400×400 or larger. Max 2MB. Formats: JPG, PNG, GIF, WEBP.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -184,7 +197,7 @@ export default function ProfileSection() {
                 {isUploading ? 'Uploading...' : 'Upload new picture'}
                 <input
                   type="file"
-                  accept="image/jpeg,image/png,image/gif"
+                  accept={ACCEPTED_IMAGE_TYPES.join(',')}
                   className="hidden"
                   onChange={handleAvatarChange}
                   disabled={isUploading}
