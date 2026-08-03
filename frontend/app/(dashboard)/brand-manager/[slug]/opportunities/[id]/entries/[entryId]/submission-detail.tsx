@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/components/ui/use-toast';
 import { unpackSubmissionNotes } from '@/lib/contest-notes';
+import { useAuth } from '@/store/AuthContext';
 import {
   useGetContestEntryQuery,
   useUpdateEntryStatusMutation,
@@ -46,7 +47,16 @@ interface Props {
 }
 
 export default function SubmissionDetail({ slug, contestId, entryId }: Props) {
-  const { data, isLoading, isError, error } = useGetContestEntryQuery({ contestId, entryId });
+  // auth.accessToken starts null and is filled in asynchronously once Firebase
+  // reports, so a query that fires on mount sends no Authorization header and
+  // the API answers 401. The pending-entries list never hit this because its
+  // parent renders nothing until the user's brands have loaded; this page has
+  // no such gate, so it has to wait for auth explicitly.
+  const { user, loading: authLoading } = useAuth();
+  const { data, isLoading, isError, error } = useGetContestEntryQuery(
+    { contestId, entryId },
+    { skip: !user }
+  );
   const [updateEntryStatus, { isLoading: isUpdating }] = useUpdateEntryStatusMutation();
 
   const backHref = `/brand-manager/${slug}`;
@@ -69,7 +79,9 @@ export default function SubmissionDetail({ slug, contestId, entryId }: Props) {
     }
   };
 
-  if (isLoading) {
+  // Keep spinning while auth resolves, otherwise the skipped query reads as a
+  // finished-but-empty result and flashes an error before the token arrives.
+  if (authLoading || (user && isLoading)) {
     return (
       <div className="flex items-center justify-center py-24">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -78,13 +90,13 @@ export default function SubmissionDetail({ slug, contestId, entryId }: Props) {
   }
 
   if (isError || !entry) {
-    // 403 and 404 are both expected here (another brand's entry, or a deleted
-    // one), so the message distinguishes them rather than showing "not found"
-    // for a permissions problem.
+    // 401/403 and 404 are all expected here (signed out, another brand's entry,
+    // or a deleted one), so the message distinguishes them rather than showing
+    // "not found" for a permissions problem.
     // SerializedError has no status field, so narrow instead of casting.
     const status = error && 'status' in error ? error.status : undefined;
     const message =
-      status === 403
+      !user || status === 401 || status === 403
         ? 'You do not have access to this submission.'
         : status === 404
           ? 'This submission no longer exists.'
