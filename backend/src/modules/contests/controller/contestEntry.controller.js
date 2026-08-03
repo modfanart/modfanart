@@ -19,12 +19,16 @@ const MAX_SUBMISSION_NOTES_LENGTH = 1200;
  * one place - it gates submitter contact details, so drift between copies
  * would be a data-exposure bug rather than a cosmetic one.
  *
- * IMPORTANT: despite the name, `contests.brand_id` is a foreign key to
- * users(id), not brands(id) - it holds the owning USER. Comparing it against
- * `user.brands[].id` (brand ids) therefore never matches, which silently
- * denied every brand manager and left only moderators and judges with access.
- * Ownership is matched on the user id, and on brands.user_id for managers who
- * reach the contest through a brand they hold.
+ * `contests.brand_id` holds a brands(id), so ownership is a direct match
+ * against `user.brands[].id`. This is the same comparison every other contest
+ * controller makes (contest, contestJudge and contestJudgeScore all do it), and
+ * matching on `brands[].user_id` instead silently denied every brand manager:
+ * getEntries then degraded to approved/winner rows, so pending submissions
+ * vanished from the dashboard rather than raising an error.
+ *
+ * Note `frontend/lib/db/schema_new.sql` still declares this column as
+ * REFERENCES users(id). That file predates the live schema and is what led the
+ * check astray in the first place; do not take it as the source of truth.
  *
  * @param {object | undefined} user req.user, absent for anonymous callers.
  * @param {object} contest Contest row, needs brand_id.
@@ -34,13 +38,7 @@ function isBrandAuthorized(user, contest) {
   if (!user || !contest) return false;
 
   return Boolean(
-    contest.brand_id === user.id ||
-      // authenticateToken exposes the owning user as owner_id for brand roles,
-      // while getMyBrands returns the raw column as user_id. Accept either, or
-      // the manager path silently fails depending on which shape arrived.
-      (user.brands || []).some(
-        (brand) => (brand.user_id ?? brand.owner_id) === contest.brand_id
-      ) ||
+    (user.brands || []).some((brand) => brand.id === contest.brand_id) ||
       user.permissions?.["contests.moderate"] ||
       user.permissions?.["contests.judge"]
   );

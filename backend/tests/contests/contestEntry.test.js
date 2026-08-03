@@ -397,35 +397,36 @@ describe('isBrandAuthorized', () => {
   // This gate decides whether the submitter's email is released, so it is
   // covered directly rather than only through the endpoints that call it.
   const { isBrandAuthorized } = ContestEntryController;
-  // contests.brand_id is a FK to users(id), so it holds the OWNER USER id.
-  const contest = { id: 'contest-1', brand_id: 'owner-user' };
+  // contests.brand_id holds a brands(id), matching every other contest
+  // controller. Asserting the opposite here passed while the dashboard stayed
+  // empty against real data, so the shape is pinned explicitly.
+  const contest = { id: 'contest-1', brand_id: 'brand-1' };
 
-  it('authorizes the user who owns the contest', () => {
-    assert.equal(isBrandAuthorized({ id: 'owner-user' }, contest), true);
-  });
-
-  it('authorizes a manager holding a brand owned by that user', () => {
-    const user = { id: 'u1', brands: [{ id: 'brand-1', user_id: 'owner-user' }] };
+  it('authorizes a manager holding the brand that owns the contest', () => {
+    const user = { id: 'u1', brands: [{ id: 'brand-1' }] };
 
     assert.equal(isBrandAuthorized(user, contest), true);
   });
 
-  it('accepts the owner_id shape that authenticateToken produces', () => {
-    // auth.middleware selects 'b.user_id as owner_id', while getMyBrands
-    // returns the raw column as user_id. Checking only one key made the
-    // manager path fail depending on which endpoint the brands came from.
-    const user = { id: 'u1', brands: [{ id: 'brand-1', owner_id: 'owner-user' }] };
+  it('matches a brand id against contests.brand_id', () => {
+    // The regression this guards: resolving through brands[].user_id denied
+    // every brand manager, so getEntries degraded to approved/winner rows and
+    // pending submissions disappeared from the dashboard.
+    const user = { id: 'u1', brands: [{ id: 'brand-1', user_id: 'someone-else' }] };
 
     assert.equal(isBrandAuthorized(user, contest), true);
   });
 
-  it('does not match a brand id against contests.brand_id', () => {
-    // The regression this guards: brands[].id is a brand id and
-    // contest.brand_id is a user id, so comparing them silently denied every
-    // brand manager and left only moderators and judges with access.
-    const user = { id: 'u1', brands: [{ id: 'owner-user', user_id: 'someone-else' }] };
+  it('ignores a brands[].user_id that happens to match', () => {
+    // Guards the inverse mistake: a user id must not authorize.
+    const user = { id: 'u1', brands: [{ id: 'brand-2', user_id: 'brand-1' }] };
 
     assert.equal(isBrandAuthorized(user, contest), false);
+  });
+
+  it('does not authorize the contest owner user id alone', () => {
+    // brand_id is not a user id, so a bare user id must never authorize.
+    assert.equal(isBrandAuthorized({ id: 'brand-1' }, contest), false);
   });
 
   it('authorizes contest moderators and judges', () => {
@@ -442,7 +443,7 @@ describe('isBrandAuthorized', () => {
   it('rejects a manager of a different brand', () => {
     // The cross-tenant case: a brand manager must not read another brand's
     // submissions just by being a brand manager.
-    const user = { id: 'u1', brands: [{ id: 'brand-2', user_id: 'another-owner' }] };
+    const user = { id: 'u1', brands: [{ id: 'brand-2' }] };
 
     assert.equal(isBrandAuthorized(user, contest), false);
   });
