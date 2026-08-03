@@ -2,6 +2,7 @@
 const Contest = require("../models/contest.model");
 const ContestEntry = require("../models/contestEntry.model");
 const Artwork = require("../../artworks/models/artwork.model");
+const Tagging = require("../../tags/models/tagging.model");
 const { sql } = require("kysely");
 const { db } = require("../../../config");
 
@@ -9,6 +10,41 @@ const { db } = require("../../../config");
 // "Fandom / Original IP: ..." line (the IP itself is capped at 100). This bound
 // leaves headroom for that suffix so a max-length note is never rejected.
 const MAX_SUBMISSION_NOTES_LENGTH = 1200;
+
+/**
+ * Whether a user may see privileged entry data for a contest: the brand that
+ * owns it, a contest moderator, or an assigned judge.
+ *
+ * Extracted from the three call sites that had inlined it so the rule lives in
+ * one place - it gates submitter contact details, so drift between copies
+ * would be a data-exposure bug rather than a cosmetic one.
+ *
+ * IMPORTANT: despite the name, `contests.brand_id` is a foreign key to
+ * users(id), not brands(id) - it holds the owning USER. Comparing it against
+ * `user.brands[].id` (brand ids) therefore never matches, which silently
+ * denied every brand manager and left only moderators and judges with access.
+ * Ownership is matched on the user id, and on brands.user_id for managers who
+ * reach the contest through a brand they hold.
+ *
+ * @param {object | undefined} user req.user, absent for anonymous callers.
+ * @param {object} contest Contest row, needs brand_id.
+ * @returns {boolean}
+ */
+function isBrandAuthorized(user, contest) {
+  if (!user || !contest) return false;
+
+  return Boolean(
+    contest.brand_id === user.id ||
+      // authenticateToken exposes the owning user as owner_id for brand roles,
+      // while getMyBrands returns the raw column as user_id. Accept either, or
+      // the manager path silently fails depending on which shape arrived.
+      (user.brands || []).some(
+        (brand) => (brand.user_id ?? brand.owner_id) === contest.brand_id
+      ) ||
+      user.permissions?.["contests.moderate"] ||
+      user.permissions?.["contests.judge"]
+  );
+}
 
 class ContestEntryController {
   /**
@@ -134,11 +170,7 @@ static async getEntries(req, res) {
       });
     }
 
-    const isAuthorized =
-      req.user &&
-      ((req.user.brands || []).some((brand) => brand.id === contest.brand_id) ||
-        req.user.permissions?.["contests.moderate"] ||
-        req.user.permissions?.["contests.judge"]);
+    const isAuthorized = isBrandAuthorized(req.user, contest);
 
     // Contest + visibility + search filters, shared by the count and the rows
     // queries so `total` always matches what the list can actually load.
@@ -280,6 +312,154 @@ static async getEntries(req, res) {
     });
   }
 }
+
+  /**
+   * GET /contests/:contestId/entries/:entryId
+   *
+   * Full detail for one entry so a brand can review a submission properly
+   * rather than from the dashboard thumbnail. Separate from getEntries because
+   * that endpoint is paginated and status-filtered - an arbitrary entry is not
+   * reliably reachable through it.
+   *
+   * Unlike getEntries, which degrades to approved/winner entries for the
+   * public, this is privileged-only: it returns the submitter's email.
+   */
+  static async getEntry(req, res) {
+    try {
+      const { contestId, entryId } = req.params;
+
+      const contest = await Contest.findById(contestId);
+      if (!contest) {
+        return res.status(404).json({ error: "Contest not found" });
+      }
+
+      if (!isBrandAuthorized(req.user, contest)) {
+        return res
+          .status(403)
+          .json({ error: "Not authorized to view this submission" });
+      }
+
+      const row = await db
+        .selectFrom("contest_entries as ce")
+        .innerJoin("artworks as a", "a.id", "ce.artwork_id")
+        .innerJoin("users as u", "u.id", "ce.creator_id")
+        .leftJoin("contest_judge_scores as cjs", "cjs.entry_id", "ce.id")
+        .select([
+          // Entry
+          "ce.id as entry_id",
+          "ce.status as entry_status",
+          "ce.rank as entry_rank",
+          "ce.submission_notes as entry_submission_notes",
+          "ce.created_at as entry_created_at",
+          "ce.updated_at as entry_updated_at",
+
+          // Artwork
+          "a.id as artwork_id",
+          "a.title as artwork_title",
+          "a.description as artwork_description",
+          "a.file_url as artwork_file_url",
+          "a.thumbnail_url as artwork_thumbnail_url",
+          "a.status as artwork_status",
+          "a.moderation_status",
+          "a.views_count",
+          "a.favorites_count",
+          "a.created_at as artwork_created_at",
+          "a.updated_at as artwork_updated_at",
+
+          // Creator. email is included here but not in getEntries: the brand
+          // needs a way to contact the submitter, and this route is already
+          // gated above.
+          "u.id as creator_id",
+          "u.username as creator_username",
+          "u.email as creator_email",
+          "u.avatar_url as creator_avatar",
+          // The ticket asks for the submitter's name. users has no name column;
+          // the name lives in the profile blob, and the codebase reads it
+          // inconsistently - search.controller uses display_name, while
+          // contestJudge.controller uses full_name. Only display_name is
+          // actually populated, so prefer it and fall back to the other.
+          sql`COALESCE(u.profile->>'display_name', u.profile->>'full_name')`.as(
+            "creator_display_name"
+          ),
+
+          // Judge score (null if not judged)
+          "cjs.score as judge_score",
+          "cjs.comments as judge_comments",
+        ])
+        .where("ce.id", "=", entryId)
+        // Scoped to the contest in the URL as well as the entry id, so an entry
+        // id belonging to another brand's contest cannot be read by pairing it
+        // with a contest the caller does own.
+        .where("ce.contest_id", "=", contestId)
+        .executeTakeFirst();
+
+      if (!row) {
+        return res.status(404).json({ error: "Entry not found" });
+      }
+
+      // Category and tags are captured by the submission form but live in join
+      // tables, so they need their own reads. Tags go through Tagging rather
+      // than a hand-written join: they live in "taggings" (polymorphic), not
+      // the "artwork_tags" table schema_new.sql still describes.
+      const [categories, tags] = await Promise.all([
+        db
+          .selectFrom("artwork_categories as ac")
+          .innerJoin("categories as c", "c.id", "ac.category_id")
+          .select(["c.id", "c.name", "c.slug"])
+          .where("ac.artwork_id", "=", row.artwork_id)
+          .execute(),
+        Tagging.getTagsForEntity("artwork", row.artwork_id),
+      ]);
+
+      return res.json({
+        entry: {
+          id: row.entry_id,
+          status: row.entry_status,
+          rank: row.entry_rank,
+          submission_notes: row.entry_submission_notes,
+          created_at: row.entry_created_at,
+          updated_at: row.entry_updated_at,
+
+          contest: {
+            id: contest.id,
+            title: contest.title,
+          },
+
+          artwork: {
+            id: row.artwork_id,
+            title: row.artwork_title,
+            description: row.artwork_description,
+            file_url: row.artwork_file_url,
+            thumbnail_url: row.artwork_thumbnail_url,
+            status: row.artwork_status,
+            moderation_status: row.moderation_status,
+            views_count: row.views_count,
+            favorites_count: row.favorites_count,
+            created_at: row.artwork_created_at,
+            updated_at: row.artwork_updated_at,
+            categories,
+            tags,
+          },
+
+          creator: {
+            id: row.creator_id,
+            username: row.creator_username,
+            display_name: row.creator_display_name,
+            email: row.creator_email,
+            avatar_url: row.creator_avatar,
+          },
+
+          judge_score: row.judge_score,
+          judge_comments: row.judge_comments,
+        },
+      });
+    } catch (err) {
+      console.error("Get entry error:", err);
+
+      return res.status(500).json({ error: "Failed to fetch entry" });
+    }
+  }
+
   /**
    * PATCH /contests/:contestId/entries/:entryId/status
    */
@@ -449,3 +629,7 @@ module.exports = ContestEntryController;
 // Exposed so tests assert against the real bound rather than a copied literal
 // that could drift out of sync with it.
 module.exports.MAX_SUBMISSION_NOTES_LENGTH = MAX_SUBMISSION_NOTES_LENGTH;
+// Exposed so the authorization rule can be tested directly. It decides whether
+// submitter contact details are released, so it is worth covering without
+// standing up a database.
+module.exports.isBrandAuthorized = isBrandAuthorized;
