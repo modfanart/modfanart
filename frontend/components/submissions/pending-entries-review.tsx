@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +14,12 @@ import {
 } from '@/services/api/contestsApi';
 import { toast } from '@/components/ui/use-toast';
 import { contestsWithBrandSlug, entryDetailPath } from '@/lib/submissions/entry-detail-link';
+import {
+  buildEntriesQueryArgs,
+  foldEntriesPage,
+  PAGE_SIZE,
+  type ExtendedContestEntry,
+} from '@/components/opportunities/submission-pagination';
 
 function ContestPendingEntries({
   contestId,
@@ -23,14 +30,49 @@ function ContestPendingEntries({
   contestTitle: string;
   brandSlug: string;
 }) {
-  const { data, isLoading } = useGetContestEntriesQuery({ contestId, status: 'pending' });
+  // Paged in from the server and accumulated client-side, same as the brand
+  // Monitor list. Without this the card took the endpoint's default page of 20
+  // and had no way to reach the rest of a contest's pending entries.
+  const [offset, setOffset] = useState(0);
+  const [entries, setEntries] = useState<ExtendedContestEntry[]>([]);
+  // Held in state so the count stays stable while the next page is fetching
+  // (the query's `data` briefly goes undefined when `offset` changes).
+  const [totalEntries, setTotalEntries] = useState(0);
+
+  const entriesQueryArgs = useMemo(
+    () => buildEntriesQueryArgs({ contestId, offset, statusFilter: 'pending', search: '' }),
+    [contestId, offset]
+  );
+
+  const { data, isLoading, isFetching } = useGetContestEntriesQuery(entriesQueryArgs);
   const [updateEntryStatus, { isLoading: isUpdating }] = useUpdateEntryStatusMutation();
 
-  const entries = data?.entries || [];
+  useEffect(() => {
+    if (typeof data?.total === 'number') setTotalEntries(data.total);
+  }, [data]);
+
+  // Fold each fetched page into the accumulated list. Dedupe by id so a
+  // StrictMode double-invoke or a post-mutation refetch cannot double-append,
+  // and let page 0 replace the list (refreshed data after approve/reject).
+  useEffect(() => {
+    const page = data?.entries;
+    if (!page) return;
+    setEntries((prev) => foldEntriesPage(prev, page, offset));
+  }, [data, offset]);
+
+  const canLoadMore = entries.length < totalEntries;
+  const loadMore = useCallback(() => {
+    setOffset((prev) => prev + PAGE_SIZE);
+  }, []);
 
   const handleDecision = async (entryId: string, status: 'approved' | 'rejected') => {
     try {
       await updateEntryStatus({ contestId, entryId, status }).unwrap();
+      // Drop it locally as well as invalidating: the entry is no longer
+      // pending, and on a later page the refetch only replaces that page, so
+      // without this a decided entry would linger in the accumulated list.
+      setEntries((prev) => prev.filter((e) => e.id !== entryId));
+      setTotalEntries((prev) => Math.max(0, prev - 1));
       toast({ title: status === 'approved' ? 'Entry approved' : 'Entry rejected' });
     } catch (err: any) {
       toast({
@@ -41,7 +83,10 @@ function ContestPendingEntries({
     }
   };
 
-  if (isLoading) {
+  // Only spin on the very first page. Changing `offset` gives RTK Query a new
+  // cache key, so isLoading goes true again on every "Load more" - gating the
+  // whole grid on it would blank the loaded entries mid-scroll.
+  if (isLoading && entries.length === 0) {
     return (
       <div className="flex items-center justify-center py-8">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -109,6 +154,16 @@ function ContestPendingEntries({
           </Card>
         ))}
       </div>
+      {canLoadMore && (
+        <div className="flex flex-col items-center gap-2 pt-1">
+          <p className="text-xs text-muted-foreground">
+            Showing {entries.length} of {totalEntries}
+          </p>
+          <Button variant="outline" size="sm" disabled={isFetching} onClick={loadMore}>
+            {isFetching ? 'Loading...' : 'Load more'}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
