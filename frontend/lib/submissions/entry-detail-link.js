@@ -18,42 +18,32 @@ export function entryDetailPath(brandSlug, contestId, entryId) {
 /**
  * Pair each contest this user owns with the slug of the brand to file it under.
  *
- * IMPORTANT: despite the name, `contests.brand_id` is a foreign key to
- * users(id), not brands(id) - it holds the owning USER. Matching it against
- * `brands[].id` never succeeds, which left the dashboard grid permanently
- * empty. Ownership is resolved through `brands.user_id`, falling back to the
- * viewer's own id for a contest they own directly.
+ * `contests.brand_id` holds a brands(id), so the owning brand is a direct
+ * lookup in the viewer's brands. Matching on `brands[].user_id` instead left
+ * this permanently empty, because `GET /users/me/brands` returns neither
+ * `user_id` nor `owner_id` - only id, name, slug and presentation fields.
+ *
+ * Note `frontend/lib/db/schema_new.sql` still declares the column as
+ * REFERENCES users(id). That file predates the live schema and is what led this
+ * resolver astray; do not take it as the source of truth.
  *
  * A manager can hold more than one brand, so the owning brand is looked up per
  * contest rather than defaulting to brands[0] - getting this wrong would build
  * links under the wrong brand. Contests with no resolvable brand slug are
  * dropped, because there is no valid URL for them.
  *
- * All arguments are optional because they come straight from RTK Query data
+ * Both arguments are optional because they come straight from RTK Query data
  * and auth state, either of which is undefined before the first response.
  *
  * @param {Array<{ id: string, brand_id: string, title: string }> | undefined | null} contests
- * @param {Array<{ id: string, slug?: string | null, user_id?: string }> | undefined | null} brands
- * @param {string | undefined | null} userId Viewer's user id.
+ * @param {Array<{ id: string, slug?: string | null }> | undefined | null} brands
  * @returns {Array<{ contest: { id: string, brand_id: string, title: string }, brandSlug: string }>}
  */
-export function contestsWithBrandSlug(contests, brands, userId) {
+export function contestsWithBrandSlug(contests, brands) {
   const owned = brands || [];
 
   return (contests || []).flatMap((contest) => {
-    // getMyBrands returns the raw column as user_id; authenticateToken exposes
-    // the same value as owner_id. Accept either, or this silently finds nothing
-    // depending on which endpoint the brands came from.
-    const byBrandOwner = owned.find((b) => {
-      const ownerId = b.user_id ?? b.owner_id;
-
-      return ownerId && ownerId === contest.brand_id;
-    });
-
-    // The contest is the viewer's own; any brand of theirs gives a valid URL.
-    const byViewer = userId && contest.brand_id === userId ? owned[0] : undefined;
-
-    const brandSlug = (byBrandOwner || byViewer)?.slug;
+    const brandSlug = owned.find((b) => b.id === contest.brand_id)?.slug;
 
     return brandSlug ? [{ contest, brandSlug }] : [];
   });

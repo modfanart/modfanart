@@ -161,6 +161,10 @@ CREATE TABLE artwork_categories (
 -- 4. CONTESTS
 CREATE TABLE contests (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    -- STALE: the live database does not match this line. Every contest
+    -- controller resolves brand_id against brands(id), and the brand-manager
+    -- dashboard depends on that. Reading this as users(id) is what broke
+    -- pending submissions. Verify against the live schema before trusting it.
     brand_id uuid NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
     title text NOT NULL,
     slug text UNIQUE NOT NULL,
