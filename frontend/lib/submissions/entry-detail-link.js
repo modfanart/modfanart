@@ -41,7 +41,14 @@ export function contestsWithBrandSlug(contests, brands, userId) {
   const owned = brands || [];
 
   return (contests || []).flatMap((contest) => {
-    const byBrandOwner = owned.find((b) => b.user_id && b.user_id === contest.brand_id);
+    // getMyBrands returns the raw column as user_id; authenticateToken exposes
+    // the same value as owner_id. Accept either, or this silently finds nothing
+    // depending on which endpoint the brands came from.
+    const byBrandOwner = owned.find((b) => {
+      const ownerId = b.user_id ?? b.owner_id;
+
+      return ownerId && ownerId === contest.brand_id;
+    });
 
     // The contest is the viewer's own; any brand of theirs gives a valid URL.
     const byViewer = userId && contest.brand_id === userId ? owned[0] : undefined;
