@@ -117,6 +117,12 @@ export interface ContestEntry {
 export interface ContestEntryDetail extends ContestEntry {
   contest: { id: string; title: string };
   creator: ArtworkCreator & { email: string | null };
+  // Category and tags are submission-form fields held in join tables, so the
+  // detail endpoint resolves them to names rather than returning bare ids.
+  artwork: Artwork & {
+    categories: Array<{ id: string; name: string; slug: string }>;
+    tags: Array<{ id: string; name: string; slug: string }>;
+  };
 }
 
 // ────────────────────────────────────────────────
