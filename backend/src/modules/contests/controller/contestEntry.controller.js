@@ -10,6 +10,28 @@ const { db } = require("../../../config");
 // leaves headroom for that suffix so a max-length note is never rejected.
 const MAX_SUBMISSION_NOTES_LENGTH = 1200;
 
+/**
+ * Whether a user may see privileged entry data for a contest: the brand that
+ * owns it, a contest moderator, or an assigned judge.
+ *
+ * Extracted from the three call sites that had inlined it so the rule lives in
+ * one place - it gates submitter contact details, so drift between copies
+ * would be a data-exposure bug rather than a cosmetic one.
+ *
+ * @param {object | undefined} user req.user, absent for anonymous callers.
+ * @param {object} contest Contest row, needs brand_id.
+ * @returns {boolean}
+ */
+function isBrandAuthorized(user, contest) {
+  if (!user || !contest) return false;
+
+  return Boolean(
+    (user.brands || []).some((brand) => brand.id === contest.brand_id) ||
+      user.permissions?.["contests.moderate"] ||
+      user.permissions?.["contests.judge"]
+  );
+}
+
 class ContestEntryController {
   /**
    * POST /contests/:contestId/entries
@@ -161,11 +183,7 @@ static async getEntries(req, res) {
       .limit(Number(limit))
       .offset(Number(offset));
 
-    const isAuthorized =
-      req.user &&
-      ((req.user.brands || []).some((brand) => brand.id === contest.brand_id) ||
-        req.user.permissions?.["contests.moderate"] ||
-        req.user.permissions?.["contests.judge"]);
+    const isAuthorized = isBrandAuthorized(req.user, contest);
 
     if (!isAuthorized) {
       query = query.where("ce.status", "in", ["approved", "winner"]);
@@ -223,6 +241,129 @@ static async getEntries(req, res) {
     });
   }
 }
+
+  /**
+   * GET /contests/:contestId/entries/:entryId
+   *
+   * Full detail for one entry so a brand can review a submission properly
+   * rather than from the dashboard thumbnail. Separate from getEntries because
+   * that endpoint is paginated and status-filtered - an arbitrary entry is not
+   * reliably reachable through it.
+   *
+   * Unlike getEntries, which degrades to approved/winner entries for the
+   * public, this is privileged-only: it returns the submitter's email.
+   */
+  static async getEntry(req, res) {
+    try {
+      const { contestId, entryId } = req.params;
+
+      const contest = await Contest.findById(contestId);
+      if (!contest) {
+        return res.status(404).json({ error: "Contest not found" });
+      }
+
+      if (!isBrandAuthorized(req.user, contest)) {
+        return res
+          .status(403)
+          .json({ error: "Not authorized to view this submission" });
+      }
+
+      const row = await db
+        .selectFrom("contest_entries as ce")
+        .innerJoin("artworks as a", "a.id", "ce.artwork_id")
+        .innerJoin("users as u", "u.id", "ce.creator_id")
+        .leftJoin("contest_judge_scores as cjs", "cjs.entry_id", "ce.id")
+        .select([
+          // Entry
+          "ce.id as entry_id",
+          "ce.status as entry_status",
+          "ce.rank as entry_rank",
+          "ce.submission_notes as entry_submission_notes",
+          "ce.created_at as entry_created_at",
+          "ce.updated_at as entry_updated_at",
+
+          // Artwork
+          "a.id as artwork_id",
+          "a.title as artwork_title",
+          "a.description as artwork_description",
+          "a.file_url as artwork_file_url",
+          "a.thumbnail_url as artwork_thumbnail_url",
+          "a.status as artwork_status",
+          "a.moderation_status",
+          "a.views_count",
+          "a.favorites_count",
+          "a.created_at as artwork_created_at",
+          "a.updated_at as artwork_updated_at",
+
+          // Creator. email is included here but not in getEntries: the brand
+          // needs a way to contact the submitter, and this route is already
+          // gated above.
+          "u.id as creator_id",
+          "u.username as creator_username",
+          "u.email as creator_email",
+          "u.avatar_url as creator_avatar",
+
+          // Judge score (null if not judged)
+          "cjs.score as judge_score",
+          "cjs.comments as judge_comments",
+        ])
+        .where("ce.id", "=", entryId)
+        // Scoped to the contest in the URL as well as the entry id, so an entry
+        // id belonging to another brand's contest cannot be read by pairing it
+        // with a contest the caller does own.
+        .where("ce.contest_id", "=", contestId)
+        .executeTakeFirst();
+
+      if (!row) {
+        return res.status(404).json({ error: "Entry not found" });
+      }
+
+      return res.json({
+        entry: {
+          id: row.entry_id,
+          status: row.entry_status,
+          rank: row.entry_rank,
+          submission_notes: row.entry_submission_notes,
+          created_at: row.entry_created_at,
+          updated_at: row.entry_updated_at,
+
+          contest: {
+            id: contest.id,
+            title: contest.title,
+          },
+
+          artwork: {
+            id: row.artwork_id,
+            title: row.artwork_title,
+            description: row.artwork_description,
+            file_url: row.artwork_file_url,
+            thumbnail_url: row.artwork_thumbnail_url,
+            status: row.artwork_status,
+            moderation_status: row.moderation_status,
+            views_count: row.views_count,
+            favorites_count: row.favorites_count,
+            created_at: row.artwork_created_at,
+            updated_at: row.artwork_updated_at,
+          },
+
+          creator: {
+            id: row.creator_id,
+            username: row.creator_username,
+            email: row.creator_email,
+            avatar_url: row.creator_avatar,
+          },
+
+          judge_score: row.judge_score,
+          judge_comments: row.judge_comments,
+        },
+      });
+    } catch (err) {
+      console.error("Get entry error:", err);
+
+      return res.status(500).json({ error: "Failed to fetch entry" });
+    }
+  }
+
   /**
    * PATCH /contests/:contestId/entries/:entryId/status
    */
@@ -392,3 +533,7 @@ module.exports = ContestEntryController;
 // Exposed so tests assert against the real bound rather than a copied literal
 // that could drift out of sync with it.
 module.exports.MAX_SUBMISSION_NOTES_LENGTH = MAX_SUBMISSION_NOTES_LENGTH;
+// Exposed so the authorization rule can be tested directly. It decides whether
+// submitter contact details are released, so it is worth covering without
+// standing up a database.
+module.exports.isBrandAuthorized = isBrandAuthorized;

@@ -71,6 +71,7 @@ router.get('/:contestId/categories', ContestCategoryController.getCategories);
 // ====================== ENTRIES ======================
 router.post('/:contestId/entries', ContestEntryController.submitEntry);
 router.get('/:contestId/entries', ContestEntryController.getEntries);
+router.get('/:contestId/entries/:entryId', ContestEntryController.getEntry);
 router.patch(
   '/:contestId/entries/:entryId/status',
   ContestEntryController.updateEntryStatus
