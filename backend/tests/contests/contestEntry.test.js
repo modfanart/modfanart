@@ -82,6 +82,68 @@ describe('submitEntry - submissionNotes validation', () => {
   });
 });
 
+// Must run before 'submission note round-trip', whose after() hook calls
+// db.destroy() on the shared pool. Anything DB-backed placed after it fails
+// with "driver has already been destroyed".
+describe('getEntry authorization', () => {
+  let contestId = null;
+  let skipReason = '';
+
+  before(async () => {
+    const { skip, reason } = await requireDatabase();
+    if (skip) {
+      skipReason = reason;
+      return;
+    }
+
+    // A real contest, so the request reaches the authorization check rather
+    // than short-circuiting on "Contest not found".
+    const contest = await db
+      .selectFrom('contests')
+      .select('id')
+      .orderBy('id')
+      .executeTakeFirst();
+
+    if (contest) contestId = contest.id;
+    else skipReason = 'database has no contest rows to build a fixture from';
+  });
+
+  it('refuses a manager of a different brand with 403', async (t) => {
+    if (!contestId) return t.skip(skipReason);
+
+    const res = makeRes();
+    await ContestEntryController.getEntry(
+      {
+        params: { contestId, entryId: '00000000-0000-0000-0000-000000000001' },
+        user: { id: 'u1', brands: [{ id: 'a-brand-that-owns-nothing' }] },
+      },
+      res
+    );
+
+    // 403 specifically, not 404: the caller must be refused on authorization
+    // before any entry lookup happens, so a probe cannot distinguish an entry
+    // that exists from one that does not.
+    assert.equal(res.statusCode, 403);
+    assert.equal(res.body.entry, undefined);
+  });
+
+  it('refuses an anonymous caller with 403', async (t) => {
+    if (!contestId) return t.skip(skipReason);
+
+    const res = makeRes();
+    await ContestEntryController.getEntry(
+      {
+        params: { contestId, entryId: '00000000-0000-0000-0000-000000000001' },
+        user: undefined,
+      },
+      res
+    );
+
+    assert.equal(res.statusCode, 403);
+    assert.equal(res.body.entry, undefined);
+  });
+});
+
 describe('submission note round-trip', () => {
   let fixture = null;
   let skipReason = '';
@@ -233,25 +295,3 @@ describe('isBrandAuthorized', () => {
   });
 });
 
-describe('getEntry authorization', () => {
-  it('refuses an unrelated brand manager with 403, not 404', async (t) => {
-    const { skip, reason } = await requireDatabase();
-    if (skip) return t.skip(reason);
-
-    const res = makeRes();
-    const req = {
-      params: {
-        contestId: '00000000-0000-0000-0000-000000000000',
-        entryId: '00000000-0000-0000-0000-000000000001',
-      },
-      user: { id: 'u1', brands: [{ id: 'some-other-brand' }] },
-    };
-
-    await ContestEntryController.getEntry(req, res);
-
-    // The contest does not exist, so 404 wins here; the assertion that matters
-    // is that an unauthorized caller never reaches entry data.
-    assert.ok([403, 404].includes(res.statusCode));
-    assert.equal(res.body.entry, undefined);
-  });
-});
