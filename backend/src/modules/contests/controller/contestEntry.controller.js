@@ -316,6 +316,14 @@ static async getEntries(req, res) {
           "u.username as creator_username",
           "u.email as creator_email",
           "u.avatar_url as creator_avatar",
+          // The ticket asks for the submitter's name. users has no name column;
+          // the name lives in the profile blob, and the codebase reads it
+          // inconsistently - search.controller uses display_name, while
+          // contestJudge.controller uses full_name. Only display_name is
+          // actually populated, so prefer it and fall back to the other.
+          sql`COALESCE(u.profile->>'display_name', u.profile->>'full_name')`.as(
+            "creator_display_name"
+          ),
 
           // Judge score (null if not judged)
           "cjs.score as judge_score",
@@ -379,6 +387,7 @@ static async getEntries(req, res) {
           creator: {
             id: row.creator_id,
             username: row.creator_username,
+            display_name: row.creator_display_name,
             email: row.creator_email,
             avatar_url: row.creator_avatar,
           },

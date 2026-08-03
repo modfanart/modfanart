@@ -226,7 +226,14 @@ export default function SubmissionDetail({ slug, contestId, entryId }: Props) {
                     <Image src={creator.avatar_url} alt="" fill className="object-cover" />
                   )}
                 </div>
-                <p className="font-medium">{creator.username}</p>
+                <div className="min-w-0">
+                  {/* Most accounts have no display_name, so the username is the
+                      only name they have; showing both would just repeat it. */}
+                  <p className="font-medium">{creator.display_name || creator.username}</p>
+                  {creator.display_name && (
+                    <p className="text-xs text-muted-foreground">@{creator.username}</p>
+                  )}
+                </div>
               </div>
 
               {creator.email && (
