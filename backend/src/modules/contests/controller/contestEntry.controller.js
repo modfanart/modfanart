@@ -146,7 +146,21 @@ class ContestEntryController {
 static async getEntries(req, res) {
   try {
     const { contestId } = req.params;
-    const { status, limit = 20, offset = 0 } = req.query;
+    const { status, search } = req.query;
+
+    // Clamp pagination at the boundary. Default page size 20; hard cap 100 so a
+    // caller can never ask the DB for an unbounded result set.
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
+    const offset = Math.max(0, parseInt(req.query.offset, 10) || 0);
+
+    // Free-text search over artwork title / creator username. Kysely
+    // parameterises the value, but bare %/_ would still act as ILIKE wildcards,
+    // so escape them (and cap the length) before building the term.
+    const rawSearch =
+      typeof search === "string" ? search.trim().slice(0, 100) : "";
+    const searchTerm = rawSearch
+      ? `%${rawSearch.replace(/[\\%_]/g, (ch) => `\\${ch}`)}%`
+      : "";
 
     const contest = await Contest.findById(contestId);
 
@@ -156,12 +170,49 @@ static async getEntries(req, res) {
       });
     }
 
-    let query = db
-      .selectFrom("contest_entries as ce")
-      .innerJoin("artworks as a", "a.id", "ce.artwork_id")
-      .innerJoin("users as u", "u.id", "ce.creator_id")
-      .leftJoin("contest_judge_scores as cjs", "cjs.entry_id", "ce.id")
-      .select([
+    const isAuthorized = isBrandAuthorized(req.user, contest);
+
+    // Contest + visibility + search filters, shared by the count and the rows
+    // queries so `total` always matches what the list can actually load.
+    const applyScope = (qb) => {
+      qb = qb.where("ce.contest_id", "=", contestId);
+
+      if (!isAuthorized) {
+        qb = qb.where("ce.status", "in", ["approved", "winner"]);
+      } else if (status) {
+        qb = qb.where("ce.status", "=", status);
+      }
+
+      if (searchTerm) {
+        qb = qb.where((eb) =>
+          eb.or([
+            eb("a.title", "ilike", searchTerm),
+            eb("u.username", "ilike", searchTerm),
+          ])
+        );
+      }
+
+      return qb;
+    };
+
+    // Base joins. contest_judge_scores is intentionally NOT joined here: it has
+    // PRIMARY KEY (entry_id, judge_id), so joining multiplies an entry into one
+    // row per judge, which would corrupt both the total and limit/offset paging.
+    const baseQuery = () =>
+      applyScope(
+        db
+          .selectFrom("contest_entries as ce")
+          .innerJoin("artworks as a", "a.id", "ce.artwork_id")
+          .innerJoin("users as u", "u.id", "ce.creator_id")
+      );
+
+    const countRow = await baseQuery()
+      .select((eb) => eb.fn.countAll().as("total"))
+      .executeTakeFirst();
+    const total = Number(countRow?.total ?? 0);
+
+    const rows = await baseQuery()
+      .select((eb) => [
         // Entry
         "ce.id as entry_id",
         "ce.status as entry_status",
@@ -188,24 +239,30 @@ static async getEntries(req, res) {
         "u.username as creator_username",
         "u.avatar_url as creator_avatar",
 
-        // Judge Score (null if not judged)
-        "cjs.score as judge_score",
-        "cjs.comments as judge_comments",
+        // Judge score, collapsed to one value per entry via correlated
+        // subqueries so the row set stays 1:1 with entries. For a single-judge
+        // contest these equal that judge's score/comments; with several judges
+        // we surface the top score deterministically.
+        eb
+          .selectFrom("contest_judge_scores as cjs")
+          .whereRef("cjs.entry_id", "=", "ce.id")
+          .select((e2) => e2.fn.max("cjs.score").as("v"))
+          .as("judge_score"),
+        eb
+          .selectFrom("contest_judge_scores as cjs")
+          .whereRef("cjs.entry_id", "=", "ce.id")
+          .orderBy("cjs.score", "desc")
+          .select("cjs.comments")
+          .limit(1)
+          .as("judge_comments"),
       ])
-      .where("ce.contest_id", "=", contestId)
+      // ce.id is a stable tiebreaker so entries sharing a created_at cannot
+      // straddle a page boundary (which would drop or duplicate a row).
       .orderBy("ce.created_at", "desc")
-      .limit(Number(limit))
-      .offset(Number(offset));
-
-    const isAuthorized = isBrandAuthorized(req.user, contest);
-
-    if (!isAuthorized) {
-      query = query.where("ce.status", "in", ["approved", "winner"]);
-    } else if (status) {
-      query = query.where("ce.status", "=", status);
-    }
-
-    const rows = await query.execute();
+      .orderBy("ce.id", "desc")
+      .limit(limit)
+      .offset(offset)
+      .execute();
 
     const entries = rows.map((row) => ({
       id: row.entry_id,
@@ -246,7 +303,7 @@ static async getEntries(req, res) {
       judge_comments: row.judge_comments,
     }));
 
-    return res.json({ entries });
+    return res.json({ entries, total });
   } catch (err) {
     console.error("Get entries error:", err);
 
