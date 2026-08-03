@@ -82,6 +82,68 @@ describe('submitEntry - submissionNotes validation', () => {
   });
 });
 
+// Must run before 'submission note round-trip', whose after() hook calls
+// db.destroy() on the shared pool. Anything DB-backed placed after it fails
+// with "driver has already been destroyed".
+describe('getEntry authorization', () => {
+  let contestId = null;
+  let skipReason = '';
+
+  before(async () => {
+    const { skip, reason } = await requireDatabase();
+    if (skip) {
+      skipReason = reason;
+      return;
+    }
+
+    // A real contest, so the request reaches the authorization check rather
+    // than short-circuiting on "Contest not found".
+    const contest = await db
+      .selectFrom('contests')
+      .select('id')
+      .orderBy('id')
+      .executeTakeFirst();
+
+    if (contest) contestId = contest.id;
+    else skipReason = 'database has no contest rows to build a fixture from';
+  });
+
+  it('refuses a manager of a different brand with 403', async (t) => {
+    if (!contestId) return t.skip(skipReason);
+
+    const res = makeRes();
+    await ContestEntryController.getEntry(
+      {
+        params: { contestId, entryId: '00000000-0000-0000-0000-000000000001' },
+        user: { id: 'u1', brands: [{ id: 'a-brand-that-owns-nothing' }] },
+      },
+      res
+    );
+
+    // 403 specifically, not 404: the caller must be refused on authorization
+    // before any entry lookup happens, so a probe cannot distinguish an entry
+    // that exists from one that does not.
+    assert.equal(res.statusCode, 403);
+    assert.equal(res.body.entry, undefined);
+  });
+
+  it('refuses an anonymous caller with 403', async (t) => {
+    if (!contestId) return t.skip(skipReason);
+
+    const res = makeRes();
+    await ContestEntryController.getEntry(
+      {
+        params: { contestId, entryId: '00000000-0000-0000-0000-000000000001' },
+        user: undefined,
+      },
+      res
+    );
+
+    assert.equal(res.statusCode, 403);
+    assert.equal(res.body.entry, undefined);
+  });
+});
+
 describe('submission note round-trip', () => {
   let fixture = null;
   let skipReason = '';
@@ -178,3 +240,81 @@ describe('submission note round-trip', () => {
     assert.equal(entry.submission_notes, null);
   });
 });
+
+describe('isBrandAuthorized', () => {
+  // This gate decides whether the submitter's email is released, so it is
+  // covered directly rather than only through the endpoints that call it.
+  const { isBrandAuthorized } = ContestEntryController;
+  // contests.brand_id is a FK to users(id), so it holds the OWNER USER id.
+  const contest = { id: 'contest-1', brand_id: 'owner-user' };
+
+  it('authorizes the user who owns the contest', () => {
+    assert.equal(isBrandAuthorized({ id: 'owner-user' }, contest), true);
+  });
+
+  it('authorizes a manager holding a brand owned by that user', () => {
+    const user = { id: 'u1', brands: [{ id: 'brand-1', user_id: 'owner-user' }] };
+
+    assert.equal(isBrandAuthorized(user, contest), true);
+  });
+
+  it('accepts the owner_id shape that authenticateToken produces', () => {
+    // auth.middleware selects 'b.user_id as owner_id', while getMyBrands
+    // returns the raw column as user_id. Checking only one key made the
+    // manager path fail depending on which endpoint the brands came from.
+    const user = { id: 'u1', brands: [{ id: 'brand-1', owner_id: 'owner-user' }] };
+
+    assert.equal(isBrandAuthorized(user, contest), true);
+  });
+
+  it('does not match a brand id against contests.brand_id', () => {
+    // The regression this guards: brands[].id is a brand id and
+    // contest.brand_id is a user id, so comparing them silently denied every
+    // brand manager and left only moderators and judges with access.
+    const user = { id: 'u1', brands: [{ id: 'owner-user', user_id: 'someone-else' }] };
+
+    assert.equal(isBrandAuthorized(user, contest), false);
+  });
+
+  it('authorizes contest moderators and judges', () => {
+    assert.equal(
+      isBrandAuthorized({ id: 'u1', permissions: { 'contests.moderate': true } }, contest),
+      true
+    );
+    assert.equal(
+      isBrandAuthorized({ id: 'u1', permissions: { 'contests.judge': true } }, contest),
+      true
+    );
+  });
+
+  it('rejects a manager of a different brand', () => {
+    // The cross-tenant case: a brand manager must not read another brand's
+    // submissions just by being a brand manager.
+    const user = { id: 'u1', brands: [{ id: 'brand-2', user_id: 'another-owner' }] };
+
+    assert.equal(isBrandAuthorized(user, contest), false);
+  });
+
+  it('rejects a user with no brands, and anonymous callers', () => {
+    assert.equal(isBrandAuthorized({ id: 'u1' }, contest), false);
+    assert.equal(isBrandAuthorized({ id: 'u1', brands: [] }, contest), false);
+    assert.equal(isBrandAuthorized(undefined, contest), false);
+    assert.equal(isBrandAuthorized(null, contest), false);
+  });
+
+  it('rejects when the contest is missing rather than throwing', () => {
+    const user = { id: 'u1', brands: [{ id: 'brand-1' }] };
+
+    assert.equal(isBrandAuthorized(user, undefined), false);
+    assert.equal(isBrandAuthorized(user, null), false);
+  });
+
+  it('returns a boolean, never a truthy permission value', () => {
+    // permissions[...] is used directly in the expression, so without the
+    // Boolean() wrapper this leaks whatever value the permission holds.
+    const user = { id: 'u1', permissions: { 'contests.moderate': 'yes' } };
+
+    assert.strictEqual(isBrandAuthorized(user, contest), true);
+  });
+});
+
