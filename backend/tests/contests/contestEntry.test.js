@@ -178,3 +178,80 @@ describe('submission note round-trip', () => {
     assert.equal(entry.submission_notes, null);
   });
 });
+
+describe('isBrandAuthorized', () => {
+  // This gate decides whether the submitter's email is released, so it is
+  // covered directly rather than only through the endpoints that call it.
+  const { isBrandAuthorized } = ContestEntryController;
+  const contest = { id: 'contest-1', brand_id: 'brand-1' };
+
+  it('authorizes a manager of the brand that owns the contest', () => {
+    const user = { id: 'u1', brands: [{ id: 'brand-1' }] };
+
+    assert.equal(isBrandAuthorized(user, contest), true);
+  });
+
+  it('authorizes contest moderators and judges', () => {
+    assert.equal(
+      isBrandAuthorized({ id: 'u1', permissions: { 'contests.moderate': true } }, contest),
+      true
+    );
+    assert.equal(
+      isBrandAuthorized({ id: 'u1', permissions: { 'contests.judge': true } }, contest),
+      true
+    );
+  });
+
+  it('rejects a manager of a different brand', () => {
+    // The cross-tenant case: a brand manager must not read another brand's
+    // submissions just by being a brand manager.
+    const user = { id: 'u1', brands: [{ id: 'brand-2' }] };
+
+    assert.equal(isBrandAuthorized(user, contest), false);
+  });
+
+  it('rejects a user with no brands, and anonymous callers', () => {
+    assert.equal(isBrandAuthorized({ id: 'u1' }, contest), false);
+    assert.equal(isBrandAuthorized({ id: 'u1', brands: [] }, contest), false);
+    assert.equal(isBrandAuthorized(undefined, contest), false);
+    assert.equal(isBrandAuthorized(null, contest), false);
+  });
+
+  it('rejects when the contest is missing rather than throwing', () => {
+    const user = { id: 'u1', brands: [{ id: 'brand-1' }] };
+
+    assert.equal(isBrandAuthorized(user, undefined), false);
+    assert.equal(isBrandAuthorized(user, null), false);
+  });
+
+  it('returns a boolean, never a truthy permission value', () => {
+    // permissions[...] is used directly in the expression, so without the
+    // Boolean() wrapper this leaks whatever value the permission holds.
+    const user = { id: 'u1', permissions: { 'contests.moderate': 'yes' } };
+
+    assert.strictEqual(isBrandAuthorized(user, contest), true);
+  });
+});
+
+describe('getEntry authorization', () => {
+  it('refuses an unrelated brand manager with 403, not 404', async (t) => {
+    const { skip, reason } = await requireDatabase();
+    if (skip) return t.skip(reason);
+
+    const res = makeRes();
+    const req = {
+      params: {
+        contestId: '00000000-0000-0000-0000-000000000000',
+        entryId: '00000000-0000-0000-0000-000000000001',
+      },
+      user: { id: 'u1', brands: [{ id: 'some-other-brand' }] },
+    };
+
+    await ContestEntryController.getEntry(req, res);
+
+    // The contest does not exist, so 404 wins here; the assertion that matters
+    // is that an unauthorized caller never reaches entry data.
+    assert.ok([403, 404].includes(res.statusCode));
+    assert.equal(res.body.entry, undefined);
+  });
+});

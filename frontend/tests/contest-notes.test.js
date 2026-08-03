@@ -1,7 +1,11 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { MAX_NOTE_LENGTH, packSubmissionNotes } from '../lib/contest-notes.js';
+import {
+  MAX_NOTE_LENGTH,
+  packSubmissionNotes,
+  unpackSubmissionNotes,
+} from '../lib/contest-notes.js';
 
 // Mirrors MAX_SUBMISSION_NOTES_LENGTH in contestEntry.controller.js. Asserted
 // against below so the two caps cannot silently drift apart.
@@ -57,5 +61,73 @@ describe('packSubmissionNotes', () => {
       packed.length <= SERVER_CAP,
       `packed length ${packed.length} exceeds server cap ${SERVER_CAP}`
     );
+  });
+});
+
+describe('unpackSubmissionNotes', () => {
+  it('splits a packed note and IP back into separate fields', () => {
+    assert.deepEqual(unpackSubmissionNotes('Inspired by my cat.\n\nFandom / Original IP: Marvel'), {
+      note: 'Inspired by my cat.',
+      originalIp: 'Marvel',
+    });
+  });
+
+  it('reads an IP-only value as an IP, not as a note', () => {
+    // Entries submitted before the note field existed look like this. Showing
+    // "Fandom / Original IP: Marvel" in the brand's note box would be wrong.
+    assert.deepEqual(unpackSubmissionNotes('Fandom / Original IP: Marvel'), {
+      note: null,
+      originalIp: 'Marvel',
+    });
+  });
+
+  it('reads a note-only value as a note', () => {
+    assert.deepEqual(unpackSubmissionNotes('Just a note.'), {
+      note: 'Just a note.',
+      originalIp: null,
+    });
+  });
+
+  it('returns nulls for empty, whitespace, null and undefined', () => {
+    const empty = { note: null, originalIp: null };
+
+    assert.deepEqual(unpackSubmissionNotes(''), empty);
+    assert.deepEqual(unpackSubmissionNotes('   \n  '), empty);
+    assert.deepEqual(unpackSubmissionNotes(null), empty);
+    assert.deepEqual(unpackSubmissionNotes(undefined), empty);
+  });
+
+  it('preserves newlines and blank lines inside a multi-paragraph note', () => {
+    const note = 'First paragraph.\n\nSecond paragraph.';
+
+    assert.deepEqual(unpackSubmissionNotes(packSubmissionNotes(note, 'Marvel')), {
+      note,
+      originalIp: 'Marvel',
+    });
+  });
+
+  it('does not split on the prefix when the entrant typed it inside their note', () => {
+    // The adversarial case for packing two fields into one column: a note that
+    // mentions the prefix must not be truncated, and the real trailing IP line
+    // must still win.
+    const note = 'I wrote "Fandom / Original IP: Marvel" on the form and it looked odd.';
+
+    assert.deepEqual(unpackSubmissionNotes(packSubmissionNotes(note, 'DC')), {
+      note,
+      originalIp: 'DC',
+    });
+  });
+
+  it('round-trips every combination the packer can produce', () => {
+    for (const [note, ip] of [
+      ['a note', 'Marvel'],
+      ['a note', ''],
+      ['', 'Marvel'],
+    ]) {
+      const unpacked = unpackSubmissionNotes(packSubmissionNotes(note, ip));
+
+      assert.equal(unpacked.note, note || null);
+      assert.equal(unpacked.originalIp, ip || null);
+    }
   });
 });
