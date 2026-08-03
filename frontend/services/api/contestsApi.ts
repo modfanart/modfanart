@@ -116,7 +116,9 @@ export interface ContestEntry {
  */
 export interface ContestEntryDetail extends ContestEntry {
   contest: { id: string; title: string };
-  creator: ArtworkCreator & { email: string | null };
+  // display_name comes from the users.profile blob and is null for accounts
+  // that never set one, so clients fall back to username.
+  creator: ArtworkCreator & { email: string | null; display_name: string | null };
   // Category and tags are submission-form fields held in join tables, so the
   // detail endpoint resolves them to names rather than returning bare ids.
   artwork: Artwork & {
