@@ -35,7 +35,12 @@ function isBrandAuthorized(user, contest) {
 
   return Boolean(
     contest.brand_id === user.id ||
-      (user.brands || []).some((brand) => brand.user_id === contest.brand_id) ||
+      // authenticateToken exposes the owning user as owner_id for brand roles,
+      // while getMyBrands returns the raw column as user_id. Accept either, or
+      // the manager path silently fails depending on which shape arrived.
+      (user.brands || []).some(
+        (brand) => (brand.user_id ?? brand.owner_id) === contest.brand_id
+      ) ||
       user.permissions?.["contests.moderate"] ||
       user.permissions?.["contests.judge"]
   );

@@ -258,6 +258,15 @@ describe('isBrandAuthorized', () => {
     assert.equal(isBrandAuthorized(user, contest), true);
   });
 
+  it('accepts the owner_id shape that authenticateToken produces', () => {
+    // auth.middleware selects 'b.user_id as owner_id', while getMyBrands
+    // returns the raw column as user_id. Checking only one key made the
+    // manager path fail depending on which endpoint the brands came from.
+    const user = { id: 'u1', brands: [{ id: 'brand-1', owner_id: 'owner-user' }] };
+
+    assert.equal(isBrandAuthorized(user, contest), true);
+  });
+
   it('does not match a brand id against contests.brand_id', () => {
     // The regression this guards: brands[].id is a brand id and
     // contest.brand_id is a user id, so comparing them silently denied every

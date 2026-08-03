@@ -54,6 +54,19 @@ describe('contestsWithBrandSlug', () => {
     assert.deepEqual(contestsWithBrandSlug([{ id: 'c1', brand_id: 'brand-2' }], brands), []);
   });
 
+  it('accepts the owner_id shape that authenticateToken produces', () => {
+    // auth.middleware selects 'b.user_id as owner_id'; getMyBrands returns the
+    // raw column as user_id. Only checking one key left the grid empty
+    // depending on which endpoint supplied the brands.
+    const [only] = contestsWithBrandSlug(
+      [{ id: 'c1', brand_id: 'user-acme' }],
+      [{ id: 'brand-1', slug: 'acme', owner_id: 'user-acme' }],
+      'someone-else'
+    );
+
+    assert.equal(only.brandSlug, 'acme');
+  });
+
   it('resolves a contest the viewer owns directly', () => {
     const [only] = contestsWithBrandSlug(
       [{ id: 'c1', brand_id: 'user-acme' }],
