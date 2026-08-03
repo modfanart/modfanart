@@ -245,12 +245,26 @@ describe('isBrandAuthorized', () => {
   // This gate decides whether the submitter's email is released, so it is
   // covered directly rather than only through the endpoints that call it.
   const { isBrandAuthorized } = ContestEntryController;
-  const contest = { id: 'contest-1', brand_id: 'brand-1' };
+  // contests.brand_id is a FK to users(id), so it holds the OWNER USER id.
+  const contest = { id: 'contest-1', brand_id: 'owner-user' };
 
-  it('authorizes a manager of the brand that owns the contest', () => {
-    const user = { id: 'u1', brands: [{ id: 'brand-1' }] };
+  it('authorizes the user who owns the contest', () => {
+    assert.equal(isBrandAuthorized({ id: 'owner-user' }, contest), true);
+  });
+
+  it('authorizes a manager holding a brand owned by that user', () => {
+    const user = { id: 'u1', brands: [{ id: 'brand-1', user_id: 'owner-user' }] };
 
     assert.equal(isBrandAuthorized(user, contest), true);
+  });
+
+  it('does not match a brand id against contests.brand_id', () => {
+    // The regression this guards: brands[].id is a brand id and
+    // contest.brand_id is a user id, so comparing them silently denied every
+    // brand manager and left only moderators and judges with access.
+    const user = { id: 'u1', brands: [{ id: 'owner-user', user_id: 'someone-else' }] };
+
+    assert.equal(isBrandAuthorized(user, contest), false);
   });
 
   it('authorizes contest moderators and judges', () => {
@@ -267,7 +281,7 @@ describe('isBrandAuthorized', () => {
   it('rejects a manager of a different brand', () => {
     // The cross-tenant case: a brand manager must not read another brand's
     // submissions just by being a brand manager.
-    const user = { id: 'u1', brands: [{ id: 'brand-2' }] };
+    const user = { id: 'u1', brands: [{ id: 'brand-2', user_id: 'another-owner' }] };
 
     assert.equal(isBrandAuthorized(user, contest), false);
   });

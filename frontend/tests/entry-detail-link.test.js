@@ -21,19 +21,26 @@ describe('entryDetailPath', () => {
 });
 
 describe('contestsWithBrandSlug', () => {
+  // contests.brand_id is a FK to users(id), so these hold OWNER USER ids, and
+  // each brand records the user who owns it in user_id. An earlier version of
+  // this suite used brand ids on both sides, which matched the implementation
+  // but not the database, so the grid was empty against real data.
   const brands = [
-    { id: 'brand-1', slug: 'acme' },
-    { id: 'brand-2', slug: 'globex' },
+    { id: 'brand-1', slug: 'acme', user_id: 'user-acme' },
+    { id: 'brand-2', slug: 'globex', user_id: 'user-globex' },
   ];
 
-  it('pairs each contest with the slug of the brand that owns it', () => {
+  it('pairs each contest with the brand whose owner matches contests.brand_id', () => {
     const contests = [
-      { id: 'c1', brand_id: 'brand-2', title: 'Globex contest' },
-      { id: 'c2', brand_id: 'brand-1', title: 'Acme contest' },
+      { id: 'c1', brand_id: 'user-globex', title: 'Globex contest' },
+      { id: 'c2', brand_id: 'user-acme', title: 'Acme contest' },
     ];
 
     assert.deepEqual(
-      contestsWithBrandSlug(contests, brands).map((c) => [c.contest.id, c.brandSlug]),
+      contestsWithBrandSlug(contests, brands, 'someone-else').map((c) => [
+        c.contest.id,
+        c.brandSlug,
+      ]),
       [
         ['c1', 'globex'],
         ['c2', 'acme'],
@@ -41,27 +48,41 @@ describe('contestsWithBrandSlug', () => {
     );
   });
 
+  it('does not match a brand id against contests.brand_id', () => {
+    // The regression this guards: comparing brands[].id to contest.brand_id
+    // never matches, because one is a brand id and the other a user id.
+    assert.deepEqual(contestsWithBrandSlug([{ id: 'c1', brand_id: 'brand-2' }], brands), []);
+  });
+
+  it('resolves a contest the viewer owns directly', () => {
+    const [only] = contestsWithBrandSlug(
+      [{ id: 'c1', brand_id: 'user-acme' }],
+      [{ id: 'brand-1', slug: 'acme', user_id: 'user-acme' }],
+      'user-acme'
+    );
+
+    assert.equal(only.brandSlug, 'acme');
+  });
+
   it('does not default a second brand to the first brand slug', () => {
-    // The bug this guards: using brands[0] would file every contest under
-    // 'acme' and link managers to another brand's URL space.
-    const [only] = contestsWithBrandSlug([{ id: 'c1', brand_id: 'brand-2' }], brands);
+    const [only] = contestsWithBrandSlug([{ id: 'c1', brand_id: 'user-globex' }], brands);
 
     assert.equal(only.brandSlug, 'globex');
   });
 
   it('drops contests whose brand is unknown or has no slug', () => {
     const contests = [
-      { id: 'c1', brand_id: 'brand-unknown' },
-      { id: 'c2', brand_id: 'brand-3' },
+      { id: 'c1', brand_id: 'user-nobody' },
+      { id: 'c2', brand_id: 'user-noslug' },
     ];
-    const withNullSlug = [...brands, { id: 'brand-3', slug: null }];
+    const withNullSlug = [...brands, { id: 'brand-3', slug: null, user_id: 'user-noslug' }];
 
-    assert.deepEqual(contestsWithBrandSlug(contests, withNullSlug), []);
+    assert.deepEqual(contestsWithBrandSlug(contests, withNullSlug, 'user-x'), []);
   });
 
-  it('handles missing contests and brands without throwing', () => {
-    assert.deepEqual(contestsWithBrandSlug(undefined, undefined), []);
-    assert.deepEqual(contestsWithBrandSlug([], []), []);
-    assert.deepEqual(contestsWithBrandSlug([{ id: 'c1', brand_id: 'b1' }], []), []);
+  it('handles missing contests, brands and user id without throwing', () => {
+    assert.deepEqual(contestsWithBrandSlug(undefined, undefined, undefined), []);
+    assert.deepEqual(contestsWithBrandSlug([], [], null), []);
+    assert.deepEqual(contestsWithBrandSlug([{ id: 'c1', brand_id: 'u1' }], [], 'u1'), []);
   });
 });

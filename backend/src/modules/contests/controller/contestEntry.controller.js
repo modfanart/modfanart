@@ -19,6 +19,13 @@ const MAX_SUBMISSION_NOTES_LENGTH = 1200;
  * one place - it gates submitter contact details, so drift between copies
  * would be a data-exposure bug rather than a cosmetic one.
  *
+ * IMPORTANT: despite the name, `contests.brand_id` is a foreign key to
+ * users(id), not brands(id) - it holds the owning USER. Comparing it against
+ * `user.brands[].id` (brand ids) therefore never matches, which silently
+ * denied every brand manager and left only moderators and judges with access.
+ * Ownership is matched on the user id, and on brands.user_id for managers who
+ * reach the contest through a brand they hold.
+ *
  * @param {object | undefined} user req.user, absent for anonymous callers.
  * @param {object} contest Contest row, needs brand_id.
  * @returns {boolean}
@@ -27,7 +34,8 @@ function isBrandAuthorized(user, contest) {
   if (!user || !contest) return false;
 
   return Boolean(
-    (user.brands || []).some((brand) => brand.id === contest.brand_id) ||
+    contest.brand_id === user.id ||
+      (user.brands || []).some((brand) => brand.user_id === contest.brand_id) ||
       user.permissions?.["contests.moderate"] ||
       user.permissions?.["contests.judge"]
   );
