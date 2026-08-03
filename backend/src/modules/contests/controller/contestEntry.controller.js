@@ -2,6 +2,7 @@
 const Contest = require("../models/contest.model");
 const ContestEntry = require("../models/contestEntry.model");
 const Artwork = require("../../artworks/models/artwork.model");
+const Tagging = require("../../tags/models/tagging.model");
 const { sql } = require("kysely");
 const { db } = require("../../../config");
 
@@ -318,6 +319,20 @@ static async getEntries(req, res) {
         return res.status(404).json({ error: "Entry not found" });
       }
 
+      // Category and tags are captured by the submission form but live in join
+      // tables, so they need their own reads. Tags go through Tagging rather
+      // than a hand-written join: they live in "taggings" (polymorphic), not
+      // the "artwork_tags" table schema_new.sql still describes.
+      const [categories, tags] = await Promise.all([
+        db
+          .selectFrom("artwork_categories as ac")
+          .innerJoin("categories as c", "c.id", "ac.category_id")
+          .select(["c.id", "c.name", "c.slug"])
+          .where("ac.artwork_id", "=", row.artwork_id)
+          .execute(),
+        Tagging.getTagsForEntity("artwork", row.artwork_id),
+      ]);
+
       return res.json({
         entry: {
           id: row.entry_id,
@@ -344,6 +359,8 @@ static async getEntries(req, res) {
             favorites_count: row.favorites_count,
             created_at: row.artwork_created_at,
             updated_at: row.artwork_updated_at,
+            categories,
+            tags,
           },
 
           creator: {

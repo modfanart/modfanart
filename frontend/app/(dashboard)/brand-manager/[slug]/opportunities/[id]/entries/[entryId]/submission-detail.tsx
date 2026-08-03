@@ -164,6 +164,35 @@ export default function SubmissionDetail({ slug, contestId, entryId }: Props) {
               <Field label="Fandom / Original IP">
                 {originalIp || <span className="italic">Not provided</span>}
               </Field>
+
+              <Field label="Category">
+                {artwork.categories?.length ? (
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {artwork.categories.map((category) => (
+                      <Badge key={category.id} variant="secondary">
+                        {category.name}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="italic">Not provided</span>
+                )}
+              </Field>
+
+              <Field label="Tags">
+                {artwork.tags?.length ? (
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {artwork.tags.map((tag) => (
+                      <Badge key={tag.id} variant="secondary" className="flex items-center">
+                        <Tag className="mr-1 h-3 w-3" />
+                        {tag.name}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="italic">No tags added</span>
+                )}
+              </Field>
             </CardContent>
           </Card>
 
