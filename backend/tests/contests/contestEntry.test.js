@@ -139,6 +139,21 @@ describe('submission note round-trip', () => {
     return entry;
   }
 
+  /**
+   * Calls getEntries as an authorized viewer (judge permission sees every
+   * status) and returns the captured res.
+   */
+  async function callGetEntries(query) {
+    const res = makeRes();
+    const req = {
+      params: { contestId: fixture.contest.id },
+      query,
+      user: { id: fixture.artwork.creator_id, permissions: { 'contests.judge': true } },
+    };
+    await ContestEntryController.getEntries(req, res);
+    return res;
+  }
+
   it('persists the note on insert', async (t) => {
     if (!fixture) return t.skip(skipReason);
 
@@ -176,5 +191,142 @@ describe('submission note round-trip', () => {
     const entry = await createEntry(null);
 
     assert.equal(entry.submission_notes, null);
+  });
+
+  // --- View All: pagination, total, search, de-duplication ---
+
+  it('returns a numeric total, and total matches a full single page', async (t) => {
+    if (!fixture) return t.skip(skipReason);
+
+    await createEntry('total-check');
+
+    // limit above the row count means the whole set is on one page, so the
+    // array length must equal the reported total.
+    const res = await callGetEntries({ limit: '500' });
+    assert.equal(typeof res.body.total, 'number');
+    assert.equal(res.body.entries.length, res.body.total);
+  });
+
+  it('pages through entries with limit/offset without overlap', async (t) => {
+    if (!fixture) return t.skip(skipReason);
+
+    // Guarantee at least four entries in the contest.
+    await createEntry('p1');
+    await createEntry('p2');
+    await createEntry('p3');
+    await createEntry('p4');
+
+    const page1 = await callGetEntries({ limit: '2', offset: '0' });
+    const page2 = await callGetEntries({ limit: '2', offset: '2' });
+
+    assert.equal(page1.body.entries.length, 2);
+    assert.equal(page2.body.entries.length, 2);
+
+    const firstIds = new Set(page1.body.entries.map((e) => e.id));
+    const overlap = page2.body.entries.filter((e) => firstIds.has(e.id));
+    assert.equal(overlap.length, 0, 'consecutive pages must not overlap');
+
+    // total is page-independent and equals the length of a full fetch.
+    assert.equal(page1.body.total, page2.body.total);
+    const all = await callGetEntries({ limit: '500' });
+    assert.equal(all.body.entries.length, all.body.total);
+    assert.equal(all.body.total, page1.body.total);
+  });
+
+  it('clamps a limit above the hard cap to 100 rows', async (t) => {
+    if (!fixture) return t.skip(skipReason);
+
+    const res = await callGetEntries({ limit: '99999' });
+    assert.ok(res.body.entries.length <= 100, 'limit must be capped at 100');
+  });
+
+  it('returns each entry once even when several judges have scored it', async (t) => {
+    if (!fixture) return t.skip(skipReason);
+
+    const entry = await createEntry('multi-judge');
+
+    // Two distinct judges score the same entry. The old LEFT JOIN would have
+    // returned this entry twice; the collapsed query must return it once.
+    const judges = await db
+      .selectFrom('users')
+      .select('id')
+      .orderBy('id')
+      .limit(2)
+      .execute();
+    if (judges.length < 2) return t.skip('need two users to act as judges');
+
+    await db
+      .insertInto('contest_judge_scores')
+      .values([
+        { entry_id: entry.id, judge_id: judges[0].id, score: 6 },
+        { entry_id: entry.id, judge_id: judges[1].id, score: 9 },
+      ])
+      .execute();
+    // Cascades from the contest_entries cleanup, but be explicit in case the
+    // entry row survives a partial failure.
+    t.after(async () => {
+      await db.deleteFrom('contest_judge_scores').where('entry_id', '=', entry.id).execute();
+    });
+
+    const res = await callGetEntries({ limit: '500' });
+    const matches = res.body.entries.filter((e) => e.id === entry.id);
+    assert.equal(matches.length, 1, 'a multi-judge entry must appear exactly once');
+    // Collapsed to the top score across judges.
+    assert.equal(Number(matches[0].judge_score), 9);
+  });
+
+  it('returns the nested shape the frontend normalizeEntry reads', async (t) => {
+    if (!fixture) return t.skip(skipReason);
+
+    const created = await createEntry('shape-check');
+
+    const res = await callGetEntries({ limit: '500' });
+    // Assert on the JSON-serialized shape the frontend actually receives over
+    // the wire (res.json turns Date columns into ISO strings, etc.).
+    const wire = JSON.parse(JSON.stringify(res.body));
+    assert.equal(typeof wire.total, 'number');
+
+    const e = wire.entries.find((row) => row.id === created.id);
+    assert.ok(e, 'created entry should be present');
+    // These exact paths back the frontend contract (ContestEntry type +
+    // normalizeEntry in submission-pagination.ts). If the backend stops nesting
+    // artwork/creator, the Monitor rows silently lose title/creator/thumbnail.
+    assert.equal(typeof e.status, 'string');
+    assert.equal(typeof e.created_at, 'string');
+    assert.ok(e.artwork && typeof e.artwork === 'object', 'artwork must be nested');
+    assert.ok('title' in e.artwork, 'artwork.title');
+    assert.ok('thumbnail_url' in e.artwork, 'artwork.thumbnail_url');
+    assert.ok('file_url' in e.artwork, 'artwork.file_url');
+    assert.ok(e.creator && typeof e.creator === 'object', 'creator must be nested');
+    assert.ok('username' in e.creator, 'creator.username');
+    assert.ok('avatar_url' in e.creator, 'creator.avatar_url');
+  });
+
+  it('filters by search on artwork title / creator username', async (t) => {
+    if (!fixture) return t.skip(skipReason);
+
+    const entry = await createEntry('search-target');
+
+    const creator = await db
+      .selectFrom('users')
+      .select('username')
+      .where('id', '=', fixture.artwork.creator_id)
+      .executeTakeFirst();
+    const term = creator.username.slice(0, 3);
+
+    const res = await callGetEntries({ search: term, limit: '500' });
+    const needle = term.toLowerCase();
+    for (const e of res.body.entries) {
+      const haystack = `${e.artwork?.title ?? ''} ${e.creator?.username ?? ''}`.toLowerCase();
+      assert.ok(haystack.includes(needle), `search returned a non-match: "${haystack}"`);
+    }
+    assert.ok(res.body.entries.some((e) => e.id === entry.id), 'target entry should match');
+    assert.equal(res.body.entries.length, res.body.total);
+
+    // A term with LIKE metacharacters must be treated literally, so it matches
+    // nothing rather than acting as a wildcard.
+    const none = await callGetEntries({ search: 'zzz_no_match_zzz_%_' });
+    assert.equal(none.body.entries.length, 0);
+    assert.equal(none.body.total, 0);
   });
 });

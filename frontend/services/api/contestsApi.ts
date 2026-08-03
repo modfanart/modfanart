@@ -377,8 +377,8 @@ const contestsApi = createApi({
     }),
 
 getContestEntries: builder.query<
-  { entries: ContestEntry[] },
-  { contestId: string; status?: string }
+  { entries: ContestEntry[]; total?: number },
+  { contestId: string; status?: string; search?: string; limit?: number; offset?: number }
 >({
   query: ({ contestId, ...params }) => ({
     url: `/contest/${contestId}/entries`,
