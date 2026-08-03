@@ -56,10 +56,14 @@ export default function SubmissionDetail({ slug, contestId, entryId }: Props) {
     try {
       await updateEntryStatus({ contestId, entryId, status }).unwrap();
       toast({ title: status === 'approved' ? 'Entry approved' : 'Entry rejected' });
-    } catch (err: any) {
+    } catch (err) {
+      // RTK Query rejects with FetchBaseQueryError | SerializedError; only the
+      // former carries the API's message, so narrow rather than casting away.
+      const apiError = (err as { data?: { error?: string } } | undefined)?.data?.error;
+
       toast({
         title: 'Action failed',
-        description: err?.data?.error || 'Please try again.',
+        description: apiError || 'Please try again.',
         variant: 'destructive',
       });
     }
@@ -77,7 +81,8 @@ export default function SubmissionDetail({ slug, contestId, entryId }: Props) {
     // 403 and 404 are both expected here (another brand's entry, or a deleted
     // one), so the message distinguishes them rather than showing "not found"
     // for a permissions problem.
-    const status = (error as any)?.status;
+    // SerializedError has no status field, so narrow instead of casting.
+    const status = error && 'status' in error ? error.status : undefined;
     const message =
       status === 403
         ? 'You do not have access to this submission.'
