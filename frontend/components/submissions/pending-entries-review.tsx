@@ -122,9 +122,10 @@ export function PendingEntriesReview() {
     skip: brandIds.length === 0,
   });
 
-  // Only contests owned by one of this manager's brands, each paired with that
-  // brand's slug for the detail link. See entry-detail-link for the rules.
-  const myContests = contestsWithBrandSlug(contestsData?.contests, brands);
+  // Only contests this manager owns, each paired with the brand slug its detail
+  // link should sit under. contests.brand_id holds a user id, not a brand id;
+  // see entry-detail-link for why that matters.
+  const myContests = contestsWithBrandSlug(contestsData?.contests, brands, user?.id);
 
   if (!user || brandIds.length === 0) return null;
 

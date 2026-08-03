@@ -16,23 +16,37 @@ export function entryDetailPath(brandSlug, contestId, entryId) {
 }
 
 /**
- * Pair each of the user's contests with the slug of the brand that owns it.
+ * Pair each contest this user owns with the slug of the brand to file it under.
+ *
+ * IMPORTANT: despite the name, `contests.brand_id` is a foreign key to
+ * users(id), not brands(id) - it holds the owning USER. Matching it against
+ * `brands[].id` never succeeds, which left the dashboard grid permanently
+ * empty. Ownership is resolved through `brands.user_id`, falling back to the
+ * viewer's own id for a contest they own directly.
  *
  * A manager can hold more than one brand, so the owning brand is looked up per
  * contest rather than defaulting to brands[0] - getting this wrong would build
- * links under the wrong brand. Contests whose brand is unknown or has no slug
- * are dropped, because there is no valid URL for them.
+ * links under the wrong brand. Contests with no resolvable brand slug are
+ * dropped, because there is no valid URL for them.
  *
- * Both arguments are optional because they come straight from RTK Query data
+ * All arguments are optional because they come straight from RTK Query data
  * and auth state, either of which is undefined before the first response.
  *
  * @param {Array<{ id: string, brand_id: string, title: string }> | undefined | null} contests
- * @param {Array<{ id: string, slug?: string | null }> | undefined | null} brands
+ * @param {Array<{ id: string, slug?: string | null, user_id?: string }> | undefined | null} brands
+ * @param {string | undefined | null} userId Viewer's user id.
  * @returns {Array<{ contest: { id: string, brand_id: string, title: string }, brandSlug: string }>}
  */
-export function contestsWithBrandSlug(contests, brands) {
+export function contestsWithBrandSlug(contests, brands, userId) {
+  const owned = brands || [];
+
   return (contests || []).flatMap((contest) => {
-    const brandSlug = (brands || []).find((b) => b.id === contest.brand_id)?.slug;
+    const byBrandOwner = owned.find((b) => b.user_id && b.user_id === contest.brand_id);
+
+    // The contest is the viewer's own; any brand of theirs gives a valid URL.
+    const byViewer = userId && contest.brand_id === userId ? owned[0] : undefined;
+
+    const brandSlug = (byBrandOwner || byViewer)?.slug;
 
     return brandSlug ? [{ contest, brandSlug }] : [];
   });
