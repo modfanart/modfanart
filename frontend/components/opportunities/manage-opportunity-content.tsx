@@ -66,6 +66,7 @@ import {
   useAssignJudgeMutation,
   useRemoveJudgeMutation,
   useGetContestJudgesQuery,
+  useGenerateJudgeInviteLinkMutation,
 } from '@/services/api/contestsApi';
 
 import { useGetUsersByRoleSlugQuery, useCreateUserMutation } from '@/services/api/userApi';
@@ -190,6 +191,7 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
   const [assignJudge] = useAssignJudgeMutation();
   const [removeJudge] = useRemoveJudgeMutation();
   const [createUser] = useCreateUserMutation();
+  const [generateInviteLink] = useGenerateJudgeInviteLinkMutation();
 
   // Handlers
   const handleDeleteOpportunity = async () => {
@@ -230,6 +232,18 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
   const handleAssignJudge = async (userId: string) => {
     try {
       await assignJudge({ contestId: opportunityId, userId: userId.trim() }).unwrap();
+
+      const invite = await generateInviteLink({
+        contestId: opportunityId,
+        judgeId: userId.trim(),
+      }).unwrap();
+
+      alert(
+        invite.email_sent
+          ? `Judge assigned. An invite email with a one-time access link has been sent.`
+          : `Judge assigned, but the invite email couldn't be sent.\n\nShare this one-time link with them directly:\n${invite.invite_url}`
+      );
+
       setAssignJudgeOpen(false);
       setJudgeSearch('');
     } catch (err: any) {
@@ -264,14 +278,24 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
       }
 
       // Auto-assign the newly created judge
+      // Auto-assign the newly created judge
       await assignJudge({
         contestId: opportunityId,
         userId: newJudgeId,
       }).unwrap();
 
+      const invite = await generateInviteLink({
+        contestId: opportunityId,
+        judgeId: newJudgeId,
+      }).unwrap();
+
       alert(
         `Judge "${newJudgeData.username}" created successfully!\n\n` +
-          `Temporary Password: ${tempPassword}\n\nPlease save and share this with the judge.`
+          `Temporary Password: ${tempPassword}\n` +
+          (invite.email_sent
+            ? `An invite email with a one-time access link has also been sent to ${newJudgeData.email}.`
+            : `One-time access link (email failed to send, share manually):\n${invite.invite_url}`) +
+          `\n\nPlease save and share the password with the judge — the invite link alone signs them into the dashboard, but they still need this password to log in the first time.`
       );
 
       // Reset form
