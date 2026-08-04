@@ -116,6 +116,11 @@ export interface ContestEntry {
   id: string;
   status: 'pending' | 'approved' | 'rejected' | 'disqualified' | 'winner';
   rank: number | null;
+  // Packed by packSubmissionNotes: the entrant's note plus a trailing
+  // "Fandom / Original IP: ..." line. Use unpackSubmissionNotes to display.
+  // The API has returned this since the note feature landed; it was missing
+  // from this interface, which hid the field from every consumer.
+  submission_notes: string | null;
   created_at: string;
   updated_at: string;
 
@@ -124,6 +129,23 @@ export interface ContestEntry {
 
   judge_score: number | null;
   judge_comments: string | null;
+}
+
+/**
+ * One entry with the detail the single-entry endpoint adds and the list
+ * endpoint does not: the submitter's email, and the parent contest.
+ */
+export interface ContestEntryDetail extends ContestEntry {
+  contest: { id: string; title: string };
+  // display_name comes from the users.profile blob and is null for accounts
+  // that never set one, so clients fall back to username.
+  creator: ArtworkCreator & { email: string | null; display_name: string | null };
+  // Category and tags are submission-form fields held in join tables, so the
+  // detail endpoint resolves them to names rather than returning bare ids.
+  artwork: Artwork & {
+    categories: Array<{ id: string; name: string; slug: string }>;
+    tags: Array<{ id: string; name: string; slug: string }>;
+  };
 }
 
 // ────────────────────────────────────────────────
@@ -398,8 +420,8 @@ const contestsApi = createApi({
     }),
 
 getContestEntries: builder.query<
-  { entries: ContestEntry[] },
-  { contestId: string; status?: string }
+  { entries: ContestEntry[]; total?: number },
+  { contestId: string; status?: string; search?: string; limit?: number; offset?: number }
 >({
   query: ({ contestId, ...params }) => ({
     url: `/contest/${contestId}/entries`,
@@ -409,6 +431,21 @@ getContestEntries: builder.query<
     { type: 'ContestEntries', id: contestId },
   ],
 }),
+
+    // Single entry, for the brand's submission detail view. Separate from
+    // getContestEntries because that one is paginated and status-filtered, so
+    // an arbitrary entry is not reliably present in its cache.
+    getContestEntry: builder.query<
+      { entry: ContestEntryDetail },
+      { contestId: string; entryId: string }
+    >({
+      query: ({ contestId, entryId }) => ({
+        url: `/contest/${contestId}/entries/${entryId}`,
+      }),
+      providesTags: (result, error, { contestId }) => [
+        { type: 'ContestEntries', id: contestId },
+      ],
+    }),
 
     updateEntryStatus: builder.mutation<
       ContestEntry,
@@ -584,6 +621,7 @@ export const {
   useUpdateContestMutation,
   useDeleteContestMutation,
   useGetContestEntriesQuery,
+  useGetContestEntryQuery,
   useSubmitEntryMutation,
   useGetMyJudgeScoresQuery,
   useUpdateEntryStatusMutation,

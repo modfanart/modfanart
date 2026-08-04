@@ -82,6 +82,68 @@ describe('submitEntry - submissionNotes validation', () => {
   });
 });
 
+// Must run before 'submission note round-trip', whose after() hook calls
+// db.destroy() on the shared pool. Anything DB-backed placed after it fails
+// with "driver has already been destroyed".
+describe('getEntry authorization', () => {
+  let contestId = null;
+  let skipReason = '';
+
+  before(async () => {
+    const { skip, reason } = await requireDatabase();
+    if (skip) {
+      skipReason = reason;
+      return;
+    }
+
+    // A real contest, so the request reaches the authorization check rather
+    // than short-circuiting on "Contest not found".
+    const contest = await db
+      .selectFrom('contests')
+      .select('id')
+      .orderBy('id')
+      .executeTakeFirst();
+
+    if (contest) contestId = contest.id;
+    else skipReason = 'database has no contest rows to build a fixture from';
+  });
+
+  it('refuses a manager of a different brand with 403', async (t) => {
+    if (!contestId) return t.skip(skipReason);
+
+    const res = makeRes();
+    await ContestEntryController.getEntry(
+      {
+        params: { contestId, entryId: '00000000-0000-0000-0000-000000000001' },
+        user: { id: 'u1', brands: [{ id: 'a-brand-that-owns-nothing' }] },
+      },
+      res
+    );
+
+    // 403 specifically, not 404: the caller must be refused on authorization
+    // before any entry lookup happens, so a probe cannot distinguish an entry
+    // that exists from one that does not.
+    assert.equal(res.statusCode, 403);
+    assert.equal(res.body.entry, undefined);
+  });
+
+  it('refuses an anonymous caller with 403', async (t) => {
+    if (!contestId) return t.skip(skipReason);
+
+    const res = makeRes();
+    await ContestEntryController.getEntry(
+      {
+        params: { contestId, entryId: '00000000-0000-0000-0000-000000000001' },
+        user: undefined,
+      },
+      res
+    );
+
+    assert.equal(res.statusCode, 403);
+    assert.equal(res.body.entry, undefined);
+  });
+});
+
 describe('submission note round-trip', () => {
   let fixture = null;
   let skipReason = '';
@@ -139,6 +201,21 @@ describe('submission note round-trip', () => {
     return entry;
   }
 
+  /**
+   * Calls getEntries as an authorized viewer (judge permission sees every
+   * status) and returns the captured res.
+   */
+  async function callGetEntries(query) {
+    const res = makeRes();
+    const req = {
+      params: { contestId: fixture.contest.id },
+      query,
+      user: { id: fixture.artwork.creator_id, permissions: { 'contests.judge': true } },
+    };
+    await ContestEntryController.getEntries(req, res);
+    return res;
+  }
+
   it('persists the note on insert', async (t) => {
     if (!fixture) return t.skip(skipReason);
 
@@ -177,4 +254,220 @@ describe('submission note round-trip', () => {
 
     assert.equal(entry.submission_notes, null);
   });
+
+  // --- View All: pagination, total, search, de-duplication ---
+
+  it('returns a numeric total, and total matches a full single page', async (t) => {
+    if (!fixture) return t.skip(skipReason);
+
+    await createEntry('total-check');
+
+    // limit above the row count means the whole set is on one page, so the
+    // array length must equal the reported total.
+    const res = await callGetEntries({ limit: '500' });
+    assert.equal(typeof res.body.total, 'number');
+    assert.equal(res.body.entries.length, res.body.total);
+  });
+
+  it('pages through entries with limit/offset without overlap', async (t) => {
+    if (!fixture) return t.skip(skipReason);
+
+    // Guarantee at least four entries in the contest.
+    await createEntry('p1');
+    await createEntry('p2');
+    await createEntry('p3');
+    await createEntry('p4');
+
+    const page1 = await callGetEntries({ limit: '2', offset: '0' });
+    const page2 = await callGetEntries({ limit: '2', offset: '2' });
+
+    assert.equal(page1.body.entries.length, 2);
+    assert.equal(page2.body.entries.length, 2);
+
+    const firstIds = new Set(page1.body.entries.map((e) => e.id));
+    const overlap = page2.body.entries.filter((e) => firstIds.has(e.id));
+    assert.equal(overlap.length, 0, 'consecutive pages must not overlap');
+
+    // total is page-independent and equals the length of a full fetch.
+    assert.equal(page1.body.total, page2.body.total);
+    const all = await callGetEntries({ limit: '500' });
+    assert.equal(all.body.entries.length, all.body.total);
+    assert.equal(all.body.total, page1.body.total);
+  });
+
+  it('clamps a limit above the hard cap to 100 rows', async (t) => {
+    if (!fixture) return t.skip(skipReason);
+
+    const res = await callGetEntries({ limit: '99999' });
+    assert.ok(res.body.entries.length <= 100, 'limit must be capped at 100');
+  });
+
+  it('returns each entry once even when several judges have scored it', async (t) => {
+    if (!fixture) return t.skip(skipReason);
+
+    const entry = await createEntry('multi-judge');
+
+    // Two distinct judges score the same entry. The old LEFT JOIN would have
+    // returned this entry twice; the collapsed query must return it once.
+    const judges = await db
+      .selectFrom('users')
+      .select('id')
+      .orderBy('id')
+      .limit(2)
+      .execute();
+    if (judges.length < 2) return t.skip('need two users to act as judges');
+
+    await db
+      .insertInto('contest_judge_scores')
+      .values([
+        { entry_id: entry.id, judge_id: judges[0].id, score: 6 },
+        { entry_id: entry.id, judge_id: judges[1].id, score: 9 },
+      ])
+      .execute();
+    // Cascades from the contest_entries cleanup, but be explicit in case the
+    // entry row survives a partial failure.
+    t.after(async () => {
+      await db.deleteFrom('contest_judge_scores').where('entry_id', '=', entry.id).execute();
+    });
+
+    const res = await callGetEntries({ limit: '500' });
+    const matches = res.body.entries.filter((e) => e.id === entry.id);
+    assert.equal(matches.length, 1, 'a multi-judge entry must appear exactly once');
+    // Collapsed to the top score across judges.
+    assert.equal(Number(matches[0].judge_score), 9);
+  });
+
+  it('returns the nested shape the frontend normalizeEntry reads', async (t) => {
+    if (!fixture) return t.skip(skipReason);
+
+    const created = await createEntry('shape-check');
+
+    const res = await callGetEntries({ limit: '500' });
+    // Assert on the JSON-serialized shape the frontend actually receives over
+    // the wire (res.json turns Date columns into ISO strings, etc.).
+    const wire = JSON.parse(JSON.stringify(res.body));
+    assert.equal(typeof wire.total, 'number');
+
+    const e = wire.entries.find((row) => row.id === created.id);
+    assert.ok(e, 'created entry should be present');
+    // These exact paths back the frontend contract (ContestEntry type +
+    // normalizeEntry in submission-pagination.ts). If the backend stops nesting
+    // artwork/creator, the Monitor rows silently lose title/creator/thumbnail.
+    assert.equal(typeof e.status, 'string');
+    assert.equal(typeof e.created_at, 'string');
+    assert.ok(e.artwork && typeof e.artwork === 'object', 'artwork must be nested');
+    assert.ok('title' in e.artwork, 'artwork.title');
+    assert.ok('thumbnail_url' in e.artwork, 'artwork.thumbnail_url');
+    assert.ok('file_url' in e.artwork, 'artwork.file_url');
+    assert.ok(e.creator && typeof e.creator === 'object', 'creator must be nested');
+    assert.ok('username' in e.creator, 'creator.username');
+    assert.ok('avatar_url' in e.creator, 'creator.avatar_url');
+  });
+
+  it('filters by search on artwork title / creator username', async (t) => {
+    if (!fixture) return t.skip(skipReason);
+
+    const entry = await createEntry('search-target');
+
+    const creator = await db
+      .selectFrom('users')
+      .select('username')
+      .where('id', '=', fixture.artwork.creator_id)
+      .executeTakeFirst();
+    const term = creator.username.slice(0, 3);
+
+    const res = await callGetEntries({ search: term, limit: '500' });
+    const needle = term.toLowerCase();
+    for (const e of res.body.entries) {
+      const haystack = `${e.artwork?.title ?? ''} ${e.creator?.username ?? ''}`.toLowerCase();
+      assert.ok(haystack.includes(needle), `search returned a non-match: "${haystack}"`);
+    }
+    assert.ok(res.body.entries.some((e) => e.id === entry.id), 'target entry should match');
+    assert.equal(res.body.entries.length, res.body.total);
+
+    // A term with LIKE metacharacters must be treated literally, so it matches
+    // nothing rather than acting as a wildcard.
+    const none = await callGetEntries({ search: 'zzz_no_match_zzz_%_' });
+    assert.equal(none.body.entries.length, 0);
+    assert.equal(none.body.total, 0);
+  });
 });
+
+describe('isBrandAuthorized', () => {
+  // This gate decides whether the submitter's email is released, so it is
+  // covered directly rather than only through the endpoints that call it.
+  const { isBrandAuthorized } = ContestEntryController;
+  // contests.brand_id holds a brands(id), matching every other contest
+  // controller. Asserting the opposite here passed while the dashboard stayed
+  // empty against real data, so the shape is pinned explicitly.
+  const contest = { id: 'contest-1', brand_id: 'brand-1' };
+
+  it('authorizes a manager holding the brand that owns the contest', () => {
+    const user = { id: 'u1', brands: [{ id: 'brand-1' }] };
+
+    assert.equal(isBrandAuthorized(user, contest), true);
+  });
+
+  it('matches a brand id against contests.brand_id', () => {
+    // The regression this guards: resolving through brands[].user_id denied
+    // every brand manager, so getEntries degraded to approved/winner rows and
+    // pending submissions disappeared from the dashboard.
+    const user = { id: 'u1', brands: [{ id: 'brand-1', user_id: 'someone-else' }] };
+
+    assert.equal(isBrandAuthorized(user, contest), true);
+  });
+
+  it('ignores a brands[].user_id that happens to match', () => {
+    // Guards the inverse mistake: a user id must not authorize.
+    const user = { id: 'u1', brands: [{ id: 'brand-2', user_id: 'brand-1' }] };
+
+    assert.equal(isBrandAuthorized(user, contest), false);
+  });
+
+  it('does not authorize the contest owner user id alone', () => {
+    // brand_id is not a user id, so a bare user id must never authorize.
+    assert.equal(isBrandAuthorized({ id: 'brand-1' }, contest), false);
+  });
+
+  it('authorizes contest moderators and judges', () => {
+    assert.equal(
+      isBrandAuthorized({ id: 'u1', permissions: { 'contests.moderate': true } }, contest),
+      true
+    );
+    assert.equal(
+      isBrandAuthorized({ id: 'u1', permissions: { 'contests.judge': true } }, contest),
+      true
+    );
+  });
+
+  it('rejects a manager of a different brand', () => {
+    // The cross-tenant case: a brand manager must not read another brand's
+    // submissions just by being a brand manager.
+    const user = { id: 'u1', brands: [{ id: 'brand-2' }] };
+
+    assert.equal(isBrandAuthorized(user, contest), false);
+  });
+
+  it('rejects a user with no brands, and anonymous callers', () => {
+    assert.equal(isBrandAuthorized({ id: 'u1' }, contest), false);
+    assert.equal(isBrandAuthorized({ id: 'u1', brands: [] }, contest), false);
+    assert.equal(isBrandAuthorized(undefined, contest), false);
+    assert.equal(isBrandAuthorized(null, contest), false);
+  });
+
+  it('rejects when the contest is missing rather than throwing', () => {
+    const user = { id: 'u1', brands: [{ id: 'brand-1' }] };
+
+    assert.equal(isBrandAuthorized(user, undefined), false);
+    assert.equal(isBrandAuthorized(user, null), false);
+  });
+
+  it('returns a boolean, never a truthy permission value', () => {
+    // permissions[...] is used directly in the expression, so without the
+    // Boolean() wrapper this leaks whatever value the permission holds.
+    const user = { id: 'u1', permissions: { 'contests.moderate': 'yes' } };
+
+    assert.strictEqual(isBrandAuthorized(user, contest), true);
+  });
+});
+
