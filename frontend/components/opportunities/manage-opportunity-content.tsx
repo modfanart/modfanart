@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -71,14 +71,12 @@ import {
 
 import { useGetUsersByRoleSlugQuery, useCreateUserMutation } from '@/services/api/userApi';
 import { ContestEntry } from '@/services/api/contestsApi';
-interface ExtendedContestEntry extends ContestEntry {
-  artwork_title?: string;
-  artwork_thumbnail_url?: string;
-  artwork_file_url?: string;
-  creator_username?: string;
-  creator_avatar?: string;
-  submitted_at?: string;
-}
+import {
+  PAGE_SIZE,
+  type ExtendedContestEntry,
+  foldEntriesPage,
+  buildEntriesQueryArgs,
+} from './submission-pagination';
 
 export function ManageOpportunityContent({ opportunityId }: { opportunityId: string }) {
   const router = useRouter();
@@ -100,23 +98,76 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
     bio: '',
   });
 
+  // Submissions are paged in from the server (limit/offset) and accumulated
+  // client-side so a brand can page through every submission in the campaign.
+  // Status filter and search run server-side so they stay correct across the
+  // whole set, not just the rows already loaded.
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [offset, setOffset] = useState(0);
+  const [items, setItems] = useState<ExtendedContestEntry[]>([]);
+  // Held in state so the count stays stable while the next page is fetching
+  // (the query's `data` briefly goes undefined when `offset` changes).
+  const [totalEntries, setTotalEntries] = useState(0);
+
+  // Debounce the search box so we fire one request after typing settles rather
+  // than one per keystroke.
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedSearch(searchQuery.trim()), 300);
+    return () => clearTimeout(id);
+  }, [searchQuery]);
+
   // Queries
   const { data: opportunity, isLoading: oppLoading } = useGetContestQuery(opportunityId);
-  const { data: entriesResponse, isLoading: entriesLoading } = useGetContestEntriesQuery({
-    contestId: opportunityId,
-  });
+
+  const entriesQueryArgs = useMemo(
+    () =>
+      buildEntriesQueryArgs({
+        contestId: opportunityId,
+        offset,
+        statusFilter,
+        search: debouncedSearch,
+      }),
+    [opportunityId, offset, statusFilter, debouncedSearch]
+  );
+
+  const {
+    data: entriesResponse,
+    isLoading: entriesLoading,
+    isFetching: entriesFetching,
+  } = useGetContestEntriesQuery(entriesQueryArgs);
+
+  useEffect(() => {
+    if (typeof entriesResponse?.total === 'number') setTotalEntries(entriesResponse.total);
+  }, [entriesResponse]);
+
   const { data: judgesData, isLoading: judgesLoading } = useGetContestJudgesQuery(opportunityId);
+
+  // Start the list over whenever the filter or search changes.
+  useEffect(() => {
+    setItems([]);
+    setOffset(0);
+    setTotalEntries(0);
+  }, [statusFilter, debouncedSearch]);
+
+  // Fold each fetched page into the accumulated list. Dedupe by id so a
+  // StrictMode double-invoke or a post-mutation refetch cannot double-append,
+  // and let page 0 replace the list (fresh filter/search or refreshed data).
+  useEffect(() => {
+    const page = entriesResponse?.entries;
+    if (!page) return;
+    setItems((prev) => foldEntriesPage(prev, page, offset));
+  }, [entriesResponse, offset]);
+
+  const canLoadMore = items.length < totalEntries;
+  const loadMore = useCallback(() => {
+    setOffset((prev) => prev + PAGE_SIZE);
+  }, []);
 
   // Fetch users with 'judge' role
   const { data: judgesPoolData, isLoading: judgesPoolLoading } = useGetUsersByRoleSlugQuery({
     roleSlug: 'JUDGE',
     limit: 100,
   });
-
-  const entries: ExtendedContestEntry[] = useMemo(
-    () => (Array.isArray(entriesResponse) ? entriesResponse : (entriesResponse?.entries ?? [])),
-    [entriesResponse]
-  );
 
   const judges: any[] = useMemo(() => {
     if (!judgesData) return [];
@@ -156,6 +207,10 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
     async (entryId: string, status: ContestEntry['status']) => {
       try {
         await updateEntryStatus({ contestId: opportunityId, entryId, status }).unwrap();
+        // Patch the accumulated list so the change shows immediately; a
+        // post-mutation refetch only covers the current page, and earlier pages
+        // would otherwise stay stale.
+        setItems((prev) => prev.map((e) => (e.id === entryId ? { ...e, status } : e)));
         if (selectedEntry?.id === entryId) setViewDialogOpen(false);
       } catch (err) {
         console.error('Failed to update entry status:', err);
@@ -168,6 +223,7 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
     if (!confirm('Delete this entry permanently? This cannot be undone.')) return;
     try {
       await deleteEntry({ contestId: opportunityId, entryId }).unwrap();
+      setItems((prev) => prev.filter((e) => e.id !== entryId));
     } catch (err) {
       console.error('Failed to delete entry:', err);
     }
@@ -304,21 +360,9 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
     return map[status] || 'bg-gray-100 text-gray-800';
   };
 
-  const filteredEntries = useMemo(() => {
-    const q = searchQuery.toLowerCase().trim();
-    return entries.filter((e) => {
-      const matchesSearch =
-        !q ||
-        e.artwork_title?.toLowerCase().includes(q) ||
-        e.creator_username?.toLowerCase().includes(q) ||
-        e.id?.toLowerCase().includes(q);
-
-      const matchesStatus = statusFilter === 'all' || e.status === statusFilter;
-      return matchesSearch && matchesStatus;
-    });
-  }, [entries, searchQuery, statusFilter]);
-
-  if (oppLoading || entriesLoading || judgesLoading) {
+  // Filtering and search are done server-side now, so the accumulated list is
+  // exactly what should render.
+  if (oppLoading || judgesLoading || (entriesLoading && items.length === 0)) {
     return <LoadingSkeleton />;
   }
 
@@ -413,7 +457,7 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Total Submissions</p>
-              <p className="text-2xl font-bold text-primary">{entries.length}</p>
+              <p className="text-2xl font-bold text-primary">{totalEntries}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Judges Assigned</p>
@@ -439,7 +483,7 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
         {/* Tabs */}
         <Tabs defaultValue="submissions" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="submissions">Submissions ({entries.length})</TabsTrigger>
+            <TabsTrigger value="submissions">Submissions ({totalEntries})</TabsTrigger>
             <TabsTrigger value="judges">Judges ({judges.length})</TabsTrigger>
           </TabsList>
 
@@ -475,7 +519,7 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
               </CardHeader>
 
               <CardContent>
-                {filteredEntries.length === 0 ? (
+                {items.length === 0 ? (
                   <EmptyState
                     title={
                       searchQuery || statusFilter !== 'all'
@@ -485,23 +529,40 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
                     description="When creators submit their artwork, they will appear here."
                   />
                 ) : (
-                  <div className="divide-y divide-border rounded-md border">
-                    {filteredEntries.map((entry) => (
-                      <EntryRow
-                        key={entry.id}
-                        entry={entry}
-                        onView={() => {
-                          setSelectedEntry(entry);
-                          setViewDialogOpen(true);
-                        }}
-                        onStatusChange={handleStatusChange}
-                        onDelete={handleDeleteEntry}
-                        isUpdating={isUpdatingStatus}
-                        formatRelative={formatRelative}
-                        getEntryRowStyles={getEntryRowStyles}
-                      />
-                    ))}
-                  </div>
+                  <>
+                    <div className="divide-y divide-border rounded-md border">
+                      {items.map((entry) => (
+                        <EntryRow
+                          key={entry.id}
+                          entry={entry}
+                          onView={() => {
+                            setSelectedEntry(entry);
+                            setViewDialogOpen(true);
+                          }}
+                          onStatusChange={handleStatusChange}
+                          onDelete={handleDeleteEntry}
+                          isUpdating={isUpdatingStatus}
+                          formatRelative={formatRelative}
+                          getEntryRowStyles={getEntryRowStyles}
+                        />
+                      ))}
+                    </div>
+
+                    <div className="mt-4 flex flex-col items-center gap-3">
+                      <p className="text-sm text-muted-foreground">
+                        Showing {items.length} of {totalEntries}
+                      </p>
+                      {canLoadMore && (
+                        <Button
+                          variant="outline"
+                          onClick={loadMore}
+                          disabled={entriesFetching}
+                        >
+                          {entriesFetching ? 'Loading...' : 'Load more'}
+                        </Button>
+                      )}
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>
@@ -573,7 +634,7 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
             <AlertDialogHeader>
               <AlertDialogTitle>Delete this contest?</AlertDialogTitle>
               <AlertDialogDescription>
-                This action will permanently delete the contest and all {entries.length}{' '}
+                This action will permanently delete the contest and all {totalEntries}{' '}
                 submissions. This cannot be undone.
               </AlertDialogDescription>
             </AlertDialogHeader>

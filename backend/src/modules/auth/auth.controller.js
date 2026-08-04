@@ -98,7 +98,9 @@ class AuthController {
         .executeTakeFirst();
 
       let brands = [];
-      if (fullUser.role === 'brand_manager' || fullUser.role === 'Admin') {
+      const BRAND_ROLES = ['BRAND_OWNER', 'BRAND_MANAGER', 'BRAND_EDITOR', 'BRAND_MEMBER'];
+      const ADMIN_ROLES = ['ADMIN', 'SUPERADMIN'];
+      if (BRAND_ROLES.includes(fullUser.role) || ADMIN_ROLES.includes(fullUser.role)) {
         brands = await db
           .selectFrom('brands as b')
           .leftJoin('brand_managers as bm', 'bm.brand_id', 'b.id')
