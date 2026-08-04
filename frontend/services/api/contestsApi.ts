@@ -91,6 +91,27 @@ export interface ArtworkCreator {
   avatar_url: string | null;
 }
 
+export interface GenerateJudgeInviteLinkResponse {
+  invite_url: string;
+  expires_at: string;
+  email_sent: boolean;
+}
+
+export interface GenerateJudgeInviteLinkArgs {
+  contestId: string;
+  judgeId: string;
+}
+
+export interface RedeemJudgeInviteResponse {
+  success: boolean;
+  contest_id: string;
+  redirect_to: string;
+}
+
+export interface RedeemJudgeInviteArgs {
+  token: string;
+}
+
 export interface ContestEntry {
   id: string;
   status: 'pending' | 'approved' | 'rejected' | 'disqualified' | 'winner';
@@ -451,6 +472,21 @@ getContestEntries: builder.query<
         body: { judgeId: userId }, // ✅ FIX
       }),
     }),
+
+    generateJudgeInviteLink: builder.mutation<GenerateJudgeInviteLinkResponse, GenerateJudgeInviteLinkArgs>({
+      query: ({ contestId, judgeId }) => ({
+        url: `/contest/${contestId}/judges/${judgeId}/invite-link`,
+        method: 'POST',
+      }),
+    }),
+    redeemJudgeInvite: builder.mutation<RedeemJudgeInviteResponse, RedeemJudgeInviteArgs>({
+      query: ({ token }) => ({
+        url: `/contest/judge-invite/${token}/redeem`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['JudgeContests'],
+    }),
+    
     getJudgeInvitations: builder.query<{ contests: Contest[] }, void>({
       query: () => '/contest/judge/invitations',
       providesTags: ['JudgeContests'],
@@ -569,6 +605,8 @@ export const {
   useDistributePrizesMutation,
   useGetLeaderboardQuery,
   useGetJudgeContestsQuery,
+  useGenerateJudgeInviteLinkMutation,
+  useRedeemJudgeInviteMutation,
 } = contestsApi;
 
 export default contestsApi;
