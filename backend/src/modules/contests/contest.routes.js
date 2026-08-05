@@ -69,16 +69,6 @@ router.post(
   ContestJudgeController.redeemInviteLink
 );
 
-// One-time invite links
-router.post(
-  '/:contestId/judges/:judgeId/invite-link',
-  ContestJudgeController.generateInviteLink
-);
-router.post(
-  '/judge-invite/:token/redeem',
-  ContestJudgeController.redeemInviteLink
-);
-
 // ====================== CATEGORIES ======================
 router.post('/:contestId/categories', ContestCategoryController.addCategory);
 router.delete(
