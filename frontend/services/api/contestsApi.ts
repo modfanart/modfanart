@@ -509,7 +509,6 @@ getContestEntries: builder.query<
         body: { judgeId: userId }, // ✅ FIX
       }),
     }),
-
     generateJudgeInviteLink: builder.mutation<GenerateJudgeInviteLinkResponse, GenerateJudgeInviteLinkArgs>({
       query: ({ contestId, judgeId }) => ({
         url: `/contest/${contestId}/judges/${judgeId}/invite-link`,
@@ -523,7 +522,6 @@ getContestEntries: builder.query<
       }),
       invalidatesTags: ['JudgeContests'],
     }),
-    
     getJudgeInvitations: builder.query<{ contests: Contest[] }, void>({
       query: () => '/contest/judge/invitations',
       providesTags: ['JudgeContests'],
