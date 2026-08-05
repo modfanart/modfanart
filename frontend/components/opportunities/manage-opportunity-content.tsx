@@ -278,7 +278,6 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
       }
 
       // Auto-assign the newly created judge
-      // Auto-assign the newly created judge
       await assignJudge({
         contestId: opportunityId,
         userId: newJudgeId,

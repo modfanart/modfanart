@@ -60,6 +60,25 @@ router.patch(
 // Judge's personal dashboard - contests they are assigned to
 router.get('/judge/contests', ContestJudgeController.getAllContestsByJudgeId);
 
+router.post(
+  '/:contestId/judges/:judgeId/invite-link',
+  ContestJudgeController.generateInviteLink
+);
+router.post(
+  '/judge-invite/:token/redeem',
+  ContestJudgeController.redeemInviteLink
+);
+
+// One-time invite links
+router.post(
+  '/:contestId/judges/:judgeId/invite-link',
+  ContestJudgeController.generateInviteLink
+);
+router.post(
+  '/judge-invite/:token/redeem',
+  ContestJudgeController.redeemInviteLink
+);
+
 // ====================== CATEGORIES ======================
 router.post('/:contestId/categories', ContestCategoryController.addCategory);
 router.delete(
