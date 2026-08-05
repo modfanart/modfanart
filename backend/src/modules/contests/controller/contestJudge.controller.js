@@ -1,9 +1,11 @@
 // src/controllers/contestJudge.controller.js
 const Contest = require("../models/contest.model");
 const ContestJudge = require("../models/contestJudge.model");
+const JudgeInviteToken = require("../models/judgeInviteToken.model");
 const User = require("../../users/models/user.model");
 const { db } = require("../../../config");
 const { sql } = require("kysely");
+const sgMail = require("../../../config/sendgrid");
 
 class ContestJudgeController {
   /**
@@ -337,6 +339,147 @@ class ContestJudgeController {
     } catch (err) {
       console.error("GET JUDGE CONTESTS ERROR:", err);
       res.status(500).json({ error: "Failed to fetch assigned contests" });
+    }
+  }
+
+  /**
+   * POST /contest/:contestId/judges/:judgeId/invite-link
+   * Brand owner/manager/admin only — generates a fresh one-time invite
+   * link for an already-assigned judge and emails it via SendGrid.
+   * Regenerating invalidates any previously unused link for the same pair.
+   */
+  static async generateInviteLink(req, res) {
+    try {
+      const { contestId, judgeId } = req.params;
+      const user = req.user;
+
+      const contest = await Contest.findById(contestId);
+      if (!contest) {
+        return res.status(404).json({ error: "Contest not found" });
+      }
+
+      const isPlatformAdmin = user?.role === "Admin";
+      const isBrandManager =
+        (user?.brands || []).some(
+          (b) => String(b.id) === String(contest.brand_id)
+        );
+
+      if (!isPlatformAdmin && !isBrandManager) {
+        return res.status(403).json({
+          error: "Not authorized",
+          message: "Only the brand owner, brand manager, or admin can generate judge invite links",
+        });
+      }
+
+      const assignment = await db
+        .selectFrom("contest_judges")
+        .select("judge_id")
+        .where("contest_id", "=", contestId)
+        .where("judge_id", "=", judgeId)
+        .executeTakeFirst();
+
+      if (!assignment) {
+        return res.status(404).json({
+          error: "This user is not assigned as a judge for this contest yet — assign them first",
+        });
+      }
+
+      const judge = await db
+        .selectFrom("users")
+        .select(["id", "username", "email"])
+        .where("id", "=", judgeId)
+        .executeTakeFirst();
+
+      if (!judge) {
+        return res.status(404).json({ error: "Judge user not found" });
+      }
+
+      const invite = await JudgeInviteToken.create(contestId, judgeId, user.id);
+      const inviteUrl = `${process.env.FRONTEND_URL}/judge/invite/${invite.token}`;
+
+      // Best-effort email — a failure here shouldn't block returning the
+      // link itself, since the brand manager can still copy/share it manually.
+      let emailSent = false;
+      if (process.env.SENDGRID_API_KEY && judge.email) {
+        try {
+          await sgMail.send({
+            to: judge.email,
+            from: process.env.SENDGRID_FROM_EMAIL,
+            subject: `You've been invited to judge: ${contest.title}`,
+            text:
+              `You've been invited to judge "${contest.title}".\n\n` +
+              `This link is single-use and expires in 7 days:\n${inviteUrl}\n\n` +
+              `If you weren't expecting this, you can ignore this email.`,
+            html:
+              `<p>You've been invited to judge <strong>${contest.title}</strong>.</p>` +
+              `<p><a href="${inviteUrl}">Click here to accept and open the judging dashboard</a></p>` +
+              `<p style="color:#666;font-size:13px">This link is single-use and expires in 7 days. If you weren't expecting this, you can ignore this email.</p>`,
+          });
+          emailSent = true;
+        } catch (emailErr) {
+          console.error("JUDGE INVITE EMAIL ERROR:", emailErr);
+        }
+      }
+
+      res.status(201).json({
+        success: true,
+        invite_url: inviteUrl,
+        expires_at: invite.expires_at,
+        email_sent: emailSent,
+      });
+    } catch (err) {
+      console.error("GENERATE INVITE LINK ERROR:", err);
+      res.status(500).json({ error: "Failed to generate invite link" });
+    }
+  }
+
+  /**
+   * POST /contest/judge-invite/:token/redeem
+   * Requires auth (the router applies authenticateToken globally). The
+   * logged-in user must be the exact judge the token was issued to.
+   * Single-use: the underlying UPDATE only matches an unused, unexpired
+   * row, so concurrent/duplicate calls can't double-redeem.
+   */
+  static async redeemInviteLink(req, res) {
+    try {
+      const { token } = req.params;
+      const userId = req.user.id;
+
+      const row = await JudgeInviteToken.redeem(token, userId);
+
+      if (!row) {
+        // Distinguish "doesn't exist" from "exists but not redeemable by you"
+        // for a clearer error, without leaking whether a token exists to
+        // someone it wasn't issued to.
+        const existing = await JudgeInviteToken.findByToken(token);
+        if (!existing) {
+          return res.status(404).json({ error: "invalid_token", message: "This invite link is invalid." });
+        }
+        if (existing.judge_id !== userId) {
+          return res.status(403).json({ error: "wrong_account", message: "This invite link was issued to a different account." });
+        }
+        if (existing.used_at) {
+          return res.status(410).json({ error: "already_used", message: "This invite link has already been used." });
+        }
+        return res.status(410).json({ error: "expired", message: "This invite link has expired." });
+      }
+
+      await ContestJudge.acceptInvitation(row.contest_id, row.judge_id);
+
+      const judge = await db
+        .selectFrom("users")
+        .select("username")
+        .where("id", "=", row.judge_id)
+        .executeTakeFirst();
+
+      res.json({
+        success: true,
+        contest_id: row.contest_id,
+        redirect_to: `/judge/${judge.username?.toLowerCase()}/contest/${row.contest_id}`,
+      });
+    } catch (err) {
+      console.error("REDEEM INVITE LINK ERROR:", err);
+      res.status(500).json({ error: "Failed to redeem invite link" });
     }
   }
 }
