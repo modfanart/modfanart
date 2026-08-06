@@ -82,6 +82,8 @@ export default function EditContestPage() {
   const router = useRouter();
   const params = useParams();
   const contestId = params['id'] as string;
+  const brandSlug = params['slug'] as string;
+  const opportunitiesBase = `/brand-manager/${brandSlug}/opportunities`;
 
   const { data: contest, isLoading: isContestLoading, isError } = useGetContestQuery(contestId);
   const [updateContest, { isLoading: isUpdating }] = useUpdateContestMutation();
@@ -287,7 +289,7 @@ export default function EditContestPage() {
       };
 
       await updateContest(payload).unwrap();
-      router.push('/dashboard/opportunities');
+      router.push(opportunitiesBase);
     } catch (err: any) {
       setFormError(
         err?.data?.message || err?.data?.error || 'Failed to update contest. Please try again.'
@@ -328,7 +330,7 @@ export default function EditContestPage() {
     <div className="max-w-5xl mx-auto space-y-8 p-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link href="/dashboard/opportunities">
+        <Link href={opportunitiesBase}>
           <Button variant="ghost" size="icon">
             <ArrowLeft className="h-5 w-5" />
           </Button>
