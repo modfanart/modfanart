@@ -871,6 +871,20 @@ class UserController {
         return res.status(400).json({ error: "Missing required fields" });
       }
 
+      let role_id = null;
+      if (role) {
+        const roleRow = await db
+          .selectFrom("roles")
+          .select(["id"])
+          .where("name", "=", role)
+          .executeTakeFirst();
+
+        if (!roleRow) {
+          return res.status(400).json({ error: `Unknown role: "${role}"` });
+        }
+        role_id = roleRow.id;
+      }
+
       const password_hash = await hashPassword(password);
 
       const newUser = await db
@@ -879,7 +893,7 @@ class UserController {
           username,
           email,
           password_hash,
-          role_id: role,
+          role_id,
           bio: bio || null,
           location: location || null,
           website: website || null,

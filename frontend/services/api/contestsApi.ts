@@ -630,6 +630,7 @@ export const {
   useAddCategoryToContestMutation,
   useRemoveCategoryFromContestMutation,
   useGetContestJudgesQuery,
+  useLazyGetContestJudgesQuery,
   useAssignJudgeMutation,
   useGetJudgeInvitationsQuery,
   useAcceptJudgeInvitationMutation,
