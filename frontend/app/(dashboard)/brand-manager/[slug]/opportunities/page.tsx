@@ -269,7 +269,7 @@ function OpportunityGrid({ items, brandBase, isClosed = false }: any) {
                       </DropdownMenuItem>
 
                       <DropdownMenuItem asChild>
-                        <Link href={`/opportunities/${opp.id}/monitor`}>
+                        <Link href={`${brandBase}/opportunities/${opp.id}/monitor`}>
                           <Users className="mr-2 h-4 w-4" /> Monitor
                         </Link>
                       </DropdownMenuItem>
