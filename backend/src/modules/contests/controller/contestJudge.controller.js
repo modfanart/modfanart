@@ -434,16 +434,187 @@ class ContestJudgeController {
   }
 
   /**
+   * POST /contest/:contestId/judges/self-assign-link
+   * Generates a contest-level, shareable link. It isn't tied to a known
+   * user up front — whoever opens it (after logging in / signing up)
+   * claims it and becomes an assigned judge for this contest, then can
+   * reuse the same link to get back into their dashboard.
+   */
+  static async generateSelfAssignLink(req, res) {
+    try {
+      const { contestId } = req.params;
+      const user = req.user;
+
+      const contest = await Contest.findById(contestId);
+      if (!contest) {
+        return res.status(404).json({ error: "Contest not found" });
+      }
+
+      const isPlatformAdmin = user?.role === "Admin";
+      const isBrandManager =
+        (user?.brands || []).some(
+          (b) => String(b.id) === String(contest.brand_id)
+        );
+
+      if (!isPlatformAdmin && !isBrandManager) {
+        return res.status(403).json({
+          error: "Not authorized",
+          message: "Only the brand owner, brand manager, or admin can generate a judging link",
+        });
+      }
+
+      if (["judging", "completed", "archived"].includes(contest.status)) {
+        return res.status(400).json({
+          error: "Cannot generate a judging link after the contest has entered judging or completed phase",
+        });
+      }
+
+      const invite = await JudgeInviteToken.createSelfAssign(contestId, user.id);
+      const inviteUrl = `${process.env.FRONTEND_URL}/judge/invite/${invite.token}`;
+
+      res.status(201).json({
+        success: true,
+        invite_url: inviteUrl,
+        expires_at: invite.expires_at,
+      });
+    } catch (err) {
+      console.error("GENERATE SELF-ASSIGN LINK ERROR:", err);
+      res.status(500).json({ error: "Failed to generate judging link" });
+    }
+  }
+
+  /**
+   * POST /contest/:contestId/judges/open-link
+   * Generates a reusable, contest-level link that multiple different
+   * people can each self-assign from — every distinct authenticated
+   * account that opens it becomes an assigned judge, with no cap and no
+   * per-account locking. This is what the "Generate Judging Link" button
+   * uses by default.
+   */
+  static async generateOpenLink(req, res) {
+    try {
+      const { contestId } = req.params;
+      const user = req.user;
+
+      const contest = await Contest.findById(contestId);
+      if (!contest) {
+        return res.status(404).json({ error: "Contest not found" });
+      }
+
+      const isPlatformAdmin = user?.role === "Admin";
+      const isBrandManager =
+        (user?.brands || []).some(
+          (b) => String(b.id) === String(contest.brand_id)
+        );
+
+      if (!isPlatformAdmin && !isBrandManager) {
+        return res.status(403).json({
+          error: "Not authorized",
+          message: "Only the brand owner, brand manager, or admin can generate a judging link",
+        });
+      }
+
+      if (["judging", "completed", "archived"].includes(contest.status)) {
+        return res.status(400).json({
+          error: "Cannot generate a judging link after the contest has entered judging or completed phase",
+        });
+      }
+
+      const invite = await JudgeInviteToken.createOpen(contestId, user.id);
+      const inviteUrl = `${process.env.FRONTEND_URL}/judge/invite/${invite.token}`;
+
+      res.status(201).json({
+        success: true,
+        invite_url: inviteUrl,
+        expires_at: invite.expires_at,
+      });
+    } catch (err) {
+      console.error("GENERATE OPEN LINK ERROR:", err);
+      res.status(500).json({ error: "Failed to generate judging link" });
+    }
+  }
+
+  /**
    * POST /contest/judge-invite/:token/redeem
-   * Requires auth (the router applies authenticateToken globally). The
-   * logged-in user must be the exact judge the token was issued to.
-   * Single-use: the underlying UPDATE only matches an unused, unexpired
-   * row, so concurrent/duplicate calls can't double-redeem.
+   * Requires auth (the router applies authenticateToken globally). Handles
+   * both invite types:
+   *  - direct: the logged-in user must be the exact judge the token was
+   *    issued to.
+   *  - self_assign: the logged-in user claims the token on first redeem,
+   *    or is confirmed as its existing owner on a repeat visit.
+   * Single-use per recipient: the underlying UPDATEs only match an
+   * unused/unclaimed, unexpired row, so concurrent/duplicate calls can't
+   * double-redeem or double-claim.
    */
   static async redeemInviteLink(req, res) {
     try {
       const { token } = req.params;
       const userId = req.user.id;
+
+      const existing = await JudgeInviteToken.findByToken(token);
+      if (!existing) {
+        return res.status(404).json({ error: "invalid_token", message: "This invite link is invalid." });
+      }
+
+      if (existing.type === "open") {
+        const row = await JudgeInviteToken.redeemOpen(token);
+
+        if (!row) {
+          if (new Date(existing.expires_at) <= new Date()) {
+            return res.status(410).json({ error: "expired", message: "This invite link has expired." });
+          }
+          return res.status(410).json({ error: "invalid_token", message: "This invite link is no longer active." });
+        }
+
+        await ContestJudge.assign(row.contest_id, userId, row.invited_by);
+        await ContestJudge.acceptInvitation(row.contest_id, userId);
+
+        const judge = await db
+          .selectFrom("users")
+          .select("username")
+          .where("id", "=", userId)
+          .executeTakeFirst();
+
+        return res.json({
+          success: true,
+          contest_id: row.contest_id,
+          redirect_to: `/judge/${judge.username?.toLowerCase()}/contest/${row.contest_id}`,
+        });
+      }
+
+      if (existing.type === "self_assign") {
+        const result = await JudgeInviteToken.redeemSelfAssign(token, userId);
+
+        if (!result) {
+          if (existing.judge_id && existing.judge_id !== userId) {
+            return res.status(403).json({
+              error: "wrong_account",
+              message: "This invite link has already been claimed by a different account.",
+            });
+          }
+          if (new Date(existing.expires_at) <= new Date()) {
+            return res.status(410).json({ error: "expired", message: "This invite link has expired." });
+          }
+          return res.status(410).json({ error: "invalid_token", message: "This invite link is invalid." });
+        }
+
+        const { row } = result;
+
+        await ContestJudge.assign(row.contest_id, userId, row.invited_by);
+        await ContestJudge.acceptInvitation(row.contest_id, userId);
+
+        const judge = await db
+          .selectFrom("users")
+          .select("username")
+          .where("id", "=", userId)
+          .executeTakeFirst();
+
+        return res.json({
+          success: true,
+          contest_id: row.contest_id,
+          redirect_to: `/judge/${judge.username?.toLowerCase()}/contest/${row.contest_id}`,
+        });
+      }
 
       const row = await JudgeInviteToken.redeem(token, userId);
 
@@ -451,10 +622,6 @@ class ContestJudgeController {
         // Distinguish "doesn't exist" from "exists but not redeemable by you"
         // for a clearer error, without leaking whether a token exists to
         // someone it wasn't issued to.
-        const existing = await JudgeInviteToken.findByToken(token);
-        if (!existing) {
-          return res.status(404).json({ error: "invalid_token", message: "This invite link is invalid." });
-        }
         if (existing.judge_id !== userId) {
           return res.status(403).json({ error: "wrong_account", message: "This invite link was issued to a different account." });
         }

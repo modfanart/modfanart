@@ -102,6 +102,24 @@ export interface GenerateJudgeInviteLinkArgs {
   judgeId: string;
 }
 
+export interface GenerateSelfAssignLinkResponse {
+  invite_url: string;
+  expires_at: string;
+}
+
+export interface GenerateSelfAssignLinkArgs {
+  contestId: string;
+}
+
+export interface GenerateOpenLinkResponse {
+  invite_url: string;
+  expires_at: string;
+}
+
+export interface GenerateOpenLinkArgs {
+  contestId: string;
+}
+
 export interface RedeemJudgeInviteResponse {
   success: boolean;
   contest_id: string;
@@ -515,6 +533,18 @@ getContestEntries: builder.query<
         method: 'POST',
       }),
     }),
+    generateSelfAssignLink: builder.mutation<GenerateSelfAssignLinkResponse, GenerateSelfAssignLinkArgs>({
+      query: ({ contestId }) => ({
+        url: `/contest/${contestId}/judges/self-assign-link`,
+        method: 'POST',
+      }),
+    }),
+    generateOpenLink: builder.mutation<GenerateOpenLinkResponse, GenerateOpenLinkArgs>({
+      query: ({ contestId }) => ({
+        url: `/contest/${contestId}/judges/open-link`,
+        method: 'POST',
+      }),
+    }),
     redeemJudgeInvite: builder.mutation<RedeemJudgeInviteResponse, RedeemJudgeInviteArgs>({
       query: ({ token }) => ({
         url: `/contest/judge-invite/${token}/redeem`,
@@ -643,6 +673,8 @@ export const {
   useGetLeaderboardQuery,
   useGetJudgeContestsQuery,
   useGenerateJudgeInviteLinkMutation,
+  useGenerateSelfAssignLinkMutation,
+  useGenerateOpenLinkMutation,
   useRedeemJudgeInviteMutation,
 } = contestsApi;
 
