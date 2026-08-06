@@ -319,7 +319,7 @@ function OpportunityGrid({ items, brandBase, isClosed = false }: any) {
                   href={
                     isClosed
                       ? `${brandBase}/opportunities/${opp.id}/reopen`
-                      : `/opportunities/${opp.slug || opp.id}`
+                      : `/contest/${opp.slug || opp.id}`
                   }
                 >
                   <Button variant="outline" className="w-full">

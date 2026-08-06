@@ -13,11 +13,12 @@ export const metadata: Metadata = {
 type PageProps = {
   params: Promise<{
     id: string;
+    slug: string;
   }>;
 };
 
 export default async function ManageOpportunityPage({ params }: PageProps) {
-  const { id } = await params;
+  const { id, slug } = await params;
 
   if (!id) {
     notFound();
@@ -25,7 +26,7 @@ export default async function ManageOpportunityPage({ params }: PageProps) {
 
   return (
     <Suspense fallback={<OpportunityPageSkeleton />}>
-      <ManageOpportunityContent opportunityId={id} />
+      <ManageOpportunityContent opportunityId={id} brandSlug={slug} />
     </Suspense>
   );
 }
