@@ -17,7 +17,11 @@ import {
   Loader2,
 } from 'lucide-react';
 
-import { useGetContestsQuery } from '@/services/api/contestsApi';
+import {
+  useGetContestsQuery,
+  useLazyGetContestJudgesQuery,
+  useGenerateJudgeInviteLinkMutation,
+} from '@/services/api/contestsApi';
 import { useAuth } from '@/store/AuthContext';
 
 /* ShadCN UI */
@@ -36,6 +40,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 /* ───────────────── STATUS ───────────────── */
 
@@ -186,19 +197,47 @@ function OpportunityGrid({ items, brandBase, isClosed = false }: any) {
   const [selected, setSelected] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [link, setLink] = useState('');
+  const [judges, setJudges] = useState<any[]>([]);
+  const [selectedJudgeId, setSelectedJudgeId] = useState('');
 
-  const generateLink = async (opp: any) => {
+  const [fetchJudges] = useLazyGetContestJudgesQuery();
+  const [generateInviteLink] = useGenerateJudgeInviteLinkMutation();
+
+  // Opens the dialog and loads the judges already assigned to this contest —
+  // invite links are per-judge, single-use tokens, so we need to know who
+  // we're generating one for before we can call the real endpoint.
+  const openLinkDialog = async (opp: any) => {
     setSelected(opp);
     setOpen(true);
     setLoading(true);
     setLink('');
+    setSelectedJudgeId('');
+    setJudges([]);
 
     try {
-      await new Promise((r) => setTimeout(r, 700));
+      const res = await fetchJudges(opp.id).unwrap();
+      setJudges(res?.judges ?? []);
+    } catch (err) {
+      console.error('Failed to load judges:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      const token = Math.random().toString(36).substring(2, 10);
+  const generateLink = async () => {
+    if (!selected || !selectedJudgeId) return;
+    setLoading(true);
+    setLink('');
 
-      setLink(`${window.location.origin}/judging/${opp.id}?token=${token}`);
+    try {
+      const invite = await generateInviteLink({
+        contestId: selected.id,
+        judgeId: selectedJudgeId,
+      }).unwrap();
+
+      setLink(invite.invite_url);
+    } catch (err) {
+      console.error('Failed to generate invite link:', err);
     } finally {
       setLoading(false);
     }
@@ -257,7 +296,7 @@ function OpportunityGrid({ items, brandBase, isClosed = false }: any) {
                           <Users className="mr-2 h-4 w-4" /> Monitor
                         </Link>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => generateLink(opp)}>
+                      <DropdownMenuItem onClick={() => openLinkDialog(opp)}>
                         <LinkIcon className="mr-2 h-4 w-4" />
                         Generate Judging Link
                       </DropdownMenuItem>
@@ -326,16 +365,52 @@ function OpportunityGrid({ items, brandBase, isClosed = false }: any) {
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">{selected?.title}</p>
 
-            <div className="p-3 border rounded-md text-sm break-all bg-muted/30">
-              {loading ? (
-                <div className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Generating...
-                </div>
-              ) : (
-                link || 'No link generated'
-              )}
-            </div>
+            {loading && judges.length === 0 && !link ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading judges...
+              </div>
+            ) : judges.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No judges are assigned to this contest yet. Assign one from
+                the Judges tab on the Monitor page first.
+              </p>
+            ) : (
+              <>
+                <Select value={selectedJudgeId} onValueChange={setSelectedJudgeId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a judge" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {judges.map((j: any) => (
+                      <SelectItem key={j.user_id} value={j.user_id}>
+                        {j.name || j.username}
+                        {j.accepted === false ? ' (invite pending)' : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Button
+                  onClick={generateLink}
+                  disabled={!selectedJudgeId || loading}
+                  className="w-full"
+                >
+                  {loading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <LinkIcon className="mr-2 h-4 w-4" />
+                  )}
+                  Generate Link
+                </Button>
+
+                {link && (
+                  <div className="p-3 border rounded-md text-sm break-all bg-muted/30">
+                    {link}
+                  </div>
+                )}
+              </>
+            )}
 
             <div className="flex gap-2">
               <Button onClick={copy} disabled={!link} className="flex-1">
