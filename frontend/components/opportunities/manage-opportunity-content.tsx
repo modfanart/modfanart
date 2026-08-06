@@ -427,7 +427,7 @@ export function ManageOpportunityContent({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild>
-                  <Link href={`/dashboard/opportunities/${opportunityId}/edit`}>
+                  <Link href={`${opportunitiesBase}/${opportunityId}/edit`}>
                     <Edit className="mr-2 h-4 w-4" /> Edit Contest
                   </Link>
                 </DropdownMenuItem>
@@ -960,7 +960,6 @@ function EntryDetailDialog({
                   </div>
                 )}
 
-         
               </div>
             </div>
 
