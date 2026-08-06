@@ -78,8 +78,15 @@ import {
   buildEntriesQueryArgs,
 } from './submission-pagination';
 
-export function ManageOpportunityContent({ opportunityId }: { opportunityId: string }) {
+export function ManageOpportunityContent({
+  opportunityId,
+  brandSlug,
+}: {
+  opportunityId: string;
+  brandSlug: string;
+}) {
   const router = useRouter();
+  const opportunitiesBase = `/brand-manager/${brandSlug}/opportunities`;
 
   // State
   const [searchQuery, setSearchQuery] = useState('');
@@ -197,7 +204,7 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
   const handleDeleteOpportunity = async () => {
     try {
       await deleteContest(opportunityId).unwrap();
-      router.push('/dashboard/opportunities');
+      router.push(opportunitiesBase);
     } catch (err) {
       console.error('Failed to delete contest:', err);
     }
@@ -371,7 +378,7 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
         title="Opportunity not found"
         description="This contest may have been deleted or you don't have access."
         actionLabel="Back to Opportunities"
-        actionLink="/dashboard/opportunities"
+        actionLink={opportunitiesBase}
       />
     );
   }
@@ -383,7 +390,7 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
         <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" asChild className="-ml-2">
-              <Link href="/dashboard/opportunities">
+              <Link href={opportunitiesBase}>
                 <ArrowLeft className="h-5 w-5" />
               </Link>
             </Button>
@@ -406,7 +413,7 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
 
           <div className="flex gap-2">
             <Button variant="outline" size="sm" asChild>
-              <Link href={`/contests/${opportunityId}`} target="_blank" rel="noopener noreferrer">
+              <Link href={`/contest/${opportunityId}`} target="_blank" rel="noopener noreferrer">
                 <Eye className="mr-2 h-4 w-4" />
                 View Public Page
               </Link>
