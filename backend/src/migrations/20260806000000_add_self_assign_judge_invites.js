@@ -27,12 +27,10 @@ async function up(db) {
   await sql`
     ALTER TABLE judge_invite_tokens
     ADD CONSTRAINT judge_invite_tokens_type_check
-    CHECK (type IN ('direct', 'self_assign', 'open'))
+    CHECK (type IN ('direct', 'self_assign'))
   `.execute(db);
 
   // A direct (per-judge) token must always name the judge it was issued to.
-  // Open (multi-claim) tokens never do — they're never "claimed" by any
-  // one account, so judge_id stays null for their whole lifetime.
   await sql`
     ALTER TABLE judge_invite_tokens
     ADD CONSTRAINT judge_invite_tokens_direct_requires_judge

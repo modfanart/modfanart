@@ -65,6 +65,14 @@ router.post(
   ContestJudgeController.generateInviteLink
 );
 router.post(
+  '/:contestId/judges/self-assign-link',
+  ContestJudgeController.generateSelfAssignLink
+);
+router.post(
+  '/:contestId/judges/open-link',
+  ContestJudgeController.generateOpenLink
+);
+router.post(
   '/judge-invite/:token/redeem',
   ContestJudgeController.redeemInviteLink
 );
