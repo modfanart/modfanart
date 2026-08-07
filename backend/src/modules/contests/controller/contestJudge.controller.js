@@ -9,6 +9,32 @@ const sgMail = require("../../../config/sendgrid");
 
 class ContestJudgeController {
   /**
+   * Who may manage a contest's judges: a platform admin, the brand account
+   * that owns the contest, or a manager of that brand.
+   *
+   * `contests.brand_id` is a FK to `users.id` — the brand *account* — so the
+   * owner check compares it against the caller's own id. `user.brands` holds
+   * rows from the `brands` table, whose ids live in a different space, so
+   * comparing those to `brand_id` can never match. Every judging endpoint
+   * used to authorize on that comparison alone, which 403'd brand owners
+   * unconditionally.
+   *
+   * The brand-manager clause is kept for when `brand_managers` exists — it's
+   * inert today because that table hasn't been created yet.
+   */
+  static canManageContest(user, contest) {
+    if (!user || !contest) return false;
+
+    const isPlatformAdmin = user.role === "Admin";
+    const isBrandOwner = String(contest.brand_id) === String(user.id);
+    const isBrandManager = (user.brands || []).some(
+      (b) => String(b.id) === String(contest.brand_id)
+    );
+
+    return isPlatformAdmin || isBrandOwner || isBrandManager;
+  }
+
+  /**
    * POST /contest/:contestId/judges
    * Assign / Invite a user as judge
    */
@@ -26,27 +52,9 @@ class ContestJudgeController {
         return res.status(404).json({ error: "Contest not found" });
       }
 
-      // === Improved Authorization Logic ===
       const user = req.user;
-      const isPlatformAdmin = user?.role === "Admin";
-      const isBrandOwner = (user?.brands || []).some((b) => b.id === contest.brand_id);
 
-      // Brand Manager check - more forgiving
-      const isBrandManager =
-        user?.role === "BRAND_MANAGER" &&
-        (user?.brands || []).some(
-          (b) =>
-            b.id === contest.brand_id ||
-            String(b.id) === String(contest.brand_id)
-        );
-
-
-      const hasPermission =
-        isPlatformAdmin ||
-        isBrandOwner ||
-        isBrandManager ;
-
-      if (!hasPermission) {
+      if (!ContestJudgeController.canManageContest(user, contest)) {
         console.log("Authorization failed for user:", {
           userId: user?.id,
           userRole: user?.role,
@@ -358,13 +366,7 @@ class ContestJudgeController {
         return res.status(404).json({ error: "Contest not found" });
       }
 
-      const isPlatformAdmin = user?.role === "Admin";
-      const isBrandManager =
-        (user?.brands || []).some(
-          (b) => String(b.id) === String(contest.brand_id)
-        );
-
-      if (!isPlatformAdmin && !isBrandManager) {
+      if (!ContestJudgeController.canManageContest(user, contest)) {
         return res.status(403).json({
           error: "Not authorized",
           message: "Only the brand owner, brand manager, or admin can generate judge invite links",
@@ -450,13 +452,7 @@ class ContestJudgeController {
         return res.status(404).json({ error: "Contest not found" });
       }
 
-      const isPlatformAdmin = user?.role === "Admin";
-      const isBrandManager =
-        (user?.brands || []).some(
-          (b) => String(b.id) === String(contest.brand_id)
-        );
-
-      if (!isPlatformAdmin && !isBrandManager) {
+      if (!ContestJudgeController.canManageContest(user, contest)) {
         return res.status(403).json({
           error: "Not authorized",
           message: "Only the brand owner, brand manager, or admin can generate a judging link",
@@ -501,13 +497,7 @@ class ContestJudgeController {
         return res.status(404).json({ error: "Contest not found" });
       }
 
-      const isPlatformAdmin = user?.role === "Admin";
-      const isBrandManager =
-        (user?.brands || []).some(
-          (b) => String(b.id) === String(contest.brand_id)
-        );
-
-      if (!isPlatformAdmin && !isBrandManager) {
+      if (!ContestJudgeController.canManageContest(user, contest)) {
         return res.status(403).json({
           error: "Not authorized",
           message: "Only the brand owner, brand manager, or admin can generate a judging link",
