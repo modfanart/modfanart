@@ -69,7 +69,7 @@ import {
   useGenerateJudgeInviteLinkMutation,
 } from '@/services/api/contestsApi';
 
-import { useGetUsersByRoleSlugQuery, useCreateUserMutation } from '@/services/api/userApi';
+import { useGetAllUsersQuery, useCreateUserMutation } from '@/services/api/userApi';
 import { ContestEntry } from '@/services/api/contestsApi';
 import {
   PAGE_SIZE,
@@ -170,13 +170,27 @@ export function ManageOpportunityContent({
     setOffset((prev) => prev + PAGE_SIZE);
   }, []);
 
-  // Fetch users with the JUDGE role. This matches roles.name exactly, and the
-  // role vocabulary is SCREAMING_SNAKE_CASE (ADMIN, BRAND_OWNER, JUDGE, ...),
-  // matching the names auth.middleware.js checks against.
-  const { data: judgesPoolData, isLoading: judgesPoolLoading } = useGetUsersByRoleSlugQuery({
-    roleSlug: 'JUDGE',
-    limit: 100,
-  });
+  // Any user can judge a contest: judging permission comes from the
+  // contest_judges table, not from the account's role. Filtering this list to
+  // accounts already holding the JUDGE role made it permanently empty, since
+  // nobody is given that role up front. Search across all users instead, so an
+  // existing account can be assigned without creating a duplicate for them.
+  // Debounced like the submissions search above, so typing fires one request
+  // after it settles rather than one per keystroke. Each keystroke would
+  // otherwise be a fresh cache key running a COUNT plus three unindexed ILIKEs.
+  const [debouncedJudgeSearch, setDebouncedJudgeSearch] = useState('');
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedJudgeSearch(judgeSearch.trim()), 300);
+    return () => clearTimeout(id);
+  }, [judgeSearch]);
+
+  // Only query once there is something to search for. Listing users by default
+  // would put 50 arbitrary people's email addresses on screen every time the
+  // dialog opens, which is not something a brand needs to see.
+  const { data: judgesPoolData, isFetching: judgesPoolLoading } = useGetAllUsersQuery(
+    { search: debouncedJudgeSearch, limit: 50, status: 'active' },
+    { skip: debouncedJudgeSearch.length < 2 }
+  );
 
   const judges: any[] = useMemo(() => {
     if (!judgesData) return [];
@@ -311,6 +325,28 @@ export function ManageOpportunityContent({
       setShowCreateJudgeForm(false);
       setAssignJudgeOpen(false);
     } catch (err: any) {
+      // The person already has an account. Creating a second one under a
+      // different email is never what the brand wants, so offer to assign the
+      // account that already exists.
+      // Email only. A username clash is a different person who happens to have
+      // picked that name, so offering to assign them would put a stranger on
+      // the contest.
+      const existing =
+        err?.status === 409 && err?.data?.field === 'email' ? err?.data?.existing_user : null;
+      if (existing?.id) {
+        if (
+          confirm(
+            `@${existing.username} (${existing.email}) already has an account.\n\n` +
+              `Assign them as a judge for this contest instead?`
+          )
+        ) {
+          setNewJudgeData({ username: '', email: '', bio: '' });
+          setShowCreateJudgeForm(false);
+          await handleAssignJudge(existing.id);
+        }
+        return;
+      }
+
       console.error('Failed to create and assign judge:', err);
       // Most backend errors come back as { error }, not { message }, so reading
       // only `message` silently hid the real reason for the failure.
@@ -688,21 +724,16 @@ export function ManageOpportunityContent({
                 <div className="max-h-96 overflow-y-auto mt-4 space-y-2 pr-2">
                   {judgesPoolLoading ? (
                     <p className="text-center py-12 text-muted-foreground">
-                      Loading available judges...
+                      Loading users...
                     </p>
                   ) : availableJudges.length === 0 ? (
                     <p className="text-center py-12 text-muted-foreground">
-                      No available judges found.
+                      {debouncedJudgeSearch.length >= 2
+                        ? `No users match "${debouncedJudgeSearch}". Create a new judge below.`
+                        : 'Search for a user to assign, or create a new judge below.'}
                     </p>
                   ) : (
-                    availableJudges
-                      .filter(
-                        (user: any) =>
-                          !judgeSearch ||
-                          user.username?.toLowerCase().includes(judgeSearch.toLowerCase()) ||
-                          user.email?.toLowerCase().includes(judgeSearch.toLowerCase())
-                      )
-                      .map((user: any) => (
+                    availableJudges.map((user: any) => (
                         <div
                           key={user.id}
                           className="flex items-center justify-between p-4 hover:bg-muted rounded-xl cursor-pointer border"

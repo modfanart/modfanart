@@ -432,7 +432,10 @@ class UserController {
       const page = Math.max(1, parseInt(req.query.page) || 1);
       const limit = Math.min(Math.max(1, parseInt(req.query.limit) || 20), 100);
       const offset = (page - 1) * limit;
-      const search = req.query.search?.trim();
+      const rawSearch = req.query.search?.trim();
+      // Escape LIKE metacharacters, otherwise a lone "%" or "_" matches every
+      // user in the table. Backslash is ILIKE's default escape character.
+      const search = rawSearch ? rawSearch.replace(/[\\%_]/g, "\\$&") : rawSearch;
       const statusFilter = req.query.status;
       const sort = req.query.sort || "created_at";
       const order = req.query.order?.toUpperCase() === "ASC" ? "asc" : "desc";
@@ -468,6 +471,11 @@ class UserController {
           "r.hierarchy_level as role_hierarchy_level",
           "u.profile",
         ]);
+
+      // The count query below already excludes soft-deleted users. Without the
+      // same filter here the list returned deleted accounts and disagreed with
+      // its own pagination total, and they showed up as assignable judges.
+      query = query.where("u.deleted_at", "is", null);
 
       if (search) {
         query = query.where((eb) =>
@@ -662,7 +670,10 @@ class UserController {
       const page = Math.max(1, parseInt(req.query.page) || 1);
       const limit = Math.min(Math.max(1, parseInt(req.query.limit) || 20), 100);
       const offset = (page - 1) * limit;
-      const search = req.query.search?.trim();
+      const rawSearch = req.query.search?.trim();
+      // Escape LIKE metacharacters, otherwise a lone "%" or "_" matches every
+      // user in the table. Backslash is ILIKE's default escape character.
+      const search = rawSearch ? rawSearch.replace(/[\\%_]/g, "\\$&") : rawSearch;
       const statusFilter = req.query.status;
 
       // Base query with role join
@@ -714,10 +725,13 @@ class UserController {
         .where("u.deleted_at", "is", null);
 
       if (search) {
+        // Must match the list query's predicate exactly, bio included, or the
+        // total disagrees with the rows actually returned.
         countQuery = countQuery.where((eb) =>
           eb.or([
             eb("u.username", "ilike", `%${search}%`),
             eb("u.email", "ilike", `%${search}%`),
+            eb("u.bio", "ilike", `%${search}%`),
           ])
         );
       }
@@ -871,19 +885,22 @@ class UserController {
         return res.status(400).json({ error: "Missing required fields" });
       }
 
-      let role_id = null;
-      if (role) {
-        const roleRow = await db
-          .selectFrom("roles")
-          .select(["id"])
-          .where("name", "=", role)
-          .executeTakeFirst();
-
-        if (!roleRow) {
-          return res.status(400).json({ error: `Unknown role: "${role}"` });
-        }
-        role_id = roleRow.id;
+      // users.role_id is NOT NULL, so omitting the role produced a 23502 and a
+      // bare 500 rather than telling the caller what was missing.
+      if (!role) {
+        return res.status(400).json({ error: "role is required" });
       }
+
+      const roleRow = await db
+        .selectFrom("roles")
+        .select(["id"])
+        .where("name", "=", role)
+        .executeTakeFirst();
+
+      if (!roleRow) {
+        return res.status(400).json({ error: `Unknown role: "${role}"` });
+      }
+      const role_id = roleRow.id;
 
       const password_hash = await hashPassword(password);
 
@@ -912,6 +929,40 @@ class UserController {
         user: newUser,
       });
     } catch (error) {
+      // 23505 = unique violation. The caller is almost always trying to create
+      // someone who already has an account, so return the existing user rather
+      // than a bare failure: the judge flow uses this to assign them instead.
+      if (error?.code === "23505") {
+        // req.body rather than the destructured names: those are scoped to the
+        // try block above and are not visible here.
+        const field = error.constraint === "users_username_key" ? "username" : "email";
+
+        // Only an email collision identifies the same person. A username
+        // collision is a name clash with an unrelated account, so returning
+        // that account would invite the caller to act on a stranger. Ask for a
+        // different username instead, and disclose nothing about them.
+        if (field === "username") {
+          return res.status(409).json({
+            error: "That username is already taken. Choose a different one.",
+            field,
+            existing_user: null,
+          });
+        }
+
+        const existing = await db
+          .selectFrom("users")
+          .select(["id", "username", "email"])
+          .where("email", "=", req.body?.email)
+          .where("deleted_at", "is", null)
+          .executeTakeFirst();
+
+        return res.status(409).json({
+          error: "A user with this email already exists",
+          field,
+          existing_user: existing || null,
+        });
+      }
+
       console.error("[createUser] Error:", error);
       return res.status(500).json({ error: "Failed to create user" });
     }

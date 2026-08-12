@@ -20,6 +20,17 @@ class ContestJudgeController {
    * Role names are SCREAMING_SNAKE_CASE (ADMIN, SUPERADMIN, BRAND_OWNER, ...)
    * and are the same vocabulary auth.middleware.js checks against.
    */
+  /**
+   * Postgres raises 22P02 on a malformed uuid, which surfaced as an opaque
+   * 500. Callers should get a 400 telling them the id is wrong.
+   */
+  static isUuid(value) {
+    return (
+      typeof value === "string" &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)
+    );
+  }
+
   static canManageContest(user, contest) {
     if (!user || !contest) return false;
 
@@ -43,6 +54,14 @@ class ContestJudgeController {
 
       if (!judgeId) {
         return res.status(400).json({ error: "judgeId is required" });
+      }
+
+      if (!ContestJudgeController.isUuid(contestId)) {
+        return res.status(400).json({ error: "Invalid contest id" });
+      }
+
+      if (!ContestJudgeController.isUuid(judgeId)) {
+        return res.status(400).json({ error: "Invalid judge id" });
       }
 
       const contest = await Contest.findById(contestId);
@@ -76,13 +95,23 @@ class ContestJudgeController {
           "u.username",
           "u.avatar_url",
           "u.profile",
+          "u.status",
           "r.name as role",
           "r.permissions as permissions",
         ])
         .where("u.id", "=", judgeId)
+        // Deleted and suspended accounts were assignable as judges, which gave
+        // scoring access to an account the platform has already shut off.
+        .where("u.deleted_at", "is", null)
         .executeTakeFirst();
       if (!judge) {
         return res.status(404).json({ error: "User not found" });
+      }
+
+      if (judge.status !== "active") {
+        return res.status(400).json({
+          error: "That account is not active and cannot be assigned as a judge",
+        });
       }
 
 
@@ -204,6 +233,8 @@ class ContestJudgeController {
           "cj.updated_at", // ← optional
         ])
         .where("cj.contest_id", "=", contestId)
+        // Deleted accounts should not keep appearing on the judges roster.
+        .where("u.deleted_at", "is", null)
         .orderBy("cj.created_at", "desc") // Now safe after adding column
         .execute();
 
@@ -272,11 +303,13 @@ class ContestJudgeController {
         return res.status(404).json({ error: "Contest not found" });
       }
 
-      const isAdmin =
-        req.user?.role === "Admin" ||
-        req.user?.permissions?.["contests.manage"] === true;
-
-      if (!isAdmin && contest.brand_id !== req.user?.id) {
+      // This was the fifth copy of the authorization logic and the one place
+      // the shared helper was not applied. All three of its checks failed
+      // against the real schema: "Admin" never matches the ADMIN role,
+      // permissions is {} on every role, and brand_id is a brands.id being
+      // compared to a users.id. The result was a 403 for every caller,
+      // including SUPERADMIN, so no judge could be removed from any contest.
+      if (!ContestJudgeController.canManageContest(req.user, contest)) {
         return res
           .status(403)
           .json({ error: "Not authorized to remove judges" });
@@ -368,6 +401,16 @@ class ContestJudgeController {
         return res.status(403).json({
           error: "Not authorized",
           message: "Only the brand owner, brand manager, or admin can generate judge invite links",
+        });
+      }
+
+      // Same guard the other two link generators and assignJudge already
+      // apply. Without it a fresh 7-day invite could be minted for a contest
+      // that has already finished judging.
+      if (["judging", "completed", "archived"].includes(contest.status)) {
+        return res.status(400).json({
+          error:
+            "Cannot generate a judge invite link after the contest has entered judging or completed phase",
         });
       }
 
@@ -542,6 +585,16 @@ class ContestJudgeController {
       const existing = await JudgeInviteToken.findByToken(token);
       if (!existing) {
         return res.status(404).json({ error: "invalid_token", message: "This invite link is invalid." });
+      }
+
+      // findByToken never looks at the contest, so a link kept working after
+      // its contest was deleted and inserted judges into the dead contest.
+      const contest = await Contest.findById(existing.contest_id);
+      if (!contest) {
+        return res.status(410).json({
+          error: "contest_unavailable",
+          message: "The contest for this invite link is no longer available.",
+        });
       }
 
       if (existing.type === "open") {
