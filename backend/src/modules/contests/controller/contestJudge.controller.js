@@ -9,29 +9,27 @@ const sgMail = require("../../../config/sendgrid");
 
 class ContestJudgeController {
   /**
-   * Who may manage a contest's judges: a platform admin, the brand account
-   * that owns the contest, or a manager of that brand.
+   * Who may manage a contest's judges: a platform admin, or someone who owns
+   * or manages the brand running the contest.
    *
-   * `contests.brand_id` is a FK to `users.id` — the brand *account* — so the
-   * owner check compares it against the caller's own id. `user.brands` holds
-   * rows from the `brands` table, whose ids live in a different space, so
-   * comparing those to `brand_id` can never match. Every judging endpoint
-   * used to authorize on that comparison alone, which 403'd brand owners
-   * unconditionally.
+   * `contests.brand_id` references `brands.id`, and `user.brands` holds the
+   * brand rows the caller owns or manages, so `brandMatch` is the check that
+   * does the work. `ownerMatch` covers older databases where `brand_id`
+   * referenced `users.id` instead; it is a no-op against the current schema.
    *
-   * The brand-manager clause is kept for when `brand_managers` exists — it's
-   * inert today because that table hasn't been created yet.
+   * Role names are SCREAMING_SNAKE_CASE (ADMIN, SUPERADMIN, BRAND_OWNER, ...)
+   * and are the same vocabulary auth.middleware.js checks against.
    */
   static canManageContest(user, contest) {
     if (!user || !contest) return false;
 
-    const isPlatformAdmin = user.role === "Admin";
-    const isBrandOwner = String(contest.brand_id) === String(user.id);
-    const isBrandManager = (user.brands || []).some(
+    const isPlatformAdmin = ["ADMIN", "SUPERADMIN"].includes(user.role);
+    const brandMatch = (user.brands || []).some(
       (b) => String(b.id) === String(contest.brand_id)
     );
+    const ownerMatch = String(contest.brand_id) === String(user.id);
 
-    return isPlatformAdmin || isBrandOwner || isBrandManager;
+    return isPlatformAdmin || brandMatch || ownerMatch;
   }
 
   /**
