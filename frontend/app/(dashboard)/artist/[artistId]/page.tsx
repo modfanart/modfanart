@@ -11,7 +11,7 @@ export default function ArtistDashboardPage() {
   return (
     <RoleGuard
       allowedRoles={['ARTIST']}
-      redirectTo="/dashboard"
+      redirectTo="/"
       fallback={
         <div className="min-h-screen flex items-center justify-center p-6">
           <Card className="w-full max-w-md shadow-lg rounded-2xl">

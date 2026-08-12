@@ -9,9 +9,16 @@ import { Loader2, Gavel } from 'lucide-react';
 
 export default function JudgeDashboard() {
   return (
+    // Deliberately not gated on the JUDGE role. Judging is granted per contest
+    // through the contest_judges table, and users.role_id holds a single role,
+    // so a brand owner assigned as a judge does not have (and must not be
+    // given) the JUDGE role. Gating on it locked legitimately assigned judges
+    // out of their own dashboard and bounced them to /dashboard, which is not a
+    // real route -- (dashboard) is a route group -- so every denial became a
+    // 404. JudgeDashboardContent loads the contests this user actually judges
+    // and shows an empty state when there are none.
     <RoleGuard
-      allowedRoles={['JUDGE']}
-      redirectTo="/dashboard"
+      redirectTo="/"
       fallback={
         <div className="min-h-screen flex items-center justify-center p-6">
           <Card className="w-full max-w-md shadow-lg rounded-2xl">
