@@ -170,10 +170,11 @@ export function ManageOpportunityContent({
     setOffset((prev) => prev + PAGE_SIZE);
   }, []);
 
-  // Fetch users with the Judge role. This matches roles.name exactly, so it
-  // has to stay in sync with the role seeded in 20260812000000_seed_judge_role.
+  // Fetch users with the JUDGE role. This matches roles.name exactly, and the
+  // role vocabulary is SCREAMING_SNAKE_CASE (ADMIN, BRAND_OWNER, JUDGE, ...),
+  // matching the names auth.middleware.js checks against.
   const { data: judgesPoolData, isLoading: judgesPoolLoading } = useGetUsersByRoleSlugQuery({
-    roleSlug: 'Judge',
+    roleSlug: 'JUDGE',
     limit: 100,
   });
 
@@ -274,7 +275,7 @@ export function ManageOpportunityContent({
         username: newJudgeData.username.trim(),
         email: newJudgeData.email.trim(),
         password: tempPassword,
-        role: 'Judge',
+        role: 'JUDGE',
         bio: newJudgeData.bio.trim() ? newJudgeData.bio.trim() : null,
       }).unwrap();
 
