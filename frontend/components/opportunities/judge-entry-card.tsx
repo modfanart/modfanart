@@ -113,9 +113,14 @@ export function JudgeEntryCard({
       <CardContent className="p-5 space-y-4 flex-1 flex flex-col">
         <div>
           <h3 className="font-semibold leading-tight">{artwork.title}</h3>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            by @{creator.username}
-          </p>
+          <div className="flex items-center gap-2 mt-1.5">
+            <div className="relative h-6 w-6 rounded-full overflow-hidden bg-muted shrink-0">
+              {creator.avatar_url && (
+                <Image src={creator.avatar_url} alt="" fill className="object-cover" sizes="24px" />
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground truncate">@{creator.username}</p>
+          </div>
         </div>
 
         <Button variant="outline" size="sm" asChild className="w-full">
