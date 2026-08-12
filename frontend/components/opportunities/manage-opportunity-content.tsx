@@ -175,11 +175,22 @@ export function ManageOpportunityContent({
   // accounts already holding the JUDGE role made it permanently empty, since
   // nobody is given that role up front. Search across all users instead, so an
   // existing account can be assigned without creating a duplicate for them.
-  const trimmedJudgeSearch = judgeSearch.trim();
-  const { data: judgesPoolData, isLoading: judgesPoolLoading } = useGetAllUsersQuery({
-    limit: 50,
-    ...(trimmedJudgeSearch ? { search: trimmedJudgeSearch } : {}),
-  });
+  // Debounced like the submissions search above, so typing fires one request
+  // after it settles rather than one per keystroke. Each keystroke would
+  // otherwise be a fresh cache key running a COUNT plus three unindexed ILIKEs.
+  const [debouncedJudgeSearch, setDebouncedJudgeSearch] = useState('');
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedJudgeSearch(judgeSearch.trim()), 300);
+    return () => clearTimeout(id);
+  }, [judgeSearch]);
+
+  // Only query once there is something to search for. Listing users by default
+  // would put 50 arbitrary people's email addresses on screen every time the
+  // dialog opens, which is not something a brand needs to see.
+  const { data: judgesPoolData, isFetching: judgesPoolLoading } = useGetAllUsersQuery(
+    { search: debouncedJudgeSearch, limit: 50, status: 'active' },
+    { skip: debouncedJudgeSearch.length < 2 }
+  );
 
   const judges: any[] = useMemo(() => {
     if (!judgesData) return [];
@@ -317,7 +328,11 @@ export function ManageOpportunityContent({
       // The person already has an account. Creating a second one under a
       // different email is never what the brand wants, so offer to assign the
       // account that already exists.
-      const existing = err?.status === 409 ? err?.data?.existing_user : null;
+      // Email only. A username clash is a different person who happens to have
+      // picked that name, so offering to assign them would put a stranger on
+      // the contest.
+      const existing =
+        err?.status === 409 && err?.data?.field === 'email' ? err?.data?.existing_user : null;
       if (existing?.id) {
         if (
           confirm(
@@ -713,8 +728,8 @@ export function ManageOpportunityContent({
                     </p>
                   ) : availableJudges.length === 0 ? (
                     <p className="text-center py-12 text-muted-foreground">
-                      {trimmedJudgeSearch
-                        ? `No users match "${trimmedJudgeSearch}". Create a new judge below.`
+                      {debouncedJudgeSearch.length >= 2
+                        ? `No users match "${debouncedJudgeSearch}". Create a new judge below.`
                         : 'Search for a user to assign, or create a new judge below.'}
                     </p>
                   ) : (

@@ -24,9 +24,11 @@ async function up(db) {
   `.execute(db);
 }
 
-async function down(db) {
-  await db.schema.alterTable('contest_judges').dropColumn('updated_at').execute();
-  await db.schema.alterTable('contest_judges').dropColumn('created_at').execute();
-}
+// Deliberately not reversed. up() is ADD COLUMN IF NOT EXISTS, so on any
+// database that already had these columns it did nothing. An unconditional
+// drop here would therefore destroy pre-existing, populated columns that
+// getJudges selects and orders by. Drop them by hand if a rollback genuinely
+// needs it.
+async function down() {}
 
 module.exports = { up, down };
