@@ -912,6 +912,26 @@ class UserController {
         user: newUser,
       });
     } catch (error) {
+      // 23505 = unique violation. The caller is almost always trying to create
+      // someone who already has an account, so return the existing user rather
+      // than a bare failure: the judge flow uses this to assign them instead.
+      if (error?.code === "23505") {
+        // req.body rather than the destructured names: those are scoped to the
+        // try block above and are not visible here.
+        const field = error.constraint === "users_username_key" ? "username" : "email";
+        const existing = await db
+          .selectFrom("users")
+          .select(["id", "username", "email"])
+          .where(field, "=", req.body?.[field])
+          .executeTakeFirst();
+
+        return res.status(409).json({
+          error: `A user with this ${field} already exists`,
+          field,
+          existing_user: existing || null,
+        });
+      }
+
       console.error("[createUser] Error:", error);
       return res.status(500).json({ error: "Failed to create user" });
     }
