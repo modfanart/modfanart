@@ -106,7 +106,7 @@ export default function JudgeDashboardContent() {
         </div>
 
         <Button asChild variant="outline">
-          <Link href="/judge/profile">View My Profile</Link>
+          <Link href={`/u/${user.username}`}>View My Profile</Link>
         </Button>
       </div>
 

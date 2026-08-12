@@ -3,9 +3,12 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
+import { Gavel } from 'lucide-react';
+
 import { useAuth } from '@/store/AuthContext';
 import { sidebarConfig } from '@/hooks/sidebar.config';
 import { getBasePath } from '@/hooks/getBasePath';
+import { useGetJudgeContestsQuery } from '@/services/api/contestsApi';
 import { cn } from '@/lib/utils';
 
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -15,6 +18,13 @@ import { Separator } from '@/components/ui/separator';
 export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
   const { user } = useAuth();
+
+  // Judging is granted per contest through contest_judges, not through a role,
+  // so it cannot come from sidebarConfig (which is keyed on user.role.name).
+  // An existing user assigned as a judge keeps their original role and would
+  // otherwise get no link into the judge area at all. Shares a cache entry with
+  // the judge dashboard, so this is one request per session.
+  const { data: judgeContests } = useGetJudgeContestsQuery(undefined, { skip: !user });
 
   const rawRole = user?.role?.name?.toLowerCase();
 
@@ -34,7 +44,16 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
     );
   }
 
-  const navigation = sidebarConfig[role]?.(basePath) || [];
+  const judgeUsername = user?.username?.trim().toLowerCase();
+  const showJudging =
+    role !== 'judge' && !!judgeUsername && (judgeContests?.contests?.length ?? 0) > 0;
+
+  const navigation = [
+    ...(sidebarConfig[role]?.(basePath) || []),
+    ...(showJudging
+      ? [{ name: 'Judging', href: `/judge/${judgeUsername}`, icon: Gavel }]
+      : []),
+  ];
 
   return (
     <aside className="flex flex-col h-full w-72 bg-background border-r">
