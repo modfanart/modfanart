@@ -9,17 +9,36 @@ const sgMail = require("../../../config/sendgrid");
 
 class ContestJudgeController {
   /**
-   * Who may manage a contest's judges: a platform admin, or someone who owns
-   * or manages the brand running the contest.
+   * Base URL for links we email to judges.
    *
-   * `contests.brand_id` references `brands.id`, and `user.brands` holds the
-   * brand rows the caller owns or manages, so `brandMatch` is the check that
-   * does the work. `ownerMatch` covers older databases where `brand_id`
-   * referenced `users.id` instead; it is a no-op against the current schema.
-   *
-   * Role names are SCREAMING_SNAKE_CASE (ADMIN, SUPERADMIN, BRAND_OWNER, ...)
-   * and are the same vocabulary auth.middleware.js checks against.
+   * FRONTEND_URL is not set on the deployed backend, and this was interpolated
+   * directly into a template literal, so every invite email went out pointing
+   * at http://undefined/judge/invite/<token>. Falling back to the production
+   * origin (the same one allowlisted for CORS in index.js) keeps the links
+   * usable, and the warning makes the missing configuration visible instead of
+   * silently producing dead links.
    */
+  static frontendBaseUrl() {
+    const configured = process.env.FRONTEND_URL?.trim();
+    if (configured) return configured.replace(/\/+$/, "");
+
+    console.warn(
+      "[judging] FRONTEND_URL is not set; falling back to the production origin for invite links"
+    );
+    return "https://www.modfanofficial.com";
+  }
+
+  /**
+   * Judge dashboard path. username is selected on every caller, but guard
+   * anyway so a missing one cannot produce "/judge/undefined/contest/...".
+   */
+  static judgeContestPath(username, contestId) {
+    const slug = username?.toLowerCase();
+    return slug
+      ? `/judge/${slug}/contest/${contestId}`
+      : `/judge/contests/${contestId}`;
+  }
+
   /**
    * Postgres raises 22P02 on a malformed uuid, which surfaced as an opaque
    * 500. Callers should get a 400 telling them the id is wrong.
@@ -31,6 +50,18 @@ class ContestJudgeController {
     );
   }
 
+  /**
+   * Who may manage a contest's judges: a platform admin, or someone who owns
+   * or manages the brand running the contest.
+   *
+   * `contests.brand_id` references `brands.id`, and `user.brands` holds the
+   * brand rows the caller owns or manages, so `brandMatch` is the check that
+   * does the work. `ownerMatch` covers older databases where `brand_id`
+   * referenced `users.id` instead; it is a no-op against the current schema.
+   *
+   * Role names are SCREAMING_SNAKE_CASE (ADMIN, SUPERADMIN, BRAND_OWNER, ...)
+   * and are the same vocabulary auth.middleware.js checks against.
+   */
   static canManageContest(user, contest) {
     if (!user || !contest) return false;
 
@@ -438,7 +469,7 @@ class ContestJudgeController {
       }
 
       const invite = await JudgeInviteToken.create(contestId, judgeId, user.id);
-      const inviteUrl = `${process.env.FRONTEND_URL}/judge/invite/${invite.token}`;
+      const inviteUrl = `${ContestJudgeController.frontendBaseUrl()}/judge/invite/${invite.token}`;
 
       // Best-effort email — a failure here shouldn't block returning the
       // link itself, since the brand manager can still copy/share it manually.
@@ -507,7 +538,7 @@ class ContestJudgeController {
       }
 
       const invite = await JudgeInviteToken.createSelfAssign(contestId, user.id);
-      const inviteUrl = `${process.env.FRONTEND_URL}/judge/invite/${invite.token}`;
+      const inviteUrl = `${ContestJudgeController.frontendBaseUrl()}/judge/invite/${invite.token}`;
 
       res.status(201).json({
         success: true,
@@ -552,7 +583,7 @@ class ContestJudgeController {
       }
 
       const invite = await JudgeInviteToken.createOpen(contestId, user.id);
-      const inviteUrl = `${process.env.FRONTEND_URL}/judge/invite/${invite.token}`;
+      const inviteUrl = `${ContestJudgeController.frontendBaseUrl()}/judge/invite/${invite.token}`;
 
       res.status(201).json({
         success: true,
@@ -619,7 +650,7 @@ class ContestJudgeController {
         return res.json({
           success: true,
           contest_id: row.contest_id,
-          redirect_to: `/judge/${judge.username?.toLowerCase()}/contest/${row.contest_id}`,
+          redirect_to: ContestJudgeController.judgeContestPath(judge.username, row.contest_id),
         });
       }
 
@@ -653,7 +684,7 @@ class ContestJudgeController {
         return res.json({
           success: true,
           contest_id: row.contest_id,
-          redirect_to: `/judge/${judge.username?.toLowerCase()}/contest/${row.contest_id}`,
+          redirect_to: ContestJudgeController.judgeContestPath(judge.username, row.contest_id),
         });
       }
 
@@ -683,7 +714,7 @@ class ContestJudgeController {
       res.json({
         success: true,
         contest_id: row.contest_id,
-        redirect_to: `/judge/${judge.username?.toLowerCase()}/contest/${row.contest_id}`,
+        redirect_to: ContestJudgeController.judgeContestPath(judge.username, row.contest_id),
       });
     } catch (err) {
       console.error("REDEEM INVITE LINK ERROR:", err);
