@@ -69,7 +69,7 @@ import {
   useGenerateJudgeInviteLinkMutation,
 } from '@/services/api/contestsApi';
 
-import { useGetUsersByRoleSlugQuery, useCreateUserMutation } from '@/services/api/userApi';
+import { useGetAllUsersQuery, useCreateUserMutation } from '@/services/api/userApi';
 import { ContestEntry } from '@/services/api/contestsApi';
 import {
   PAGE_SIZE,
@@ -170,12 +170,15 @@ export function ManageOpportunityContent({
     setOffset((prev) => prev + PAGE_SIZE);
   }, []);
 
-  // Fetch users with the JUDGE role. This matches roles.name exactly, and the
-  // role vocabulary is SCREAMING_SNAKE_CASE (ADMIN, BRAND_OWNER, JUDGE, ...),
-  // matching the names auth.middleware.js checks against.
-  const { data: judgesPoolData, isLoading: judgesPoolLoading } = useGetUsersByRoleSlugQuery({
-    roleSlug: 'JUDGE',
-    limit: 100,
+  // Any user can judge a contest: judging permission comes from the
+  // contest_judges table, not from the account's role. Filtering this list to
+  // accounts already holding the JUDGE role made it permanently empty, since
+  // nobody is given that role up front. Search across all users instead, so an
+  // existing account can be assigned without creating a duplicate for them.
+  const trimmedJudgeSearch = judgeSearch.trim();
+  const { data: judgesPoolData, isLoading: judgesPoolLoading } = useGetAllUsersQuery({
+    limit: 50,
+    ...(trimmedJudgeSearch ? { search: trimmedJudgeSearch } : {}),
   });
 
   const judges: any[] = useMemo(() => {
@@ -311,6 +314,24 @@ export function ManageOpportunityContent({
       setShowCreateJudgeForm(false);
       setAssignJudgeOpen(false);
     } catch (err: any) {
+      // The person already has an account. Creating a second one under a
+      // different email is never what the brand wants, so offer to assign the
+      // account that already exists.
+      const existing = err?.status === 409 ? err?.data?.existing_user : null;
+      if (existing?.id) {
+        if (
+          confirm(
+            `@${existing.username} (${existing.email}) already has an account.\n\n` +
+              `Assign them as a judge for this contest instead?`
+          )
+        ) {
+          setNewJudgeData({ username: '', email: '', bio: '' });
+          setShowCreateJudgeForm(false);
+          await handleAssignJudge(existing.id);
+        }
+        return;
+      }
+
       console.error('Failed to create and assign judge:', err);
       // Most backend errors come back as { error }, not { message }, so reading
       // only `message` silently hid the real reason for the failure.
@@ -688,21 +709,16 @@ export function ManageOpportunityContent({
                 <div className="max-h-96 overflow-y-auto mt-4 space-y-2 pr-2">
                   {judgesPoolLoading ? (
                     <p className="text-center py-12 text-muted-foreground">
-                      Loading available judges...
+                      Loading users...
                     </p>
                   ) : availableJudges.length === 0 ? (
                     <p className="text-center py-12 text-muted-foreground">
-                      No available judges found.
+                      {trimmedJudgeSearch
+                        ? `No users match "${trimmedJudgeSearch}". Create a new judge below.`
+                        : 'Search for a user to assign, or create a new judge below.'}
                     </p>
                   ) : (
-                    availableJudges
-                      .filter(
-                        (user: any) =>
-                          !judgeSearch ||
-                          user.username?.toLowerCase().includes(judgeSearch.toLowerCase()) ||
-                          user.email?.toLowerCase().includes(judgeSearch.toLowerCase())
-                      )
-                      .map((user: any) => (
+                    availableJudges.map((user: any) => (
                         <div
                           key={user.id}
                           className="flex items-center justify-between p-4 hover:bg-muted rounded-xl cursor-pointer border"
