@@ -170,9 +170,10 @@ export function ManageOpportunityContent({
     setOffset((prev) => prev + PAGE_SIZE);
   }, []);
 
-  // Fetch users with 'judge' role
+  // Fetch users with the Judge role. This matches roles.name exactly, so it
+  // has to stay in sync with the role seeded in 20260812000000_seed_judge_role.
   const { data: judgesPoolData, isLoading: judgesPoolLoading } = useGetUsersByRoleSlugQuery({
-    roleSlug: 'JUDGE',
+    roleSlug: 'Judge',
     limit: 100,
   });
 
@@ -255,7 +256,7 @@ export function ManageOpportunityContent({
       setJudgeSearch('');
     } catch (err: any) {
       console.error('Failed to assign judge:', err);
-      alert(err?.data?.message || 'Failed to assign judge');
+      alert(err?.data?.error || err?.data?.message || 'Failed to assign judge');
     }
   };
 
@@ -273,7 +274,7 @@ export function ManageOpportunityContent({
         username: newJudgeData.username.trim(),
         email: newJudgeData.email.trim(),
         password: tempPassword,
-        role: 'judge',
+        role: 'Judge',
         bio: newJudgeData.bio.trim() ? newJudgeData.bio.trim() : null,
       }).unwrap();
 
@@ -310,7 +311,9 @@ export function ManageOpportunityContent({
       setAssignJudgeOpen(false);
     } catch (err: any) {
       console.error('Failed to create and assign judge:', err);
-      alert(err?.data?.message || 'Failed to create judge');
+      // Most backend errors come back as { error }, not { message }, so reading
+      // only `message` silently hid the real reason for the failure.
+      alert(err?.data?.error || err?.data?.message || 'Failed to create judge');
     }
   };
   const handleRemoveJudge = async (userId: string) => {
@@ -332,7 +335,10 @@ export function ManageOpportunityContent({
       console.error('Failed to remove judge:', err);
 
       const errorMessage =
-        err?.data?.message || err?.message || 'Failed to remove judge. Please try again.';
+        err?.data?.error ||
+        err?.data?.message ||
+        err?.message ||
+        'Failed to remove judge. Please try again.';
 
       alert(errorMessage);
     }
