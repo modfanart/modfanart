@@ -15,11 +15,16 @@ interface EmptyStateProps {
   showImage?: boolean;
 }
 
+// The action is opt-in: pass actionLink to get a button. It used to default to
+// "Create New" -> /submissions/new, so every empty state that did not ask for a
+// button got one anyway, pointing at the artist artwork-submission form. On the
+// contest manage page that put a "Create New" button under "No judges assigned
+// yet", which 404s on any build without that route.
 export function EmptyState({
   title,
   description,
   actionLabel = 'Create New',
-  actionLink = '/submissions/new',
+  actionLink,
   icon,
   showImage = true,
 }: EmptyStateProps) {
