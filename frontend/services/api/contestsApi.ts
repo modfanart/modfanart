@@ -263,14 +263,29 @@ export interface ContestJudgeScore {
 
 export interface LeaderboardEntry {
   entry_id: string;
-  artwork_title?: string;
-  creator_username?: string;
+  artwork_id: string;
   creator_id: string;
-  rank: number | null;
-  score_public: number;
+  status: string;
+  /** Competition ranking, so equal averages share a rank: 1, 2, 2, 4. */
+  rank: number;
+  /** Mean of the judges who scored this entry, not the sum. */
   score_judge: number;
-  vote_count: number;
-  thumbnail_url?: string | null;
+  /** How many judges actually reached it. Needed to read score_judge fairly. */
+  judge_count: number;
+  artwork_title?: string;
+  artwork_thumbnail?: string | null;
+  artwork_file_url?: string;
+  creator_username?: string;
+  creator_avatar?: string | null;
+}
+
+export interface LeaderboardResponse {
+  leaderboard: LeaderboardEntry[];
+  /** Entries with at least one score. Entries with none are not ranked. */
+  scored_total: number;
+  /** Every approved entry, scored or not, so the gap is visible. */
+  approved_total: number;
+  judges_total: number;
 }
 
 export interface ArtistContestEntry extends Contest {
@@ -589,7 +604,9 @@ getContestEntries: builder.query<
       }),
       invalidatesTags: (result, error, { contestId, entryId }) => [
         { type: 'ContestScores', id: `${contestId}-${entryId}` },
+        { type: 'ContestScores', id: `my-${contestId}` },
         { type: 'ContestEntry', id: entryId },
+        { type: 'ContestEntries', id: contestId },
         { type: 'Leaderboard', id: contestId },
       ],
     }),
@@ -631,12 +648,18 @@ getContestEntries: builder.query<
     }),
     getMyJudgeScores: builder.query<{ scores: ContestJudgeScore[] }, { contestId: string }>({
       query: ({ contestId }) => `/contest/${contestId}/my-scores`,
-      providesTags: ['ContestScores'],
+      // Tagged per contest. A bare 'ContestScores' tag would not be matched by
+      // submitJudgeScore, which invalidates specific ids, so the judge's own
+      // scores would never refresh after they scored something.
+      providesTags: (result, error, { contestId }) => [
+        { type: 'ContestScores', id: `my-${contestId}` },
+      ],
     }),
     // Leaderboard
-    getLeaderboard: builder.query<LeaderboardEntry[], string>({
-      query: (contestId) => `/contest/${contestId}/leaderboard`,
-      providesTags: (result, error, contestId) => [{ type: 'Leaderboard', id: contestId }],
+    getLeaderboard: builder.query<LeaderboardResponse, { contestId: string; limit?: number }>({
+      query: ({ contestId, limit }) =>
+        `/contest/${contestId}/leaderboard${limit ? `?limit=${limit}` : ''}`,
+      providesTags: (result, error, { contestId }) => [{ type: 'Leaderboard', id: contestId }],
     }),
 
     getJudgeContests: builder.query<{ contests: Contest[] }, void>({

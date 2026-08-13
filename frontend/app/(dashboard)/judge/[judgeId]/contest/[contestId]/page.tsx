@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import {
   useGetContestQuery,
   useGetContestEntriesQuery,
+  useGetMyJudgeScoresQuery,
 } from '@/services/api/contestsApi';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -32,6 +33,13 @@ export default function JudgeContestPage() {
     status: 'approved',
     limit: 100,
   });
+
+  // Fetched once for the whole grid rather than per card, so the panel makes
+  // one request no matter how large the field is.
+  const { data: myScoresData } = useGetMyJudgeScoresQuery({ contestId });
+  const myScores = new Map(
+    (myScoresData?.scores ?? []).map((s) => [s.entry_id, s.score])
+  );
 
   const entries = entriesData?.entries ?? [];
 
@@ -121,7 +129,12 @@ export default function JudgeContestPage() {
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {entries.map((entry) => (
-              <JudgeEntryCard key={entry.id} entry={entry} contestId={contestId} />
+              <JudgeEntryCard
+                key={entry.id}
+                entry={entry}
+                contestId={contestId}
+                myScore={myScores.get(entry.id)}
+              />
             ))}
           </div>
         )}
