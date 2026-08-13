@@ -13,15 +13,20 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { getBasePath } from '@/hooks/getBasePath';
 import { Trophy, Calendar, Users, Eye } from 'lucide-react';
 import { useAuth } from '@/store/AuthContext';
 import { JudgeEntryCard } from '@/components/opportunities/judge-entry-card';
 
 export default function JudgeContestPage() {
-  const { contestId } = useParams<{ contestId: string }>();
+  const { contestId, judgeId } = useParams<{ contestId: string; judgeId: string }>();
   const { user } = useAuth();
-  const basePath = user ? getBasePath(user) : null;
+  // getBasePath is keyed on user.role.name, but judging is granted per contest
+  // through contest_judges and never sets a role. A judge whose role is ARTIST
+  // got /artist/<username>/contest/<id>/review-queue and a DEFAULT_USER got
+  // "null/...", both of which 404. Only judgejoe worked, because someone had
+  // given that account the JUDGE role. Reuse the judgeId already in the URL:
+  // we are on this page, so it is correct by construction.
+  const basePath = `/judge/${judgeId}`;
   // Fetch contest details
   const { data: contest, isLoading: contestLoading } = useGetContestQuery(contestId);
 

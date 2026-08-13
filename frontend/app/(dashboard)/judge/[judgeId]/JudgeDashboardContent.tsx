@@ -18,10 +18,13 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Trophy, Calendar, Clock, Award, Eye, ArrowRight, ShieldCheck } from 'lucide-react';
 
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { format } from 'date-fns';
 
 export default function JudgeDashboardContent() {
   const { user, loading: authLoading } = useAuth();
+  // Read before the early returns below, since hooks cannot be conditional.
+  const { judgeId } = useParams<{ judgeId: string }>();
 
   // ✅ Accepted contests
   const { data, isLoading, isError, refetch } = useGetJudgeContestsQuery(undefined, {
@@ -73,6 +76,14 @@ export default function JudgeDashboardContent() {
     );
   }
 
+  // Taken from the URL rather than from getBasePath or user.username.
+  // getBasePath is keyed on user.role.name, but judging is granted per contest
+  // through contest_judges and never sets a role, so a judge whose role is
+  // ARTIST would get /artist/<username>/... and a DEFAULT_USER "null/...",
+  // both of which 404. username is also nullable. We are rendering at
+  // /judge/[judgeId], so that segment is correct by construction.
+  const judgeBase = `/judge/${judgeId}`;
+
   // =============================
   // Accept handler
   // =============================
@@ -105,9 +116,14 @@ export default function JudgeDashboardContent() {
           </div>
         </div>
 
-        <Button asChild variant="outline">
-          <Link href={`/u/${user.username}`}>View My Profile</Link>
-        </Button>
+        {/* username is nullable on the user record, and interpolating it blind
+            produced /u/null, which resolves to the profile route and then
+            renders a missing user. Nothing to link to without it. */}
+        {user.username && (
+          <Button asChild variant="outline">
+            <Link href={`/u/${user.username}`}>View My Profile</Link>
+          </Button>
+        )}
       </div>
 
       {/* ================= INVITATIONS ================= */}
@@ -219,15 +235,22 @@ export default function JudgeDashboardContent() {
                       </div>
 
                       <div className="flex gap-3 pt-4">
+                        {/* Both of these used contest.slug. There is no
+                            /contest/[id]/judge route at all, so Start was a
+                            hard 404, and the public contest page resolves its
+                            param with .where("id", "=", id) with no slug
+                            fallback, so the eye returned "Contest not found".
+                            Judging lives under /judge/[judgeId], never under
+                            /contest. */}
                         <Button asChild className="flex-1">
-                          <Link href={`/contest/${contest.slug}/judge`}>
+                          <Link href={`${judgeBase}/contest/${contest.id}`}>
                             Start
                             <ArrowRight className="ml-2 h-4 w-4" />
                           </Link>
                         </Button>
 
                         <Button asChild variant="outline" size="icon">
-                          <Link href={`/contest/${contest.slug}`}>
+                          <Link href={`/contest/${contest.id}`}>
                             <Eye className="h-4 w-4" />
                           </Link>
                         </Button>
