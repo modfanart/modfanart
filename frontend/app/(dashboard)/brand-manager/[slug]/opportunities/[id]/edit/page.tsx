@@ -69,6 +69,44 @@ const toISODate = (date: Date | string | null | undefined): string | null => {
   if (typeof date === 'string') return date.split('T')[0]!;
   return date.toISOString().split('T')[0]!;
 };
+
+/**
+ * Used when saving, where truncating to YYYY-MM-DD silently moved the contest.
+ * The API returns full ISO timestamps, so re-truncating a date the user never
+ * touched threw its time away: a 17:00 start became midnight and an 03:59:59
+ * submission deadline moved four hours earlier on every save. Pass through what
+ * the API sent; the pickers already write a plain date when a new one is picked.
+ */
+const toISODateTime = (date: Date | string | null | undefined): string | null => {
+  if (!date) return null;
+  if (typeof date === 'string') return date;
+  return date.toISOString();
+};
+
+/**
+ * contests.gallery is a TEXT column holding a JSON array string - createContest
+ * writes JSON.stringify(gallery), or "[]" when there are no images. Reading it
+ * without parsing put a string into state that the form types as string[], and
+ * rendering it then threw `form.gallery.map is not a function`, which took out
+ * the entire page behind the global error boundary.
+ *
+ * Values genuinely present in the database: "" on rows predating the column,
+ * "[]" on everything createContest made, and Postgres array literals ("{}",
+ * '{"a","b"}') on rows written by updateContest before it was fixed to
+ * serialise. The last of those is not valid JSON. Tolerate all of them rather
+ * than trusting the declared type, which is what was wrong in the first place.
+ */
+const parseGallery = (value: unknown): string[] => {
+  if (Array.isArray(value)) return value.filter((u): u is string => typeof u === 'string');
+  if (typeof value !== 'string' || value.trim() === '') return [];
+
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed.filter((u): u is string => typeof u === 'string') : [];
+  } catch {
+    return [];
+  }
+};
 const generateSlug = (title: string): string =>
   title
     .trim()
@@ -124,7 +162,7 @@ export default function EditContestPage() {
         slug: contest.slug || '',
         description: contest.description || '',
         hero_image: contest.hero_image || '',
-        gallery: contest.gallery || [],
+        gallery: parseGallery(contest.gallery),
         rules: contest.rules || '',
         prizes: (contest.prizes || []).map((p) => ({
           rank: p.rank ?? 1,
@@ -149,14 +187,19 @@ export default function EditContestPage() {
 
   /* ───────────────── AUTO SLUG GENERATION ───────────────── */
 
+  // Only follow the title once the user has actually edited it. The previous
+  // condition (form.slug === contest?.slug) is true the instant the contest
+  // loads, so simply opening this page regenerated the slug from the title and
+  // the next save renamed the contest - "the-librarians-2026" silently became
+  // "the-librarians-official-fan-art-contest" without anyone touching the field.
   useEffect(() => {
-    if (form.title && (!form.slug || form.slug === contest?.slug)) {
+    if (form.title && contest?.title && form.title !== contest.title) {
       const newSlug = generateSlug(form.title);
       if (newSlug !== form.slug) {
         setForm((prev) => ({ ...prev, slug: newSlug }));
       }
     }
-  }, [form.title, contest?.slug]);
+  }, [form.title, form.slug, contest?.title]);
 
   /* ───────────────── FIELD UPDATER ───────────────── */
 
@@ -273,11 +316,13 @@ export default function EditContestPage() {
         rules: form.rules?.trim() || null,
         prizes: form.prizes.length > 0 ? form.prizes : null,
 
-        start_date: form.start_date ? toISODate(form.start_date)! : '',
-        submission_end_date: form.submission_end_date ? toISODate(form.submission_end_date)! : '',
+        start_date: form.start_date ? toISODateTime(form.start_date)! : '',
+        submission_end_date: form.submission_end_date
+          ? toISODateTime(form.submission_end_date)!
+          : '',
 
-        voting_end_date: toISODate(form.voting_end_date),
-        judging_end_date: toISODate(form.judging_end_date),
+        voting_end_date: toISODateTime(form.voting_end_date),
+        judging_end_date: toISODateTime(form.judging_end_date),
 
         entry_requirements: form.entry_requirements,
         judging_criteria: form.judging_criteria,
