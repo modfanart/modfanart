@@ -3,6 +3,7 @@
 import {
   useGetContestQuery,
   useGetContestEntriesQuery,
+  useGetMyJudgeScoresQuery,
 } from '@/services/api/contestsApi';
 
 import { JudgeEntryCard } from '@/components/opportunities/judge-entry-card';
@@ -27,6 +28,12 @@ export function JudgeOpportunityContent({
     limit: 100,
   });
 
+  // One request for the whole grid, mirroring the contest page.
+  const { data: myScoresData } = useGetMyJudgeScoresQuery({ contestId });
+  const myScores = new Map(
+    (myScoresData?.scores ?? []).map((s) => [s.entry_id, s.score])
+  );
+
   const entries = entriesData?.entries ?? [];
 
   if (contestLoading || entriesLoading) {
@@ -48,7 +55,12 @@ export function JudgeOpportunityContent({
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
       {entries.map((entry) => (
-        <JudgeEntryCard key={entry.id} entry={entry} contestId={contestId} />
+        <JudgeEntryCard
+          key={entry.id}
+          entry={entry}
+          contestId={contestId}
+          myScore={myScores.get(entry.id)}
+        />
       ))}
     </div>
   );

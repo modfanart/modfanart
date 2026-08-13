@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { format } from 'date-fns';
-import { ExternalLink, Loader2, Send, Tag } from 'lucide-react';
+import { Check, ExternalLink, Loader2, Send, Tag } from 'lucide-react';
 
 import { unpackSubmissionNotes } from '@/lib/contest-notes';
 import type { ContestEntry } from '@/services/api/contestsApi';
@@ -43,9 +43,16 @@ const NOT_PROVIDED = <span className="italic text-muted-foreground">Not provided
 export function JudgeEntryCard({
   entry,
   contestId,
+  myScore,
 }: {
   entry: ContestEntry;
   contestId: string;
+  /**
+   * This judge's own score, if they have already scored this entry.
+   * undefined is spelled out because callers pass Map.get() straight through
+   * and exactOptionalPropertyTypes is on.
+   */
+  myScore?: number | null | undefined;
 }) {
   const { toast } = useToast();
   const [submitScore, { isLoading: isSubmitting }] = useSubmitJudgeScoreMutation();
@@ -180,9 +187,21 @@ export function JudgeEntryCard({
         )}
 
         <div className="pt-3 border-t mt-auto space-y-3">
+          {/* Without this a judge working a large field over several sittings
+              has no way to tell an entry they scored 8 from one they have not
+              opened. The input is left empty rather than pre-filled: a filled
+              box invites an accidental resubmit, and the state would not
+              refresh when the query resolves after mount. */}
+          {typeof myScore === 'number' && (
+            <Badge className="w-fit" variant="default">
+              <Check className="mr-1 h-3 w-3" />
+              You scored this {myScore}/10
+            </Badge>
+          )}
+
           <div>
             <Label htmlFor={`score-${entry.id}`} className="text-xs uppercase tracking-widest">
-              Your score (1-10)
+              {typeof myScore === 'number' ? 'Change your score (1-10)' : 'Your score (1-10)'}
             </Label>
             <div className="flex gap-3 mt-2">
               <Input
