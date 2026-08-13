@@ -324,11 +324,17 @@ class ContestController {
         if (req.body[column] !== undefined) updateData[column] = req.body[column];
       }
 
-      if (
-        updateData.gallery !== undefined &&
-        !Array.isArray(updateData.gallery)
-      ) {
-        return res.status(400).json({ error: "gallery must be an array" });
+      // contests.gallery is a text column holding a JSON array string. That is
+      // what createContest writes (JSON.stringify, or "[]" when empty) and what
+      // the public contest page JSON.parses back out. Handing kysely a raw JS
+      // array instead makes node-pg serialise it as a Postgres array literal -
+      // {} for an empty gallery, {"a","b"} otherwise - which is not valid JSON,
+      // so every later reader either sees nothing or throws. Match createContest.
+      if (updateData.gallery !== undefined) {
+        if (!Array.isArray(updateData.gallery)) {
+          return res.status(400).json({ error: "gallery must be an array" });
+        }
+        updateData.gallery = JSON.stringify(updateData.gallery);
       }
 
       if (updateData.max_entries_per_user !== undefined) {
