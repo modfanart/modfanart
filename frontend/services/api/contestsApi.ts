@@ -285,7 +285,12 @@ export interface LeaderboardResponse {
   scored_total: number;
   /** Every approved entry, scored or not, so the gap is visible. */
   approved_total: number;
-  judges_total: number;
+  /**
+   * Judges who have actually scored something, not judges who accepted an
+   * invitation. A reviewer invited only to view the finalists is an accepted
+   * judge who never scores, and must not count towards coverage.
+   */
+  judges_scoring: number;
 }
 
 export interface ArtistContestEntry extends Contest {
