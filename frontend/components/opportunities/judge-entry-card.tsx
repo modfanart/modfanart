@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { format } from 'date-fns';
-import { ExternalLink, Loader2, Send } from 'lucide-react';
+import { ExternalLink, Loader2, Send, Tag } from 'lucide-react';
 
 import { unpackSubmissionNotes } from '@/lib/contest-notes';
 import type { ContestEntry } from '@/services/api/contestsApi';
@@ -136,6 +136,34 @@ export function JudgeEntryCard({
           <Field label="Description">{artwork.description || NOT_PROVIDED}</Field>
           <Field label="Artist's note">{note || NOT_PROVIDED}</Field>
           <Field label="Fandom / Original IP">{originalIp || NOT_PROVIDED}</Field>
+          {/* Category and tags render only when present, unlike the fields
+              above which show "Not provided". Nothing in production has either
+              yet (artwork_categories and taggings are both empty), so an
+              always-visible empty row would read as broken on every card
+              rather than as an artwork that simply has no tags. */}
+          {!!artwork.categories?.length && (
+            <Field label="Category">
+              <div className="flex flex-wrap gap-2 pt-1">
+                {artwork.categories.map((category) => (
+                  <Badge key={category.id} variant="secondary">
+                    {category.name}
+                  </Badge>
+                ))}
+              </div>
+            </Field>
+          )}
+          {!!artwork.tags?.length && (
+            <Field label="Tags">
+              <div className="flex flex-wrap gap-2 pt-1">
+                {artwork.tags.map((tag) => (
+                  <Badge key={tag.id} variant="secondary" className="flex items-center">
+                    <Tag className="mr-1 h-3 w-3" />
+                    {tag.name}
+                  </Badge>
+                ))}
+              </div>
+            </Field>
+          )}
           <Field label="Submitted">
             {entry.created_at ? format(new Date(entry.created_at), 'dd MMM yyyy') : NOT_PROVIDED}
           </Field>

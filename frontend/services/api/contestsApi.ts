@@ -83,6 +83,11 @@ export interface Artwork {
   favorites_count: number;
   created_at: string;
   updated_at: string;
+  // Held in join tables (artwork_categories, and the polymorphic taggings), so
+  // both endpoints resolve them to names. Optional because older cached
+  // responses and the artwork endpoints do not include them.
+  categories?: Array<{ id: string; name: string; slug: string }>;
+  tags?: Array<{ id: string; name: string; slug: string }>;
 }
 
 export interface ArtworkCreator {
