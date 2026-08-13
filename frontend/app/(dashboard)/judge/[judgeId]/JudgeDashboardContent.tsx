@@ -116,9 +116,14 @@ export default function JudgeDashboardContent() {
           </div>
         </div>
 
-        <Button asChild variant="outline">
-          <Link href={`/u/${user.username}`}>View My Profile</Link>
-        </Button>
+        {/* username is nullable on the user record, and interpolating it blind
+            produced /u/null, which resolves to the profile route and then
+            renders a missing user. Nothing to link to without it. */}
+        {user.username && (
+          <Button asChild variant="outline">
+            <Link href={`/u/${user.username}`}>View My Profile</Link>
+          </Button>
+        )}
       </div>
 
       {/* ================= INVITATIONS ================= */}
