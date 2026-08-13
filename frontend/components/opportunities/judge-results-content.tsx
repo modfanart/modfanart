@@ -20,15 +20,15 @@ const FINALIST_COUNT = 10;
 
 function FinalistRow({
   entry,
-  judgesTotal,
+  judgesScoring,
 }: {
   entry: LeaderboardEntry;
-  judgesTotal: number;
+  judgesScoring: number;
 }) {
   // An entry fewer judges reached is not necessarily worse, but its average
   // rests on less evidence, and whoever is reviewing this should be able to
   // see that rather than infer it.
-  const partiallyJudged = judgesTotal > 1 && entry.judge_count < judgesTotal;
+  const partiallyJudged = judgesScoring > 1 && entry.judge_count < judgesScoring;
 
   return (
     <Card>
@@ -57,7 +57,7 @@ function FinalistRow({
           {partiallyJudged && (
             <Badge variant="outline" className="mt-1.5 text-amber-600 border-amber-600">
               <AlertTriangle className="mr-1 h-3 w-3" />
-              Scored by {entry.judge_count} of {judgesTotal} judges
+              Scored by {entry.judge_count} of {judgesScoring} judges
             </Badge>
           )}
         </div>
@@ -125,7 +125,7 @@ export function JudgeResultsContent({ contestId }: { contestId: string }) {
   }
 
   const rows = data?.leaderboard ?? [];
-  const judgesTotal = data?.judges_total ?? 0;
+  const judgesScoring = data?.judges_scoring ?? 0;
   const scoredTotal = data?.scored_total ?? 0;
   const approvedTotal = data?.approved_total ?? 0;
 
@@ -143,7 +143,7 @@ export function JudgeResultsContent({ contestId }: { contestId: string }) {
         <p className="text-sm text-muted-foreground mt-2">
           Ranked by average judge score. {scoredTotal} of {approvedTotal} approved{' '}
           {approvedTotal === 1 ? 'entry has' : 'entries have'} been scored by{' '}
-          {judgesTotal} {judgesTotal === 1 ? 'judge' : 'judges'}.
+          {judgesScoring} {judgesScoring === 1 ? 'judge' : 'judges'}.
         </p>
       </div>
 
@@ -171,7 +171,7 @@ export function JudgeResultsContent({ contestId }: { contestId: string }) {
         <>
           <div className="space-y-3">
             {visible.map((entry) => (
-              <FinalistRow key={entry.entry_id} entry={entry} judgesTotal={judgesTotal} />
+              <FinalistRow key={entry.entry_id} entry={entry} judgesScoring={judgesScoring} />
             ))}
           </div>
 
