@@ -110,6 +110,9 @@ router.get(
   '/:contestId/entries/:entryId/scores',
   ContestJudgeScoreController.getScoresForEntry
 );
+// The signed-in judge's own scores for this contest. The frontend has defined
+// useGetMyJudgeScoresQuery against this path since before it existed.
+router.get('/:contestId/my-scores', ContestJudgeScoreController.getMyScores);
 
 // ====================== PUBLIC VOTING ======================
 router.post('/:contestId/entries/:entryId/vote', ContestVoteController.vote);
