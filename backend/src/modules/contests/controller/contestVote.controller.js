@@ -207,11 +207,17 @@ class ContestVoteController {
         };
       });
 
-      const judgesTotal = await db
-        .selectFrom("contest_judges")
-        .select(sql`COUNT(*)`.as("count"))
-        .where("contest_id", "=", contestId)
-        .where("accepted", "=", true)
+      // Counts judges who have actually scored, not judges who accepted an
+      // invitation. Access to this page is granted by inviting someone as a
+      // judge, so a reviewer brought in purely to look over the finalists is
+      // an accepted judge who will never score anything. Counting them would
+      // put a "Scored by 2 of 3 judges" warning on every row and have the
+      // header credit a judge who did nothing.
+      const judgesScoring = await db
+        .selectFrom("contest_judge_scores as cjs")
+        .innerJoin("contest_entries as ce", "ce.id", "cjs.entry_id")
+        .select(sql`COUNT(DISTINCT cjs.judge_id)`.as("count"))
+        .where("ce.contest_id", "=", contestId)
         .executeTakeFirst();
 
       const approved = await db
@@ -225,7 +231,7 @@ class ContestVoteController {
         leaderboard: ranked.slice(0, limit),
         scored_total: ranked.length,
         approved_total: Number(approved?.count ?? 0),
-        judges_total: Number(judgesTotal?.count ?? 0),
+        judges_scoring: Number(judgesScoring?.count ?? 0),
       });
     } catch (err) {
       console.error(err);
