@@ -6,7 +6,14 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { Kysely, PostgresDialect, DummyDriver, PostgresAdapter, PostgresIntrospector, PostgresQueryCompiler } = require("kysely");
 
-const { applyPublicArtworkFilter } = require("../src/modules/artworks/artwork.visibility");
+const {
+  applyPublicArtworkFilter,
+  GALLERY_ENTRY_STATUSES,
+} = require("../src/modules/artworks/artwork.visibility");
+
+/** The EXISTS clause that ties gallery visibility to a brand-reviewed entry. */
+const APPROVED_ENTRY_EXISTS =
+  /exists \(select "contest_entries"\."id" from "contest_entries" where "contest_entries"\."artwork_id" = "artworks"\."id" and "contest_entries"\."status" in \(\$\d+, \$\d+\)\)/;
 
 /**
  * Compile-only Kysely instance. It never opens a connection, so these tests
@@ -62,14 +69,23 @@ function buildCountQuery({ search } = {}) {
   return countQuery.select(db.fn.count("id").as("total"));
 }
 
-test("restricts artwork to published AND moderator-approved", () => {
+test("restricts artwork to published, approved AND brand-reviewed", () => {
   const { sql, parameters } = applyPublicArtworkFilter(
     db.selectFrom("artworks").select("id")
   ).compile();
 
   assert.match(sql, /"artworks"\."status" = \$\d+/);
   assert.match(sql, /"artworks"\."moderation_status" = \$\d+/);
-  assert.deepEqual(parameters, ["published", "approved"]);
+  assert.match(sql, APPROVED_ENTRY_EXISTS);
+  assert.deepEqual(parameters, ["published", "approved", "approved", "winner"]);
+});
+
+test("a brand-reviewed entry means approved or winner, nothing else", () => {
+  // 'approved' is what the brand sets in the Monitor page. 'winner' is the
+  // licensing step; it must stay in the set or selecting winners would hide
+  // work that was already approved. Pending, rejected and disqualified entries
+  // must never qualify, whatever the artwork row itself says.
+  assert.deepEqual(GALLERY_ENTRY_STATUSES, ["approved", "winner"]);
 });
 
 test("list and count queries apply an identical visibility filter", () => {
@@ -82,10 +98,12 @@ test("list and count queries apply an identical visibility filter", () => {
   for (const compiled of [list, count]) {
     assert.match(compiled.sql, /"status" = \$\d+/);
     assert.match(compiled.sql, /"moderation_status" = \$\d+/);
+    assert.match(compiled.sql, APPROVED_ENTRY_EXISTS);
   }
 
-  const visibilityParams = (p) => p.filter((v) => v === "published" || v === "approved");
-  assert.deepEqual(visibilityParams(list.parameters), ["published", "approved"]);
+  const VISIBILITY_VALUES = new Set(["published", "approved", "winner"]);
+  const visibilityParams = (p) => p.filter((v) => VISIBILITY_VALUES.has(v));
+  assert.deepEqual(visibilityParams(list.parameters), ["published", "approved", "approved", "winner"]);
   assert.deepEqual(
     visibilityParams(count.parameters),
     visibilityParams(list.parameters)
@@ -97,12 +115,17 @@ test("search does not widen visibility via OR", () => {
   // into the OR, `?search=x` would match unapproved artwork again.
   const { sql, parameters } = buildListQuery({ search: "batman" }).compile();
 
-  assert.match(sql, /"artworks"\."status" = \$\d+ and "artworks"\."moderation_status" = \$\d+ and \(/);
+  assert.match(
+    sql,
+    new RegExp(
+      `"artworks"\\."status" = \\$\\d+ and "artworks"\\."moderation_status" = \\$\\d+ and ${APPROVED_ENTRY_EXISTS.source} and \\(`
+    )
+  );
   assert.ok(parameters.includes("%batman%"));
 
   // Same guarantee on the count side, so totals match the filtered rows.
   const count = buildCountQuery({ search: "batman" }).compile();
-  assert.match(count.sql, /"moderation_status" = \$\d+ and \(/);
+  assert.match(count.sql, new RegExp(`${APPROVED_ENTRY_EXISTS.source} and \\(`));
 });
 
 test("getArtworks wires the filter into both of its queries", () => {
@@ -158,12 +181,15 @@ test("applyPublicArtworkFilter returns a new builder rather than mutating", () =
   assert.match(filtered.compile().sql, /"status" = \$\d+/);
 });
 
-test("draft and pending artwork cannot satisfy the filter", () => {
-  // Encodes the actual bug: uploads land as draft/pending and were public.
+test("draft, pending, rejected and disqualified can never satisfy the filter", () => {
+  // Encodes the actual bug: uploads land as draft/pending and were public, and
+  // an entry a brand has not kept (pending/rejected/disqualified) must not put
+  // its artwork in the gallery either.
   const { parameters } = applyPublicArtworkFilter(
     db.selectFrom("artworks").select("id")
   ).compile();
 
-  assert.ok(!parameters.includes("draft"));
-  assert.ok(!parameters.includes("pending"));
+  for (const value of ["draft", "pending", "rejected", "disqualified"]) {
+    assert.ok(!parameters.includes(value), `${value} must not appear in the filter`);
+  }
 });
