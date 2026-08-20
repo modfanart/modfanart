@@ -77,6 +77,7 @@ import {
   foldEntriesPage,
   buildEntriesQueryArgs,
 } from './submission-pagination';
+import { ResultsTabContent } from './results-tab-content';
 
 export function ManageOpportunityContent({
   opportunityId,
@@ -531,9 +532,10 @@ export function ManageOpportunityContent({
 
         {/* Tabs */}
         <Tabs defaultValue="submissions" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="submissions">Submissions ({totalEntries})</TabsTrigger>
             <TabsTrigger value="judges">Judges ({judges.length})</TabsTrigger>
+            <TabsTrigger value="results">Results</TabsTrigger>
           </TabsList>
 
           {/* Submissions Tab */}
@@ -672,6 +674,15 @@ export function ManageOpportunityContent({
                     ))}
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Results Tab - winner selection + public share link */}
+          <TabsContent value="results" className="space-y-6">
+            <Card>
+              <CardContent className="pt-6">
+                <ResultsTabContent contestId={opportunityId} />
               </CardContent>
             </Card>
           </TabsContent>
