@@ -119,7 +119,7 @@ export default function ArtworkDetailPage() {
           {(error as any)?.data?.message || 'The requested artwork could not be loaded.'}
         </p>
         <Button asChild size="lg">
-          <Link href="/gallery/featured">Back to Gallery</Link>
+          <Link href="/gallery">Back to Gallery</Link>
         </Button>
       </div>
     );
@@ -142,7 +142,7 @@ export default function ArtworkDetailPage() {
     <div className="container py-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="mb-8">
         <Link
-          href="/gallery/featured"
+          href="/gallery"
           className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -255,12 +255,6 @@ export default function ArtworkDetailPage() {
                   No pricing tiers defined yet. Please contact us for custom licensing options.
                 </p>
               )}
-
-              <div className="mt-8 pt-6 border-t">
-                <Button size="lg" className="w-full" disabled={!isPublished}>
-                  {isPublished ? 'Proceed to License' : 'Not Available for Licensing'}
-                </Button>
-              </div>
             </CardContent>
           </Card>
 
