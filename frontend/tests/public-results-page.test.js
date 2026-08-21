@@ -39,7 +39,10 @@ const WINNERS_RESPONSE = {
     {
       entry_id: 'e1',
       rank: 1,
+      submission_notes: 'Happy to tweak the colours on request',
+      artwork_id: 'art-1',
       artwork_title: 'First Piece',
+      artwork_description: 'A study in blues',
       artwork_thumbnail: 'https://cdn/1-thumb.png',
       artwork_file_url: 'https://cdn/1.png',
       creator_username: 'artist_one',
@@ -47,7 +50,10 @@ const WINNERS_RESPONSE = {
     {
       entry_id: 'e2',
       rank: 2,
+      submission_notes: null,
+      artwork_id: 'art-2',
       artwork_title: 'Second Piece',
+      artwork_description: null,
       artwork_thumbnail: null,
       artwork_file_url: 'https://cdn/2.png',
       creator_username: 'artist_two',
@@ -139,6 +145,13 @@ before(() => {
     if (PRELOADED[request]) return PRELOADED[request];
     if (request === 'next/navigation') {
       return { useParams: () => ({ token: TOKEN }), useRouter: () => ({ push() {} }) };
+    }
+    if (request === 'next/link') {
+      return {
+        __esModule: true,
+        default: ({ children, href, ...rest }) =>
+          React.createElement('a', { href, 'aria-label': rest['aria-label'] }, children),
+      };
     }
     if (request === 'next/image') {
       return {
@@ -247,6 +260,20 @@ describe('public results page - a viewer with no account', () => {
     const srcs = [...container.querySelectorAll('img')].map((i) => i.getAttribute('src'));
     assert.ok(srcs.includes('https://cdn/1-thumb.png'), `thumbnail preferred, got ${srcs}`);
     assert.ok(srcs.includes('https://cdn/2.png'), `file_url fallback, got ${srcs}`);
+
+    // Description and artist's note render for the winner that has them...
+    assert.ok(text.includes('A study in blues'), 'description missing');
+    assert.ok(text.includes('Happy to tweak the colours on request'), 'note missing');
+    // ...and the note label appears exactly once: the second winner has no
+    // note, so no empty "Artist's note" box may render for it.
+    const labelCount = text.split("Artist's note").length - 1;
+    assert.equal(labelCount, 1, `expected one note label, saw ${labelCount}`);
+
+    // Both the thumbnail and the explicit button link to the artwork page.
+    const hrefs = [...container.querySelectorAll('a')].map((a) => a.getAttribute('href'));
+    assert.equal(hrefs.filter((h) => h === '/artwork/art-1').length, 2,
+      `thumbnail + button should both link to /artwork/art-1, got ${hrefs}`);
+    assert.ok(hrefs.includes('/artwork/art-2'), `second winner link missing, got ${hrefs}`);
   });
 
   it('says winners are not selected yet when the list is empty', async () => {

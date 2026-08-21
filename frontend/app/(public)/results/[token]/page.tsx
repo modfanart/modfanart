@@ -2,18 +2,23 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { Trophy } from 'lucide-react';
+import { ExternalLink, Trophy } from 'lucide-react';
 
 import { API_BASE_URL } from '@/services';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface PublicWinner {
   entry_id: string;
   rank: number;
+  submission_notes: string | null;
+  artwork_id: string;
   artwork_title: string | null;
+  artwork_description: string | null;
   artwork_thumbnail: string | null;
   artwork_file_url: string | null;
   creator_username: string | null;
@@ -116,12 +121,16 @@ export default function PublicResultsPage() {
         <div className="space-y-3">
           {winners.map((winner) => (
             <Card key={winner.entry_id}>
-              <CardContent className="p-4 flex gap-4 items-center">
-                <div className="text-2xl font-bold tabular-nums w-12 shrink-0 text-center text-muted-foreground">
+              <CardContent className="p-4 flex gap-4 items-start">
+                <div className="text-2xl font-bold tabular-nums w-12 shrink-0 text-center text-muted-foreground pt-6">
                   {winner.rank}
                 </div>
 
-                <div className="relative h-20 w-20 rounded-md overflow-hidden bg-muted shrink-0">
+                <Link
+                  href={`/artwork/${winner.artwork_id}`}
+                  className="relative h-20 w-20 rounded-md overflow-hidden bg-muted shrink-0 block"
+                  aria-label={`View full artwork: ${winner.artwork_title || 'Untitled'}`}
+                >
                   {(winner.artwork_thumbnail || winner.artwork_file_url) && (
                     <Image
                       src={winner.artwork_thumbnail || winner.artwork_file_url || ''}
@@ -131,9 +140,9 @@ export default function PublicResultsPage() {
                       sizes="80px"
                     />
                   )}
-                </div>
+                </Link>
 
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1 space-y-1.5">
                   <div className="font-semibold truncate">
                     {winner.artwork_title || 'Untitled'}
                   </div>
@@ -142,7 +151,25 @@ export default function PublicResultsPage() {
                       @{winner.creator_username}
                     </div>
                   )}
+                  {winner.artwork_description && (
+                    <p className="text-sm text-muted-foreground whitespace-pre-line">
+                      {winner.artwork_description}
+                    </p>
+                  )}
+                  {winner.submission_notes && (
+                    <div className="rounded-md bg-muted/50 p-3 text-sm">
+                      <span className="font-medium">Artist&apos;s note: </span>
+                      <span className="whitespace-pre-line">{winner.submission_notes}</span>
+                    </div>
+                  )}
                 </div>
+
+                <Button variant="outline" size="sm" asChild className="shrink-0 mt-1">
+                  <Link href={`/artwork/${winner.artwork_id}`}>
+                    <ExternalLink className="mr-1 h-4 w-4" />
+                    View full artwork
+                  </Link>
+                </Button>
               </CardContent>
             </Card>
           ))}
