@@ -44,6 +44,29 @@ function isBrandAuthorized(user, contest) {
   );
 }
 
+/**
+ * Publish the artwork behind a newly approved entry.
+ *
+ * The public gallery keys on a brand-approved entry (see
+ * artworks/artwork.visibility.js) AND on the artwork being published. The
+ * contest submission form creates artwork as a draft and never prompts the
+ * artist to publish, so without this step brand approval alone would leave
+ * the work invisible. Approval is the review event, so it is what releases
+ * the work; Artwork.publish is reused so the row ends up exactly as it would
+ * had the creator published it.
+ *
+ * Only drafts are touched: already-published work is left as is, and
+ * archived or rejected artwork is never resurrected by an approval.
+ *
+ * @param {string} artworkId
+ */
+async function publishArtworkForApprovedEntry(artworkId) {
+  const artwork = await Artwork.findById(artworkId);
+  if (artwork && artwork.status === "draft") {
+    await Artwork.publish(artwork.id);
+  }
+}
+
 class ContestEntryController {
   /**
    * POST /contests/:contestId/entries
@@ -548,6 +571,10 @@ static async getEntries(req, res) {
         })
         .where("id", "=", entryId)
         .execute();
+
+      if (status === "approved") {
+        await publishArtworkForApprovedEntry(entry.artwork_id);
+      }
 
       res.json({
         message: `Entry ${status} successfully`,
