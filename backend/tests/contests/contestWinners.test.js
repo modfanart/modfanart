@@ -138,6 +138,7 @@ describe('winner selection and public results', () => {
           id: lateUuid(),
           creator_id: creatorId,
           title: `${tag} art ${i}`,
+          description: i === 0 ? `${tag} a study in blues` : null,
           file_url: `https://cdn.example/${tag}-${i}.png`,
           status: 'published',
         })
@@ -153,6 +154,7 @@ describe('winner selection and public results', () => {
           artwork_id: artwork.id,
           creator_id: creatorId,
           status: statuses[i],
+          submission_notes: i === 0 ? `${tag} happy to tweak the colours` : null,
         })
         .returning('id')
         .executeTakeFirstOrThrow();
@@ -355,9 +357,19 @@ describe('winner selection and public results', () => {
     assert.equal(res.statusCode, 200);
     assert.equal(res.body.contest.title, `${tag} Contest`);
     assert.equal(res.body.winners.length, 1);
-    assert.equal(res.body.winners[0].rank, 1);
-    assert.equal(res.body.winners[0].creator_username, `${tag}_artist`);
-    assert.match(res.body.winners[0].artwork_file_url, /^https:\/\/cdn\.example\//);
+    const winner = res.body.winners[0];
+    assert.equal(winner.rank, 1);
+    assert.equal(winner.creator_username, `${tag}_artist`);
+    assert.match(winner.artwork_file_url, /^https:\/\/cdn\.example\//);
+
+    // The shared page also shows the artist's note, the artwork description,
+    // and links to the artwork page, so all three must ride along. The winner
+    // at this point is entryIds[0] (re-selected in the earlier test), which
+    // the fixture built from artworkIds[0] - the one with a note and a
+    // description.
+    assert.equal(winner.submission_notes, `${tag} happy to tweak the colours`);
+    assert.equal(winner.artwork_description, `${tag} a study in blues`);
+    assert.equal(winner.artwork_id, artworkIds[0]);
 
     // Nothing about judging may leak through this response.
     const flat = JSON.stringify(res.body).toLowerCase();

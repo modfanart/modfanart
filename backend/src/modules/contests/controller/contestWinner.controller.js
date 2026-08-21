@@ -209,7 +209,12 @@ class ContestWinnerController {
         .select([
           "ce.id as entry_id",
           "ce.rank",
+          // The artist's note to the brand. Published here deliberately: the
+          // brand chose to expose it on the shared results (2026-08-21).
+          "ce.submission_notes",
+          "ce.artwork_id",
           "a.title as artwork_title",
+          "a.description as artwork_description",
           "a.thumbnail_url as artwork_thumbnail",
           "a.file_url as artwork_file_url",
           "u.username as creator_username",
