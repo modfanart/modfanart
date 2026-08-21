@@ -286,15 +286,55 @@ class ContestController {
       if (!existing)
         return res.status(404).json({ error: "Contest not found" });
 
-      const updateData = { ...req.body, updated_at: sql`NOW()` };
-      delete updateData.id;
-      delete updateData.created_at;
+      // Whitelist, because this used to spread req.body straight into .set().
+      // The brand edit page always sends `categories`, which is not a column on
+      // contests (they live in the contest_categories join table), so Postgres
+      // rejected the statement and EVERY save from that page returned 500,
+      // whatever field the user had changed. That is what stopped the brand
+      // moving a contest into the judging phase, which in turn stopped all
+      // scoring. createContest never hit this because it destructures a fixed
+      // list of fields.
+      //
+      // brand_id is deliberately not updatable: reassigning a contest to
+      // another brand is not something any screen does, and permitting it here
+      // would matter more once this endpoint is authorized (it currently is
+      // not, which is tracked separately).
+      const UPDATABLE_COLUMNS = [
+        "title",
+        "slug",
+        "description",
+        "rules",
+        "prizes",
+        "start_date",
+        "submission_end_date",
+        "voting_end_date",
+        "judging_end_date",
+        "status",
+        "visibility",
+        "max_entries_per_user",
+        "entry_requirements",
+        "judging_criteria",
+        "winner_announced",
+        "hero_image",
+        "gallery",
+      ];
 
-      if (
-        updateData.gallery !== undefined &&
-        !Array.isArray(updateData.gallery)
-      ) {
-        return res.status(400).json({ error: "gallery must be an array" });
+      const updateData = { updated_at: sql`NOW()` };
+      for (const column of UPDATABLE_COLUMNS) {
+        if (req.body[column] !== undefined) updateData[column] = req.body[column];
+      }
+
+      // contests.gallery is a text column holding a JSON array string. That is
+      // what createContest writes (JSON.stringify, or "[]" when empty) and what
+      // the public contest page JSON.parses back out. Handing kysely a raw JS
+      // array instead makes node-pg serialise it as a Postgres array literal -
+      // {} for an empty gallery, {"a","b"} otherwise - which is not valid JSON,
+      // so every later reader either sees nothing or throws. Match createContest.
+      if (updateData.gallery !== undefined) {
+        if (!Array.isArray(updateData.gallery)) {
+          return res.status(400).json({ error: "gallery must be an array" });
+        }
+        updateData.gallery = JSON.stringify(updateData.gallery);
       }
 
       if (updateData.max_entries_per_user !== undefined) {

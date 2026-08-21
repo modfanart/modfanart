@@ -50,6 +50,12 @@ export const LoginPage = () => {
         <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-8">
           <h2 className="text-xl font-semibold text-white">Welcome back</h2>
           <p className="text-zinc-400 text-sm mb-6">Sign in to your account</p>
+          <Link
+            href="/"
+            className="text-sm text-gray-500 mb-1 hover:text-gray-700 transition-colors"
+          >
+            Home
+          </Link>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (

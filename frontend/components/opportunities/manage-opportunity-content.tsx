@@ -69,7 +69,7 @@ import {
   useGenerateJudgeInviteLinkMutation,
 } from '@/services/api/contestsApi';
 
-import { useGetUsersByRoleSlugQuery, useCreateUserMutation } from '@/services/api/userApi';
+import { useGetAllUsersQuery, useCreateUserMutation } from '@/services/api/userApi';
 import { ContestEntry } from '@/services/api/contestsApi';
 import {
   PAGE_SIZE,
@@ -77,9 +77,17 @@ import {
   foldEntriesPage,
   buildEntriesQueryArgs,
 } from './submission-pagination';
+import { ResultsTabContent } from './results-tab-content';
 
-export function ManageOpportunityContent({ opportunityId }: { opportunityId: string }) {
+export function ManageOpportunityContent({
+  opportunityId,
+  brandSlug,
+}: {
+  opportunityId: string;
+  brandSlug: string;
+}) {
   const router = useRouter();
+  const opportunitiesBase = `/brand-manager/${brandSlug}/opportunities`;
 
   // State
   const [searchQuery, setSearchQuery] = useState('');
@@ -163,11 +171,27 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
     setOffset((prev) => prev + PAGE_SIZE);
   }, []);
 
-  // Fetch users with 'judge' role
-  const { data: judgesPoolData, isLoading: judgesPoolLoading } = useGetUsersByRoleSlugQuery({
-    roleSlug: 'JUDGE',
-    limit: 100,
-  });
+  // Any user can judge a contest: judging permission comes from the
+  // contest_judges table, not from the account's role. Filtering this list to
+  // accounts already holding the JUDGE role made it permanently empty, since
+  // nobody is given that role up front. Search across all users instead, so an
+  // existing account can be assigned without creating a duplicate for them.
+  // Debounced like the submissions search above, so typing fires one request
+  // after it settles rather than one per keystroke. Each keystroke would
+  // otherwise be a fresh cache key running a COUNT plus three unindexed ILIKEs.
+  const [debouncedJudgeSearch, setDebouncedJudgeSearch] = useState('');
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedJudgeSearch(judgeSearch.trim()), 300);
+    return () => clearTimeout(id);
+  }, [judgeSearch]);
+
+  // Only query once there is something to search for. Listing users by default
+  // would put 50 arbitrary people's email addresses on screen every time the
+  // dialog opens, which is not something a brand needs to see.
+  const { data: judgesPoolData, isFetching: judgesPoolLoading } = useGetAllUsersQuery(
+    { search: debouncedJudgeSearch, limit: 50, status: 'active' },
+    { skip: debouncedJudgeSearch.length < 2 }
+  );
 
   const judges: any[] = useMemo(() => {
     if (!judgesData) return [];
@@ -197,7 +221,7 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
   const handleDeleteOpportunity = async () => {
     try {
       await deleteContest(opportunityId).unwrap();
-      router.push('/dashboard/opportunities');
+      router.push(opportunitiesBase);
     } catch (err) {
       console.error('Failed to delete contest:', err);
     }
@@ -248,7 +272,7 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
       setJudgeSearch('');
     } catch (err: any) {
       console.error('Failed to assign judge:', err);
-      alert(err?.data?.message || 'Failed to assign judge');
+      alert(err?.data?.error || err?.data?.message || 'Failed to assign judge');
     }
   };
 
@@ -266,7 +290,7 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
         username: newJudgeData.username.trim(),
         email: newJudgeData.email.trim(),
         password: tempPassword,
-        role: 'judge',
+        role: 'JUDGE',
         bio: newJudgeData.bio.trim() ? newJudgeData.bio.trim() : null,
       }).unwrap();
 
@@ -277,7 +301,6 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
         throw new Error('Failed to get created user ID');
       }
 
-      // Auto-assign the newly created judge
       // Auto-assign the newly created judge
       await assignJudge({
         contestId: opportunityId,
@@ -303,8 +326,32 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
       setShowCreateJudgeForm(false);
       setAssignJudgeOpen(false);
     } catch (err: any) {
+      // The person already has an account. Creating a second one under a
+      // different email is never what the brand wants, so offer to assign the
+      // account that already exists.
+      // Email only. A username clash is a different person who happens to have
+      // picked that name, so offering to assign them would put a stranger on
+      // the contest.
+      const existing =
+        err?.status === 409 && err?.data?.field === 'email' ? err?.data?.existing_user : null;
+      if (existing?.id) {
+        if (
+          confirm(
+            `@${existing.username} (${existing.email}) already has an account.\n\n` +
+              `Assign them as a judge for this contest instead?`
+          )
+        ) {
+          setNewJudgeData({ username: '', email: '', bio: '' });
+          setShowCreateJudgeForm(false);
+          await handleAssignJudge(existing.id);
+        }
+        return;
+      }
+
       console.error('Failed to create and assign judge:', err);
-      alert(err?.data?.message || 'Failed to create judge');
+      // Most backend errors come back as { error }, not { message }, so reading
+      // only `message` silently hid the real reason for the failure.
+      alert(err?.data?.error || err?.data?.message || 'Failed to create judge');
     }
   };
   const handleRemoveJudge = async (userId: string) => {
@@ -326,7 +373,10 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
       console.error('Failed to remove judge:', err);
 
       const errorMessage =
-        err?.data?.message || err?.message || 'Failed to remove judge. Please try again.';
+        err?.data?.error ||
+        err?.data?.message ||
+        err?.message ||
+        'Failed to remove judge. Please try again.';
 
       alert(errorMessage);
     }
@@ -372,7 +422,7 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
         title="Opportunity not found"
         description="This contest may have been deleted or you don't have access."
         actionLabel="Back to Opportunities"
-        actionLink="/dashboard/opportunities"
+        actionLink={opportunitiesBase}
       />
     );
   }
@@ -384,7 +434,7 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
         <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" asChild className="-ml-2">
-              <Link href="/dashboard/opportunities">
+              <Link href={opportunitiesBase}>
                 <ArrowLeft className="h-5 w-5" />
               </Link>
             </Button>
@@ -407,7 +457,7 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
 
           <div className="flex gap-2">
             <Button variant="outline" size="sm" asChild>
-              <Link href={`/contests/${opportunityId}`} target="_blank" rel="noopener noreferrer">
+              <Link href={`/contest/${opportunityId}`} target="_blank" rel="noopener noreferrer">
                 <Eye className="mr-2 h-4 w-4" />
                 View Public Page
               </Link>
@@ -421,7 +471,7 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild>
-                  <Link href={`/dashboard/opportunities/${opportunityId}/edit`}>
+                  <Link href={`${opportunitiesBase}/${opportunityId}/edit`}>
                     <Edit className="mr-2 h-4 w-4" /> Edit Contest
                   </Link>
                 </DropdownMenuItem>
@@ -482,9 +532,10 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
 
         {/* Tabs */}
         <Tabs defaultValue="submissions" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="submissions">Submissions ({totalEntries})</TabsTrigger>
             <TabsTrigger value="judges">Judges ({judges.length})</TabsTrigger>
+            <TabsTrigger value="results">Results</TabsTrigger>
           </TabsList>
 
           {/* Submissions Tab */}
@@ -626,6 +677,15 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Results Tab - winner selection + public share link */}
+          <TabsContent value="results" className="space-y-6">
+            <Card>
+              <CardContent className="pt-6">
+                <ResultsTabContent contestId={opportunityId} />
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
 
         {/* Delete Contest Dialog */}
@@ -675,21 +735,16 @@ export function ManageOpportunityContent({ opportunityId }: { opportunityId: str
                 <div className="max-h-96 overflow-y-auto mt-4 space-y-2 pr-2">
                   {judgesPoolLoading ? (
                     <p className="text-center py-12 text-muted-foreground">
-                      Loading available judges...
+                      Loading users...
                     </p>
                   ) : availableJudges.length === 0 ? (
                     <p className="text-center py-12 text-muted-foreground">
-                      No available judges found.
+                      {debouncedJudgeSearch.length >= 2
+                        ? `No users match "${debouncedJudgeSearch}". Create a new judge below.`
+                        : 'Search for a user to assign, or create a new judge below.'}
                     </p>
                   ) : (
-                    availableJudges
-                      .filter(
-                        (user: any) =>
-                          !judgeSearch ||
-                          user.username?.toLowerCase().includes(judgeSearch.toLowerCase()) ||
-                          user.email?.toLowerCase().includes(judgeSearch.toLowerCase())
-                      )
-                      .map((user: any) => (
+                    availableJudges.map((user: any) => (
                         <div
                           key={user.id}
                           className="flex items-center justify-between p-4 hover:bg-muted rounded-xl cursor-pointer border"
@@ -954,7 +1009,6 @@ function EntryDetailDialog({
                   </div>
                 )}
 
-         
               </div>
             </div>
 

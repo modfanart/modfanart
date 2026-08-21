@@ -17,7 +17,11 @@ import {
   Loader2,
 } from 'lucide-react';
 
-import { useGetContestsQuery } from '@/services/api/contestsApi';
+import {
+  useGetContestsQuery,
+  useGenerateSelfAssignLinkMutation,
+  useGenerateOpenLinkMutation,
+} from '@/services/api/contestsApi';
 import { useAuth } from '@/store/AuthContext';
 
 /* ShadCN UI */
@@ -75,7 +79,7 @@ export default function OpportunitiesManagementPage() {
   let brandSlug: string | undefined;
   let brandBase = '';
 
-  if (user?.role?.name === 'BRAND_MANAGER') {
+if (['BRAND_MANAGER', 'BRAND_OWNER'].includes(user?.role?.name ?? '')) {
     const managedBrand = user?.brands?.[0];
 
     if (managedBrand) {
@@ -186,19 +190,31 @@ function OpportunityGrid({ items, brandBase, isClosed = false }: any) {
   const [selected, setSelected] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [link, setLink] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
 
-  const generateLink = async (opp: any) => {
+  // Kept wired for later: locks a link to a single self-assigning judge
+  // (one link -> one judge), as opposed to the open/multi-claim link the
+  // button below currently generates.
+  const [generateSelfAssignLink] = useGenerateSelfAssignLinkMutation();
+  const [generateOpenLink] = useGenerateOpenLinkMutation();
+  void generateSelfAssignLink;
+
+  // Contest-level, shareable, reusable link — any number of different
+  // people can open it (after logging in or signing up) and each
+  // becomes an assigned judge for this contest.
+  const openLinkDialog = async (opp: any) => {
     setSelected(opp);
     setOpen(true);
     setLoading(true);
     setLink('');
+    setErrorMsg('');
 
     try {
-      await new Promise((r) => setTimeout(r, 700));
-
-      const token = Math.random().toString(36).substring(2, 10);
-
-      setLink(`${window.location.origin}/judging/${opp.id}?token=${token}`);
+      const invite = await generateOpenLink({ contestId: opp.id }).unwrap();
+      setLink(invite.invite_url);
+    } catch (err: any) {
+      console.error('Failed to generate judging link:', err);
+      setErrorMsg(err?.data?.message || err?.data?.error || 'Failed to generate judging link.');
     } finally {
       setLoading(false);
     }
@@ -253,11 +269,11 @@ function OpportunityGrid({ items, brandBase, isClosed = false }: any) {
                       </DropdownMenuItem>
 
                       <DropdownMenuItem asChild>
-                        <Link href={`/opportunities/${opp.id}/monitor`}>
+                        <Link href={`${brandBase}/opportunities/${opp.id}/monitor`}>
                           <Users className="mr-2 h-4 w-4" /> Monitor
                         </Link>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => generateLink(opp)}>
+                      <DropdownMenuItem onClick={() => openLinkDialog(opp)}>
                         <LinkIcon className="mr-2 h-4 w-4" />
                         Generate Judging Link
                       </DropdownMenuItem>
@@ -303,7 +319,7 @@ function OpportunityGrid({ items, brandBase, isClosed = false }: any) {
                   href={
                     isClosed
                       ? `${brandBase}/opportunities/${opp.id}/reopen`
-                      : `/opportunities/${opp.slug || opp.id}`
+                      : `/contest/${opp.slug || opp.id}`
                   }
                 >
                   <Button variant="outline" className="w-full">
@@ -326,16 +342,25 @@ function OpportunityGrid({ items, brandBase, isClosed = false }: any) {
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">{selected?.title}</p>
 
-            <div className="p-3 border rounded-md text-sm break-all bg-muted/30">
-              {loading ? (
-                <div className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Generating...
-                </div>
-              ) : (
-                link || 'No link generated'
-              )}
-            </div>
+            <p className="text-sm text-muted-foreground">
+              Anyone with this link can sign in (or sign up) and become an
+              assigned judge for this contest — the link works for
+              multiple different people, and each of them can reuse it
+              afterward to get back into their dashboard.
+            </p>
+
+            {loading ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Generating...
+              </div>
+            ) : errorMsg ? (
+              <p className="text-sm text-destructive">{errorMsg}</p>
+            ) : (
+              <div className="p-3 border rounded-md text-sm break-all bg-muted/30">
+                {link || 'No link generated'}
+              </div>
+            )}
 
             <div className="flex gap-2">
               <Button onClick={copy} disabled={!link} className="flex-1">

@@ -19,6 +19,8 @@ export default function JudgeInviteCompletePage() {
     if (authLoading) return;
 
     if (!user) {
+      // Session didn't stick (or was cleared) between the bounce and here —
+      // send them back through the invite entry point rather than failing silently.
       router.replace(`/judge/invite/${token}`);
       return;
     }

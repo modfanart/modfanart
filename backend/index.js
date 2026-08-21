@@ -102,6 +102,9 @@ const routes = [
   // /api/tags/:artworkId/tags and left every tag call 404ing.
   { path: "/api/artwork", module: "./src/modules/tags/tagging.routes.js" },
   { path: "/api/contest", module: "./src/modules/contests/contest.routes.js" },
+  // Unauthenticated, token-keyed reads (the results share link). Everything
+  // under /api/contest requires a token; this router must not.
+  { path: "/api/public", module: "./src/modules/contests/public.routes.js" },
   { path: "/api/order", module: "./src/modules/licenses/order.routes.js" },
   {
     path: "/api/category",

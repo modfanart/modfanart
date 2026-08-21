@@ -83,6 +83,11 @@ export interface Artwork {
   favorites_count: number;
   created_at: string;
   updated_at: string;
+  // Held in join tables (artwork_categories, and the polymorphic taggings), so
+  // both endpoints resolve them to names. Optional because older cached
+  // responses and the artwork endpoints do not include them.
+  categories?: Array<{ id: string; name: string; slug: string }>;
+  tags?: Array<{ id: string; name: string; slug: string }>;
 }
 
 export interface ArtworkCreator {
@@ -100,6 +105,24 @@ export interface GenerateJudgeInviteLinkResponse {
 export interface GenerateJudgeInviteLinkArgs {
   contestId: string;
   judgeId: string;
+}
+
+export interface GenerateSelfAssignLinkResponse {
+  invite_url: string;
+  expires_at: string;
+}
+
+export interface GenerateSelfAssignLinkArgs {
+  contestId: string;
+}
+
+export interface GenerateOpenLinkResponse {
+  invite_url: string;
+  expires_at: string;
+}
+
+export interface GenerateOpenLinkArgs {
+  contestId: string;
 }
 
 export interface RedeemJudgeInviteResponse {
@@ -240,14 +263,34 @@ export interface ContestJudgeScore {
 
 export interface LeaderboardEntry {
   entry_id: string;
-  artwork_title?: string;
-  creator_username?: string;
+  artwork_id: string;
   creator_id: string;
-  rank: number | null;
-  score_public: number;
+  status: string;
+  /** Competition ranking, so equal averages share a rank: 1, 2, 2, 4. */
+  rank: number;
+  /** Mean of the judges who scored this entry, not the sum. */
   score_judge: number;
-  vote_count: number;
-  thumbnail_url?: string | null;
+  /** How many judges actually reached it. Needed to read score_judge fairly. */
+  judge_count: number;
+  artwork_title?: string;
+  artwork_thumbnail?: string | null;
+  artwork_file_url?: string;
+  creator_username?: string;
+  creator_avatar?: string | null;
+}
+
+export interface LeaderboardResponse {
+  leaderboard: LeaderboardEntry[];
+  /** Entries with at least one score. Entries with none are not ranked. */
+  scored_total: number;
+  /** Every approved entry, scored or not, so the gap is visible. */
+  approved_total: number;
+  /**
+   * Judges who have actually scored something, not judges who accepted an
+   * invitation. A reviewer invited only to view the finalists is an accepted
+   * judge who never scores, and must not count towards coverage.
+   */
+  judges_scoring: number;
 }
 
 export interface ArtistContestEntry extends Contest {
@@ -509,10 +552,21 @@ getContestEntries: builder.query<
         body: { judgeId: userId }, // ✅ FIX
       }),
     }),
-
     generateJudgeInviteLink: builder.mutation<GenerateJudgeInviteLinkResponse, GenerateJudgeInviteLinkArgs>({
       query: ({ contestId, judgeId }) => ({
         url: `/contest/${contestId}/judges/${judgeId}/invite-link`,
+        method: 'POST',
+      }),
+    }),
+    generateSelfAssignLink: builder.mutation<GenerateSelfAssignLinkResponse, GenerateSelfAssignLinkArgs>({
+      query: ({ contestId }) => ({
+        url: `/contest/${contestId}/judges/self-assign-link`,
+        method: 'POST',
+      }),
+    }),
+    generateOpenLink: builder.mutation<GenerateOpenLinkResponse, GenerateOpenLinkArgs>({
+      query: ({ contestId }) => ({
+        url: `/contest/${contestId}/judges/open-link`,
         method: 'POST',
       }),
     }),
@@ -523,7 +577,6 @@ getContestEntries: builder.query<
       }),
       invalidatesTags: ['JudgeContests'],
     }),
-    
     getJudgeInvitations: builder.query<{ contests: Contest[] }, void>({
       query: () => '/contest/judge/invitations',
       providesTags: ['JudgeContests'],
@@ -556,7 +609,9 @@ getContestEntries: builder.query<
       }),
       invalidatesTags: (result, error, { contestId, entryId }) => [
         { type: 'ContestScores', id: `${contestId}-${entryId}` },
+        { type: 'ContestScores', id: `my-${contestId}` },
         { type: 'ContestEntry', id: entryId },
+        { type: 'ContestEntries', id: contestId },
         { type: 'Leaderboard', id: contestId },
       ],
     }),
@@ -589,6 +644,34 @@ getContestEntries: builder.query<
       invalidatesTags: (result, error, contestId) => [{ type: 'Contest', id: contestId }],
     }),
 
+    // Replaces the winner selection wholesale: entry_ids ordered, first is
+    // rank 1, [] clears. Invalidates the leaderboard and entries so the
+    // selection state shown anywhere refreshes.
+    selectWinners: builder.mutation<
+      { winners: Array<{ id: string; rank: number; status: string }> },
+      { contestId: string; entry_ids: string[] }
+    >({
+      query: ({ contestId, entry_ids }) => ({
+        url: `/contest/${contestId}/winners`,
+        method: 'PUT',
+        body: { entry_ids },
+      }),
+      invalidatesTags: (result, error, { contestId }) => [
+        { type: 'Leaderboard', id: contestId },
+        { type: 'ContestEntries', id: contestId },
+        { type: 'Contest', id: contestId },
+      ],
+    }),
+
+    // Get-or-create the public results link. Idempotent on the backend, so
+    // repeated copies hand back the same URL.
+    getResultsShareLink: builder.mutation<{ share_url: string }, string>({
+      query: (contestId) => ({
+        url: `/contest/${contestId}/results-share-link`,
+        method: 'POST',
+      }),
+    }),
+
     distributePrizes: builder.mutation<{ success: boolean; message?: string }, string>({
       query: (contestId) => ({
         url: `/contest/${contestId}/distribute-prizes`,
@@ -598,12 +681,18 @@ getContestEntries: builder.query<
     }),
     getMyJudgeScores: builder.query<{ scores: ContestJudgeScore[] }, { contestId: string }>({
       query: ({ contestId }) => `/contest/${contestId}/my-scores`,
-      providesTags: ['ContestScores'],
+      // Tagged per contest. A bare 'ContestScores' tag would not be matched by
+      // submitJudgeScore, which invalidates specific ids, so the judge's own
+      // scores would never refresh after they scored something.
+      providesTags: (result, error, { contestId }) => [
+        { type: 'ContestScores', id: `my-${contestId}` },
+      ],
     }),
     // Leaderboard
-    getLeaderboard: builder.query<LeaderboardEntry[], string>({
-      query: (contestId) => `/contest/${contestId}/leaderboard`,
-      providesTags: (result, error, contestId) => [{ type: 'Leaderboard', id: contestId }],
+    getLeaderboard: builder.query<LeaderboardResponse, { contestId: string; limit?: number }>({
+      query: ({ contestId, limit }) =>
+        `/contest/${contestId}/leaderboard${limit ? `?limit=${limit}` : ''}`,
+      providesTags: (result, error, { contestId }) => [{ type: 'Leaderboard', id: contestId }],
     }),
 
     getJudgeContests: builder.query<{ contests: Contest[] }, void>({
@@ -632,6 +721,7 @@ export const {
   useAddCategoryToContestMutation,
   useRemoveCategoryFromContestMutation,
   useGetContestJudgesQuery,
+  useLazyGetContestJudgesQuery,
   useAssignJudgeMutation,
   useGetJudgeInvitationsQuery,
   useAcceptJudgeInvitationMutation,
@@ -641,9 +731,13 @@ export const {
   useVoteForEntryMutation,
   useAnnounceWinnersMutation,
   useDistributePrizesMutation,
+  useSelectWinnersMutation,
+  useGetResultsShareLinkMutation,
   useGetLeaderboardQuery,
   useGetJudgeContestsQuery,
   useGenerateJudgeInviteLinkMutation,
+  useGenerateSelfAssignLinkMutation,
+  useGenerateOpenLinkMutation,
   useRedeemJudgeInviteMutation,
 } = contestsApi;
 

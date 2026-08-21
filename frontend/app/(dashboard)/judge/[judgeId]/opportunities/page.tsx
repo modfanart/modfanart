@@ -301,12 +301,21 @@ function OpportunityGrid({ items, isActive = false, onGenerateLink, user }: any)
                 <Link href={`${base}/contest/${contest.id}`}>{isActive ? 'Start' : 'View'}</Link>
               </Button>
 
-              {/* ✅ Results Button */}
-              {(contest.status === 'completed' ||
+              {/* Standings are reachable from the judging phase onwards, not
+                  only once winners are announced. A reviewer invited to look
+                  over the finalists needs the link to work while the contest
+                  is still in judging, and relying on the brand to flip the
+                  status to completed first would leave it dead.
+
+                  The cost is that one judge can see the running averages mid
+                  pass. Their own panel is where they work and it shows none of
+                  this, so reaching the standings takes a deliberate detour. */}
+              {(contest.status === 'judging' ||
+                contest.status === 'completed' ||
                 contest.status === 'archived' ||
                 contest.winner_announced) && (
                 <Button variant="secondary" asChild>
-                  <Link href={`${base}/results/${contest.id}`}>Results</Link>
+                  <Link href={`${base}/results/${contest.id}`}>Standings</Link>
                 </Button>
               )}
             </CardFooter>

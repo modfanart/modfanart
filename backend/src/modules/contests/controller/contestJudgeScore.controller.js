@@ -79,6 +79,48 @@ class ContestJudgeScoreController {
   }
 
   /**
+   * GET /contests/:contestId/my-scores
+   *
+   * Every score the signed-in judge has recorded on this contest.
+   *
+   * The judging panel's judge_score column is MAX across all judges, so a
+   * judge could not tell their own verdict from a colleague's, nor which
+   * entries they had already been through. Working a large field over several
+   * sittings that is the difference between finishing and starting again.
+   *
+   * Needs no authorization beyond being signed in: it is filtered to
+   * req.user.id and can only ever return the caller's own rows.
+   */
+  static async getMyScores(req, res) {
+    try {
+      const { contestId } = req.params;
+
+      const scores = await db
+        .selectFrom("contest_judge_scores as cjs")
+        .innerJoin("contest_entries as ce", "ce.id", "cjs.entry_id")
+        .select([
+          "cjs.entry_id",
+          "cjs.judge_id",
+          "cjs.score",
+          "cjs.comments",
+          "cjs.created_at",
+        ])
+        .where("ce.contest_id", "=", contestId)
+        .where("cjs.judge_id", "=", req.user.id)
+        .execute();
+
+      // score is numeric, which pg returns as a string. The client compares
+      // and renders it as a number.
+      res.json({
+        scores: scores.map((s) => ({ ...s, score: Number(s.score) })),
+      });
+    } catch (err) {
+      console.error("Get my scores error:", err);
+      res.status(500).json({ error: "Failed to fetch your scores" });
+    }
+  }
+
+  /**
    * GET /contests/:contestId/entries/:entryId/scores
    * Get all judge scores for a specific entry
    * (Restricted: brand owner, admin, or the judges themselves)

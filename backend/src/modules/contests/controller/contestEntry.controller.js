@@ -262,6 +262,45 @@ static async getEntries(req, res) {
       .offset(offset)
       .execute();
 
+    // Category and tags live in join tables, so they cannot come from the
+    // select above. Both are fetched for the whole page in one query each and
+    // grouped in memory: two extra round trips regardless of page size, rather
+    // than the two-per-entry an N+1 would cost. Tags are polymorphic and live
+    // in "taggings", not the "artwork_tags" table schema_new.sql describes.
+    const artworkIds = rows.map((row) => row.artwork_id);
+
+    const [categoryRows, tagRows] = artworkIds.length
+      ? await Promise.all([
+          db
+            .selectFrom("artwork_categories as ac")
+            .innerJoin("categories as c", "c.id", "ac.category_id")
+            .select(["ac.artwork_id", "c.id", "c.name", "c.slug"])
+            .where("ac.artwork_id", "in", artworkIds)
+            .execute(),
+          db
+            .selectFrom("taggings")
+            .innerJoin("tags", "tags.id", "taggings.tag_id")
+            .select([
+              "taggings.taggable_id as artwork_id",
+              "tags.id",
+              "tags.name",
+              "tags.slug",
+            ])
+            .where("taggings.taggable_type", "=", "artwork")
+            .where("taggings.taggable_id", "in", artworkIds)
+            .execute(),
+        ])
+      : [[], []];
+
+    const groupByArtwork = (list) =>
+      list.reduce((acc, { artwork_id, ...rest }) => {
+        (acc[artwork_id] ||= []).push(rest);
+        return acc;
+      }, {});
+
+    const categoriesByArtwork = groupByArtwork(categoryRows);
+    const tagsByArtwork = groupByArtwork(tagRows);
+
     const entries = rows.map((row) => ({
       id: row.entry_id,
       status: row.entry_status,
@@ -289,6 +328,8 @@ static async getEntries(req, res) {
         favorites_count: row.favorites_count,
         created_at: row.artwork_created_at,
         updated_at: row.artwork_updated_at,
+        categories: categoriesByArtwork[row.artwork_id] || [],
+        tags: tagsByArtwork[row.artwork_id] || [],
       },
 
       creator: {
