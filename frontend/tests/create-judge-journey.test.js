@@ -208,6 +208,11 @@ before(() => {
     if (ui[request]) return ui[request];
     if (request === 'lucide-react') return iconProxy;
     if (request === 'date-fns') return { formatDistanceToNow: () => 'moments' };
+    // The Results tab is its own feature with its own API hooks; this journey
+    // never opens it, so stand it in rather than compile it and its tree.
+    if (request === './results-tab-content') {
+      return { __esModule: true, ResultsTabContent: () => null };
+    }
     if (request === 'next/navigation') {
       return { useRouter: () => ({ push() {}, back() {}, replace() {} }) };
     }

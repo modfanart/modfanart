@@ -644,6 +644,34 @@ getContestEntries: builder.query<
       invalidatesTags: (result, error, contestId) => [{ type: 'Contest', id: contestId }],
     }),
 
+    // Replaces the winner selection wholesale: entry_ids ordered, first is
+    // rank 1, [] clears. Invalidates the leaderboard and entries so the
+    // selection state shown anywhere refreshes.
+    selectWinners: builder.mutation<
+      { winners: Array<{ id: string; rank: number; status: string }> },
+      { contestId: string; entry_ids: string[] }
+    >({
+      query: ({ contestId, entry_ids }) => ({
+        url: `/contest/${contestId}/winners`,
+        method: 'PUT',
+        body: { entry_ids },
+      }),
+      invalidatesTags: (result, error, { contestId }) => [
+        { type: 'Leaderboard', id: contestId },
+        { type: 'ContestEntries', id: contestId },
+        { type: 'Contest', id: contestId },
+      ],
+    }),
+
+    // Get-or-create the public results link. Idempotent on the backend, so
+    // repeated copies hand back the same URL.
+    getResultsShareLink: builder.mutation<{ share_url: string }, string>({
+      query: (contestId) => ({
+        url: `/contest/${contestId}/results-share-link`,
+        method: 'POST',
+      }),
+    }),
+
     distributePrizes: builder.mutation<{ success: boolean; message?: string }, string>({
       query: (contestId) => ({
         url: `/contest/${contestId}/distribute-prizes`,
@@ -703,6 +731,8 @@ export const {
   useVoteForEntryMutation,
   useAnnounceWinnersMutation,
   useDistributePrizesMutation,
+  useSelectWinnersMutation,
+  useGetResultsShareLinkMutation,
   useGetLeaderboardQuery,
   useGetJudgeContestsQuery,
   useGenerateJudgeInviteLinkMutation,

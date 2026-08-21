@@ -2,6 +2,14 @@ const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 
 const { db, requireDatabase } = require('../helpers/db');
+
+// node --test runs files in parallel, and other files (contestWinners,
+// contestUpdate) create and delete their own contests and artworks while this
+// one runs. Borrowing one of those rows means it can vanish mid-test and every
+// insert that references it fails on the foreign key. Only rows that have been
+// settled for a while are safe to borrow.
+const SETTLED_AGE_MS = 60_000;
+const settledBefore = () => new Date(Date.now() - SETTLED_AGE_MS);
 const ContestEntry = require('../../src/modules/contests/models/contestEntry.model');
 const ContestEntryController = require('../../src/modules/contests/controller/contestEntry.controller');
 
@@ -101,6 +109,7 @@ describe('getEntry authorization', () => {
     const contest = await db
       .selectFrom('contests')
       .select('id')
+      .where('created_at', '<', settledBefore())
       .orderBy('id')
       .executeTakeFirst();
 
@@ -162,11 +171,13 @@ describe('submission note round-trip', () => {
     const contest = await db
       .selectFrom('contests')
       .select('id')
+      .where('created_at', '<', settledBefore())
       .orderBy('id')
       .executeTakeFirst();
     const artwork = await db
       .selectFrom('artworks')
       .select(['id', 'creator_id'])
+      .where('created_at', '<', settledBefore())
       .orderBy('id')
       .executeTakeFirst();
 
