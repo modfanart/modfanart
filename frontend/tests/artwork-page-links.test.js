@@ -184,6 +184,20 @@ describe('artwork page - the navigation a shared-results visitor lands on', () =
     );
   });
 
+  it('page content clears the fixed nav so Back to Gallery is clickable', async () => {
+    // The nav is fixed top-0 z-50 and ~64px tall; with the old py-10 (40px)
+    // the link rendered underneath it and the nav swallowed every click.
+    // jsdom cannot do geometry, so pin the class that provides the clearance.
+    const container = await render();
+    const page = container.querySelector('.container');
+    assert.ok(page, 'no page container rendered');
+    assert.match(
+      page.className,
+      /pt-(2[4-9]|[3-9][0-9])/,
+      `page container must pad past the fixed nav, got: ${page.className}`
+    );
+  });
+
   it('the per-tier Choose links - the real license CTA - still work', async () => {
     const container = await render();
     const choose = [...container.querySelectorAll('a')].find((a) =>
