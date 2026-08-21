@@ -16,12 +16,20 @@ DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
 import { useAuth } from '@/store/AuthContext';
+import { useJudgeAreaHref } from '@/hooks/use-judge-area-href';
 
 export function UserNav() {
 const router = useRouter();
 
 const { user, loading: isUserLoading, logout } = useAuth();
 const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+// Judging rights are per-contest (contest_judges), not per-role, so this
+// cannot ride on isEligibleForDashboard below: a fan-role judge has no
+// dashboard at all, and this dropdown is their only way into the judge area
+// from the public site. Called before the early return to keep hook order
+// stable.
+const judgeHref = useJudgeAreaHref();
 
 if (isUserLoading || !user) return null;
 
@@ -142,6 +150,14 @@ return (
             onClick={() => router.push(dashboardPath)}
           >
             Dashboard
+          </DropdownMenuItem>
+        )}
+
+        {judgeHref && (
+          <DropdownMenuItem
+            onClick={() => router.push(judgeHref)}
+          >
+            Judging
           </DropdownMenuItem>
         )}
 

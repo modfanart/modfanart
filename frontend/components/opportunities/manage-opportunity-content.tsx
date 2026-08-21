@@ -78,6 +78,7 @@ import {
   buildEntriesQueryArgs,
 } from './submission-pagination';
 import { ResultsTabContent } from './results-tab-content';
+import { JudgeCredentialsDialog, type JudgeCredentials } from './judge-credentials-dialog';
 
 export function ManageOpportunityContent({
   opportunityId,
@@ -98,6 +99,7 @@ export function ManageOpportunityContent({
   const [assignJudgeOpen, setAssignJudgeOpen] = useState(false);
   const [judgeSearch, setJudgeSearch] = useState('');
   const [showCreateJudgeForm, setShowCreateJudgeForm] = useState(false);
+  const [judgeCredentials, setJudgeCredentials] = useState<JudgeCredentials | null>(null);
 
   // New Judge Form State
   const [newJudgeData, setNewJudgeData] = useState({
@@ -312,14 +314,16 @@ export function ManageOpportunityContent({
         judgeId: newJudgeId,
       }).unwrap();
 
-      alert(
-        `Judge "${newJudgeData.username}" created successfully!\n\n` +
-          `Temporary Password: ${tempPassword}\n` +
-          (invite.email_sent
-            ? `An invite email with a one-time access link has also been sent to ${newJudgeData.email}.`
-            : `One-time access link (email failed to send, share manually):\n${invite.invite_url}`) +
-          `\n\nPlease save and share the password with the judge — the invite link alone signs them into the dashboard, but they still need this password to log in the first time.`
-      );
+      // The password is generated above and never stored, so hand it to a
+      // dialog the brand can copy from. alert() text cannot be selected, and
+      // dismissing it lost the only copy of the password.
+      setJudgeCredentials({
+        username: newJudgeData.username.trim(),
+        email: newJudgeData.email.trim(),
+        password: tempPassword,
+        inviteUrl: invite.invite_url,
+        emailSent: invite.email_sent,
+      });
 
       // Reset form
       setNewJudgeData({ username: '', email: '', bio: '' });
@@ -814,6 +818,12 @@ export function ManageOpportunityContent({
             )}
           </DialogContent>
         </Dialog>
+
+        {/* One-time judge credentials, shown after Create & Assign Judge */}
+        <JudgeCredentialsDialog
+          credentials={judgeCredentials}
+          onClose={() => setJudgeCredentials(null)}
+        />
 
         {/* Entry Detail Dialog */}
         <EntryDetailDialog
