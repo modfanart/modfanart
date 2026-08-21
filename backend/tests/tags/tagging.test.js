@@ -2,6 +2,14 @@ const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 
 const { db, requireDatabase } = require('../helpers/db');
+
+// node --test runs files in parallel, and other files (contestWinners,
+// galleryVisibility) create and delete their own artworks while this one
+// runs. Borrowing one of those rows means it can vanish mid-test and every
+// insert that references it fails on the foreign key. Only rows that have
+// been settled for a while are safe to borrow.
+const SETTLED_AGE_MS = 60_000;
+const settledBefore = () => new Date(Date.now() - SETTLED_AGE_MS);
 const Tag = require('../../src/modules/tags/models/tag.model');
 const { slugifyTag } = require('../../src/modules/tags/models/tag.model');
 const Tagging = require('../../src/modules/tags/models/tagging.model');
@@ -60,6 +68,7 @@ describe('tag attachment + vocabulary (integration)', () => {
     const artworks = await db
       .selectFrom('artworks')
       .select(['id', 'creator_id'])
+      .where('created_at', '<', settledBefore())
       .orderBy('id')
       .limit(2)
       .execute();
