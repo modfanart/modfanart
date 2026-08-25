@@ -32,12 +32,19 @@ async function authenticateToken(req, res, next) {
       .executeTakeFirst();
 
     if (!user) {
-      return res.status(403).json({ error: 'User not found. Call /api/auth/sync first.' });
+      return res
+        .status(403)
+        .json({ error: 'User not found. Call /api/auth/sync first.' });
     }
 
     let brands = [];
 
-    const BRAND_ROLES = ['BRAND_OWNER', 'BRAND_MANAGER', 'BRAND_EDITOR', 'BRAND_MEMBER'];
+    const BRAND_ROLES = [
+      'BRAND_OWNER',
+      'BRAND_MANAGER',
+      'BRAND_EDITOR',
+      'BRAND_MEMBER',
+    ];
     const ADMIN_ROLES = ['ADMIN', 'SUPERADMIN'];
 
     if (BRAND_ROLES.includes(user.role) || ADMIN_ROLES.includes(user.role)) {
@@ -54,10 +61,7 @@ async function authenticateToken(req, res, next) {
           'b.user_id as owner_id',
         ])
         .where((eb) =>
-          eb.or([
-            eb('b.user_id', '=', user.id),
-            eb('bm.user_id', '=', user.id),
-          ])
+          eb.or([eb('b.user_id', '=', user.id), eb('bm.user_id', '=', user.id)])
         )
         .execute();
     } else {
