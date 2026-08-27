@@ -8,14 +8,18 @@
  *
  *   1. status = 'published'            - the creator released it
  *   2. moderation_status = 'approved'  - set alongside (1) by Artwork.publish
- *   3. a contest entry for it is 'approved' or 'winner' - a brand reviewed it
+ *   3. a contest entry for it is status='winner' AND
+ *      licensing_status='finalized'    - selected by the brand, and its
+ *                                        licensing agreement completed
  *
  * (1) and (2) alone are not a review: Artwork.publish writes both columns on
  * the creator's own say-so, so a contest submission could reach the gallery
  * the moment its author pressed Publish, before any brand had looked at it.
- * (3) is the actual moderation event. 'approved' is what the brand sets in
- * the Monitor page; 'winner' is the licensing step and is kept so selecting
- * winners never hides work that was already approved.
+ * (3) is the real gate, and since the licensing check-in (2026-08-27) brand
+ * approval alone no longer publishes: an entry must be a selected winner
+ * whose licensing the brand explicitly finalized in the Licensing tab.
+ * Selection without finalization keeps the work private - winning a contest
+ * and being cleared for commercial use are separate facts.
  *
  * Kept in its own module (rather than inline in the controller) for two
  * reasons: the list query and the count query must apply an identical
@@ -24,8 +28,10 @@
  * database connection.
  */
 
-/** Contest entry statuses that mean a brand has reviewed and kept the work. */
-const GALLERY_ENTRY_STATUSES = ["approved", "winner"];
+/** The one entry state that makes an artwork public: a selected winner... */
+const GALLERY_ENTRY_STATUS = "winner";
+/** ...whose licensing agreement the brand has explicitly finalized. */
+const GALLERY_LICENSING_STATUS = "finalized";
 
 /**
  * Restrict a Kysely query on `artworks` to publicly visible rows.
@@ -51,9 +57,14 @@ function applyPublicArtworkFilter(query) {
         selectFrom("contest_entries")
           .select("contest_entries.id")
           .whereRef("contest_entries.artwork_id", "=", "artworks.id")
-          .where("contest_entries.status", "in", GALLERY_ENTRY_STATUSES)
+          .where("contest_entries.status", "=", GALLERY_ENTRY_STATUS)
+          .where("contest_entries.licensing_status", "=", GALLERY_LICENSING_STATUS)
       )
     );
 }
 
-module.exports = { applyPublicArtworkFilter, GALLERY_ENTRY_STATUSES };
+module.exports = {
+  applyPublicArtworkFilter,
+  GALLERY_ENTRY_STATUS,
+  GALLERY_LICENSING_STATUS,
+};

@@ -135,10 +135,24 @@ export interface RedeemJudgeInviteArgs {
   token: string;
 }
 
+/**
+ * Where a selected winner's licensing agreement is, set manually by the brand
+ * in the Licensing tab. 'finalized' is terminal and is what admits the artwork
+ * to the public gallery. Mirrors the backend LICENSING_STATUSES allowlist.
+ */
+export type LicensingStatus =
+  | 'not_started'
+  | 'agreement_sent'
+  | 'signed'
+  | 'declined'
+  | 'expired'
+  | 'finalized';
+
 export interface ContestEntry {
   id: string;
   status: 'pending' | 'approved' | 'rejected' | 'disqualified' | 'winner';
   rank: number | null;
+  licensing_status: LicensingStatus;
   // Packed by packSubmissionNotes: the entrant's note plus a trailing
   // "Fandom / Original IP: ..." line. Use unpackSubmissionNotes to display.
   // The API has returned this since the note feature landed; it was missing
@@ -506,6 +520,24 @@ getContestEntries: builder.query<
       ],
     }),
 
+    // Manual licensing tracking for selected winners (Licensing tab). Kept
+    // separate from updateEntryStatus: different endpoint, different
+    // authorization (brand owner / contests.manage only - judges are out).
+    updateEntryLicensingStatus: builder.mutation<
+      { entry: { id: string; status: string; rank: number | null; licensing_status: LicensingStatus } },
+      { contestId: string; entryId: string; licensing_status: LicensingStatus }
+    >({
+      query: ({ contestId, entryId, licensing_status }) => ({
+        url: `/contest/${contestId}/entries/${entryId}/licensing-status`,
+        method: 'PATCH',
+        body: { licensing_status },
+      }),
+      invalidatesTags: (result, error, { contestId, entryId }) => [
+        { type: 'ContestEntries', id: contestId },
+        { type: 'ContestEntry', id: entryId },
+      ],
+    }),
+
     getMyContestEntries: builder.query<
       { entries: any[]; total?: number },
       { status?: string; contestId?: string; limit?: number; offset?: number } | void
@@ -714,6 +746,7 @@ export const {
   useSubmitEntryMutation,
   useGetMyJudgeScoresQuery,
   useUpdateEntryStatusMutation,
+  useUpdateEntryLicensingStatusMutation,
   useGetMyContestEntriesQuery,
   useDeleteContestEntryMutation,
   useGetMySubmittedContestsQuery,

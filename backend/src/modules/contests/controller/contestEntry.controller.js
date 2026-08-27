@@ -238,6 +238,7 @@ static async getEntries(req, res) {
         "ce.id as entry_id",
         "ce.status as entry_status",
         "ce.rank as entry_rank",
+        "ce.licensing_status",
         "ce.submission_notes as entry_submission_notes",
         "ce.created_at as entry_created_at",
         "ce.updated_at as entry_updated_at",
@@ -328,6 +329,7 @@ static async getEntries(req, res) {
       id: row.entry_id,
       status: row.entry_status,
       rank: row.entry_rank,
+      licensing_status: row.licensing_status,
       submission_notes: row.entry_submission_notes,
       created_at: row.entry_created_at,
       updated_at: row.entry_updated_at,
@@ -411,6 +413,7 @@ static async getEntries(req, res) {
           "ce.id as entry_id",
           "ce.status as entry_status",
           "ce.rank as entry_rank",
+          "ce.licensing_status",
           "ce.submission_notes as entry_submission_notes",
           "ce.created_at as entry_created_at",
           "ce.updated_at as entry_updated_at",
@@ -478,6 +481,7 @@ static async getEntries(req, res) {
           id: row.entry_id,
           status: row.entry_status,
           rank: row.entry_rank,
+          licensing_status: row.licensing_status,
           submission_notes: row.entry_submission_notes,
           created_at: row.entry_created_at,
           updated_at: row.entry_updated_at,
@@ -563,10 +567,15 @@ static async getEntries(req, res) {
         return res.status(403).json({ error: "Not authorized" });
       }
 
+      // Demoting a winner also clears its licensing progress. This endpoint
+      // can move a 'winner' to approved/rejected/disqualified without going
+      // through selectWinners, and a stale 'finalized' left on the row would
+      // make the artwork instantly public if the entry were re-selected.
       await db
         .updateTable("contest_entries")
         .set({
           status,
+          ...(entry.status === "winner" ? { licensing_status: "not_started" } : {}),
           updated_at: sql`NOW()`,
         })
         .where("id", "=", entryId)

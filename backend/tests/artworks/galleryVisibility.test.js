@@ -1,15 +1,15 @@
 // tests/artworks/galleryVisibility.test.js
 //
-// Row-level regression test for "Fix submission showing in Gallery".
+// Row-level regression test for the public gallery gate.
 //
 // The compile-only tests in ../artwork.visibility.test.js pin the SQL shape.
-// This file runs the real controllers against a database and proves the two
-// halves of the fix on actual rows:
-//
-//   1. an artwork the creator published is still NOT in the public gallery
-//      until a brand approves its contest entry (the bug), and
-//   2. a brand approving an entry publishes a draft artwork, so approval
-//      alone is enough to surface it.
+// This file runs the real controllers against a database and proves the gate
+// on actual rows. Since the licensing check-in (2026-08-27) the gate is:
+// an artwork is publicly listed only when its contest entry is a selected
+// winner (status='winner') whose licensing the brand explicitly finalized
+// (licensing_status='finalized'). Brand approval still publishes the artwork
+// row (so it stays addressable), but approval alone no longer lists it, and
+// neither does selection without finalization.
 
 const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert/strict');
@@ -18,6 +18,7 @@ const { sql } = require('kysely');
 const { db, requireDatabase } = require('../helpers/db');
 const ArtworkController = require('../../src/modules/artworks/controller/artwork.controller');
 const ContestEntryController = require('../../src/modules/contests/controller/contestEntry.controller');
+const ContestWinnerController = require('../../src/modules/contests/controller/contestWinner.controller');
 
 /** Minimal Express res double capturing the status/body the controller sends. */
 function makeRes() {
@@ -36,7 +37,7 @@ function makeRes() {
   };
 }
 
-describe('public gallery shows only brand-approved artwork', () => {
+describe('public gallery lists only finalized winners', () => {
   const tag = `galvis_${Date.now().toString(36)}`;
 
   let ownerId;
@@ -54,13 +55,35 @@ describe('public gallery shows only brand-approved artwork', () => {
     return { ids: res.body.artworks.map((a) => a.id).sort(), total: res.body.pagination.total };
   }
 
+  function brandUser() {
+    return { id: ownerId, brands: [{ id: contestBrandId }] };
+  }
+
   async function setEntryStatus(entryId, status) {
     const res = makeRes();
     await ContestEntryController.updateEntryStatus(
+      { params: { contestId, entryId }, body: { status }, user: brandUser() },
+      res
+    );
+    return res;
+  }
+
+  async function selectWinners(entryIds) {
+    const res = makeRes();
+    await ContestWinnerController.selectWinners(
+      { params: { contestId }, body: { entry_ids: entryIds }, user: brandUser() },
+      res
+    );
+    return res;
+  }
+
+  async function setLicensingStatus(entryId, licensingStatus) {
+    const res = makeRes();
+    await ContestWinnerController.updateLicensingStatus(
       {
         params: { contestId, entryId },
-        body: { status },
-        user: { id: ownerId, brands: [{ id: contestBrandId }] },
+        body: { licensing_status: licensingStatus },
+        user: brandUser(),
       },
       res
     );
@@ -71,6 +94,14 @@ describe('public gallery shows only brand-approved artwork', () => {
     return db
       .selectFrom('artworks')
       .select(['status', 'moderation_status'])
+      .where('id', '=', id)
+      .executeTakeFirstOrThrow();
+  }
+
+  async function entryRow(id) {
+    return db
+      .selectFrom('contest_entries')
+      .select(['status', 'rank', 'licensing_status'])
       .where('id', '=', id)
       .executeTakeFirstOrThrow();
   }
@@ -125,9 +156,11 @@ describe('public gallery shows only brand-approved artwork', () => {
       .executeTakeFirstOrThrow();
     contestId = contest.id;
 
-    // approved: creator published it AND the brand approved the entry.
+    // approved: creator published it AND the brand approved the entry. Under
+    //           the old gate this row was public; it is the one this file
+    //           walks through winner -> finalized.
     // pending:  creator published it (self-approval) but the brand has not
-    //           reviewed it. This is the row the bug leaked.
+    //           reviewed it. This is the row the original bug leaked.
     // draft:    raw submission, exactly as the contest form creates it.
     const seeds = {
       approved: { artwork: { status: 'published', moderation_status: 'approved' }, entry: 'approved' },
@@ -169,25 +202,25 @@ describe('public gallery shows only brand-approved artwork', () => {
     }
   });
 
-  it('lists a published artwork only once a brand approved its entry', async () => {
+  it('no longer lists a published artwork on brand approval alone', async () => {
     const { ids, total } = await galleryIds();
-
-    assert.deepEqual(ids, [fx.approved.artworkId]);
-    assert.equal(total, 1, 'count query must apply the same filter as the list query');
+    assert.deepEqual(ids, []);
+    assert.equal(total, 0, 'count query must apply the same filter as the list query');
   });
 
-  it('publishes a draft artwork when the brand approves its entry, which surfaces it', async () => {
+  it('approving a draft entry still publishes the artwork row without listing it', async () => {
     const res = await setEntryStatus(fx.draft.entryId, 'approved');
     assert.equal(res.statusCode, 200, JSON.stringify(res.body));
 
+    // The publish side-effect is unchanged: the artwork becomes addressable...
     assert.deepEqual(await artworkRow(fx.draft.artworkId), {
       status: 'published',
       moderation_status: 'approved',
     });
 
-    const { ids, total } = await galleryIds();
-    assert.deepEqual(ids, [fx.approved.artworkId, fx.draft.artworkId].sort());
-    assert.equal(total, 2);
+    // ...but approval no longer puts it in the public gallery list.
+    const { ids } = await galleryIds();
+    assert.deepEqual(ids, []);
   });
 
   it('rejecting an entry leaves the artwork row alone and keeps it out of the gallery', async () => {
@@ -204,21 +237,48 @@ describe('public gallery shows only brand-approved artwork', () => {
     assert.ok(!ids.includes(fx.pending.artworkId));
   });
 
-  it('approving an already-published artwork is a no-op on the artwork row', async () => {
-    const before = await db
-      .selectFrom('artworks')
-      .select(['status', 'moderation_status', 'updated_at'])
-      .where('id', '=', fx.approved.artworkId)
-      .executeTakeFirstOrThrow();
-
-    const res = await setEntryStatus(fx.approved.entryId, 'approved');
+  it('selecting a winner does not list it while licensing is incomplete', async () => {
+    const res = await selectWinners([fx.approved.entryId]);
     assert.equal(res.statusCode, 200, JSON.stringify(res.body));
 
-    const after = await db
-      .selectFrom('artworks')
-      .select(['status', 'moderation_status', 'updated_at'])
-      .where('id', '=', fx.approved.artworkId)
-      .executeTakeFirstOrThrow();
-    assert.deepEqual(after, before);
+    assert.deepEqual(await entryRow(fx.approved.entryId), {
+      status: 'winner',
+      rank: 1,
+      licensing_status: 'not_started',
+    });
+
+    const { ids } = await galleryIds();
+    assert.deepEqual(ids, []);
+
+    // Mid-lifecycle statuses do not open the gate either.
+    const sent = await setLicensingStatus(fx.approved.entryId, 'agreement_sent');
+    assert.equal(sent.statusCode, 200, JSON.stringify(sent.body));
+    assert.deepEqual((await galleryIds()).ids, []);
+  });
+
+  it('finalizing the winner is what lists the artwork', async () => {
+    const res = await setLicensingStatus(fx.approved.entryId, 'finalized');
+    assert.equal(res.statusCode, 200, JSON.stringify(res.body));
+
+    const { ids, total } = await galleryIds();
+    assert.deepEqual(ids, [fx.approved.artworkId]);
+    assert.equal(total, 1);
+  });
+
+  it('deselecting the winner hides the artwork and resets its licensing progress', async () => {
+    const res = await selectWinners([]);
+    assert.equal(res.statusCode, 200, JSON.stringify(res.body));
+
+    // Without the reset, a stale 'finalized' would instantly re-list the
+    // artwork if the entry were ever selected again.
+    assert.deepEqual(await entryRow(fx.approved.entryId), {
+      status: 'approved',
+      rank: null,
+      licensing_status: 'not_started',
+    });
+
+    const { ids, total } = await galleryIds();
+    assert.deepEqual(ids, []);
+    assert.equal(total, 0);
   });
 });

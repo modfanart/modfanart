@@ -24,6 +24,20 @@ function isAuthorized(user, contest) {
   );
 }
 
+/**
+ * Where a winner's licensing agreement is, set manually by the brand for now.
+ * 'finalized' is terminal and is what the public gallery gate requires.
+ * Mirrors the contest_entries_licensing_status_check DB constraint.
+ */
+const LICENSING_STATUSES = [
+  "not_started",
+  "agreement_sent",
+  "signed",
+  "declined",
+  "expired",
+  "finalized",
+];
+
 class ContestWinnerController {
   /**
    * PUT /contest/:contestId/winners
@@ -92,7 +106,15 @@ class ContestWinnerController {
       await db.transaction().execute(async (trx) => {
         let reset = trx
           .updateTable("contest_entries")
-          .set({ status: "approved", rank: null, updated_at: sql`NOW()` })
+          // licensing_status resets with the deselection: a stale 'finalized'
+          // left behind here would instantly re-publish the artwork if the
+          // entry were ever selected again.
+          .set({
+            status: "approved",
+            rank: null,
+            licensing_status: "not_started",
+            updated_at: sql`NOW()`,
+          })
           .where("contest_id", "=", contestId)
           .where("status", "=", "winner");
         if (entryIds.length > 0) reset = reset.where("id", "not in", entryIds);
@@ -109,7 +131,7 @@ class ContestWinnerController {
 
       const winners = await db
         .selectFrom("contest_entries")
-        .select(["id", "rank", "status"])
+        .select(["id", "rank", "status", "licensing_status"])
         .where("contest_id", "=", contestId)
         .where("status", "=", "winner")
         .orderBy("rank", "asc")
@@ -119,6 +141,80 @@ class ContestWinnerController {
     } catch (err) {
       console.error(err);
       return res.status(500).json({ error: "Failed to select winners" });
+    }
+  }
+
+  /**
+   * PATCH /contest/:contestId/entries/:entryId/licensing-status
+   *
+   * Body: { licensing_status: string } - one of LICENSING_STATUSES.
+   *
+   * Manual for now: the brand walks each winner's agreement through its
+   * lifecycle by hand, and 'finalized' is what makes the artwork publicly
+   * visible in the gallery. Lives in this controller rather than the entry
+   * controller because its isAuthorized (brand owner or contests.manage) is
+   * the right audience - the entry-status predicate also admits judges, who
+   * have no business in licensing.
+   */
+  static async updateLicensingStatus(req, res) {
+    try {
+      const { contestId, entryId } = req.params;
+      const { licensing_status: licensingStatus } = req.body || {};
+
+      if (!LICENSING_STATUSES.includes(licensingStatus)) {
+        return res.status(400).json({
+          error: `licensing_status must be one of: ${LICENSING_STATUSES.join(", ")}`,
+        });
+      }
+
+      const contest = await db
+        .selectFrom("contests")
+        .select(["id", "brand_id"])
+        .where("id", "=", contestId)
+        .where("deleted_at", "is", null)
+        .executeTakeFirst();
+
+      if (!contest) return res.status(404).json({ error: "Contest not found" });
+      if (!isAuthorized(req.user, contest)) {
+        return res.status(403).json({ error: "Not authorized" });
+      }
+
+      // Scoped to the contest so an entry id from another contest 404s
+      // instead of letting one brand touch another brand's entries.
+      const entry = await db
+        .selectFrom("contest_entries")
+        .select(["id", "status", "rank", "licensing_status"])
+        .where("id", "=", entryId)
+        .where("contest_id", "=", contestId)
+        .executeTakeFirst();
+
+      if (!entry) return res.status(404).json({ error: "Entry not found" });
+
+      // Licensing only exists for selected winners. 409 rather than 400: the
+      // request is well-formed, the entry is just not in a licensable state.
+      if (entry.status !== "winner") {
+        return res.status(409).json({
+          error: "Only selected winners can have a licensing status",
+        });
+      }
+
+      await db
+        .updateTable("contest_entries")
+        .set({ licensing_status: licensingStatus, updated_at: sql`NOW()` })
+        .where("id", "=", entryId)
+        .execute();
+
+      return res.json({
+        entry: {
+          id: entry.id,
+          status: entry.status,
+          rank: entry.rank,
+          licensing_status: licensingStatus,
+        },
+      });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ error: "Failed to update licensing status" });
     }
   }
 

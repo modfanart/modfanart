@@ -8,12 +8,13 @@ const { Kysely, PostgresDialect, DummyDriver, PostgresAdapter, PostgresIntrospec
 
 const {
   applyPublicArtworkFilter,
-  GALLERY_ENTRY_STATUSES,
+  GALLERY_ENTRY_STATUS,
+  GALLERY_LICENSING_STATUS,
 } = require("../src/modules/artworks/artwork.visibility");
 
-/** The EXISTS clause that ties gallery visibility to a brand-reviewed entry. */
-const APPROVED_ENTRY_EXISTS =
-  /exists \(select "contest_entries"\."id" from "contest_entries" where "contest_entries"\."artwork_id" = "artworks"\."id" and "contest_entries"\."status" in \(\$\d+, \$\d+\)\)/;
+/** The EXISTS clause that ties gallery visibility to a finalized winner entry. */
+const FINALIZED_WINNER_EXISTS =
+  /exists \(select "contest_entries"\."id" from "contest_entries" where "contest_entries"\."artwork_id" = "artworks"\."id" and "contest_entries"\."status" = \$\d+ and "contest_entries"\."licensing_status" = \$\d+\)/;
 
 /**
  * Compile-only Kysely instance. It never opens a connection, so these tests
@@ -69,23 +70,23 @@ function buildCountQuery({ search } = {}) {
   return countQuery.select(db.fn.count("id").as("total"));
 }
 
-test("restricts artwork to published, approved AND brand-reviewed", () => {
+test("restricts artwork to published, approved AND a finalized winner entry", () => {
   const { sql, parameters } = applyPublicArtworkFilter(
     db.selectFrom("artworks").select("id")
   ).compile();
 
   assert.match(sql, /"artworks"\."status" = \$\d+/);
   assert.match(sql, /"artworks"\."moderation_status" = \$\d+/);
-  assert.match(sql, APPROVED_ENTRY_EXISTS);
-  assert.deepEqual(parameters, ["published", "approved", "approved", "winner"]);
+  assert.match(sql, FINALIZED_WINNER_EXISTS);
+  assert.deepEqual(parameters, ["published", "approved", "winner", "finalized"]);
 });
 
-test("a brand-reviewed entry means approved or winner, nothing else", () => {
-  // 'approved' is what the brand sets in the Monitor page. 'winner' is the
-  // licensing step; it must stay in the set or selecting winners would hide
-  // work that was already approved. Pending, rejected and disqualified entries
-  // must never qualify, whatever the artwork row itself says.
-  assert.deepEqual(GALLERY_ENTRY_STATUSES, ["approved", "winner"]);
+test("only a finalized winner qualifies - brand approval alone does not", () => {
+  // Since the licensing check-in (2026-08-27), 'approved' no longer surfaces
+  // work: the entry must be a selected winner whose licensing agreement the
+  // brand explicitly finalized. Selection without finalization stays private.
+  assert.equal(GALLERY_ENTRY_STATUS, "winner");
+  assert.equal(GALLERY_LICENSING_STATUS, "finalized");
 });
 
 test("list and count queries apply an identical visibility filter", () => {
@@ -98,12 +99,13 @@ test("list and count queries apply an identical visibility filter", () => {
   for (const compiled of [list, count]) {
     assert.match(compiled.sql, /"status" = \$\d+/);
     assert.match(compiled.sql, /"moderation_status" = \$\d+/);
-    assert.match(compiled.sql, APPROVED_ENTRY_EXISTS);
+    assert.match(compiled.sql, /"licensing_status" = \$\d+/);
+    assert.match(compiled.sql, FINALIZED_WINNER_EXISTS);
   }
 
-  const VISIBILITY_VALUES = new Set(["published", "approved", "winner"]);
+  const VISIBILITY_VALUES = new Set(["published", "approved", "winner", "finalized"]);
   const visibilityParams = (p) => p.filter((v) => VISIBILITY_VALUES.has(v));
-  assert.deepEqual(visibilityParams(list.parameters), ["published", "approved", "approved", "winner"]);
+  assert.deepEqual(visibilityParams(list.parameters), ["published", "approved", "winner", "finalized"]);
   assert.deepEqual(
     visibilityParams(count.parameters),
     visibilityParams(list.parameters)
@@ -118,14 +120,14 @@ test("search does not widen visibility via OR", () => {
   assert.match(
     sql,
     new RegExp(
-      `"artworks"\\."status" = \\$\\d+ and "artworks"\\."moderation_status" = \\$\\d+ and ${APPROVED_ENTRY_EXISTS.source} and \\(`
+      `"artworks"\\."status" = \\$\\d+ and "artworks"\\."moderation_status" = \\$\\d+ and ${FINALIZED_WINNER_EXISTS.source} and \\(`
     )
   );
   assert.ok(parameters.includes("%batman%"));
 
   // Same guarantee on the count side, so totals match the filtered rows.
   const count = buildCountQuery({ search: "batman" }).compile();
-  assert.match(count.sql, new RegExp(`${APPROVED_ENTRY_EXISTS.source} and \\(`));
+  assert.match(count.sql, new RegExp(`${FINALIZED_WINNER_EXISTS.source} and \\(`));
 });
 
 test("getArtworks wires the filter into both of its queries", () => {
