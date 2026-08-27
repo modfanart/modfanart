@@ -78,6 +78,7 @@ import {
   buildEntriesQueryArgs,
 } from './submission-pagination';
 import { ResultsTabContent } from './results-tab-content';
+import { LicensingTabContent } from './licensing-tab-content';
 import { JudgeCredentialsDialog, type JudgeCredentials } from './judge-credentials-dialog';
 
 export function ManageOpportunityContent({
@@ -536,10 +537,11 @@ export function ManageOpportunityContent({
 
         {/* Tabs */}
         <Tabs defaultValue="submissions" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="submissions">Submissions ({totalEntries})</TabsTrigger>
             <TabsTrigger value="judges">Judges ({judges.length})</TabsTrigger>
             <TabsTrigger value="results">Results</TabsTrigger>
+            <TabsTrigger value="licensing">Licensing</TabsTrigger>
           </TabsList>
 
           {/* Submissions Tab */}
@@ -687,6 +689,15 @@ export function ManageOpportunityContent({
             <Card>
               <CardContent className="pt-6">
                 <ResultsTabContent contestId={opportunityId} />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Licensing Tab - manual agreement tracking for selected winners */}
+          <TabsContent value="licensing" className="space-y-6">
+            <Card>
+              <CardContent className="pt-6">
+                <LicensingTabContent contestId={opportunityId} />
               </CardContent>
             </Card>
           </TabsContent>

@@ -213,6 +213,10 @@ before(() => {
     if (request === './results-tab-content') {
       return { __esModule: true, ResultsTabContent: () => null };
     }
+    // Same treatment for the Licensing tab, for the same reason.
+    if (request === './licensing-tab-content') {
+      return { __esModule: true, LicensingTabContent: () => null };
+    }
     if (request === 'next/navigation') {
       return { useRouter: () => ({ push() {}, back() {}, replace() {} }) };
     }

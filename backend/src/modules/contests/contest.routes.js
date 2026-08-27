@@ -43,6 +43,13 @@ router.post(
   '/:contestId/results-share-link',
   ContestWinnerController.getResultsShareLink
 );
+// Post-selection licensing tracking for winners; brand owner or
+// contests.manage only (enforced in the controller). 'finalized' here is what
+// admits the artwork to the public gallery.
+router.patch(
+  '/:contestId/entries/:entryId/licensing-status',
+  ContestWinnerController.updateLicensingStatus
+);
 
 // Brand-specific judges overview (if needed)
 router.get(
