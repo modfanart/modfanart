@@ -1,7 +1,6 @@
 const admin = require('../../../config/firebase');
 const { db } = require('../../../config');
 const { sql } = require('kysely');
-
 const User = require('../../users/models/user.model');
 const Role = require('../../rbac/models/role.model');
 

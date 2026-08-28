@@ -135,10 +135,30 @@ export interface RedeemJudgeInviteArgs {
   token: string;
 }
 
+<<<<<<< HEAD
+=======
+/**
+ * Where a selected winner's licensing agreement is, set manually by the brand
+ * in the Licensing tab. 'finalized' is terminal and is what admits the artwork
+ * to the public gallery. Mirrors the backend LICENSING_STATUSES allowlist.
+ */
+export type LicensingStatus =
+  | 'not_started'
+  | 'agreement_sent'
+  | 'signed'
+  | 'declined'
+  | 'expired'
+  | 'finalized';
+
+>>>>>>> 8f5c3620965f1ac1ad78ff2c5adf1f4a674d1386
 export interface ContestEntry {
   id: string;
   status: 'pending' | 'approved' | 'rejected' | 'disqualified' | 'winner';
   rank: number | null;
+<<<<<<< HEAD
+=======
+  licensing_status: LicensingStatus;
+>>>>>>> 8f5c3620965f1ac1ad78ff2c5adf1f4a674d1386
   // Packed by packSubmissionNotes: the entrant's note plus a trailing
   // "Fandom / Original IP: ..." line. Use unpackSubmissionNotes to display.
   // The API has returned this since the note feature landed; it was missing
@@ -506,6 +526,27 @@ getContestEntries: builder.query<
       ],
     }),
 
+<<<<<<< HEAD
+=======
+    // Manual licensing tracking for selected winners (Licensing tab). Kept
+    // separate from updateEntryStatus: different endpoint, different
+    // authorization (brand owner / contests.manage only - judges are out).
+    updateEntryLicensingStatus: builder.mutation<
+      { entry: { id: string; status: string; rank: number | null; licensing_status: LicensingStatus } },
+      { contestId: string; entryId: string; licensing_status: LicensingStatus }
+    >({
+      query: ({ contestId, entryId, licensing_status }) => ({
+        url: `/contest/${contestId}/entries/${entryId}/licensing-status`,
+        method: 'PATCH',
+        body: { licensing_status },
+      }),
+      invalidatesTags: (result, error, { contestId, entryId }) => [
+        { type: 'ContestEntries', id: contestId },
+        { type: 'ContestEntry', id: entryId },
+      ],
+    }),
+
+>>>>>>> 8f5c3620965f1ac1ad78ff2c5adf1f4a674d1386
     getMyContestEntries: builder.query<
       { entries: any[]; total?: number },
       { status?: string; contestId?: string; limit?: number; offset?: number } | void
@@ -644,6 +685,37 @@ getContestEntries: builder.query<
       invalidatesTags: (result, error, contestId) => [{ type: 'Contest', id: contestId }],
     }),
 
+<<<<<<< HEAD
+=======
+    // Replaces the winner selection wholesale: entry_ids ordered, first is
+    // rank 1, [] clears. Invalidates the leaderboard and entries so the
+    // selection state shown anywhere refreshes.
+    selectWinners: builder.mutation<
+      { winners: Array<{ id: string; rank: number; status: string }> },
+      { contestId: string; entry_ids: string[] }
+    >({
+      query: ({ contestId, entry_ids }) => ({
+        url: `/contest/${contestId}/winners`,
+        method: 'PUT',
+        body: { entry_ids },
+      }),
+      invalidatesTags: (result, error, { contestId }) => [
+        { type: 'Leaderboard', id: contestId },
+        { type: 'ContestEntries', id: contestId },
+        { type: 'Contest', id: contestId },
+      ],
+    }),
+
+    // Get-or-create the public results link. Idempotent on the backend, so
+    // repeated copies hand back the same URL.
+    getResultsShareLink: builder.mutation<{ share_url: string }, string>({
+      query: (contestId) => ({
+        url: `/contest/${contestId}/results-share-link`,
+        method: 'POST',
+      }),
+    }),
+
+>>>>>>> 8f5c3620965f1ac1ad78ff2c5adf1f4a674d1386
     distributePrizes: builder.mutation<{ success: boolean; message?: string }, string>({
       query: (contestId) => ({
         url: `/contest/${contestId}/distribute-prizes`,
@@ -686,6 +758,10 @@ export const {
   useSubmitEntryMutation,
   useGetMyJudgeScoresQuery,
   useUpdateEntryStatusMutation,
+<<<<<<< HEAD
+=======
+  useUpdateEntryLicensingStatusMutation,
+>>>>>>> 8f5c3620965f1ac1ad78ff2c5adf1f4a674d1386
   useGetMyContestEntriesQuery,
   useDeleteContestEntryMutation,
   useGetMySubmittedContestsQuery,
@@ -703,6 +779,11 @@ export const {
   useVoteForEntryMutation,
   useAnnounceWinnersMutation,
   useDistributePrizesMutation,
+<<<<<<< HEAD
+=======
+  useSelectWinnersMutation,
+  useGetResultsShareLinkMutation,
+>>>>>>> 8f5c3620965f1ac1ad78ff2c5adf1f4a674d1386
   useGetLeaderboardQuery,
   useGetJudgeContestsQuery,
   useGenerateJudgeInviteLinkMutation,

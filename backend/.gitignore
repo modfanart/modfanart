@@ -29,4 +29,4 @@ node_modules/
 .next/cache/
 mod-backend-secret.pem
 backend/*-firebase-adminsdk-*.json
-backend/modfanart-firebase-adminsdk-fbsvc-6a7ddc187d.json
+modfanart-firebase-adminsdk-fbsvc-6a7ddc187d.json

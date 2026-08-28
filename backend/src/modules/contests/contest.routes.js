@@ -7,8 +7,11 @@ const ContestEntryController = require('./controller/contestEntry.controller');
 const ContestJudgeController = require('./controller/contestJudge.controller');
 const ContestJudgeScoreController = require('./controller/contestJudgeScore.controller');
 const ContestVoteController = require('./controller/contestVote.controller');
+const ContestWinnerController = require('./controller/contestWinner.controller');
 
-const { authenticateToken } = require('../../common/middleware/auth.middleware');
+const {
+  authenticateToken,
+} = require('../../common/middleware/auth.middleware');
 // const { hasPermission } = require('../middleware/permission.middleware'); // Commented if not used
 
 const router = express.Router();
@@ -34,6 +37,21 @@ router.delete('/:id', ContestController.deleteContest);
 
 router.patch('/:id/announce-winners', ContestController.announceWinners);
 router.post('/:id/distribute-prizes', ContestController.distributePrizes);
+
+// Winner selection feeds announce-winners/distribute-prizes above: it is what
+// writes the status='winner' + rank rows those endpoints read.
+router.put('/:contestId/winners', ContestWinnerController.selectWinners);
+router.post(
+  '/:contestId/results-share-link',
+  ContestWinnerController.getResultsShareLink
+);
+// Post-selection licensing tracking for winners; brand owner or
+// contests.manage only (enforced in the controller). 'finalized' here is what
+// admits the artwork to the public gallery.
+router.patch(
+  '/:contestId/entries/:entryId/licensing-status',
+  ContestWinnerController.updateLicensingStatus
+);
 
 // Brand-specific judges overview (if needed)
 router.get(

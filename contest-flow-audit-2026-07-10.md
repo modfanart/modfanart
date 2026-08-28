@@ -145,4 +145,3 @@ today. What was manually set up (hardcoded) was:
 Nothing in the actual authorization/linking logic is tied to those
 two specific accounts — the same code path works for any account in
 the same role/ownership configuration.
- admin@modfanofficial.com mod@2026# 

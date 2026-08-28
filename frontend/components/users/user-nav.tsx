@@ -16,6 +16,10 @@ DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
 import { useAuth } from '@/store/AuthContext';
+<<<<<<< HEAD
+=======
+import { useJudgeAreaHref } from '@/hooks/use-judge-area-href';
+>>>>>>> 8f5c3620965f1ac1ad78ff2c5adf1f4a674d1386
 
 export function UserNav() {
 const router = useRouter();
@@ -23,6 +27,16 @@ const router = useRouter();
 const { user, loading: isUserLoading, logout } = useAuth();
 const [isLoggingOut, setIsLoggingOut] = useState(false);
 
+<<<<<<< HEAD
+=======
+// Judging rights are per-contest (contest_judges), not per-role, so this
+// cannot ride on isEligibleForDashboard below: a fan-role judge has no
+// dashboard at all, and this dropdown is their only way into the judge area
+// from the public site. Called before the early return to keep hook order
+// stable.
+const judgeHref = useJudgeAreaHref();
+
+>>>>>>> 8f5c3620965f1ac1ad78ff2c5adf1f4a674d1386
 if (isUserLoading || !user) return null;
 
 const displayName = user.username || user.email?.split('@')[0] || 'User';
@@ -145,6 +159,17 @@ return (
           </DropdownMenuItem>
         )}
 
+<<<<<<< HEAD
+=======
+        {judgeHref && (
+          <DropdownMenuItem
+            onClick={() => router.push(judgeHref)}
+          >
+            Judging
+          </DropdownMenuItem>
+        )}
+
+>>>>>>> 8f5c3620965f1ac1ad78ff2c5adf1f4a674d1386
         <DropdownMenuItem
           onClick={() =>
             router.push(`/u/${user.username || displayName}`)

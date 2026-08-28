@@ -8,10 +8,14 @@ import { Gavel } from 'lucide-react';
 import { useAuth } from '@/store/AuthContext';
 import { sidebarConfig } from '@/hooks/sidebar.config';
 import { getBasePath } from '@/hooks/getBasePath';
+<<<<<<< HEAD
 import {
   useGetJudgeContestsQuery,
   useGetJudgeInvitationsQuery,
 } from '@/services/api/contestsApi';
+=======
+import { useJudgeAreaHref } from '@/hooks/use-judge-area-href';
+>>>>>>> 8f5c3620965f1ac1ad78ff2c5adf1f4a674d1386
 import { cn } from '@/lib/utils';
 
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -24,6 +28,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
 
   // Judging is granted per contest through contest_judges, not through a role,
   // so it cannot come from sidebarConfig (which is keyed on user.role.name).
+<<<<<<< HEAD
   // An existing user assigned as a judge keeps their original role and would
   // otherwise get no link into the judge area at all. Both queries are void-arg
   // and shared with the judge dashboard, so they cost one request per session.
@@ -34,6 +39,12 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
   // link from exactly the people who have not found that button yet.
   const { data: judgeContests } = useGetJudgeContestsQuery(undefined, { skip: !user });
   const { data: judgeInvitations } = useGetJudgeInvitationsQuery(undefined, { skip: !user });
+=======
+  // The decision rules (and why pending invitations count) live in
+  // lib/judging/judge-access.js, shared with the account dropdown in the site
+  // header so the two surfaces cannot drift apart.
+  const judgeHref = useJudgeAreaHref();
+>>>>>>> 8f5c3620965f1ac1ad78ff2c5adf1f4a674d1386
 
   const rawRole = user?.role?.name?.toLowerCase();
 
@@ -45,6 +56,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
   ) as keyof typeof sidebarConfig;
   const basePath = getBasePath(user);
 
+<<<<<<< HEAD
   const judgeUsername = user?.username?.trim().toLowerCase();
   const judgesAnything =
     (judgeContests?.contests?.length ?? 0) > 0 ||
@@ -54,12 +66,18 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
   // points at the same place.
   const showJudging = role !== 'judge' && !!judgeUsername && judgesAnything;
 
+=======
+>>>>>>> 8f5c3620965f1ac1ad78ff2c5adf1f4a674d1386
   // getBasePath returns null for any role it does not know about, and for a
   // brand account with no brand attached. That used to mean no navigation at
   // all, which would strand an assigned judge whose role happens not to be one
   // of the five the sidebar understands. Judging is reachable either way.
   if (!role || !basePath) {
+<<<<<<< HEAD
     if (!showJudging) {
+=======
+    if (!judgeHref) {
+>>>>>>> 8f5c3620965f1ac1ad78ff2c5adf1f4a674d1386
       return (
         <div className="flex h-full items-center justify-center p-6 text-red-500">
           Missing profile identifier
@@ -70,9 +88,13 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
 
   const navigation = [
     ...((role && basePath && sidebarConfig[role]?.(basePath)) || []),
+<<<<<<< HEAD
     ...(showJudging
       ? [{ name: 'Judging', href: `/judge/${judgeUsername}`, icon: Gavel }]
       : []),
+=======
+    ...(judgeHref ? [{ name: 'Judging', href: judgeHref, icon: Gavel }] : []),
+>>>>>>> 8f5c3620965f1ac1ad78ff2c5adf1f4a674d1386
   ];
 
   return (

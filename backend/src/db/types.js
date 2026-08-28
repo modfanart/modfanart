@@ -207,6 +207,7 @@
  * @property {string} creator_id
  * @property {string | null} submission_notes
  * @property {'pending' | 'approved' | 'rejected' | 'disqualified' | 'winner'} status
+ * @property {'not_started' | 'agreement_sent' | 'signed' | 'declined' | 'expired' | 'finalized'} licensing_status
  * @property {number | null} rank
  * @property {number} score_public
  * @property {number} score_judge
