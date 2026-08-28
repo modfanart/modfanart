@@ -177,7 +177,16 @@ export const authApi = createApi({
         }
       },
     }),
-
+    sync: builder.mutation({
+      query: ({ idToken, ...options }) => ({
+        url: '/sync',
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: options,
+      }),
+    }),
     // ========================================
     // PASSWORD / ACCOUNT ACTIONS
     // ========================================
@@ -225,6 +234,7 @@ export const {
   useForgotPasswordMutation,
   useResetPasswordMutation,
   useVerifyEmailMutation,
+  useSyncMutation,
   useResendVerificationEmailMutation,
 } = authApi;
 
