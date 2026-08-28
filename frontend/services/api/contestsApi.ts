@@ -476,18 +476,16 @@ const contestsApi = createApi({
       ],
     }),
 
-getContestEntries: builder.query<
-  { entries: ContestEntry[]; total?: number },
-  { contestId: string; status?: string; search?: string; limit?: number; offset?: number }
->({
-  query: ({ contestId, ...params }) => ({
-    url: `/contest/${contestId}/entries`,
-    params,
-  }),
-  providesTags: (result, error, { contestId }) => [
-    { type: 'ContestEntries', id: contestId },
-  ],
-}),
+    getContestEntries: builder.query<
+      { entries: ContestEntry[]; total?: number },
+      { contestId: string; status?: string; search?: string; limit?: number; offset?: number }
+    >({
+      query: ({ contestId, ...params }) => ({
+        url: `/contest/${contestId}/entries`,
+        params,
+      }),
+      providesTags: (result, error, { contestId }) => [{ type: 'ContestEntries', id: contestId }],
+    }),
 
     // Single entry, for the brand's submission detail view. Separate from
     // getContestEntries because that one is paginated and status-filtered, so
@@ -499,9 +497,7 @@ getContestEntries: builder.query<
       query: ({ contestId, entryId }) => ({
         url: `/contest/${contestId}/entries/${entryId}`,
       }),
-      providesTags: (result, error, { contestId }) => [
-        { type: 'ContestEntries', id: contestId },
-      ],
+      providesTags: (result, error, { contestId }) => [{ type: 'ContestEntries', id: contestId }],
     }),
 
     updateEntryStatus: builder.mutation<
@@ -524,7 +520,14 @@ getContestEntries: builder.query<
     // separate from updateEntryStatus: different endpoint, different
     // authorization (brand owner / contests.manage only - judges are out).
     updateEntryLicensingStatus: builder.mutation<
-      { entry: { id: string; status: string; rank: number | null; licensing_status: LicensingStatus } },
+      {
+        entry: {
+          id: string;
+          status: string;
+          rank: number | null;
+          licensing_status: LicensingStatus;
+        };
+      },
       { contestId: string; entryId: string; licensing_status: LicensingStatus }
     >({
       query: ({ contestId, entryId, licensing_status }) => ({
@@ -584,13 +587,19 @@ getContestEntries: builder.query<
         body: { judgeId: userId }, // ✅ FIX
       }),
     }),
-    generateJudgeInviteLink: builder.mutation<GenerateJudgeInviteLinkResponse, GenerateJudgeInviteLinkArgs>({
+    generateJudgeInviteLink: builder.mutation<
+      GenerateJudgeInviteLinkResponse,
+      GenerateJudgeInviteLinkArgs
+    >({
       query: ({ contestId, judgeId }) => ({
         url: `/contest/${contestId}/judges/${judgeId}/invite-link`,
         method: 'POST',
       }),
     }),
-    generateSelfAssignLink: builder.mutation<GenerateSelfAssignLinkResponse, GenerateSelfAssignLinkArgs>({
+    generateSelfAssignLink: builder.mutation<
+      GenerateSelfAssignLinkResponse,
+      GenerateSelfAssignLinkArgs
+    >({
       query: ({ contestId }) => ({
         url: `/contest/${contestId}/judges/self-assign-link`,
         method: 'POST',

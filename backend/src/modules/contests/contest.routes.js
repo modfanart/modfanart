@@ -9,7 +9,9 @@ const ContestJudgeScoreController = require('./controller/contestJudgeScore.cont
 const ContestVoteController = require('./controller/contestVote.controller');
 const ContestWinnerController = require('./controller/contestWinner.controller');
 
-const { authenticateToken } = require('../../common/middleware/auth.middleware');
+const {
+  authenticateToken,
+} = require('../../common/middleware/auth.middleware');
 // const { hasPermission } = require('../middleware/permission.middleware'); // Commented if not used
 
 const router = express.Router();

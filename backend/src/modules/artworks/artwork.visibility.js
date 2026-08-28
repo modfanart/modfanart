@@ -29,9 +29,9 @@
  */
 
 /** The one entry state that makes an artwork public: a selected winner... */
-const GALLERY_ENTRY_STATUS = "winner";
+const GALLERY_ENTRY_STATUS = 'winner';
 /** ...whose licensing agreement the brand has explicitly finalized. */
-const GALLERY_LICENSING_STATUS = "finalized";
+const GALLERY_LICENSING_STATUS = 'finalized';
 
 /**
  * Restrict a Kysely query on `artworks` to publicly visible rows.
@@ -50,15 +50,19 @@ const GALLERY_LICENSING_STATUS = "finalized";
  */
 function applyPublicArtworkFilter(query) {
   return query
-    .where("artworks.status", "=", "published")
-    .where("artworks.moderation_status", "=", "approved")
+    .where('artworks.status', '=', 'published')
+    .where('artworks.moderation_status', '=', 'approved')
     .where(({ exists, selectFrom }) =>
       exists(
-        selectFrom("contest_entries")
-          .select("contest_entries.id")
-          .whereRef("contest_entries.artwork_id", "=", "artworks.id")
-          .where("contest_entries.status", "=", GALLERY_ENTRY_STATUS)
-          .where("contest_entries.licensing_status", "=", GALLERY_LICENSING_STATUS)
+        selectFrom('contest_entries')
+          .select('contest_entries.id')
+          .whereRef('contest_entries.artwork_id', '=', 'artworks.id')
+          .where('contest_entries.status', '=', GALLERY_ENTRY_STATUS)
+          .where(
+            'contest_entries.licensing_status',
+            '=',
+            GALLERY_LICENSING_STATUS
+          )
       )
     );
 }

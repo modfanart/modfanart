@@ -182,18 +182,26 @@ describe('submission note round-trip', () => {
       .executeTakeFirst();
 
     if (contest && artwork) fixture = { contest, artwork };
-    else skipReason = 'database has no contest/artwork rows to build a fixture from';
+    else
+      skipReason =
+        'database has no contest/artwork rows to build a fixture from';
   });
 
   after(async () => {
     try {
       if (createdEntryIds.length > 0) {
-        await db.deleteFrom('contest_entries').where('id', 'in', createdEntryIds).execute();
+        await db
+          .deleteFrom('contest_entries')
+          .where('id', 'in', createdEntryIds)
+          .execute();
       }
     } catch (err) {
       // Surface the ids so leaked rows can be removed by hand; never let a
       // cleanup failure skip db.destroy() and leave the pool open.
-      console.error(`Failed to clean up contest_entries ${createdEntryIds.join(', ')}:`, err.message);
+      console.error(
+        `Failed to clean up contest_entries ${createdEntryIds.join(', ')}:`,
+        err.message
+      );
       throw err;
     } finally {
       await db.destroy();
@@ -221,7 +229,10 @@ describe('submission note round-trip', () => {
     const req = {
       params: { contestId: fixture.contest.id },
       query,
-      user: { id: fixture.artwork.creator_id, permissions: { 'contests.judge': true } },
+      user: {
+        id: fixture.artwork.creator_id,
+        permissions: { 'contests.judge': true },
+      },
     };
     await ContestEntryController.getEntries(req, res);
     return res;
@@ -247,7 +258,10 @@ describe('submission note round-trip', () => {
       params: { contestId: fixture.contest.id },
       query: {},
       // Judge permission is required to see pending entries.
-      user: { id: fixture.artwork.creator_id, permissions: { 'contests.judge': true } },
+      user: {
+        id: fixture.artwork.creator_id,
+        permissions: { 'contests.judge': true },
+      },
     };
 
     await ContestEntryController.getEntries(req, res);
@@ -338,12 +352,19 @@ describe('submission note round-trip', () => {
     // Cascades from the contest_entries cleanup, but be explicit in case the
     // entry row survives a partial failure.
     t.after(async () => {
-      await db.deleteFrom('contest_judge_scores').where('entry_id', '=', entry.id).execute();
+      await db
+        .deleteFrom('contest_judge_scores')
+        .where('entry_id', '=', entry.id)
+        .execute();
     });
 
     const res = await callGetEntries({ limit: '500' });
     const matches = res.body.entries.filter((e) => e.id === entry.id);
-    assert.equal(matches.length, 1, 'a multi-judge entry must appear exactly once');
+    assert.equal(
+      matches.length,
+      1,
+      'a multi-judge entry must appear exactly once'
+    );
     // Collapsed to the top score across judges.
     assert.equal(Number(matches[0].judge_score), 9);
   });
@@ -366,11 +387,17 @@ describe('submission note round-trip', () => {
     // artwork/creator, the Monitor rows silently lose title/creator/thumbnail.
     assert.equal(typeof e.status, 'string');
     assert.equal(typeof e.created_at, 'string');
-    assert.ok(e.artwork && typeof e.artwork === 'object', 'artwork must be nested');
+    assert.ok(
+      e.artwork && typeof e.artwork === 'object',
+      'artwork must be nested'
+    );
     assert.ok('title' in e.artwork, 'artwork.title');
     assert.ok('thumbnail_url' in e.artwork, 'artwork.thumbnail_url');
     assert.ok('file_url' in e.artwork, 'artwork.file_url');
-    assert.ok(e.creator && typeof e.creator === 'object', 'creator must be nested');
+    assert.ok(
+      e.creator && typeof e.creator === 'object',
+      'creator must be nested'
+    );
     assert.ok('username' in e.creator, 'creator.username');
     assert.ok('avatar_url' in e.creator, 'creator.avatar_url');
   });
@@ -390,10 +417,17 @@ describe('submission note round-trip', () => {
     const res = await callGetEntries({ search: term, limit: '500' });
     const needle = term.toLowerCase();
     for (const e of res.body.entries) {
-      const haystack = `${e.artwork?.title ?? ''} ${e.creator?.username ?? ''}`.toLowerCase();
-      assert.ok(haystack.includes(needle), `search returned a non-match: "${haystack}"`);
+      const haystack =
+        `${e.artwork?.title ?? ''} ${e.creator?.username ?? ''}`.toLowerCase();
+      assert.ok(
+        haystack.includes(needle),
+        `search returned a non-match: "${haystack}"`
+      );
     }
-    assert.ok(res.body.entries.some((e) => e.id === entry.id), 'target entry should match');
+    assert.ok(
+      res.body.entries.some((e) => e.id === entry.id),
+      'target entry should match'
+    );
     assert.equal(res.body.entries.length, res.body.total);
 
     // A term with LIKE metacharacters must be treated literally, so it matches
@@ -423,7 +457,10 @@ describe('isBrandAuthorized', () => {
     // The regression this guards: resolving through brands[].user_id denied
     // every brand manager, so getEntries degraded to approved/winner rows and
     // pending submissions disappeared from the dashboard.
-    const user = { id: 'u1', brands: [{ id: 'brand-1', user_id: 'someone-else' }] };
+    const user = {
+      id: 'u1',
+      brands: [{ id: 'brand-1', user_id: 'someone-else' }],
+    };
 
     assert.equal(isBrandAuthorized(user, contest), true);
   });
@@ -442,11 +479,17 @@ describe('isBrandAuthorized', () => {
 
   it('authorizes contest moderators and judges', () => {
     assert.equal(
-      isBrandAuthorized({ id: 'u1', permissions: { 'contests.moderate': true } }, contest),
+      isBrandAuthorized(
+        { id: 'u1', permissions: { 'contests.moderate': true } },
+        contest
+      ),
       true
     );
     assert.equal(
-      isBrandAuthorized({ id: 'u1', permissions: { 'contests.judge': true } }, contest),
+      isBrandAuthorized(
+        { id: 'u1', permissions: { 'contests.judge': true } },
+        contest
+      ),
       true
     );
   });
@@ -481,4 +524,3 @@ describe('isBrandAuthorized', () => {
     assert.strictEqual(isBrandAuthorized(user, contest), true);
   });
 });
-

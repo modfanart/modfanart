@@ -1,10 +1,17 @@
 const admin = require('firebase-admin');
 
-if (!admin.apps.length) {
-  const credential = process.env.FIREBASE_SERVICE_ACCOUNT
-    ? admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT))
-    : admin.credential.applicationDefault();
-  admin.initializeApp({ credential });
+const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT;
+
+if (!admin.apps || admin.apps.length === 0) {
+  if (serviceAccount) {
+    admin.initializeApp({
+      credential: admin.credential.cert(JSON.parse(serviceAccount)),
+    });
+  } else {
+    admin.initializeApp({
+      credential: admin.credential.applicationDefault(),
+    });
+  }
 }
 
 module.exports = admin;
