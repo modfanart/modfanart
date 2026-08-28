@@ -1,3 +1,4 @@
+
 // src/contexts/AuthContext.jsx
 
 import React, {
@@ -22,8 +23,13 @@ import {
   useLazyGetCurrentUserQuery,
 } from '../services/api/userApi';
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL;
+import {
+  useSyncMutation,
+} from '../services/api/authApi';
+
+// ============================================================
+// AUTH CONTEXT
+// ============================================================
 
 const AuthContext = createContext({
   user: null,
@@ -31,7 +37,7 @@ const AuthContext = createContext({
 
   login: async () => { },
   loginWithGoogle: async () => { },
-  logout: () => { },
+  logout: async () => { },
 
   hasRole: () => false,
 
@@ -39,16 +45,40 @@ const AuthContext = createContext({
   isGoogleLoggingIn: false,
 });
 
+// ============================================================
+// AUTH PROVIDER
+// ============================================================
+
 export function AuthProvider({ children }) {
-  const [isLoggingIn, setIsLoggingIn] =
-    useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const [isGoogleLoggingIn, setIsGoogleLoggingIn] =
     useState(false);
 
-  // --------------------------------------------------
-  // Current user
-  // --------------------------------------------------
+  // ----------------------------------------------------------
+  // RTK QUERY
+  // ----------------------------------------------------------
+
+  /**
+   * Firebase -> Backend synchronization.
+   *
+   * The actual HTTP request is handled by authApi.js.
+   *
+   * AuthContext only coordinates:
+   *
+   * Firebase authentication
+   *        ↓
+   * Firebase ID token
+   *        ↓
+   * authApi.sync()
+   *        ↓
+   * Backend
+   */
+  const [sync] = useSyncMutation();
+
+  // ----------------------------------------------------------
+  // Current User
+  // ----------------------------------------------------------
 
   const {
     data,
@@ -61,6 +91,10 @@ export function AuthProvider({ children }) {
 
   const [triggerGetUser] =
     useLazyGetCurrentUserQuery();
+
+  // ----------------------------------------------------------
+  // Normalize User
+  // ----------------------------------------------------------
 
   const user = data
     ? {
@@ -81,68 +115,18 @@ export function AuthProvider({ children }) {
     error?.status
   );
 
-  // --------------------------------------------------
-  // Firebase -> Backend synchronization
-  // --------------------------------------------------
-  //
-  // This is the important common function.
-  //
-  // Both:
-  //   Email/password
-  //   Google
-  //
-  // eventually come here.
-  //
-  // Firebase gives us the ID token.
-  // Backend verifies that token and returns the
-  // application user.
-  // --------------------------------------------------
-
-  const syncWithBackend = useCallback(
-    async (idToken, options = {}) => {
-      const response = await fetch(
-        `${API_BASE_URL}/auth/sync`,
-        {
-          method: 'POST',
-
-          headers: {
-            Authorization: `Bearer ${idToken}`,
-            'Content-Type': 'application/json',
-          },
-
-          body: JSON.stringify(options),
-        }
-      );
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          result?.error ||
-          'Authentication synchronization failed'
-        );
-      }
-
-      return {
-        ...result,
-        idToken,
-      };
-    },
-    []
-  );
-
-  // --------------------------------------------------
-  // Email / Password Login
-  // --------------------------------------------------
+  // ==========================================================
+  // EMAIL / PASSWORD LOGIN
+  // ==========================================================
 
   const login = useCallback(
     async ({ email, password }) => {
       setIsLoggingIn(true);
 
       try {
-        // --------------------------------------------
+        // ----------------------------------------------------
         // 1. Authenticate against Firebase
-        // --------------------------------------------
+        // ----------------------------------------------------
 
         const credential =
           await signInWithEmailAndPassword(
@@ -151,31 +135,34 @@ export function AuthProvider({ children }) {
             password
           );
 
-        // --------------------------------------------
-        // 2. Get Firebase ID token
-        // --------------------------------------------
+        // ----------------------------------------------------
+        // 2. Get Firebase ID Token
+        // ----------------------------------------------------
 
         const idToken =
           await credential.user.getIdToken();
 
-        // --------------------------------------------
-        // 3. Synchronize Firebase user with our DB
-        // --------------------------------------------
+        // ----------------------------------------------------
+        // 3. Synchronize Firebase user with backend
+        //
+        // RTK Query now handles the HTTP request.
+        // ----------------------------------------------------
 
-        const result =
-          await syncWithBackend(idToken);
+        const result = await sync({
+          idToken,
+        }).unwrap();
 
         console.log(
           '[AuthContext] Email login sync:',
           result
         );
 
-        // --------------------------------------------
-        // 4. New user
+        // ----------------------------------------------------
+        // 4. New User
         //
-        // Firebase account exists but our DB account
+        // Firebase account exists but application account
         // does not exist yet.
-        // --------------------------------------------
+        // ----------------------------------------------------
 
         if (
           result?.isNewUser ||
@@ -191,21 +178,21 @@ export function AuthProvider({ children }) {
           };
         }
 
-        // --------------------------------------------
-        // 5. Existing user
+        // ----------------------------------------------------
+        // 5. Existing User
         //
-        // The Firebase ID token becomes the access
-        // token used by the workspace API.
-        // --------------------------------------------
+        // Firebase ID token becomes the access token used
+        // by the workspace/application API.
+        // ----------------------------------------------------
 
         localStorage.setItem(
           'accessToken',
           idToken
         );
 
-        // --------------------------------------------
-        // 6. Refresh current user
-        // --------------------------------------------
+        // ----------------------------------------------------
+        // 6. Refresh Current User
+        // ----------------------------------------------------
 
         await triggerGetUser(
           undefined,
@@ -213,6 +200,10 @@ export function AuthProvider({ children }) {
             forceRefetch: true,
           }
         ).unwrap();
+
+        // ----------------------------------------------------
+        // 7. Return Authentication Result
+        // ----------------------------------------------------
 
         return {
           success: true,
@@ -227,37 +218,33 @@ export function AuthProvider({ children }) {
           err
         );
 
-        localStorage.removeItem(
-          'accessToken'
-        );
+        // ----------------------------------------------------
+        // Clear locally stored authentication state
+        // ----------------------------------------------------
 
-        localStorage.removeItem(
-          'refreshToken'
-        );
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
 
         throw err;
       } finally {
         setIsLoggingIn(false);
       }
     },
-    [
-      syncWithBackend,
-      triggerGetUser,
-    ]
+    [sync, triggerGetUser]
   );
 
-  // --------------------------------------------------
-  // Google Login
-  // --------------------------------------------------
+  // ==========================================================
+  // GOOGLE LOGIN
+  // ==========================================================
 
   const loginWithGoogle = useCallback(
     async () => {
       setIsGoogleLoggingIn(true);
 
       try {
-        // --------------------------------------------
-        // 1. Google provider
-        // --------------------------------------------
+        // ----------------------------------------------------
+        // 1. Create Google Provider
+        // ----------------------------------------------------
 
         const provider =
           new GoogleAuthProvider();
@@ -266,9 +253,9 @@ export function AuthProvider({ children }) {
           prompt: 'select_account',
         });
 
-        // --------------------------------------------
-        // 2. Open Google popup
-        // --------------------------------------------
+        // ----------------------------------------------------
+        // 2. Open Google Popup
+        // ----------------------------------------------------
 
         const credential =
           await signInWithPopup(
@@ -276,37 +263,44 @@ export function AuthProvider({ children }) {
             provider
           );
 
-        // --------------------------------------------
-        // 3. Get Firebase ID token
-        // --------------------------------------------
+        // ----------------------------------------------------
+        // 3. Get Firebase ID Token
+        // ----------------------------------------------------
 
         const idToken =
           await credential.user.getIdToken();
 
-        // --------------------------------------------
-        // 4. Synchronize with backend
-        // --------------------------------------------
+        // ----------------------------------------------------
+        // 4. Synchronize with Backend
+        //
+        // RTK Query handles:
+        //
+        // POST /auth/sync
+        // Authorization: Bearer <firebase-id-token>
+        // ----------------------------------------------------
 
-        const result =
-          await syncWithBackend(idToken);
+        const result = await sync({
+          idToken,
+        }).unwrap();
 
         console.log(
           '[AuthContext] Google login sync:',
           result
         );
 
-        // --------------------------------------------
-        // 5. New Google account
+        // ----------------------------------------------------
+        // 5. New Google Account
         //
-        // Firebase account exists.
-        // Application account does not.
+        // Firebase account exists but application account
+        // does not exist yet.
         //
-        // Send user to signup so they can select:
+        // The caller can redirect the user to signup where
+        // they can select:
         //
         // fan
         // artist
         // brand
-        // --------------------------------------------
+        // ----------------------------------------------------
 
         if (
           result?.isNewUser ||
@@ -322,18 +316,18 @@ export function AuthProvider({ children }) {
           };
         }
 
-        // --------------------------------------------
-        // 6. Existing application user
-        // --------------------------------------------
+        // ----------------------------------------------------
+        // 6. Existing Application User
+        // ----------------------------------------------------
 
         localStorage.setItem(
           'accessToken',
           idToken
         );
 
-        // --------------------------------------------
-        // 7. Refresh current user
-        // --------------------------------------------
+        // ----------------------------------------------------
+        // 7. Refresh Current User
+        // ----------------------------------------------------
 
         await triggerGetUser(
           undefined,
@@ -341,6 +335,10 @@ export function AuthProvider({ children }) {
             forceRefetch: true,
           }
         ).unwrap();
+
+        // ----------------------------------------------------
+        // 8. Return Authentication Result
+        // ----------------------------------------------------
 
         return {
           success: true,
@@ -355,8 +353,10 @@ export function AuthProvider({ children }) {
           err
         );
 
-        // Don't show an error when the user
-        // intentionally closes the Google popup.
+        // ----------------------------------------------------
+        // Don't show an error / clear auth state when the
+        // user intentionally closes the Google popup.
+        // ----------------------------------------------------
 
         if (
           err?.code !==
@@ -376,15 +376,12 @@ export function AuthProvider({ children }) {
         setIsGoogleLoggingIn(false);
       }
     },
-    [
-      syncWithBackend,
-      triggerGetUser,
-    ]
+    [sync, triggerGetUser]
   );
 
-  // --------------------------------------------------
-  // Auto retry logic
-  // --------------------------------------------------
+  // ==========================================================
+  // AUTO RETRY LOGIC
+  // ==========================================================
 
   useEffect(() => {
     if (error?.status === 401) {
@@ -405,13 +402,16 @@ export function AuthProvider({ children }) {
     }
   }, [error, refetch]);
 
-  // --------------------------------------------------
-  // Logout
-  // --------------------------------------------------
+  // ==========================================================
+  // LOGOUT
+  // ==========================================================
 
   const logout = useCallback(async () => {
     try {
+      // ------------------------------------------------------
       // Sign out from Firebase as well.
+      // ------------------------------------------------------
+
       await signOut(firebaseAuth);
     } catch (err) {
       console.error(
@@ -419,21 +419,20 @@ export function AuthProvider({ children }) {
         err
       );
     } finally {
-      localStorage.removeItem(
-        'accessToken'
-      );
+      // ------------------------------------------------------
+      // Clear application authentication state.
+      // ------------------------------------------------------
 
-      localStorage.removeItem(
-        'refreshToken'
-      );
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
 
       window.location.href = '/login';
     }
   }, []);
 
-  // --------------------------------------------------
-  // Role helper
-  // --------------------------------------------------
+  // ==========================================================
+  // ROLE HELPER
+  // ==========================================================
 
   const hasRole = useCallback(
     (roles = []) => {
@@ -444,15 +443,13 @@ export function AuthProvider({ children }) {
         return false;
       }
 
-      // Depending on your API response,
-      // role may be:
+      // Depending on the API response, role may be:
       //
       // "ADMIN"
       //
       // or:
       //
       // { name: "ADMIN" }
-      //
 
       const roleName =
         typeof user.role === 'string'
@@ -468,9 +465,9 @@ export function AuthProvider({ children }) {
     [user]
   );
 
-  // --------------------------------------------------
-  // Provider
-  // --------------------------------------------------
+  // ==========================================================
+  // PROVIDER
+  // ==========================================================
 
   return (
     <AuthContext.Provider
@@ -498,6 +495,10 @@ export function AuthProvider({ children }) {
     </AuthContext.Provider>
   );
 }
+
+// ============================================================
+// USE AUTH
+// ============================================================
 
 export const useAuth = () =>
   useContext(AuthContext);
