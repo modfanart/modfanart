@@ -1,5 +1,4 @@
 // src/contexts/AuthContext.jsx
-<<<<<<< HEAD
 
 import React, {
   createContext,
@@ -25,16 +24,10 @@ import {
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL;
-=======
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { useLoginMutation } from '../services/api/authApi';
-import { useGetCurrentUserQuery, useLazyGetCurrentUserQuery } from '../services/api/userApi';
->>>>>>> 8f5c3620965f1ac1ad78ff2c5adf1f4a674d1386
 
 const AuthContext = createContext({
   user: null,
   loading: true,
-<<<<<<< HEAD
 
   login: async () => { },
   loginWithGoogle: async () => { },
@@ -68,23 +61,6 @@ export function AuthProvider({ children }) {
 
   const [triggerGetUser] =
     useLazyGetCurrentUserQuery();
-=======
-  login: async () => { },
-  logout: () => { },
-  hasRole: () => false,
-  isLoggingIn: false,
-});
-
-export function AuthProvider({ children }) {
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
-
-  const { data, isLoading, error, refetch } = useGetCurrentUserQuery(undefined, {
-    skip: !localStorage.getItem('accessToken'),
-  });
-
-  const [loginMutation] = useLoginMutation();
-  const [triggerGetUser] = useLazyGetCurrentUserQuery();
->>>>>>> 8f5c3620965f1ac1ad78ff2c5adf1f4a674d1386
 
   const user = data
     ? {
@@ -98,7 +74,6 @@ export function AuthProvider({ children }) {
     }
     : null;
 
-<<<<<<< HEAD
   console.log(
     '[AuthContext] Current user:',
     user ? user.username : null,
@@ -426,22 +401,10 @@ export function AuthProvider({ children }) {
         }, 400);
 
         return () => clearTimeout(timeout);
-=======
-  console.log('[AuthContext] Current user:', user ? user.username : null, '| Error:', error?.status);
-
-  // Auto-retry logic
-  useEffect(() => {
-    if (error?.status === 401) {
-      const token = localStorage.getItem('accessToken');
-      if (token) {
-        console.log('[AuthProvider] 401 detected but token exists → forcing refetch');
-        setTimeout(() => refetch(), 400);
->>>>>>> 8f5c3620965f1ac1ad78ff2c5adf1f4a674d1386
       }
     }
   }, [error, refetch]);
 
-<<<<<<< HEAD
   // --------------------------------------------------
   // Logout
   // --------------------------------------------------
@@ -508,63 +471,11 @@ export function AuthProvider({ children }) {
   // --------------------------------------------------
   // Provider
   // --------------------------------------------------
-=======
-  const login = useCallback(async (credentials) => {
-    setIsLoggingIn(true);
-    try {
-      const res = await loginMutation(credentials).unwrap();
-
-      console.log('[AuthContext] Login Response:', res); // ← Add this for debugging
-
-      const accessToken = res?.accessToken || res?.data?.accessToken;
-      const refreshToken = res?.refreshToken || res?.data?.refreshToken;
-
-      if (!accessToken) {
-        throw new Error('No access token received from server');
-      }
-
-      // Save tokens
-      localStorage.setItem('accessToken', accessToken);
-      if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
-
-      console.log('✅ Tokens successfully saved to localStorage');
-      console.log('Token length:', accessToken.length);
-
-      // Small delay
-      await new Promise(r => setTimeout(r, 150));
-
-      // Fetch user
-      const userResponse = await triggerGetUser(undefined, { forceRefetch: true }).unwrap();
-
-      console.log('[AuthContext] /me response:', userResponse);
-
-      return { success: true };
-    } catch (err) {
-      console.error('[AuthContext] Login failed:', err);
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      throw err;
-    } finally {
-      setIsLoggingIn(false);
-    }
-  }, [loginMutation, triggerGetUser]);
-  const logout = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    window.location.href = '/login';
-  };
-
-  const hasRole = (roles = []) => {
-    if (!Array.isArray(roles) || !user?.role?.name) return false;
-    return roles.includes(user.role.name);
-  };
->>>>>>> 8f5c3620965f1ac1ad78ff2c5adf1f4a674d1386
 
   return (
     <AuthContext.Provider
       value={{
         user,
-<<<<<<< HEAD
 
         loading:
           isLoading ||
@@ -581,13 +492,6 @@ export function AuthProvider({ children }) {
 
         isLoggingIn,
         isGoogleLoggingIn,
-=======
-        loading: isLoading || (!user && !!localStorage.getItem('accessToken')),
-        login,
-        logout,
-        hasRole,
-        isLoggingIn,
->>>>>>> 8f5c3620965f1ac1ad78ff2c5adf1f4a674d1386
       }}
     >
       {children}
@@ -595,9 +499,5 @@ export function AuthProvider({ children }) {
   );
 }
 
-<<<<<<< HEAD
 export const useAuth = () =>
   useContext(AuthContext);
-=======
-export const useAuth = () => useContext(AuthContext);
->>>>>>> 8f5c3620965f1ac1ad78ff2c5adf1f4a674d1386
