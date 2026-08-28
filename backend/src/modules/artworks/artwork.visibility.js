@@ -28,6 +28,11 @@
  * database connection.
  */
 
+/** The one entry state that makes an artwork public: a selected winner... */
+const GALLERY_ENTRY_STATUS = 'winner';
+/** ...whose licensing agreement the brand has explicitly finalized. */
+const GALLERY_LICENSING_STATUS = 'finalized';
+
 /**
  * Restrict a Kysely query on `artworks` to publicly visible rows.
  *
