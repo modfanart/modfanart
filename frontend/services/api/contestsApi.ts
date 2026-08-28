@@ -135,8 +135,6 @@ export interface RedeemJudgeInviteArgs {
   token: string;
 }
 
-<<<<<<< HEAD
-=======
 /**
  * Where a selected winner's licensing agreement is, set manually by the brand
  * in the Licensing tab. 'finalized' is terminal and is what admits the artwork
@@ -150,15 +148,11 @@ export type LicensingStatus =
   | 'expired'
   | 'finalized';
 
->>>>>>> 8f5c3620965f1ac1ad78ff2c5adf1f4a674d1386
 export interface ContestEntry {
   id: string;
   status: 'pending' | 'approved' | 'rejected' | 'disqualified' | 'winner';
   rank: number | null;
-<<<<<<< HEAD
-=======
   licensing_status: LicensingStatus;
->>>>>>> 8f5c3620965f1ac1ad78ff2c5adf1f4a674d1386
   // Packed by packSubmissionNotes: the entrant's note plus a trailing
   // "Fandom / Original IP: ..." line. Use unpackSubmissionNotes to display.
   // The API has returned this since the note feature landed; it was missing
@@ -482,18 +476,16 @@ const contestsApi = createApi({
       ],
     }),
 
-getContestEntries: builder.query<
-  { entries: ContestEntry[]; total?: number },
-  { contestId: string; status?: string; search?: string; limit?: number; offset?: number }
->({
-  query: ({ contestId, ...params }) => ({
-    url: `/contest/${contestId}/entries`,
-    params,
-  }),
-  providesTags: (result, error, { contestId }) => [
-    { type: 'ContestEntries', id: contestId },
-  ],
-}),
+    getContestEntries: builder.query<
+      { entries: ContestEntry[]; total?: number },
+      { contestId: string; status?: string; search?: string; limit?: number; offset?: number }
+    >({
+      query: ({ contestId, ...params }) => ({
+        url: `/contest/${contestId}/entries`,
+        params,
+      }),
+      providesTags: (result, error, { contestId }) => [{ type: 'ContestEntries', id: contestId }],
+    }),
 
     // Single entry, for the brand's submission detail view. Separate from
     // getContestEntries because that one is paginated and status-filtered, so
@@ -505,9 +497,7 @@ getContestEntries: builder.query<
       query: ({ contestId, entryId }) => ({
         url: `/contest/${contestId}/entries/${entryId}`,
       }),
-      providesTags: (result, error, { contestId }) => [
-        { type: 'ContestEntries', id: contestId },
-      ],
+      providesTags: (result, error, { contestId }) => [{ type: 'ContestEntries', id: contestId }],
     }),
 
     updateEntryStatus: builder.mutation<
@@ -526,13 +516,18 @@ getContestEntries: builder.query<
       ],
     }),
 
-<<<<<<< HEAD
-=======
     // Manual licensing tracking for selected winners (Licensing tab). Kept
     // separate from updateEntryStatus: different endpoint, different
     // authorization (brand owner / contests.manage only - judges are out).
     updateEntryLicensingStatus: builder.mutation<
-      { entry: { id: string; status: string; rank: number | null; licensing_status: LicensingStatus } },
+      {
+        entry: {
+          id: string;
+          status: string;
+          rank: number | null;
+          licensing_status: LicensingStatus;
+        };
+      },
       { contestId: string; entryId: string; licensing_status: LicensingStatus }
     >({
       query: ({ contestId, entryId, licensing_status }) => ({
@@ -546,7 +541,6 @@ getContestEntries: builder.query<
       ],
     }),
 
->>>>>>> 8f5c3620965f1ac1ad78ff2c5adf1f4a674d1386
     getMyContestEntries: builder.query<
       { entries: any[]; total?: number },
       { status?: string; contestId?: string; limit?: number; offset?: number } | void
@@ -593,13 +587,19 @@ getContestEntries: builder.query<
         body: { judgeId: userId }, // ✅ FIX
       }),
     }),
-    generateJudgeInviteLink: builder.mutation<GenerateJudgeInviteLinkResponse, GenerateJudgeInviteLinkArgs>({
+    generateJudgeInviteLink: builder.mutation<
+      GenerateJudgeInviteLinkResponse,
+      GenerateJudgeInviteLinkArgs
+    >({
       query: ({ contestId, judgeId }) => ({
         url: `/contest/${contestId}/judges/${judgeId}/invite-link`,
         method: 'POST',
       }),
     }),
-    generateSelfAssignLink: builder.mutation<GenerateSelfAssignLinkResponse, GenerateSelfAssignLinkArgs>({
+    generateSelfAssignLink: builder.mutation<
+      GenerateSelfAssignLinkResponse,
+      GenerateSelfAssignLinkArgs
+    >({
       query: ({ contestId }) => ({
         url: `/contest/${contestId}/judges/self-assign-link`,
         method: 'POST',
@@ -685,8 +685,6 @@ getContestEntries: builder.query<
       invalidatesTags: (result, error, contestId) => [{ type: 'Contest', id: contestId }],
     }),
 
-<<<<<<< HEAD
-=======
     // Replaces the winner selection wholesale: entry_ids ordered, first is
     // rank 1, [] clears. Invalidates the leaderboard and entries so the
     // selection state shown anywhere refreshes.
@@ -715,7 +713,6 @@ getContestEntries: builder.query<
       }),
     }),
 
->>>>>>> 8f5c3620965f1ac1ad78ff2c5adf1f4a674d1386
     distributePrizes: builder.mutation<{ success: boolean; message?: string }, string>({
       query: (contestId) => ({
         url: `/contest/${contestId}/distribute-prizes`,
@@ -758,10 +755,7 @@ export const {
   useSubmitEntryMutation,
   useGetMyJudgeScoresQuery,
   useUpdateEntryStatusMutation,
-<<<<<<< HEAD
-=======
   useUpdateEntryLicensingStatusMutation,
->>>>>>> 8f5c3620965f1ac1ad78ff2c5adf1f4a674d1386
   useGetMyContestEntriesQuery,
   useDeleteContestEntryMutation,
   useGetMySubmittedContestsQuery,
@@ -779,11 +773,8 @@ export const {
   useVoteForEntryMutation,
   useAnnounceWinnersMutation,
   useDistributePrizesMutation,
-<<<<<<< HEAD
-=======
   useSelectWinnersMutation,
   useGetResultsShareLinkMutation,
->>>>>>> 8f5c3620965f1ac1ad78ff2c5adf1f4a674d1386
   useGetLeaderboardQuery,
   useGetJudgeContestsQuery,
   useGenerateJudgeInviteLinkMutation,

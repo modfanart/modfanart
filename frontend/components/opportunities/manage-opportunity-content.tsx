@@ -77,12 +77,9 @@ import {
   foldEntriesPage,
   buildEntriesQueryArgs,
 } from './submission-pagination';
-<<<<<<< HEAD
-=======
 import { ResultsTabContent } from './results-tab-content';
 import { LicensingTabContent } from './licensing-tab-content';
 import { JudgeCredentialsDialog, type JudgeCredentials } from './judge-credentials-dialog';
->>>>>>> 8f5c3620965f1ac1ad78ff2c5adf1f4a674d1386
 
 export function ManageOpportunityContent({
   opportunityId,
@@ -103,10 +100,7 @@ export function ManageOpportunityContent({
   const [assignJudgeOpen, setAssignJudgeOpen] = useState(false);
   const [judgeSearch, setJudgeSearch] = useState('');
   const [showCreateJudgeForm, setShowCreateJudgeForm] = useState(false);
-<<<<<<< HEAD
-=======
   const [judgeCredentials, setJudgeCredentials] = useState<JudgeCredentials | null>(null);
->>>>>>> 8f5c3620965f1ac1ad78ff2c5adf1f4a674d1386
 
   // New Judge Form State
   const [newJudgeData, setNewJudgeData] = useState({
@@ -321,16 +315,6 @@ export function ManageOpportunityContent({
         judgeId: newJudgeId,
       }).unwrap();
 
-<<<<<<< HEAD
-      alert(
-        `Judge "${newJudgeData.username}" created successfully!\n\n` +
-          `Temporary Password: ${tempPassword}\n` +
-          (invite.email_sent
-            ? `An invite email with a one-time access link has also been sent to ${newJudgeData.email}.`
-            : `One-time access link (email failed to send, share manually):\n${invite.invite_url}`) +
-          `\n\nPlease save and share the password with the judge — the invite link alone signs them into the dashboard, but they still need this password to log in the first time.`
-      );
-=======
       // The password is generated above and never stored, so hand it to a
       // dialog the brand can copy from. alert() text cannot be selected, and
       // dismissing it lost the only copy of the password.
@@ -341,7 +325,6 @@ export function ManageOpportunityContent({
         inviteUrl: invite.invite_url,
         emailSent: invite.email_sent,
       });
->>>>>>> 8f5c3620965f1ac1ad78ff2c5adf1f4a674d1386
 
       // Reset form
       setNewJudgeData({ username: '', email: '', bio: '' });
@@ -554,17 +537,11 @@ export function ManageOpportunityContent({
 
         {/* Tabs */}
         <Tabs defaultValue="submissions" className="w-full">
-<<<<<<< HEAD
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="submissions">Submissions ({totalEntries})</TabsTrigger>
-            <TabsTrigger value="judges">Judges ({judges.length})</TabsTrigger>
-=======
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="submissions">Submissions ({totalEntries})</TabsTrigger>
             <TabsTrigger value="judges">Judges ({judges.length})</TabsTrigger>
             <TabsTrigger value="results">Results</TabsTrigger>
             <TabsTrigger value="licensing">Licensing</TabsTrigger>
->>>>>>> 8f5c3620965f1ac1ad78ff2c5adf1f4a674d1386
           </TabsList>
 
           {/* Submissions Tab */}
@@ -706,8 +683,6 @@ export function ManageOpportunityContent({
               </CardContent>
             </Card>
           </TabsContent>
-<<<<<<< HEAD
-=======
 
           {/* Results Tab - winner selection + public share link */}
           <TabsContent value="results" className="space-y-6">
@@ -726,7 +701,6 @@ export function ManageOpportunityContent({
               </CardContent>
             </Card>
           </TabsContent>
->>>>>>> 8f5c3620965f1ac1ad78ff2c5adf1f4a674d1386
         </Tabs>
 
         {/* Delete Contest Dialog */}
@@ -856,15 +830,12 @@ export function ManageOpportunityContent({
           </DialogContent>
         </Dialog>
 
-<<<<<<< HEAD
-=======
         {/* One-time judge credentials, shown after Create & Assign Judge */}
         <JudgeCredentialsDialog
           credentials={judgeCredentials}
           onClose={() => setJudgeCredentials(null)}
         />
 
->>>>>>> 8f5c3620965f1ac1ad78ff2c5adf1f4a674d1386
         {/* Entry Detail Dialog */}
         <EntryDetailDialog
           entry={selectedEntry}

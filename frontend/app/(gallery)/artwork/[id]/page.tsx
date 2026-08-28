@@ -97,11 +97,7 @@ export default function ArtworkDetailPage() {
 
   if (isLoading) {
     return (
-<<<<<<< HEAD
-      <div className="container py-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-=======
       <div className="container pt-24 pb-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
->>>>>>> 8f5c3620965f1ac1ad78ff2c5adf1f4a674d1386
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-12">
           <Skeleton className="aspect-square w-full rounded-xl" />
           <div className="space-y-6">
@@ -117,21 +113,13 @@ export default function ArtworkDetailPage() {
 
   if (isError || !artwork) {
     return (
-<<<<<<< HEAD
-      <div className="container py-20 text-center max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-=======
       <div className="container pt-28 pb-20 text-center max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
->>>>>>> 8f5c3620965f1ac1ad78ff2c5adf1f4a674d1386
         <h2 className="text-2xl lg:text-3xl font-bold mb-4">Artwork Not Found</h2>
         <p className="text-muted-foreground mb-8 max-w-md mx-auto">
           {(error as any)?.data?.message || 'The requested artwork could not be loaded.'}
         </p>
         <Button asChild size="lg">
-<<<<<<< HEAD
-          <Link href="/gallery/featured">Back to Gallery</Link>
-=======
           <Link href="/gallery">Back to Gallery</Link>
->>>>>>> 8f5c3620965f1ac1ad78ff2c5adf1f4a674d1386
         </Button>
       </div>
     );
@@ -151,17 +139,10 @@ export default function ArtworkDetailPage() {
   const createdDate = format(new Date(artwork.created_at), 'MMMM d, yyyy');
 
   return (
-<<<<<<< HEAD
-    <div className="container py-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="mb-8">
-        <Link
-          href="/gallery/featured"
-=======
     <div className="container pt-24 pb-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="mb-8">
         <Link
           href="/gallery"
->>>>>>> 8f5c3620965f1ac1ad78ff2c5adf1f4a674d1386
           className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -274,15 +255,6 @@ export default function ArtworkDetailPage() {
                   No pricing tiers defined yet. Please contact us for custom licensing options.
                 </p>
               )}
-<<<<<<< HEAD
-
-              <div className="mt-8 pt-6 border-t">
-                <Button size="lg" className="w-full" disabled={!isPublished}>
-                  {isPublished ? 'Proceed to License' : 'Not Available for Licensing'}
-                </Button>
-              </div>
-=======
->>>>>>> 8f5c3620965f1ac1ad78ff2c5adf1f4a674d1386
             </CardContent>
           </Card>
 
