@@ -236,8 +236,8 @@ export const ShopPage = () => {
           <button
             onClick={() => setSelectedCategory('all')}
             className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${selectedCategory === 'all'
-                ? 'bg-white text-black'
-                : 'bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700'
+              ? 'bg-white text-black'
+              : 'bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700'
               }`}
           >
             All
@@ -247,8 +247,8 @@ export const ShopPage = () => {
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
               className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${selectedCategory === cat.id
-                  ? 'bg-white text-black'
-                  : 'bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700'
+                ? 'bg-white text-black'
+                : 'bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700'
                 }`}
               data-testid={`category-chip-${cat.id}`}
             >

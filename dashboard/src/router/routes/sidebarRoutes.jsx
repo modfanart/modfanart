@@ -1,6 +1,6 @@
 // src/routes/sidebarRoutes.js
 import {
-  Users, Storefront, ShieldCheck, Trophy, ClipboardTextIcon, SquaresFour, Question,
+  Users, Storefront, ShieldCheck, Trophy, ClipboardTextIcon, SquaresFour, Question, ShoppingBag
 } from "@phosphor-icons/react"
 import Dashboard from "../../concepts/dashboard/DashboardPage"
 import ProjectsTasksList from "../../concepts/tasks/ProjectTasksList"
@@ -15,6 +15,7 @@ import { File } from "@phosphor-icons/react/dist/ssr";
 import LicensesList from "../../concepts/licensing/LicensingList";
 import MediaList from "../../concepts/media/MediaList";
 import { FileText } from "lucide-react";
+import ShopPage from "../../concepts/merch-on-demand/ShopPage"
 const iconProps = {
   size: 20,
   weight: "duotone",
@@ -84,13 +85,13 @@ export const sidebarRoutes = [
     isSidebarActive: true,
     element: <MediaList />, // Replace with actual component when ready
   },
-  // {
-  //   path: "/storefront",
-  //   name: "Storefront",
-  //   icon: <ShoppingBag {...iconProps} />,
-  //   isSidebarActive: true,
-  //   element: null,
-  // },
+  {
+    path: "/storefront",
+    name: "Storefront",
+    icon: <ShoppingBag {...iconProps} />,
+    isSidebarActive: true,
+    element: <ShopPage />,
+  },
   // {
   //   path: "/content",
   //   name: "Content",
