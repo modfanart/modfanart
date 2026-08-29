@@ -153,21 +153,6 @@ export const LoginPage = () => {
 
         <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-8">
 
-          <h2 className="text-xl font-semibold text-white">
-            Welcome back
-          </h2>
-
-          <p className="text-zinc-400 text-sm mb-6">
-            Sign in to your account
-          </p>
-
-          <Link
-            to="/"
-            className="text-sm text-zinc-500 mb-6 inline-block hover:text-white transition-colors"
-          >
-            Home
-          </Link>
-
           {error && (
             <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-md text-red-400 text-sm">
               {error}
@@ -295,20 +280,6 @@ export const LoginPage = () => {
               : 'Continue with Google'}
           </Button>
 
-          {/* ---------------------------------------- */}
-          {/* Register */}
-          {/* ---------------------------------------- */}
-
-          <div className="mt-6 text-center text-sm text-zinc-400">
-            Don't have an account?{' '}
-
-            <Link
-              to="/register"
-              className="text-white underline hover:text-zinc-300"
-            >
-              Register
-            </Link>
-          </div>
 
         </div>
       </div>
