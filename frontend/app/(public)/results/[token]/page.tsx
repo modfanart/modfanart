@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ExternalLink, Trophy } from 'lucide-react';
+import { ExternalLink, FileText, Trophy } from 'lucide-react';
 
 import { API_BASE_URL } from '@/services';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -28,6 +28,10 @@ interface PublicWinner {
 interface PublicResults {
   contest: { title: string; hero_image: string | null };
   winners: PublicWinner[];
+}
+
+function isPdfUrl(url: string | null) {
+  return !!url && /\.pdf($|\?)/i.test(url);
 }
 
 /**
@@ -137,25 +141,43 @@ export default function PublicResultsPage() {
                     aria-label={`View full artwork: ${winner.artwork_title || 'Untitled'}`}
                   >
                     {(winner.artwork_thumbnail || winner.artwork_file_url) && (
-                      <Image
-                        src={winner.artwork_thumbnail || winner.artwork_file_url || ''}
-                        alt={winner.artwork_title || 'Winning entry'}
-                        fill
-                        className="object-cover"
-                        sizes="80px"
-                      />
+                      isPdfUrl(winner.artwork_thumbnail || winner.artwork_file_url) ? (
+                        <div className="flex h-full w-full items-center justify-center bg-muted">
+                          <FileText className="h-8 w-8 text-muted-foreground" />
+                        </div>
+                      ) : (
+                        <Image
+                          src={winner.artwork_thumbnail || winner.artwork_file_url || ''}
+                          alt={winner.artwork_title || 'Winning entry'}
+                          fill
+                          className="object-cover"
+                          sizes="80px"
+                        />
+                      )
                     )}
                   </Link>
                 ) : (
                   <div className="relative h-20 w-20 rounded-md overflow-hidden bg-muted shrink-0">
                     {(winner.artwork_thumbnail || winner.artwork_file_url) && (
-                      <Image
-                        src={winner.artwork_thumbnail || winner.artwork_file_url || ''}
-                        alt={winner.artwork_title || 'Winning entry'}
-                        fill
-                        className="object-cover"
-                        sizes="80px"
-                      />
+                      isPdfUrl(winner.artwork_thumbnail || winner.artwork_file_url) ? (
+                        <a
+                          href={winner.artwork_file_url ?? undefined}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex h-full w-full items-center justify-center bg-muted"
+                          aria-label="View PDF submission"
+                        >
+                          <FileText className="h-8 w-8 text-muted-foreground" />
+                        </a>
+                      ) : (
+                        <Image
+                          src={winner.artwork_thumbnail || winner.artwork_file_url || ''}
+                          alt={winner.artwork_title || 'Winning entry'}
+                          fill
+                          className="object-cover"
+                          sizes="80px"
+                        />
+                      )
                     )}
                   </div>
                 )}

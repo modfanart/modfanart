@@ -6,6 +6,7 @@ const ArtworkPricingTier = require("../models/artworkPricingTier.model");
 const CDNFile = require("../../cdn/models/cdn-file.model");
 const CDNFileService = require("../../cdn/services/cdn-file.service");
 const cdnFileModel = require("../../cdn/models/cdn-file.model");
+const { renderPdfThumbnail } = require("../utils/pdf-thumbnail.util");
 const { applyPublicArtworkFilter } = require("../artwork.visibility");
 
 const { db } = require("../../../config");
@@ -57,6 +58,34 @@ class ArtworkController {
       }
 
 const cdnService = new CDNFileService(cdnFileModel);
+
+let pdfThumbnailUrl = null;
+if (ext === ".pdf") {
+  const thumbBuffer = await renderPdfThumbnail(req.file.path);
+  if (thumbBuffer) {
+    const thumbFilename = `${path.parse(req.file.filename).name}-thumb.png`;
+    pdfThumbnailUrl = await cdnService.uploadBufferToCDN(
+      thumbBuffer,
+      thumbFilename,
+      "image/png"
+    );
+  }
+}
+
+const cdnFile = await cdnService.createFileRecord(req.file, userId);
+
+// Create artwork
+const artwork = await Artwork.create(userId, {
+  title: title.trim(),
+  description: description?.trim() || null,
+
+  file_url: cdnFile.url,
+  thumbnail_url: pdfThumbnailUrl || cdnFile.url,
+  source_file_url: cdnFile.url,
+
+  status: "draft",
+  moderation_status: "pending",
+});
 
 const cdnFile = await cdnService.createFileRecord(
   req.file,
