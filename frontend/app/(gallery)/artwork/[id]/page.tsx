@@ -156,15 +156,26 @@ export default function ArtworkDetailPage() {
         <div className="bg-muted/40 rounded-2xl overflow-hidden border shadow-sm">
           <div className="aspect-square relative">
             {isPdfUrl(artwork.file_url || artwork.thumbnail_url) ? (
-              <a
-                href={artwork.file_url ?? undefined}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex h-full w-full flex-col items-center justify-center gap-3 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <FileText className="h-20 w-20" />
-                <span className="text-sm font-medium">Open PDF submission</span>
-              </a>
+              <>
+                {/* Most browsers render PDFs natively inside an iframe, so the
+                    submission shows inline rather than requiring a click-through.
+                    #toolbar=0 trims the built-in PDF viewer chrome so it sits
+                    flush in the card instead of showing a second set of controls. */}
+                <iframe
+                  src={`${artwork.file_url}#toolbar=0`}
+                  title={artwork.title}
+                  className="h-full w-full border-0"
+                />
+                <a
+                  href={artwork.file_url ?? undefined}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="absolute top-3 right-3 inline-flex items-center gap-1.5 rounded-md bg-background/90 backdrop-blur px-2.5 py-1.5 text-xs font-medium text-muted-foreground border shadow-sm hover:text-foreground transition-colors"
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                  Open full size
+                </a>
+              </>
             ) : (
               <Image
                 src={artwork.file_url || artwork.thumbnail_url || '/placeholder-artwork.svg'}
