@@ -42,8 +42,11 @@ function FinalistRow({
         <div className="relative h-20 w-20 rounded-md overflow-hidden bg-muted shrink-0">
           {(entry.artwork_thumbnail || entry.artwork_file_url) && (
             isPdfUrl(entry.artwork_thumbnail || entry.artwork_file_url) ? (
-              <div className="flex h-full w-full items-center justify-center bg-muted">
-                <FileText className="h-8 w-8 text-muted-foreground" />
+              <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-muted">
+                <FileText className="h-7 w-7 text-muted-foreground" />
+                <span className="text-[10px] font-medium leading-none text-muted-foreground">
+                  PDF
+                </span>
               </div>
             ) : (
               <Image
