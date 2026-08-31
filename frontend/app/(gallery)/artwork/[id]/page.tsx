@@ -8,7 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowLeft, Download, Share2, Heart } from 'lucide-react';
+import { ArrowLeft, Download, Share2, Heart, FileText } from 'lucide-react';
+import { isPdfUrl } from '@/lib/utils/file-type';
 import { useGetArtworkQuery } from '@/services/api/artworkApi';
 import { useGetArtworkTagsQuery } from '@/services/api/artworkTagsApi';
 import { useGetArtworkCategoriesQuery } from '@/services/api/artworkApi';
@@ -154,14 +155,26 @@ export default function ArtworkDetailPage() {
         {/* Image Section */}
         <div className="bg-muted/40 rounded-2xl overflow-hidden border shadow-sm">
           <div className="aspect-square relative">
-            <Image
-              src={artwork.file_url || artwork.thumbnail_url || '/placeholder-artwork.svg'}
-              alt={artwork.title}
-              fill
-              className="object-contain p-6 sm:p-10 md:p-12"
-              priority
-              sizes="(max-width: 1024px) 100vw, 50vw"
-            />
+            {isPdfUrl(artwork.file_url || artwork.thumbnail_url) ? (
+              <a
+                href={artwork.file_url ?? undefined}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex h-full w-full flex-col items-center justify-center gap-3 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <FileText className="h-20 w-20" />
+                <span className="text-sm font-medium">Open PDF submission</span>
+              </a>
+            ) : (
+              <Image
+                src={artwork.file_url || artwork.thumbnail_url || '/placeholder-artwork.svg'}
+                alt={artwork.title}
+                fill
+                className="object-contain p-6 sm:p-10 md:p-12"
+                priority
+                sizes="(max-width: 1024px) 100vw, 50vw"
+              />
+            )}
           </div>
         </div>
 
