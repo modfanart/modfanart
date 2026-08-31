@@ -142,8 +142,11 @@ export default function PublicResultsPage() {
                   >
                     {(winner.artwork_thumbnail || winner.artwork_file_url) && (
                       isPdfUrl(winner.artwork_thumbnail || winner.artwork_file_url) ? (
-                        <div className="flex h-full w-full items-center justify-center bg-muted">
-                          <FileText className="h-8 w-8 text-muted-foreground" />
+                        <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-muted">
+                          <FileText className="h-7 w-7 text-muted-foreground" />
+                          <span className="text-[10px] font-medium leading-none text-muted-foreground">
+                            PDF
+                          </span>
                         </div>
                       ) : (
                         <Image
@@ -164,10 +167,13 @@ export default function PublicResultsPage() {
                           href={winner.artwork_file_url ?? undefined}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex h-full w-full items-center justify-center bg-muted"
+                          className="flex h-full w-full flex-col items-center justify-center gap-1 bg-muted"
                           aria-label="View PDF submission"
                         >
-                          <FileText className="h-8 w-8 text-muted-foreground" />
+                          <FileText className="h-7 w-7 text-muted-foreground" />
+                          <span className="text-[10px] font-medium leading-none text-muted-foreground">
+                            PDF
+                          </span>
                         </a>
                       ) : (
                         <Image
