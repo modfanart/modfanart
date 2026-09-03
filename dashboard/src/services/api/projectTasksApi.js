@@ -4,20 +4,19 @@ import { API_BASE_URL } from '..';
 export const projectTaskApi = createApi({
   reducerPath: 'projectTaskApi',
   baseQuery: fetchBaseQuery({
-    baseUrl:  `${API_BASE_URL}`,
-    prepareHeaders: (headers) => {
-    const token = localStorage.getItem('accessToken');
+    baseUrl: `${API_BASE_URL}`,
+    prepareHeaders: headers => {
+      const token = localStorage.getItem('accessToken');
 
-    if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
-    }
+      if (token) {
+        headers.set('Authorization', `Bearer ${token}`);
+      }
 
-    return headers;
-  },
+      return headers;
+    },
   }),
   tagTypes: ['Project', 'Task', 'ProjectMembers'],
-  endpoints: (builder) => ({
-
+  endpoints: builder => ({
     // ==================== PROJECTS ====================
     getMyProjects: builder.query({
       query: () => '/projects/my-projects',
@@ -25,12 +24,12 @@ export const projectTaskApi = createApi({
     }),
 
     getProjectById: builder.query({
-      query: (id) => `/projects/${id}`,
+      query: id => `/projects/${id}`,
       providesTags: (result, error, id) => [{ type: 'Project', id }],
     }),
 
     createProject: builder.mutation({
-      query: (body) => ({
+      query: body => ({
         url: '/projects',
         method: 'POST',
         body,
@@ -46,22 +45,22 @@ export const projectTaskApi = createApi({
       }),
       invalidatesTags: ['Project'],
     }),
-getProjectTasks: builder.query({
-  query: (projectId) => `/tasks/project/${projectId}`,
-  providesTags: (result, error, projectId) => [
-    { type: 'Task', id: projectId },
-  ],
-}),
-deleteProject: builder.mutation({
-  query: (id) => ({
-    url: `/projects/${id}`,
-    method: 'DELETE',
-  }),
-  invalidatesTags: ['Project'],
-}),
+    getProjectTasks: builder.query({
+      query: projectId => `/tasks/project/${projectId}`,
+      providesTags: (result, error, projectId) => [
+        { type: 'Task', id: projectId },
+      ],
+    }),
+    deleteProject: builder.mutation({
+      query: id => ({
+        url: `/projects/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Project'],
+    }),
     // Members
     getProjectMembers: builder.query({
-      query: (projectId) => `/projects/${projectId}/members`,
+      query: projectId => `/projects/${projectId}/members`,
       providesTags: ['ProjectMembers'],
     }),
 
@@ -81,17 +80,19 @@ deleteProject: builder.mutation({
     }),
 
     getTasksByProject: builder.query({
-      query: (projectId) => `/tasks/project/${projectId}`,
-      providesTags: (result, error, projectId) => [{ type: 'Task', id: projectId }],
+      query: projectId => `/tasks/project/${projectId}`,
+      providesTags: (result, error, projectId) => [
+        { type: 'Task', id: projectId },
+      ],
     }),
 
     getTaskById: builder.query({
-      query: (id) => `/tasks/${id}`,
+      query: id => `/tasks/${id}`,
       providesTags: (result, error, id) => [{ type: 'Task', id }],
     }),
 
     createTask: builder.mutation({
-      query: (body) => ({
+      query: body => ({
         url: '/tasks',
         method: 'POST',
         body,
@@ -136,7 +137,8 @@ export const {
   useGetProjectMembersQuery,
   useAddProjectMemberMutation,
   useGetProjectTasksQuery, // 👈 add this
-  useGetMyTasksQuery,useDeleteProjectMutation,
+  useGetMyTasksQuery,
+  useDeleteProjectMutation,
   useGetTasksByProjectQuery,
   useGetTaskByIdQuery,
   useCreateTaskMutation,

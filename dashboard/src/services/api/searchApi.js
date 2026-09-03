@@ -10,21 +10,21 @@ export const searchApi = createApi({
     baseUrl: `${API_BASE_URL}`,
     credentials: 'include',
 
-  prepareHeaders: (headers) => {
-    const token = localStorage.getItem('accessToken');
+    prepareHeaders: headers => {
+      const token = localStorage.getItem('accessToken');
 
-    if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
-    }
+      if (token) {
+        headers.set('Authorization', `Bearer ${token}`);
+      }
 
-    return headers;
-  },
+      return headers;
+    },
   }),
 
-  endpoints: (builder) => ({
+  endpoints: builder => ({
     // Global Search
     globalSearch: builder.query({
-      query: (params) => ({
+      query: params => ({
         url: '/search',
 
         params: {
@@ -37,10 +37,10 @@ export const searchApi = createApi({
 
       keepUnusedDataFor: 60,
 
-      transformResponse: (response) => ({
+      transformResponse: response => ({
         ...response,
 
-        results: response.results.map((item) => ({
+        results: response.results.map(item => ({
           ...item,
           image: item.image ?? null,
         })),

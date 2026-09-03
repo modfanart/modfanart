@@ -6,30 +6,36 @@ export const userApi = createApi({
   reducerPath: 'userApi',
   baseQuery: fetchBaseQuery({
     baseUrl: `${API_BASE_URL}/users`,
- prepareHeaders: (headers) => {
-    const token = localStorage.getItem('accessToken');
+    prepareHeaders: headers => {
+      const token = localStorage.getItem('accessToken');
 
-    if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
-    }
+      if (token) {
+        headers.set('Authorization', `Bearer ${token}`);
+      }
 
-    return headers;
-  },
+      return headers;
+    },
   }),
 
-  tagTypes: ['CurrentUser', 'UserList', 'UserViolations', 'PublicProfile', 'UsersByRole'],
+  tagTypes: [
+    'CurrentUser',
+    'UserList',
+    'UserViolations',
+    'PublicProfile',
+    'UsersByRole',
+  ],
 
-  endpoints: (builder) => ({
+  endpoints: builder => ({
     // GET /users/me
-getCurrentUser: builder.query({
-  query: () => '/me',
-  providesTags: ['CurrentUser'],
-  transformResponse: (response) => response?.user || response, // Normalize here
-}),
+    getCurrentUser: builder.query({
+      query: () => '/me',
+      providesTags: ['CurrentUser'],
+      transformResponse: response => response?.user || response, // Normalize here
+    }),
 
     // PATCH /users/me
     updateProfile: builder.mutation({
-      query: (body) => ({
+      query: body => ({
         url: '/me',
         method: 'PATCH',
         body,
@@ -38,11 +44,11 @@ getCurrentUser: builder.query({
     }),
 
     getUserByUsername: builder.query({
-      query: (username) => `/by-username/${username}`,
+      query: username => `/by-username/${username}`,
       providesTags: (result, error, username) => [
         { type: 'PublicProfile', id: username.toLowerCase() },
       ],
-      transformResponse: (response) => {
+      transformResponse: response => {
         if (!response?.success || !response?.user) {
           throw new Error('Invalid profile response from server');
         }
@@ -55,7 +61,7 @@ getCurrentUser: builder.query({
 
     // PATCH /users/me/password
     changePassword: builder.mutation({
-      query: (body) => ({
+      query: body => ({
         url: '/me/password',
         method: 'PATCH',
         body,
@@ -63,7 +69,7 @@ getCurrentUser: builder.query({
     }),
 
     createUser: builder.mutation({
-      query: (body) => ({
+      query: body => ({
         url: '/create',
         method: 'POST',
         body,
@@ -72,7 +78,7 @@ getCurrentUser: builder.query({
     }),
 
     uploadAvatar: builder.mutation({
-      query: (file) => {
+      query: file => {
         const formData = new FormData();
         formData.append('avatar', file);
         return {
@@ -94,7 +100,7 @@ getCurrentUser: builder.query({
 
     // GET /users/all → Admin: List all users
     getAllUsers: builder.query({
-      query: (params) => ({
+      query: params => ({
         url: '/all',
         params,
       }),
@@ -115,7 +121,7 @@ getCurrentUser: builder.query({
 
     // GET /users/:id → Admin: Get user by ID
     getUserById: builder.query({
-      query: (id) => `/${id}`,
+      query: id => `/${id}`,
       providesTags: (result, error, id) => [{ type: 'CurrentUser', id }],
     }),
 
@@ -139,7 +145,7 @@ getCurrentUser: builder.query({
 
     // GET /users/:id/violations
     getUserViolations: builder.query({
-      query: (userId) => `/${userId}/violations`,
+      query: userId => `/${userId}/violations`,
       providesTags: (result, error, userId) => [
         'UserViolations',
         { type: 'UserViolations', id: userId },
@@ -163,7 +169,7 @@ getCurrentUser: builder.query({
 
     // GET /users/violations → Global violations
     getAllViolations: builder.query({
-      query: (params) => ({
+      query: params => ({
         url: '/violations',
         params,
       }),
