@@ -9,23 +9,23 @@ export const ordersApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: `${API_BASE_URL}`,
 
- prepareHeaders: (headers) => {
-    const token = localStorage.getItem('accessToken');
+    prepareHeaders: headers => {
+      const token = localStorage.getItem('accessToken');
 
-    if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
-    }
+      if (token) {
+        headers.set('Authorization', `Bearer ${token}`);
+      }
 
-    return headers;
-  },
+      return headers;
+    },
   }),
 
   tagTypes: ['MyOrders', 'Order', 'MyLicenses', 'License'],
 
-  endpoints: (builder) => ({
+  endpoints: builder => ({
     // POST /orders
     createOrder: builder.mutation({
-      query: (body) => ({
+      query: body => ({
         url: '/orders',
         method: 'POST',
         body,
@@ -58,7 +58,7 @@ export const ordersApi = createApi({
 
     // GET /orders/:id
     getOrderById: builder.query({
-      query: (id) => `/orders/${id}`,
+      query: id => `/orders/${id}`,
 
       providesTags: (result, error, id) => [
         {
@@ -77,7 +77,7 @@ export const ordersApi = createApi({
 
     // GET /licenses/:id
     getLicenseById: builder.query({
-      query: (id) => `/licenses/${id}`,
+      query: id => `/licenses/${id}`,
 
       providesTags: (result, error, id) => [
         {

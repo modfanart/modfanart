@@ -68,6 +68,11 @@ import {
   useCreateUserMutation,
 } from '../../services/api/userApi';
 
+import {
+  useGetAllBrandsQuery,
+  useAssignBrandManagerMutation,
+} from '../../services/api/brandApi';
+
 import { UserFormModal } from '../../components/modals/UserFormModal';
 import { RolePermissionsModal } from '../../components/modals/RolePermissionsModal';
 
@@ -103,6 +108,20 @@ const RoleBadge = ({ role }) => {
       {role?.display_name || role?.name || 'No Role'}
     </span>
   );
+};
+
+// ============================================================
+// BRAND ROLE MAP
+// ============================================================
+// Maps global role names that represent a *brand-scoped* role to
+// the value expected by the brand_managers.role column. Any role
+// found in this map requires the admin to also pick a brand.
+
+const BRAND_ROLE_MAP = {
+  BRAND_OWNER: 'owner',
+  BRAND_MANAGER: 'manager',
+  BRAND_EDITOR: 'editor',
+  BRAND_MEMBER: 'member',
 };
 
 // ============================================================
@@ -162,8 +181,17 @@ export const UsersPage = () => {
     role: null,
   });
 
+  // ==========================================================
+  // ASSIGN ROLE (two-step: role, then brand if the role is
+  // brand-scoped)
+  // ==========================================================
+
   const [selectedUserForRole, setSelectedUserForRole] =
     useState(null);
+
+  const [assignRoleId, setAssignRoleId] = useState('');
+
+  const [assignBrandId, setAssignBrandId] = useState('');
 
   const [newRole, setNewRole] = useState({
     name: '',
@@ -193,6 +221,18 @@ export const UsersPage = () => {
     useGetAllRolesQuery();
 
   // ==========================================================
+  // BRANDS QUERY (only needed once the assign-role dialog is
+  // open, and only actually rendered when a brand-scoped role
+  // is selected)
+  // ==========================================================
+
+  const { data: brandsData, isFetching: fetchingBrands } =
+    useGetAllBrandsQuery(
+      { limit: 100 },
+      { skip: !selectedUserForRole }
+    );
+
+  // ==========================================================
   // MUTATIONS
   // ==========================================================
 
@@ -205,8 +245,11 @@ export const UsersPage = () => {
   const [deleteRole] =
     useDeleteRoleMutation();
 
-  const [assignRoleToUser] =
+  const [assignRoleToUser, { isLoading: isAssigningRole }] =
     useAssignRoleToUserMutation();
+
+  const [assignBrandManager, { isLoading: isAssigningBrand }] =
+    useAssignBrandManagerMutation();
 
   const [updateUser] =
     useUpdateUserMutation();
@@ -245,6 +288,8 @@ export const UsersPage = () => {
 
   const roles = rolesData || [];
 
+  const brands = brandsData?.brands || [];
+
   const pagination = usersData?.pagination || {
     page: 1,
     limit: USERS_PER_PAGE,
@@ -253,6 +298,19 @@ export const UsersPage = () => {
     has_next: false,
     has_prev: false,
   };
+
+  // The role currently picked in the assign-role dialog, and
+  // whether it requires a brand to be selected as well.
+
+  const selectedRoleForAssignment = useMemo(
+    () => roles.find((role) => role.id === assignRoleId),
+    [roles, assignRoleId]
+  );
+
+  const isBrandRoleSelected = !!(
+    selectedRoleForAssignment &&
+    BRAND_ROLE_MAP[selectedRoleForAssignment.name]
+  );
 
   // ==========================================================
   // HANDLERS
@@ -484,28 +542,67 @@ export const UsersPage = () => {
   };
 
   // ==========================================================
-  // ASSIGN ROLE
+  // OPEN ASSIGN ROLE DIALOG
   // ==========================================================
 
-  const handleAssignRole = async (
-    userId,
-    roleId
-  ) => {
-    if (!userId || !roleId) {
+  const handleOpenAssignRole = (user) => {
+    setSelectedUserForRole(user);
+    setAssignRoleId('');
+    setAssignBrandId('');
+  };
+
+  const handleCloseAssignRole = () => {
+    setSelectedUserForRole(null);
+    setAssignRoleId('');
+    setAssignBrandId('');
+  };
+
+  // ==========================================================
+  // ASSIGN ROLE (+ BRAND, WHEN APPLICABLE)
+  // ==========================================================
+  // Brand-scoped roles (owner/manager/editor/member) require a
+  // second step: which brand does this apply to. We first set
+  // the user's global role, then link them to the chosen brand
+  // via BrandManager. If the brand link fails, the role change
+  // has already gone through — we surface that in the error so
+  // it can be retried without duplicating the role assignment.
+
+  const handleConfirmAssignRole = async () => {
+    if (!selectedUserForRole || !assignRoleId) {
+      toast.error('Please select a role');
+      return;
+    }
+
+    if (isBrandRoleSelected && !assignBrandId) {
+      toast.error('Please select a brand');
       return;
     }
 
     try {
       await assignRoleToUser({
-        userId,
-        roleId,
+        userId: selectedUserForRole.id,
+        roleId: assignRoleId,
       }).unwrap();
 
-      toast.success(
-        'Role assigned successfully'
-      );
+      if (isBrandRoleSelected) {
+        try {
+          await assignBrandManager({
+            brandId: assignBrandId,
+            userId: selectedUserForRole.id,
+            role: BRAND_ROLE_MAP[selectedRoleForAssignment.name],
+          }).unwrap();
+        } catch (brandErr) {
+          toast.error(
+            brandErr?.data?.message ||
+            'Role was assigned, but linking the user to the brand failed. Please try assigning the brand again.'
+          );
+          return;
+        }
+      }
 
-      setSelectedUserForRole(null);
+      toast.success('Role assigned successfully');
+
+      handleCloseAssignRole();
     } catch (err) {
       toast.error(
         err?.data?.message ||
@@ -837,9 +934,7 @@ export const UsersPage = () => {
                               variant="outline"
                               size="sm"
                               onClick={() =>
-                                setSelectedUserForRole(
-                                  user
-                                )
+                                handleOpenAssignRole(user)
                               }
                             >
                               Change Role
@@ -1371,13 +1466,13 @@ export const UsersPage = () => {
       </Dialog>
 
       {/* ======================================================
-          ASSIGN ROLE
+          ASSIGN ROLE (+ BRAND, when the role is brand-scoped)
       ====================================================== */}
 
       <Dialog
         open={!!selectedUserForRole}
-        onOpenChange={() =>
-          setSelectedUserForRole(null)
+        onOpenChange={(open) =>
+          !open && handleCloseAssignRole()
         }
       >
 
@@ -1392,38 +1487,134 @@ export const UsersPage = () => {
 
           </DialogHeader>
 
-          <Select
-            onValueChange={(roleId) =>
-              handleAssignRole(
-                selectedUserForRole?.id,
-                roleId
-              )
-            }
-          >
+          <div className="space-y-4">
 
-            <SelectTrigger>
+            {/* ROLE SELECT */}
 
-              <SelectValue placeholder="Select role" />
+            <div>
 
-            </SelectTrigger>
+              <Label>Role</Label>
 
-            <SelectContent>
+              <Select
+                value={assignRoleId}
+                onValueChange={(roleId) => {
+                  setAssignRoleId(roleId);
+                  // Reset brand choice whenever the role changes,
+                  // since a previously picked brand may no longer
+                  // be relevant (or the new role may not need one).
+                  setAssignBrandId('');
+                }}
+              >
 
-              {roles.map((role) => (
+                <SelectTrigger>
 
-                <SelectItem
-                  key={role.id}
-                  value={role.id}
+                  <SelectValue placeholder="Select role" />
+
+                </SelectTrigger>
+
+                <SelectContent>
+
+                  {roles.map((role) => (
+
+                    <SelectItem
+                      key={role.id}
+                      value={role.id}
+                    >
+                      {role.display_name || role.name} (Level{' '}
+                      {role.hierarchy_level})
+                    </SelectItem>
+
+                  ))}
+
+                </SelectContent>
+
+              </Select>
+
+            </div>
+
+            {/* BRAND SELECT — only for brand-scoped roles */}
+
+            {isBrandRoleSelected && (
+
+              <div>
+
+                <Label>Brand</Label>
+
+                <Select
+                  value={assignBrandId}
+                  onValueChange={setAssignBrandId}
+                  disabled={fetchingBrands}
                 >
-                  {role.name} (Level{' '}
-                  {role.hierarchy_level})
-                </SelectItem>
 
-              ))}
+                  <SelectTrigger>
 
-            </SelectContent>
+                    <SelectValue
+                      placeholder={
+                        fetchingBrands
+                          ? 'Loading brands…'
+                          : 'Select brand'
+                      }
+                    />
 
-          </Select>
+                  </SelectTrigger>
+
+                  <SelectContent>
+
+                    {brands.map((brand) => (
+
+                      <SelectItem
+                        key={brand.id}
+                        value={brand.id}
+                      >
+                        {brand.name}
+                      </SelectItem>
+
+                    ))}
+
+                  </SelectContent>
+
+                </Select>
+
+                <p className="text-xs text-zinc-500 mt-1">
+                  The user will be added as{' '}
+                  {BRAND_ROLE_MAP[selectedRoleForAssignment.name]}{' '}
+                  of this brand.
+                </p>
+
+              </div>
+
+            )}
+
+          </div>
+
+          <DialogFooter>
+
+            <Button
+              variant="outline"
+              onClick={handleCloseAssignRole}
+            >
+              Cancel
+            </Button>
+
+            <Button
+              onClick={handleConfirmAssignRole}
+              disabled={
+                !assignRoleId ||
+                (isBrandRoleSelected && !assignBrandId) ||
+                isAssigningRole ||
+                isAssigningBrand
+              }
+            >
+
+              {(isAssigningRole || isAssigningBrand) && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+
+              Assign Role
+
+            </Button>
+
+          </DialogFooter>
 
         </DialogContent>
 
@@ -1434,4 +1625,3 @@ export const UsersPage = () => {
 };
 
 export default UsersPage;
-

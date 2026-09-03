@@ -9,20 +9,20 @@ export const rolesApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: `${API_BASE_URL}/roles`,
 
-  prepareHeaders: (headers) => {
-    const token = localStorage.getItem('accessToken');
+    prepareHeaders: headers => {
+      const token = localStorage.getItem('accessToken');
 
-    if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
-    }
+      if (token) {
+        headers.set('Authorization', `Bearer ${token}`);
+      }
 
-    return headers;
-  },
+      return headers;
+    },
   }),
 
   tagTypes: ['Roles', 'Role', 'UserRoles'],
 
-  endpoints: (builder) => ({
+  endpoints: builder => ({
     // GET /roles
     getAllRoles: builder.query({
       query: () => '/',
@@ -32,7 +32,7 @@ export const rolesApi = createApi({
 
     // POST /roles
     createRole: builder.mutation({
-      query: (body) => ({
+      query: body => ({
         url: '/',
         method: 'POST',
         body,
@@ -57,15 +57,12 @@ export const rolesApi = createApi({
 
     // DELETE /roles/:id
     deleteRole: builder.mutation({
-      query: (id) => ({
+      query: id => ({
         url: `/${id}`,
         method: 'DELETE',
       }),
 
-      invalidatesTags: (result, error, id) => [
-        'Roles',
-        { type: 'Role', id },
-      ],
+      invalidatesTags: (result, error, id) => ['Roles', { type: 'Role', id }],
     }),
 
     // POST /roles/users/:userId/roles
