@@ -141,7 +141,135 @@ class WorkspaceLoginService {
     // 7. Create internal JWT access token
     // =========================================================
 
-    const accessToken = jwt.sign(
+    const accessToken = WorkspaceLoginService._signAccessToken(user);
+
+    // =========================================================
+    // 8. Create + store refresh token
+    // =========================================================
+
+    const rawRefreshToken = await WorkspaceLoginService._issueRefreshToken(
+      user.id
+    );
+
+    // =========================================================
+    // 9. Update login timestamp
+    // =========================================================
+
+    await User.updateLastLogin(user.id);
+
+    // =========================================================
+    // 10. Return local authentication tokens
+    // =========================================================
+
+    return {
+      user: fullUser,
+      accessToken,
+      refreshToken: rawRefreshToken,
+    };
+  }
+
+  /**
+   * Exchange a valid, unexpired refresh token for a new access
+   * token, rotating the refresh token in the process.
+   *
+   * Flow:
+   *
+   * Raw refresh token (from client)
+   *        ↓
+   * sha256 hash
+   *        ↓
+   * Lookup in refresh_tokens table
+   *        ↓
+   * Check not expired / not revoked
+   *        ↓
+   * Issue new access token
+   *        ↓
+   * Rotate refresh token (revoke old, issue new)
+   */
+  static async refresh({ refreshToken }) {
+    if (!refreshToken) {
+      const error = new Error('Refresh token is required');
+      error.status = 400;
+      throw error;
+    }
+
+    // =========================================================
+    // 1. Hash the incoming raw token to compare against storage
+    // =========================================================
+
+    const tokenHash = crypto
+      .createHash('sha256')
+      .update(refreshToken)
+      .digest('hex');
+
+    // =========================================================
+    // 2. Look up the stored token record
+    // =========================================================
+
+    const tokenRecord = await RefreshToken.findByHash(tokenHash);
+
+    if (!tokenRecord) {
+      const error = new Error('Invalid refresh token');
+      error.status = 401;
+      throw error;
+    }
+
+    if (tokenRecord.revoked_at) {
+      const error = new Error('Refresh token has been revoked');
+      error.status = 401;
+      throw error;
+    }
+
+    if (new Date(tokenRecord.expires_at) < new Date()) {
+      const error = new Error('Refresh token has expired');
+      error.status = 401;
+      throw error;
+    }
+
+    // =========================================================
+    // 3. Load the user tied to this token
+    // =========================================================
+
+    const user = await User.findById(tokenRecord.user_id);
+
+    if (!user || user.status !== 'active') {
+      const error = new Error('Account is not available for login');
+      error.status = 403;
+      throw error;
+    }
+
+    // =========================================================
+    // 4. Issue a new access token
+    // =========================================================
+
+    const accessToken = WorkspaceLoginService._signAccessToken(user);
+
+    // =========================================================
+    // 5. Rotate the refresh token
+    //
+    // Revoke the one that was just used and issue a brand new
+    // one. This limits the blast radius if a refresh token is
+    // ever stolen — it can only be used once.
+    // =========================================================
+
+    await RefreshToken.revoke(tokenRecord.id);
+
+    const newRawRefreshToken = await WorkspaceLoginService._issueRefreshToken(
+      user.id
+    );
+
+    return {
+      accessToken,
+      refreshToken: newRawRefreshToken,
+    };
+  }
+
+  // ===============================================================
+  // PRIVATE HELPERS
+  // ===============================================================
+
+  static _signAccessToken(user) {
+    return jwt.sign(
       {
         sub: user.id,
         email: user.email,
@@ -153,11 +281,9 @@ class WorkspaceLoginService {
         expiresIn: ACCESS_TOKEN_EXPIRY,
       }
     );
+  }
 
-    // =========================================================
-    // 8. Create cryptographically secure refresh token
-    // =========================================================
-
+  static async _issueRefreshToken(userId) {
     const rawRefreshToken = crypto.randomBytes(64).toString('hex');
 
     // Never store raw refresh token in DB
@@ -170,27 +296,9 @@ class WorkspaceLoginService {
 
     expiresAt.setDate(expiresAt.getDate() + REFRESH_TOKEN_EXPIRY_DAYS);
 
-    // =========================================================
-    // 9. Store hashed refresh token
-    // =========================================================
+    await RefreshToken.create(userId, refreshTokenHash, expiresAt);
 
-    await RefreshToken.create(user.id, refreshTokenHash, expiresAt);
-
-    // =========================================================
-    // 10. Update login timestamp
-    // =========================================================
-
-    await User.updateLastLogin(user.id);
-
-    // =========================================================
-    // 11. Return local authentication tokens
-    // =========================================================
-
-    return {
-      user: fullUser,
-      accessToken,
-      refreshToken: rawRefreshToken,
-    };
+    return rawRefreshToken;
   }
 }
 

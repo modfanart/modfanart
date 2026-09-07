@@ -1,0 +1,1190 @@
+{
+  "Marketplace Tasks": [
+    {
+      "Task ID": "TSK-001",
+      "Phase": "Phase 0 - Foundations",
+      "Type": "Backend",
+      "Task Title": "Design seller identity model",
+      "Description": "Decide whether sellers can be individual creators (not just verified brands) before writing the catalog service — this changes several foreign keys.",
+      "Reference (if any)": "m",
+      "Assigned To ": null,
+      "Status": null,
+      "Notes": null
+    },
+    {
+      "Task ID": "TSK-002",
+      "Phase": "Phase 0 - Foundations",
+      "Type": "Backend",
+      "Task Title": "Migration: merch_products & merch_variants tables",
+      "Description": "Create merch_products and merch_variants tables (SKU, size/color variants, pricing in INR/USD cents, stock_qty, weight, print_file_url, artwork_id link).",
+      "Reference (if any)": "Section 04 - Schema additions",
+      "Assigned To ": null,
+      "Status": null,
+      "Notes": null
+    },
+    {
+      "Task ID": "TSK-003",
+      "Phase": "Phase 0 - Foundations",
+      "Type": "Backend",
+      "Task Title": "Migration: print_providers table",
+      "Description": "Create print_providers table to store POD partner config (Printful/Printify/manual) with integration_type and api_config jsonb.",
+      "Reference (if any)": "Section 04 - Schema additions",
+      "Assigned To ": null,
+      "Status": null,
+      "Notes": null
+    },
+    {
+      "Task ID": "TSK-004",
+      "Phase": "Phase 0 - Foundations",
+      "Type": "Backend",
+      "Task Title": "Seller onboarding API + KYC service",
+      "Description": "Build onboarding API endpoints for new sellers, reusing brand_verification_requests pattern for KYC/KYB where applicable.",
+      "Reference (if any)": "Section 01 - Existing INFRA / Section 07 Q1",
+      "Assigned To ": null,
+      "Status": null,
+      "Notes": null
+    },
+    {
+      "Task ID": "TSK-005",
+      "Phase": "Phase 0 - Foundations",
+      "Type": "Frontend",
+      "Task Title": "Seller onboarding UI flow",
+      "Description": "Build the multi-step seller onboarding screens (profile, payout details, KYC document upload, verification status) consuming the onboarding API.",
+      "Reference (if any)": "Section 01 - Existing INFRA / Section 07 Q1",
+      "Assigned To ": null,
+      "Status": null,
+      "Notes": null
+    },
+    {
+      "Task ID": "TSK-006",
+      "Phase": "Phase 0 - Foundations",
+      "Type": "Frontend",
+      "Task Title": "Seller dashboard shell",
+      "Description": "Scaffold the seller dashboard shell/navigation (products, orders, payouts placeholders) that later phases will fill in.",
+      "Reference (if any)": "Section 06 - Phase 0 deliverables",
+      "Assigned To ": null,
+      "Status": null,
+      "Notes": null
+    },
+    {
+      "Task ID": "TSK-007",
+      "Phase": "Phase 1 - Standalone Merch",
+      "Type": "Backend",
+      "Task Title": "Build carts & cart_items tables + API",
+      "Description": "Create carts and cart_items tables and CRUD endpoints to support persistent multi-item, multi-seller shopping carts (item_type: license or merch_variant).",
+      "Reference (if any)": "Section 04 - Checkout schema",
+      "Assigned To ": null,
+      "Status": null,
+      "Notes": null
+    },
+    {
+      "Task ID": "TSK-008",
+      "Phase": "Phase 1 - Standalone Merch",
+      "Type": "Backend",
+      "Task Title": "Split order_items by seller_id",
+      "Description": "Add seller_id, item_type, merch_variant_id, and cart_id columns to orders/order_items so a single order can span multiple sellers.",
+      "Reference (if any)": "Section 04 - Checkout schema",
+      "Assigned To ": null,
+      "Status": null,
+      "Notes": null
+    },
+    {
+      "Task ID": "TSK-009",
+      "Phase": "Phase 1 - Standalone Merch",
+      "Type": "Backend",
+      "Task Title": "Build addresses table + API",
+      "Description": "Create addresses table and endpoints for buyer shipping addresses (line1/2, city, state, postal_code, country, is_default).",
+      "Reference (if any)": "Section 04 - Fulfillment schema",
+      "Assigned To ": null,
+      "Status": null,
+      "Notes": null
+    },
+    {
+      "Task ID": "TSK-010",
+      "Phase": "Phase 1 - Standalone Merch",
+      "Type": "Backend",
+      "Task Title": "Build fulfillments table + manual status update API",
+      "Description": "Create fulfillments and fulfillment_items tables with manual status update endpoints (fulfillment_type = in_house_stock, no POD integration yet).",
+      "Reference (if any)": "Section 06 - Phase 1 deliverables",
+      "Assigned To ": null,
+      "Status": null,
+      "Notes": null
+    },
+    {
+      "Task ID": "TSK-011",
+      "Phase": "Phase 1 - Standalone Merch",
+      "Type": "Backend",
+      "Task Title": "Merch catalog listing API",
+      "Description": "Build read APIs for browsing/searching the small standalone merch catalog (product + variant listing, filters).",
+      "Reference (if any)": "Section 06 - Phase 1",
+      "Assigned To ": null,
+      "Status": null,
+      "Notes": null
+    },
+    {
+      "Task ID": "TSK-012",
+      "Phase": "Phase 1 - Standalone Merch",
+      "Type": "Frontend",
+      "Task Title": "Merch catalog browse & product detail pages",
+      "Description": "Build the storefront pages for browsing merch products, filtering, and viewing a product detail page with variant (size/color) selection.",
+      "Reference (if any)": "Section 06 - Phase 1",
+      "Assigned To ": null,
+      "Status": null,
+      "Notes": null
+    },
+    {
+      "Task ID": "TSK-013",
+      "Phase": "Phase 1 - Standalone Merch",
+      "Type": "Frontend",
+      "Task Title": "Cart UI",
+      "Description": "Build the cart drawer/page: add/remove items, quantity updates, mixed license + merch_variant line items, multi-seller grouping.",
+      "Reference (if any)": "Section 04 - Checkout schema",
+      "Assigned To ": null,
+      "Status": null,
+      "Notes": null
+    },
+    {
+      "Task ID": "TSK-014",
+      "Phase": "Phase 1 - Standalone Merch",
+      "Type": "Frontend",
+      "Task Title": "Checkout flow UI (address + payment)",
+      "Description": "Build the checkout flow: address selection/entry, order summary split by seller, and payment step.",
+      "Reference (if any)": "Section 04 - Fulfillment schema",
+      "Assigned To ": null,
+      "Status": null,
+      "Notes": null
+    },
+    {
+      "Task ID": "TSK-015",
+      "Phase": "Phase 1 - Standalone Merch",
+      "Type": "Frontend",
+      "Task Title": "Buyer address book UI",
+      "Description": "Build the address book management screen (add/edit/delete/set default) on top of the addresses API.",
+      "Reference (if any)": "Section 04 - Fulfillment schema",
+      "Assigned To ": null,
+      "Status": null,
+      "Notes": null
+    },
+    {
+      "Task ID": "TSK-016",
+      "Phase": "Phase 1 - Standalone Merch",
+      "Type": "Frontend",
+      "Task Title": "Seller manual fulfillment/shipping ops UI",
+      "Description": "Build the internal seller-facing screen to view orders and manually mark fulfillment status (pending/shipped/delivered) with tracking info.",
+      "Reference (if any)": "Section 06 - Phase 1 deliverables",
+      "Assigned To ": null,
+      "Status": null,
+      "Notes": null
+    },
+    {
+      "Task ID": "TSK-017",
+      "Phase": "Phase 2 - Fanart-linked Merch + POD",
+      "Type": "Backend",
+      "Task Title": "Integrate Printful/Printify",
+      "Description": "Build the print-on-demand integration with Printful/Printify, including order-status webhooks (the main async path in the system).",
+      "Reference (if any)": "Section 05 - Fulfillment svc / Section 06 - Phase 2",
+      "Assigned To ": null,
+      "Status": null,
+      "Notes": null
+    },
+    {
+      "Task ID": "TSK-018",
+      "Phase": "Phase 2 - Fanart-linked Merch + POD",
+      "Type": "Backend",
+      "Task Title": "Build print_file_url pipeline off cdn_files",
+      "Description": "Build the pipeline that generates/serves print-ready files from the existing cdn_files asset registry.",
+      "Reference (if any)": "Section 06 - Phase 2 deliverables",
+      "Assigned To ": null,
+      "Status": null,
+      "Notes": null
+    },
+    {
+      "Task ID": "TSK-019",
+      "Phase": "Phase 2 - Fanart-linked Merch + POD",
+      "Type": "Backend",
+      "Task Title": "Turn on artwork_id linking on merch_products",
+      "Description": "Enable linking a merch_product to its originating artwork so contest-winning/brand fanart can be sold as merch.",
+      "Reference (if any)": "Section 04 / Section 06 - Phase 2",
+      "Assigned To ": null,
+      "Status": null,
+      "Notes": null
+    },
+    {
+      "Task ID": "TSK-020",
+      "Phase": "Phase 2 - Fanart-linked Merch + POD",
+      "Type": "Backend",
+      "Task Title": "'Turn artwork into merch' API",
+      "Description": "Build the backend endpoint(s) that take an approved artwork and generate a draft merch_product/variant with print_file_url set.",
+      "Reference (if any)": "Section 06 - Phase 2 deliverables",
+      "Assigned To ": null,
+      "Status": null,
+      "Notes": null
+    },
+    {
+      "Task ID": "TSK-021",
+      "Phase": "Phase 2 - Fanart-linked Merch + POD",
+      "Type": "Frontend",
+      "Task Title": "'Turn this artwork into merch' creator flow UI",
+      "Description": "Build the creator-facing flow: pick a product template, preview artwork-on-product mockup, set pricing, and publish the merch listing.",
+      "Reference (if any)": "Section 06 - Phase 2 deliverables",
+      "Assigned To ": null,
+      "Status": null,
+      "Notes": null
+    },
+    {
+      "Task ID": "TSK-022",
+      "Phase": "Phase 2 - Fanart-linked Merch + POD",
+      "Type": "Frontend",
+      "Task Title": "POD order status & tracking UI",
+      "Description": "Surface print-provider order status (in production/shipped/delivered/failed) to buyers and sellers, driven by the webhook-updated fulfillment records.",
+      "Reference (if any)": "Section 05 - Fulfillment svc",
+      "Assigned To ": null,
+      "Status": null,
+      "Notes": null
+    },
+    {
+      "Task ID": "TSK-023",
+      "Phase": "Phase 2 - Fanart-linked Merch + POD",
+      "Type": "Backend",
+      "Task Title": "Resolve licensing-before-print question",
+      "Description": "Determine whether printing someone else's artwork onto merch requires a commercial license purchase or a separate merch-rights grant, and whether merch_products needs a license_id FK.",
+      "Reference (if any)": "Open Question #2",
+      "Assigned To ": null,
+      "Status": null,
+      "Notes": null
+    },
+    {
+      "Task ID": "TSK-024",
+      "Phase": "Phase 3 - Payouts, Reviews, Trust",
+      "Type": "Backend",
+      "Task Title": "Build payouts ledger + Stripe Connect transfers",
+      "Description": "Create the payouts table (gross/platform_fee/net cents, status, stripe_transfer_id) and automate seller payouts against Stripe Connect.",
+      "Reference (if any)": "Section 04 - Money schema / Section 06 - Phase 3",
+      "Assigned To ": null,
+      "Status": null,
+      "Notes": null
+    },
+    {
+      "Task ID": "TSK-025",
+      "Phase": "Phase 3 - Payouts, Reviews, Trust",
+      "Type": "Backend",
+      "Task Title": "Define platform fee rule table",
+      "Description": "Decide whether platform fee is flat or varies by fulfillment/product type (POD margins are thinner than digital licenses) and build the rule table accordingly.",
+      "Reference (if any)": "Open Question #3",
+      "Assigned To ": null,
+      "Status": null,
+      "Notes": null
+    },
+    {
+      "Task ID": "TSK-026",
+      "Phase": "Phase 3 - Payouts, Reviews, Trust",
+      "Type": "Backend",
+      "Task Title": "Build product_reviews table + API",
+      "Description": "Create product_reviews table (reviewer, target_type: artwork/merch_product, order_item_id for verified purchase, rating, body) and endpoints to submit/fetch reviews.",
+      "Reference (if any)": "Section 04 - Money schema / Section 06 - Phase 3",
+      "Assigned To ": null,
+      "Status": null,
+      "Notes": null
+    },
+    {
+      "Task ID": "TSK-027",
+      "Phase": "Phase 3 - Payouts, Reviews, Trust",
+      "Type": "Backend",
+      "Task Title": "Extend moderation_queue to merch listings",
+      "Description": "Extend the existing generic moderation_queue (entity_type/entity_id) to cover merch listing moderation.",
+      "Reference (if any)": "Section 06 - Phase 3 deliverables",
+      "Assigned To ": null,
+      "Status": null,
+      "Notes": null
+    },
+    {
+      "Task ID": "TSK-028",
+      "Phase": "Phase 3 - Payouts, Reviews, Trust",
+      "Type": "Frontend",
+      "Task Title": "Seller payouts dashboard",
+      "Description": "Build the seller-facing payouts screen: pending/paid balances, per-order breakdown, and Stripe Connect payout status.",
+      "Reference (if any)": "Section 04 - Money schema / Section 06 - Phase 3",
+      "Assigned To ": null,
+      "Status": null,
+      "Notes": null
+    },
+    {
+      "Task ID": "TSK-029",
+      "Phase": "Phase 3 - Payouts, Reviews, Trust",
+      "Type": "Frontend",
+      "Task Title": "Reviews & ratings UI",
+      "Description": "Build the review submission form (for verified buyers) and the display of ratings/reviews on artwork and merch product pages.",
+      "Reference (if any)": "Section 04 - Money schema / Section 06 - Phase 3",
+      "Assigned To ": null,
+      "Status": null,
+      "Notes": null
+    },
+    {
+      "Task ID": "TSK-030",
+      "Phase": "Phase 3 - Payouts, Reviews, Trust",
+      "Type": "Frontend",
+      "Task Title": "Merch moderation queue UI",
+      "Description": "Extend the existing moderation admin UI to show and action merch listings alongside other moderation entity types.",
+      "Reference (if any)": "Section 06 - Phase 3 deliverables",
+      "Assigned To ": null,
+      "Status": null,
+      "Notes": null
+    },
+    {
+      "Task ID": "TSK-031",
+      "Phase": "Cross-cutting / Open Questions",
+      "Type": "Backend",
+      "Task Title": "Scope international shipping & tax",
+      "Description": "Decide whether international shipping, customs/duty, and tax-jurisdiction handling are in scope for Phase 1 or explicitly deferred to a later phase.",
+      "Reference (if any)": "Open Question #4",
+      "Assigned To ": null,
+      "Status": null,
+      "Notes": null
+    },
+    {
+      "Task ID": "TSK-032",
+      "Phase": "Cross-cutting / Open Questions",
+      "Type": "Backend",
+      "Task Title": "Decide sync vs async architecture boundary",
+      "Description": "Confirm that only print-provider webhooks and payout triggers are async (via a Postgres outbox table for now); everything else stays synchronous through the gateway.",
+      "Reference (if any)": "Section 05 - Service boundaries",
+      "Assigned To ": null,
+      "Status": null,
+      "Notes": null
+    },
+    {
+      "Task ID": "TSK-033",
+      "Phase": "Cross-cutting / Open Questions",
+      "Type": "Backend",
+      "Task Title": "Define service ownership boundaries",
+      "Description": "Formalize the 5 service boundaries (Catalog, Commerce, Fulfillment, Payouts, Contests+Brand) within the shared Postgres so teams can own a slice without stepping on each other.",
+      "Reference (if any)": "Section 05 - Service boundaries diagram",
+      "Assigned To ": null,
+      "Status": null,
+      "Notes": null
+    },
+    {
+      "Task ID": "TSK-034",
+      "Phase": "Cross-cutting / Open Questions",
+      "Type": "Frontend",
+      "Task Title": "API contract review with frontend team",
+      "Description": "Frontend sync with backend on request/response shapes for cart, checkout, fulfillment, and payouts endpoints before UI build-out per phase.",
+      "Reference (if any)": "Section 05 - Service boundaries diagram",
+      "Assigned To ": null,
+      "Status": null,
+      "Notes": null
+    }
+  ],
+  "Log Tracker": [
+    {
+      "__EMPTY_1": "Task ID/Name",
+      "__EMPTY_2": "Feature / Project Area",
+      "__EMPTY_3": "Task Description",
+      "__EMPTY_4": "Priority",
+      "__EMPTY_5": "Assigned To",
+      "__EMPTY_6": "Status",
+      "__EMPTY_7": "Reviewer",
+      "__EMPTY_8": "Start Date",
+      "__EMPTY_9": "Target Completion Date",
+      "__EMPTY_10": "Completion Date",
+      "__EMPTY_11": "Pull Request / Merge Link",
+      "__EMPTY_12": "Progress Notes",
+      "__EMPTY_13": "Blockers / Issues",
+      "__EMPTY_14": "Next Steps",
+      "__EMPTY_15": "Carry Over to Next Week (Y/N)"
+    },
+    {
+      "__EMPTY_1": "Dev Log & Tracker",
+      "__EMPTY_2": "Project Management",
+      "__EMPTY_3": "Create a spreadsheet for tracking development progress weekly and logging changes to the platform code.",
+      "__EMPTY_4": "Medium",
+      "__EMPTY_5": "Joey",
+      "__EMPTY_6": "Complete",
+
+      "__EMPTY_12": "Completed after our meeting, sent to the team",
+
+      "__EMPTY_14": "Whole team gets on board and starts using this weekly.",
+      "__EMPTY_15": "Y"
+    },
+    {
+      "__EMPTY_1": "Double footer",
+      "__EMPTY_2": "Navigation/Menu",
+      "__EMPTY_3": "Fix the double footers that pop up on multiple pages. ",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Rafay",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Update Buttons",
+      "__EMPTY_2": "Home Page",
+      "__EMPTY_3": "Buttons: for brands, artists, view active",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Rafay",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Artist Logos",
+      "__EMPTY_2": "About",
+      "__EMPTY_3": "Remove empty artist logos",
+      "__EMPTY_4": "Medium",
+      "__EMPTY_5": "Rafay",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Brand Properties listed",
+      "__EMPTY_2": "Super Admin",
+      "__EMPTY_3": "Have Brand properties listed under brand owners",
+      "__EMPTY_4": "Low",
+      "__EMPTY_5": "Dhruv",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "artist button 404",
+      "__EMPTY_2": "Super Admin",
+      "__EMPTY_3": "artist button 404 fix",
+      "__EMPTY_4": "Low",
+      "__EMPTY_5": "Dhruv",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Owner Profile",
+      "__EMPTY_2": "Brand, Super Admin",
+      "__EMPTY_3": "Owner profile separate from Brands tab",
+      "__EMPTY_4": "Low",
+      "__EMPTY_5": "Dhruv",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Header/Footer",
+      "__EMPTY_2": "Brand, Navigation/Menu",
+      "__EMPTY_3": "No header and footer",
+      "__EMPTY_4": "Low",
+      "__EMPTY_5": "Rafay",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Website Content Doc",
+      "__EMPTY_2": "Website Content",
+      "__EMPTY_3": "Create a doc with content for Dhruv to update including: past campaigns, fan artist users, licensed fan work, etc.",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Joey",
+      "__EMPTY_6": "In Progress"
+    },
+    {
+      "__EMPTY_1": "Nav Bar update",
+      "__EMPTY_2": "Navigation/Menu",
+      "__EMPTY_3": "Fix Nav bar to be correct pages in web ",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Rafay",
+      "__EMPTY_6": "Complete",
+
+      "__EMPTY_12": "Desktop verson is complete but mobile version is still old nav bar options."
+    },
+    {
+      "__EMPTY_1": "Button Hover",
+      "__EMPTY_2": "About",
+      "__EMPTY_3": "Remove button hover",
+      "__EMPTY_4": "Medium",
+      "__EMPTY_5": "Rafay",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Update Image",
+      "__EMPTY_2": "Guidelines",
+      "__EMPTY_3": "Update images with ones provided in Whatsapp group",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Pratyank",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Remove some sections",
+      "__EMPTY_2": "Guidelines",
+      "__EMPTY_3": "Remove following sections: Popular IP-Specific Guidelines, Additional Resources",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Rafay",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Discord link ",
+      "__EMPTY_2": "Guidelines",
+      "__EMPTY_3": "keep artist community link and add Discord link",
+      "__EMPTY_4": "Medium",
+      "__EMPTY_5": "Rafay",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Guidelines PDF",
+      "__EMPTY_2": "Guidelines",
+      "__EMPTY_3": "keep addtional resources link to pdf",
+      "__EMPTY_4": "Medium",
+      "__EMPTY_5": "Rafay",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Update Section",
+      "__EMPTY_2": "Guidelines",
+      "__EMPTY_3": "Update the Ready to submit your fan art? section at the bottom of the page.",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Pratyank",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Page spacing",
+      "__EMPTY_2": "Book a Demo",
+      "__EMPTY_3": "Fix Spacing between top of page and nav bar",
+      "__EMPTY_4": "Medium",
+      "__EMPTY_5": "Rafay",
+      "__EMPTY_6": "Complete",
+
+      "__EMPTY_12": "This is fixed on desktop but still showing issues on mobile."
+    },
+    {
+      "__EMPTY_1": "Clean up Mobile",
+      "__EMPTY_2": "Various Pages",
+      "__EMPTY_3": "Clean up the spacing of headers on each page for Mobile view",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Pratyank",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Mobile page spacing",
+      "__EMPTY_2": "Book a Demo",
+      "__EMPTY_3": "Fix spacing on mobile",
+      "__EMPTY_4": "Medium",
+      "__EMPTY_5": "Pratyank",
+      "__EMPTY_6": "Complete",
+
+      "__EMPTY_12": "This is fixed on desktop but still showing issues on mobile."
+    },
+    {
+      "__EMPTY_1": "Combine sections",
+      "__EMPTY_2": "Book a Demo",
+      "__EMPTY_3": "Combine the Request Your Brand and Book a Demo section into one. Remove the appt options and scheduling and just add that our Team will be in touch to book a demo and then the demo details from the Book a Demo section",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Rafay",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Add how did you hear about us",
+      "__EMPTY_2": "Book a Demo",
+      "__EMPTY_3": "Add Discord and input field for Other options for  how did you hear about us",
+      "__EMPTY_4": "Low",
+      "__EMPTY_5": "Rafay -> Pratyank",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Date picker not selecting date",
+      "__EMPTY_2": "Create Opportunity",
+      "__EMPTY_3": "Fix error where date picker not selecting date",
+      "__EMPTY_4": "Medium",
+      "__EMPTY_5": "Rafay",
+      "__EMPTY_6": "Not Started"
+    },
+    {
+      "__EMPTY_1": "Days Alignment",
+      "__EMPTY_2": "Create Opportunity",
+      "__EMPTY_3": "Fix days alignment off",
+      "__EMPTY_4": "Medium",
+      "__EMPTY_5": "Rafay",
+      "__EMPTY_6": "Not Started"
+    },
+    {
+      "__EMPTY_1": "Fix upload image",
+      "__EMPTY_2": "Create Opportunity",
+      "__EMPTY_3": "upload image not working",
+      "__EMPTY_4": "Medium",
+      "__EMPTY_5": "Pratyank",
+      "__EMPTY_6": "Not Started"
+    },
+    {
+      "__EMPTY_1": "Create New Accounts (Brand Owners)",
+      "__EMPTY_2": "Signup/Login, Super Admin",
+      "__EMPTY_3": "Fix so we can create new accounts with no issues and login to existing accounts with new issues. ",
+      "__EMPTY_4": "Medium",
+      "__EMPTY_5": "Dhruv -> Jyotishmoy",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Create New Accounts (Fan Artists)",
+      "__EMPTY_2": "Signup/Login, Super Admin",
+      "__EMPTY_3": "Fix so we can create new accounts for fan artists with no issues. ",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Dhruv -> Jyotishmoy",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Test accounts",
+      "__EMPTY_2": "Signup/Login, Dashboard",
+      "__EMPTY_3": "Create test accounts for team to login ",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Dhruv -> Jyotishmoy",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Featured Campaigns style",
+      "__EMPTY_2": "Home Page",
+      "__EMPTY_3": "Update featured campaigns to remove the infringement images and template campaigns. Replace with feed of current/live campaigns or preset ones from old/new campaigns.",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Rafay",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Select Featured Campaigns",
+      "__EMPTY_2": "Super Admin",
+      "__EMPTY_3": "Create a function for marking featured campaigns in the Super Admin",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Dhruv",
+      "__EMPTY_6": "In Progress"
+    },
+    {
+      "__EMPTY_1": "Featured Campaigns Section",
+      "__EMPTY_2": "Home Page",
+      "__EMPTY_3": "Create section for featured campaigns to display",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Rafay",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Backend Migration",
+      "__EMPTY_2": "Backend",
+      "__EMPTY_3": "Migrating Node.js to Nest.js server architecture ",
+      "__EMPTY_4": "Medium",
+      "__EMPTY_5": "Dhruv, Aakash",
+      "__EMPTY_6": "Blocked"
+    },
+    {
+      "__EMPTY_1": "Signup Workflow",
+      "__EMPTY_2": "Signup/Login",
+      "__EMPTY_3": "Fix the registering of brand owners and fan artists accounts when signing up",
+      "__EMPTY_4": "Medium",
+      "__EMPTY_5": "Dhruv, Jyotishmoy",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Shift Manual Auth to Firebase",
+      "__EMPTY_2": "Auth",
+      "__EMPTY_3": "Shift the current manual auth apis to firebase sdk instead",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Aakash",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Add Coolify to VPS ",
+      "__EMPTY_2": "Core/Devops",
+      "__EMPTY_3": "Shift the projects and db to Coolify instead",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Aakash",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Make a weekly database backup cron job",
+      "__EMPTY_2": "DB Backups",
+      "__EMPTY_3": "Add a weekly automated cron job that makes backup of the db and saves it locally on the VPS itself",
+      "__EMPTY_4": "Medium",
+      "__EMPTY_5": "Aakash",
+      "__EMPTY_6": "Ready for Review"
+    },
+    {
+      "__EMPTY_1": "Update platform T&S date",
+      "__EMPTY_2": "Terms of Service",
+      "__EMPTY_3": "Platform Terms of Service date needs to be fixed: Updated June 23, 2026: https://www.modfanofficial.com/legal/terms-and-service",
+      "__EMPTY_4": "Medium",
+      "__EMPTY_5": "Pratyank",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Transfer/create submission terms of service and link to each Opportunity/contest page",
+      "__EMPTY_2": "Terms of Service, Opportunity Pages",
+      "__EMPTY_3": "Make sure the submissions terms of service has it’s own page and is linked for each contest/opportunity page: https://modfanart.com/pages/submission-terms-and-conditions (need to update “MOD INC.” name to “MOD Fan Official”. \r\n\r\ncreate a page for contest submissions terms, you can find the terms data in lib/terms-data/contestSubmissionSections.ts and use the terms-section.tsx component to display it\r\n",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Pratyank",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Authentication for librarians page",
+      "__EMPTY_2": "Authentication, The Librarians, Opportunty Page",
+      "__EMPTY_3": "Authentication for the Librarians campaign page. Check if the are logged in for the page.",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Pratyank",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Remove Welcome Art",
+      "__EMPTY_2": "Gallery Page",
+      "__EMPTY_3": "Remove Welcome Artwork in the gallery",
+      "__EMPTY_4": "Medium",
+      "__EMPTY_5": "Pratyank",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Update Artwork",
+      "__EMPTY_2": "Gallery Page",
+      "__EMPTY_3": "Update the artwork and gallery with past winner art.",
+      "__EMPTY_4": "Low",
+      "__EMPTY_5": "Joseph, Pratyank",
+      "__EMPTY_6": "Blocked"
+    },
+    {
+      "__EMPTY_1": "Remove sections in Profile",
+      "__EMPTY_2": "Profile Settings",
+      "__EMPTY_3": "Remove API, Billing (can keep hidden for later), and Security (Two Factor Authentication) pages)",
+      "__EMPTY_4": "Medium",
+      "__EMPTY_5": "Rafay",
+      "__EMPTY_6": "Complete",
+      "__EMPTY_7": "Jyotishmoy"
+    },
+    {
+      "__EMPTY_1": "Upoad Profile picture",
+      "__EMPTY_2": "Profile Settings",
+      "__EMPTY_3": "Fix upload profile picture ",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Rafay, Pratyank",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Two factor auth",
+      "__EMPTY_2": "Profile, Security",
+      "__EMPTY_3": "Setup TFA for users",
+      "__EMPTY_4": "Low",
+      "__EMPTY_5": "Aakash",
+      "__EMPTY_6": "Not Started"
+    },
+    {
+      "__EMPTY_1": "User name visibility fix",
+      "__EMPTY_2": "All",
+      "__EMPTY_3": "Fix the visibility of the username on top right for all pages in the Hero section",
+      "__EMPTY_4": "Low",
+      "__EMPTY_5": "Pratyank",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Fix signup",
+      "__EMPTY_2": "Sign up/ Login",
+      "__EMPTY_3": "Fix GoogleAuth for signup and login",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Jyotishmoy",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Fix Lib contest entry",
+      "__EMPTY_2": "The Librarians, Submissions",
+      "__EMPTY_3": "Fix Librarians contest entry button to lead to sign up not submission page",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Pratyank",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Get Submission flow ready",
+      "__EMPTY_2": "Submissions, Dashboard",
+      "__EMPTY_3": "Ensure submission upload page and workflow is functional and ready",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Jyotishmoy, Aakash",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Link T&S to Lib contest",
+      "__EMPTY_2": "Terms of Service, The Librarians",
+      "__EMPTY_3": "Link new Submissions terms and conditions page to Librarians contest",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Pratyank",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Replace hero image at Signup",
+      "__EMPTY_2": "Signup/Login",
+      "__EMPTY_3": "Replace image right side image with logo with new asset provided HERE.",
+      "__EMPTY_4": "Medium",
+      "__EMPTY_5": "Pratyank",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Remove for Creators page on mobile",
+      "__EMPTY_2": "Menu Bar, Mobile",
+      "__EMPTY_3": "Remove For Creators page in mobile view",
+      "__EMPTY_4": "Low",
+      "__EMPTY_5": "Pratyank",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Remove hardcoded parts of the Dashboard",
+      "__EMPTY_2": "Dashboard clean up",
+      "__EMPTY_3": "Clean up and remove the sections and numbers that are hardcoded in the dashboards",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Rafay",
+      "__EMPTY_6": "Complete",
+      "__EMPTY_7": "Jyotishmoy"
+    },
+    {
+      "__EMPTY_1": "Create Electric Entertainment brand account",
+      "__EMPTY_2": "Create EE brand Account",
+      "__EMPTY_3": "Create EE brand account and librrians brand account",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Joey",
+      "__EMPTY_6": "Not Started"
+    },
+    {
+      "__EMPTY_1": "Fix submission images in dashboard",
+      "__EMPTY_2": "Dashboard, Submissions",
+      "__EMPTY_3": "Fixing the images that show up on dashboard for submissions",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Praytank",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Fix refresh glitch ",
+      "__EMPTY_2": "404 Page, Login/Signup",
+      "__EMPTY_3": "When refreshing the website or from a 404 page it automatically brings us to the login/signup page",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Rafay",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Allow for multi entry submissions",
+      "__EMPTY_2": "Contests, Submissions",
+      "__EMPTY_3": "Allow for multiple entries into the contest for submittors",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Aakash",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Allow for multi submissions",
+      "__EMPTY_2": "Contests, Submissions",
+      "__EMPTY_3": "allow for multiple submissions uploaded at a time",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Aakash",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "allow for pdf files",
+      "__EMPTY_2": "Contests, Submissions",
+      "__EMPTY_3": "allow for pdf files to be uploaded",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Aakash",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "increase file sizes for submissions",
+      "__EMPTY_2": "Contests, Submissions",
+      "__EMPTY_3": "increase file size of submissions allowed to be uploaded",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Aakash",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Create superadmin login for team",
+      "__EMPTY_2": "Super Admin",
+      "__EMPTY_3": "Create new login credentials for workspace.modfanofficial admin/team dashboard",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Dhruv",
+      "__EMPTY_6": "In Progress"
+    },
+    {
+      "__EMPTY_1": "Add header and logo nav",
+      "__EMPTY_2": "Login/Signup",
+      "__EMPTY_3": "Add the header and logo buttom to head back to main page from the dashboard, login/signup page, to easily navigate back to main page.",
+      "__EMPTY_4": "Low",
+      "__EMPTY_5": "Rafay",
+      "__EMPTY_6": "In Progress"
+    },
+    {
+      "__EMPTY_1": "Individual submission pages ",
+      "__EMPTY_2": "Dashboard, Submissions, Contests",
+      "__EMPTY_3": "Build out the individual submission/artwork page with all notes and details ",
+      "__EMPTY_4": "Medium",
+      "__EMPTY_5": "Rafay",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Fix submission tags",
+      "__EMPTY_2": "Contests, Submissions",
+      "__EMPTY_3": "Submission page tags section is not working",
+      "__EMPTY_4": "Medium",
+      "__EMPTY_5": "Pratyank",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Add description and note to contest entry",
+      "__EMPTY_2": "Contests, Submissions",
+      "__EMPTY_3": "Add a Note section to the submission page",
+      "__EMPTY_4": "Medium",
+      "__EMPTY_5": "Praytank",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Setup full contest and submission flow backend",
+      "__EMPTY_2": "Contests, Submissions, Dashboard",
+      "__EMPTY_3": "Create proper backend flow for creating new contests and submissions flow correctly connected to it. Review gaps Jyotishmoy shared and what is needed left.",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Aakash, Jyotishmoy, Pratyank",
+      "__EMPTY_6": "Ready for Review"
+    },
+    {
+      "__EMPTY_1": "Link artists and brand owners with contest ID",
+      "__EMPTY_2": "Contests, Submissions",
+      "__EMPTY_3": "How to link to artists and brand owners (through the submission?), contest ID to link them all?",
+      "__EMPTY_4": "Medium",
+      "__EMPTY_5": "Aakash, Jyotishmoy, Pratyank",
+      "__EMPTY_6": "Ready for Review"
+    },
+    {
+      "__EMPTY_1": "Create viewable approved artwork page",
+      "__EMPTY_2": "Submisions, Dashboard",
+      "__EMPTY_3": "Where do artwork go and are viewable once approved on brand side.",
+      "__EMPTY_4": "Medium",
+      "__EMPTY_5": "Aakash, Jyotishmoy, Pratyank, Rafay"
+    },
+    {
+      "__EMPTY_1": "Link EE account to Librarians contest",
+      "__EMPTY_2": "Contests",
+      "__EMPTY_3": "Link new EE account connect the Librarians contest to them to see and setup for approvals/judging. ",
+      "__EMPTY_4": "Medium",
+      "__EMPTY_5": "Aakash",
+      "__EMPTY_6": "Blocked"
+    },
+    {
+      "__EMPTY_1": "Switch domain to hostinger",
+      "__EMPTY_2": "Server, Domain",
+      "__EMPTY_3": "Connect domain to hostinger to move away from vercel",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Aakash",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Fix submission showing in Gallery",
+      "__EMPTY_2": "Gallery, Backend",
+      "__EMPTY_3": "Fixing so submissions don't automatically show up in the main gallery for everyone, they should only show approved and licesned artwork there",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Pratyank",
+      "__EMPTY_6": "Ready for Review"
+    },
+    {
+      "__EMPTY_1": "Fix contest submit art button to dashboard for logged in",
+      "__EMPTY_2": "Contest Page, Dashboard, Login",
+      "__EMPTY_3": "if logged in the submit art on contest page takes you to the login page, would be best to take it to dashboard directly to the submit page",
+      "__EMPTY_4": "Medium",
+      "__EMPTY_5": "Rafay",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Login Issues with firebase",
+      "__EMPTY_2": "Login, User",
+      "__EMPTY_3": "User getting logged out and also having login in issues using google auth. Seems to be a firebase issue. ",
+      "__EMPTY_4": "Medium",
+      "__EMPTY_5": "Aakash",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Fix Dashboard Setting button",
+      "__EMPTY_2": "Dashboard",
+      "__EMPTY_3": "Dashboard setting button on the bottom is fixed and connected to settings page.",
+      "__EMPTY_4": "Low",
+      "__EMPTY_5": "rafay"
+    },
+    {
+      "__EMPTY_1": "Update dashboard top right menu to full one",
+      "__EMPTY_2": "Dashboard",
+      "__EMPTY_3": "The dropdown menu at top right when clicking name is not appear in the dashboard, have it reappear there",
+      "__EMPTY_4": "Low",
+      "__EMPTY_5": "Rafay"
+    },
+    {
+      "__EMPTY_1": "Upload Favicon",
+      "__EMPTY_2": "Favicon",
+      "__EMPTY_3": "favicon is missing ",
+      "__EMPTY_4": "Low"
+    },
+    {
+      "__EMPTY_1": "Fix timezone options",
+      "__EMPTY_2": "Settings, Account",
+      "__EMPTY_3": "Update Settings so you can choose EST and other timezones. ",
+      "__EMPTY_4": "Low",
+      "__EMPTY_5": "Rafay"
+    },
+    {
+      "__EMPTY_1": "Fix failed to create artwork issue",
+      "__EMPTY_2": "Submissions, The Librarians",
+      "__EMPTY_3": "Failed to create artwork issue coming up for user on mobile and desktop",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Aakash",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Complete migration away from AWS",
+      "__EMPTY_2": "Server",
+      "__EMPTY_3": "Full complete migration from AWS to Hostinger or other s3 services",
+      "__EMPTY_4": "High",
+
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Dashboard welcome back name",
+      "__EMPTY_2": "Dashboard",
+      "__EMPTY_3": "Dashboard welcome back name hardcoded",
+      "__EMPTY_4": "Low",
+      "__EMPTY_5": "Rafay",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Old contest page link",
+      "__EMPTY_2": "Contests",
+      "__EMPTY_3": "linking to old contest page",
+      "__EMPTY_4": "Medium",
+      "__EMPTY_5": "Rafay",
+      "__EMPTY_6": "Blocked"
+    },
+    {
+      "__EMPTY_1": "Dashboard - View All Submissions",
+      "__EMPTY_2": "Brand Manager Dashboard",
+      "__EMPTY_3": "The brand account dashboard currently caps at ~20 submissions with no way to see the rest",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Pratyank",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Submission Detail View - Full Image + Form Metadata",
+      "__EMPTY_2": "Brand Manager Dashboard",
+      "__EMPTY_3": "Clicking a submission on the dashboard should open a full detail view showing the full-size artwork image plus all metadata",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Pratyank",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Fix dashboard images",
+      "__EMPTY_2": "Dashboard",
+      "__EMPTY_3": "⁠ ⁠Fix images showing now loading/showing on the platform dashboards (need to be able to see the entries).",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Rafay",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Super admin credentials",
+      "__EMPTY_2": "Super Admin",
+      "__EMPTY_3": "Access to the mod super admin workspace. Need the new credentials for this so we can see all users, brand requests, and inquires that have come in through the website. ",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Dhruv"
+    },
+    {
+      "__EMPTY_1": "Submission page details",
+      "__EMPTY_2": "Submissions",
+      "__EMPTY_3": "Each submission page that shows that submission image or multiple images, all the inputs from the submission form, and the AI check results. ",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Rafay/Pratyank",
+      "__EMPTY_6": "Blocked"
+    },
+    {
+      "__EMPTY_1": "Prepare judging system",
+      "__EMPTY_2": "Judging",
+      "__EMPTY_3": " ⁠Prepare the judging system for when librarians contest ends. We will need to send the judging links to the librarians team.",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Rafay",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Judging backend endpoints",
+      "__EMPTY_2": "Backend/Judging",
+      "__EMPTY_3": "Fix backend enpoints for juding system ",
+      "__EMPTY_4": "High",
+      "__EMPTY_5": "Pratyank",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "PDF image preview",
+      "__EMPTY_2": "Submissions",
+      "__EMPTY_3": "pdf image preview for submissions needs to be fixed, replace with placeholder PDF image so it's not showing like an eerror",
+      "__EMPTY_4": "Medium",
+      "__EMPTY_5": "Rafay",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Judging next phase",
+      "__EMPTY_2": "Judging",
+      "__EMPTY_3": "Complete next phase of judging to show results, select final winners, and generate shareable link to view the top 10 (internal link for brand team/final look over). ",
+
+      "__EMPTY_5": "Pratyank",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "AI system UI",
+      "__EMPTY_2": "Frontend/AI",
+      "__EMPTY_3": "Create frontend/UI of the AI system and integrating the script into our system. ",
+
+      "__EMPTY_5": "Aakash, Pratyank, Rafay"
+    },
+    {
+      "__EMPTY_1": "Marketplace plan",
+      "__EMPTY_2": "Marketplace",
+      "__EMPTY_3": "Next phase Marketplace plan creation and implementation ",
+
+      "__EMPTY_5": "Dhruv"
+    },
+    {
+      "__EMPTY_1": "Copy judging password",
+      "__EMPTY_2": "Judging",
+      "__EMPTY_3": "Unable to copy Judging password from popup that appears when creating juding account. ",
+
+      "__EMPTY_5": "Pratyank",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Brand account creation error",
+      "__EMPTY_2": "Super Admin/Judging",
+      "__EMPTY_3": "Error appeared when creating brand account through juding link: Submission failed: Collumn \"contact_email\"of relation \"brand_verification_requests\" does not exist",
+
+      "__EMPTY_5": "Pratyank",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Login page standard",
+      "__EMPTY_2": "Login/Backend",
+      "__EMPTY_3": "Fix login page and backend to industry standard",
+      "__EMPTY_4": "Low",
+      "__EMPTY_5": "Dhruv"
+    },
+    {
+      "__EMPTY_1": "Update contest results",
+      "__EMPTY_2": "Contests",
+      "__EMPTY_3": "Update contest results with finalized licensing and selected artwork",
+
+      "__EMPTY_5": "Pratyank",
+      "__EMPTY_6": "Merged"
+    },
+    {
+      "__EMPTY_1": "AI system integration",
+      "__EMPTY_2": "AI",
+      "__EMPTY_3": "Connect with Aakash on AI system and figure out integration into the front end, for submission checks for campaigns and always on submissions",
+
+      "__EMPTY_5": "Rafay"
+    },
+    {
+      "__EMPTY_1": "Marketplace tasks",
+      "__EMPTY_2": "Marketplace",
+      "__EMPTY_3": "Decide and assign tasks for Marketplace roll out",
+
+      "__EMPTY_5": "Dhruv"
+    },
+    {
+      "__EMPTY_1": "Licensing workflow doc",
+      "__EMPTY_2": "Licensing",
+      "__EMPTY_3": "Assess licensing workflow and create doc to get team aligned",
+
+      "__EMPTY_5": "Dhruv",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Github security filtration",
+      "__EMPTY_2": "Github/Security",
+      "__EMPTY_3": "Github filtration to clean up security issues. ",
+
+      "__EMPTY_5": "Dhruv",
+      "__EMPTY_6": "Complete"
+    },
+    {
+      "__EMPTY_1": "Add .git ignore file",
+      "__EMPTY_2": "Github",
+      "__EMPTY_3": ".git ignore file added to our Github so that it ignores file types that it specifiies",
+
+      "__EMPTY_5": "Dhruv",
+      "__EMPTY_6": "Complete"
+    }
+  ]
+}
