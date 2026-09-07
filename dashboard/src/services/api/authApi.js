@@ -4,6 +4,8 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 import { setCredentials, logout } from './features/authSlice';
 
+import { firebaseAuth } from '../../lib/firebase';
+
 import { API_BASE_URL } from '..';
 
 const rawBaseQuery = fetchBaseQuery({
@@ -22,6 +24,85 @@ const rawBaseQuery = fetchBaseQuery({
   },
 });
 
+// ============================================================
+// REAUTH
+//
+// There are two independent auth systems sharing the same
+// `accessToken` localStorage key:
+//
+//   - "firebase"  -> refreshed via the Firebase SDK
+//                    (credential.user.getIdToken(true))
+//   - "workspace" -> refreshed via our own
+//                    POST /auth/workspace/refresh endpoint
+//                    using the stored refreshToken
+//
+// `authType` is set at login time (see AuthContext.jsx /
+// workspaceLogin) so we know which path to take on a 401.
+// ============================================================
+
+const refreshFirebaseToken = async () => {
+  const currentUser = firebaseAuth.currentUser;
+
+  if (!currentUser) {
+    return null;
+  }
+
+  try {
+    // Force refresh — this is what was missing before. Without
+    // `true` here, getIdToken() just returns the cached
+    // (possibly expired) token and the request 401s again.
+    const freshIdToken = await currentUser.getIdToken(true);
+
+    localStorage.setItem('accessToken', freshIdToken);
+
+    return freshIdToken;
+  } catch (err) {
+    console.error('[RTK Query] Firebase token refresh failed:', err);
+    return null;
+  }
+};
+
+const refreshWorkspaceToken = async (api, extraOptions) => {
+  const refreshToken = localStorage.getItem('refreshToken');
+
+  if (!refreshToken) {
+    return null;
+  }
+
+  const refreshResult = await rawBaseQuery(
+    {
+      url: '/workspace/refresh',
+      method: 'POST',
+      body: { refreshToken },
+    },
+    api,
+    extraOptions
+  );
+
+  const newAccessToken = refreshResult.data?.accessToken;
+  const newRefreshToken = refreshResult.data?.refreshToken;
+
+  if (!newAccessToken) {
+    return null;
+  }
+
+  localStorage.setItem('accessToken', newAccessToken);
+
+  // Refresh tokens are rotated server-side — store the new one.
+  if (newRefreshToken) {
+    localStorage.setItem('refreshToken', newRefreshToken);
+  }
+
+  api.dispatch(
+    setCredentials({
+      accessToken: newAccessToken,
+      user: api.getState()?.auth?.user ?? null,
+    })
+  );
+
+  return newAccessToken;
+};
+
 const baseQueryWithReauth = async (args, api, extraOptions) => {
   let result = await rawBaseQuery(args, api, extraOptions);
 
@@ -31,41 +112,32 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
   ) {
     console.warn('[RTK Query] 401 detected — attempting refresh');
 
-    const refreshToken = localStorage.getItem('refreshToken');
+    const authType = localStorage.getItem('authType');
 
-    if (!refreshToken) {
-      api.dispatch(logout());
-      return result;
+    let newAccessToken = null;
+
+    if (authType === 'firebase') {
+      newAccessToken = await refreshFirebaseToken();
+    } else if (authType === 'workspace') {
+      newAccessToken = await refreshWorkspaceToken(api, extraOptions);
+    } else {
+      // authType wasn't set (e.g. stale session from before this
+      // fix shipped) — try Firebase first since currentUser will
+      // simply be null if it isn't a Firebase session, then fall
+      // back to a workspace refresh.
+      newAccessToken =
+        (await refreshFirebaseToken()) ||
+        (await refreshWorkspaceToken(api, extraOptions));
     }
 
-    const refreshResult = await rawBaseQuery(
-      {
-        url: '/refresh',
-        method: 'POST',
-        body: { refreshToken },
-      },
-      api,
-      extraOptions
-    );
-
-    if (refreshResult.data?.accessToken) {
-      const { accessToken } = refreshResult.data;
-
-      localStorage.setItem('accessToken', accessToken);
-
-      api.dispatch(
-        setCredentials({
-          accessToken,
-          user: api.getState()?.auth?.user ?? null,
-        })
-      );
-
+    if (newAccessToken) {
       result = await rawBaseQuery(args, api, extraOptions);
     } else {
-      console.error('[RTK Query] Refresh failed');
+      console.error('[RTK Query] Refresh failed — logging out');
 
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
+      localStorage.removeItem('authType');
 
       api.dispatch(logout());
     }
@@ -138,6 +210,7 @@ export const authApi = createApi({
           // Store workspace tokens.
           localStorage.setItem('accessToken', accessToken);
           localStorage.setItem('refreshToken', refreshToken);
+          localStorage.setItem('authType', 'workspace');
 
           // Update Redux authentication state.
           dispatch(
@@ -152,6 +225,17 @@ export const authApi = createApi({
       },
 
       invalidatesTags: ['CurrentUser'],
+    }),
+
+    // Refresh the workspace access token using the stored
+    // refresh token. Called internally by baseQueryWithReauth,
+    // but exported in case a caller wants to trigger it manually.
+    workspaceRefresh: builder.mutation({
+      query: body => ({
+        url: '/workspace/refresh',
+        method: 'POST',
+        body,
+      }),
     }),
 
     // ========================================
@@ -172,6 +256,7 @@ export const authApi = createApi({
         } finally {
           localStorage.removeItem('accessToken');
           localStorage.removeItem('refreshToken');
+          localStorage.removeItem('authType');
 
           dispatch(logout());
         }
@@ -230,6 +315,7 @@ export const {
   useRegisterMutation,
   useLoginMutation,
   useWorkspaceLoginMutation,
+  useWorkspaceRefreshMutation,
   useLogoutMutation,
   useForgotPasswordMutation,
   useResetPasswordMutation,

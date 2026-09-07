@@ -1,4 +1,3 @@
-
 // src/contexts/AuthContext.jsx
 
 import React, {
@@ -7,6 +6,7 @@ import React, {
   useEffect,
   useState,
   useCallback,
+  useRef,
 } from 'react';
 
 import {
@@ -27,13 +27,13 @@ import {
   useSyncMutation,
 } from '../services/api/authApi';
 
-// ============================================================
-// AUTH CONTEXT
-// ============================================================
+
+const MAX_AUTH_RETRIES = 2;
 
 const AuthContext = createContext({
   user: null,
   loading: true,
+  authError: null,
 
   login: async () => { },
   loginWithGoogle: async () => { },
@@ -45,9 +45,6 @@ const AuthContext = createContext({
   isGoogleLoggingIn: false,
 });
 
-// ============================================================
-// AUTH PROVIDER
-// ============================================================
 
 export function AuthProvider({ children }) {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -55,30 +52,14 @@ export function AuthProvider({ children }) {
   const [isGoogleLoggingIn, setIsGoogleLoggingIn] =
     useState(false);
 
-  // ----------------------------------------------------------
-  // RTK QUERY
-  // ----------------------------------------------------------
 
-  /**
-   * Firebase -> Backend synchronization.
-   *
-   * The actual HTTP request is handled by authApi.js.
-   *
-   * AuthContext only coordinates:
-   *
-   * Firebase authentication
-   *        ↓
-   * Firebase ID token
-   *        ↓
-   * authApi.sync()
-   *        ↓
-   * Backend
-   */
+  const [authError, setAuthError] = useState(null);
+
+  const retryCountRef = useRef(0);
+
+
   const [sync] = useSyncMutation();
 
-  // ----------------------------------------------------------
-  // Current User
-  // ----------------------------------------------------------
 
   const {
     data,
@@ -92,9 +73,6 @@ export function AuthProvider({ children }) {
   const [triggerGetUser] =
     useLazyGetCurrentUserQuery();
 
-  // ----------------------------------------------------------
-  // Normalize User
-  // ----------------------------------------------------------
 
   const user = data
     ? {
@@ -115,18 +93,25 @@ export function AuthProvider({ children }) {
     error?.status
   );
 
-  // ==========================================================
-  // EMAIL / PASSWORD LOGIN
-  // ==========================================================
+
+  useEffect(() => {
+    if (user) {
+      retryCountRef.current = 0;
+      setAuthError(null);
+    }
+  }, [user]);
+
+
+  const setAuthType = (type) => {
+    localStorage.setItem('authType', type);
+  };
+
 
   const login = useCallback(
     async ({ email, password }) => {
       setIsLoggingIn(true);
 
       try {
-        // ----------------------------------------------------
-        // 1. Authenticate against Firebase
-        // ----------------------------------------------------
 
         const credential =
           await signInWithEmailAndPassword(
@@ -135,18 +120,9 @@ export function AuthProvider({ children }) {
             password
           );
 
-        // ----------------------------------------------------
-        // 2. Get Firebase ID Token
-        // ----------------------------------------------------
-
         const idToken =
           await credential.user.getIdToken();
 
-        // ----------------------------------------------------
-        // 3. Synchronize Firebase user with backend
-        //
-        // RTK Query now handles the HTTP request.
-        // ----------------------------------------------------
 
         const result = await sync({
           idToken,
@@ -157,12 +133,6 @@ export function AuthProvider({ children }) {
           result
         );
 
-        // ----------------------------------------------------
-        // 4. New User
-        //
-        // Firebase account exists but application account
-        // does not exist yet.
-        // ----------------------------------------------------
 
         if (
           result?.isNewUser ||
@@ -178,21 +148,9 @@ export function AuthProvider({ children }) {
           };
         }
 
-        // ----------------------------------------------------
-        // 5. Existing User
-        //
-        // Firebase ID token becomes the access token used
-        // by the workspace/application API.
-        // ----------------------------------------------------
 
-        localStorage.setItem(
-          'accessToken',
-          idToken
-        );
-
-        // ----------------------------------------------------
-        // 6. Refresh Current User
-        // ----------------------------------------------------
+        localStorage.setItem('accessToken', idToken);
+        setAuthType('firebase');
 
         await triggerGetUser(
           undefined,
@@ -201,9 +159,6 @@ export function AuthProvider({ children }) {
           }
         ).unwrap();
 
-        // ----------------------------------------------------
-        // 7. Return Authentication Result
-        // ----------------------------------------------------
 
         return {
           success: true,
@@ -218,12 +173,10 @@ export function AuthProvider({ children }) {
           err
         );
 
-        // ----------------------------------------------------
-        // Clear locally stored authentication state
-        // ----------------------------------------------------
 
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
+        localStorage.removeItem('authType');
 
         throw err;
       } finally {
@@ -233,18 +186,11 @@ export function AuthProvider({ children }) {
     [sync, triggerGetUser]
   );
 
-  // ==========================================================
-  // GOOGLE LOGIN
-  // ==========================================================
-
   const loginWithGoogle = useCallback(
     async () => {
       setIsGoogleLoggingIn(true);
 
       try {
-        // ----------------------------------------------------
-        // 1. Create Google Provider
-        // ----------------------------------------------------
 
         const provider =
           new GoogleAuthProvider();
@@ -253,9 +199,6 @@ export function AuthProvider({ children }) {
           prompt: 'select_account',
         });
 
-        // ----------------------------------------------------
-        // 2. Open Google Popup
-        // ----------------------------------------------------
 
         const credential =
           await signInWithPopup(
@@ -263,21 +206,10 @@ export function AuthProvider({ children }) {
             provider
           );
 
-        // ----------------------------------------------------
-        // 3. Get Firebase ID Token
-        // ----------------------------------------------------
 
         const idToken =
           await credential.user.getIdToken();
 
-        // ----------------------------------------------------
-        // 4. Synchronize with Backend
-        //
-        // RTK Query handles:
-        //
-        // POST /auth/sync
-        // Authorization: Bearer <firebase-id-token>
-        // ----------------------------------------------------
 
         const result = await sync({
           idToken,
@@ -288,19 +220,6 @@ export function AuthProvider({ children }) {
           result
         );
 
-        // ----------------------------------------------------
-        // 5. New Google Account
-        //
-        // Firebase account exists but application account
-        // does not exist yet.
-        //
-        // The caller can redirect the user to signup where
-        // they can select:
-        //
-        // fan
-        // artist
-        // brand
-        // ----------------------------------------------------
 
         if (
           result?.isNewUser ||
@@ -316,18 +235,8 @@ export function AuthProvider({ children }) {
           };
         }
 
-        // ----------------------------------------------------
-        // 6. Existing Application User
-        // ----------------------------------------------------
-
-        localStorage.setItem(
-          'accessToken',
-          idToken
-        );
-
-        // ----------------------------------------------------
-        // 7. Refresh Current User
-        // ----------------------------------------------------
+        localStorage.setItem('accessToken', idToken);
+        setAuthType('firebase');
 
         await triggerGetUser(
           undefined,
@@ -336,9 +245,6 @@ export function AuthProvider({ children }) {
           }
         ).unwrap();
 
-        // ----------------------------------------------------
-        // 8. Return Authentication Result
-        // ----------------------------------------------------
 
         return {
           success: true,
@@ -353,22 +259,14 @@ export function AuthProvider({ children }) {
           err
         );
 
-        // ----------------------------------------------------
-        // Don't show an error / clear auth state when the
-        // user intentionally closes the Google popup.
-        // ----------------------------------------------------
 
         if (
           err?.code !==
           'auth/popup-closed-by-user'
         ) {
-          localStorage.removeItem(
-            'accessToken'
-          );
-
-          localStorage.removeItem(
-            'refreshToken'
-          );
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          localStorage.removeItem('authType');
         }
 
         throw err;
@@ -379,38 +277,45 @@ export function AuthProvider({ children }) {
     [sync, triggerGetUser]
   );
 
-  // ==========================================================
-  // AUTO RETRY LOGIC
-  // ==========================================================
 
   useEffect(() => {
     if (error?.status === 401) {
-      const token =
-        localStorage.getItem('accessToken');
+      const token = localStorage.getItem('accessToken');
 
-      if (token) {
-        console.log(
-          '[AuthProvider] 401 detected but token exists → forcing refetch'
+      if (!token) {
+        return;
+      }
+
+      if (retryCountRef.current >= MAX_AUTH_RETRIES) {
+        console.warn(
+          '[AuthProvider] Max auth retries reached — giving up.'
         );
 
-        const timeout = setTimeout(() => {
-          refetch();
-        }, 400);
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('authType');
 
-        return () => clearTimeout(timeout);
+        setAuthError('SESSION_EXPIRED');
+        return;
       }
+
+      retryCountRef.current += 1;
+
+      console.log(
+        `[AuthProvider] 401 detected → retry ${retryCountRef.current}/${MAX_AUTH_RETRIES}`
+      );
+
+      const timeout = setTimeout(() => {
+        refetch();
+      }, 400);
+
+      return () => clearTimeout(timeout);
     }
   }, [error, refetch]);
 
-  // ==========================================================
-  // LOGOUT
-  // ==========================================================
 
   const logout = useCallback(async () => {
     try {
-      // ------------------------------------------------------
-      // Sign out from Firebase as well.
-      // ------------------------------------------------------
 
       await signOut(firebaseAuth);
     } catch (err) {
@@ -419,12 +324,10 @@ export function AuthProvider({ children }) {
         err
       );
     } finally {
-      // ------------------------------------------------------
-      // Clear application authentication state.
-      // ------------------------------------------------------
 
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
+      localStorage.removeItem('authType');
 
       window.location.href = '/login';
     }
@@ -443,13 +346,6 @@ export function AuthProvider({ children }) {
         return false;
       }
 
-      // Depending on the API response, role may be:
-      //
-      // "ADMIN"
-      //
-      // or:
-      //
-      // { name: "ADMIN" }
 
       const roleName =
         typeof user.role === 'string'
@@ -465,21 +361,20 @@ export function AuthProvider({ children }) {
     [user]
   );
 
-  // ==========================================================
-  // PROVIDER
-  // ==========================================================
+
+  const hasToken = !!localStorage.getItem('accessToken');
 
   return (
     <AuthContext.Provider
       value={{
         user,
 
+
         loading:
-          isLoading ||
-          (!user &&
-            !!localStorage.getItem(
-              'accessToken'
-            )),
+          !authError &&
+          (isLoading || (!user && hasToken)),
+
+        authError,
 
         login,
         loginWithGoogle,
@@ -496,9 +391,6 @@ export function AuthProvider({ children }) {
   );
 }
 
-// ============================================================
-// USE AUTH
-// ============================================================
 
 export const useAuth = () =>
   useContext(AuthContext);

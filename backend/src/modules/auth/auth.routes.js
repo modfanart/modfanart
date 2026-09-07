@@ -23,4 +23,10 @@ router.post('/sync', AuthController.sync);
 // This flow does NOT contact Firebase.
 router.post('/workspace/login', WorkspaceAuthController.login);
 
+// Internal refresh — exchanges a valid refresh token for a new
+// access token (and a rotated refresh token). This was missing
+// entirely, which is why the frontend's refresh call 404'd and
+// the UI spun forever.
+router.post('/workspace/refresh', WorkspaceAuthController.refresh);
+
 module.exports = router;
