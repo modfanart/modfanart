@@ -131,6 +131,20 @@ const routes = [
   { path: '/api/projects', module: './src/modules/tasks/project.routes.js' },
   { path: '/api/media', module: './src/modules/cdn/cdn.routes.js' },
   { path: '/api/admin', module: './src/modules/admin/admin.routes.js' },
+  { path: '/api/cart', module: './src/modules/cart/cart.routes.js' },
+
+  {
+    path: '/api/merch',
+    module: './src/modules/merch/merch.routes.js',
+  },
+  {
+    path: '/api/payout',
+    module: './src/modules/payout/payout.routes.js',
+  },
+  {
+    path: '/api/review',
+    module: './src/modules/review/review.route.js',
+  },
 ];
 
 routes.forEach(({ path, module: mod }) => {
