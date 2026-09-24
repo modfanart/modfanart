@@ -1,10 +1,11 @@
 // src/controllers/contestEntry.controller.js
-const Contest = require('../models/contest.model');
-const ContestEntry = require('../models/contestEntry.model');
-const Artwork = require('../../artworks/models/artwork.model');
-const Tagging = require('../../tags/models/tagging.model');
-const { sql } = require('kysely');
-const { db } = require('../../../config');
+const Contest = require("../models/contest.model");
+const ContestEntry = require("../models/contestEntry.model");
+const Artwork = require("../../artworks/models/artwork.model");
+const Tagging = require("../../tags/models/tagging.model");
+const { triggerScreening } = require("../../screening/screening.hook");
+const { sql } = require("kysely");
+const { db } = require("../../../config");
 
 // The client caps the entrant's own note at 1000 chars, then appends a
 // "Fandom / Original IP: ..." line (the IP itself is capped at 100). This bound
@@ -152,8 +153,17 @@ class ContestEntryController {
         trimmedNotes
       );
 
+      // Screened again in contest context even if the artwork already passed a standalone
+      // screening: the contest's brand may impose style and IP rules the gallery does not.
+      const screeningRun = await triggerScreening({
+        artworkId,
+        contestEntryId: entry.id,
+        actorId: req.user.id,
+      });
+
       res.status(201).json({
-        message: 'Entry submitted successfully',
+        message: "Entry submitted successfully",
+        screening_run_id: screeningRun?.id ?? null,
         entry,
       });
     } catch (err) {

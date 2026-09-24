@@ -1,12 +1,12 @@
 // migrate.js
 // Run with: node migrate.js
 
-const fs = require("node:fs").promises;
 const path = require("node:path");
 
-const { FileMigrationProvider, Migrator } = require("kysely");
+const { Migrator } = require("kysely");
 
 const { db } = require("../config");
+const { MigrationFolderProvider } = require("./migration-provider");
 
 const migrationFolder = path.join(process.cwd(), "src/migrations");
 
@@ -18,11 +18,7 @@ async function main() {
 
   const migrator = new Migrator({
     db,
-    provider: new FileMigrationProvider({
-      fs,
-      path,
-      migrationFolder,
-    }),
+    provider: new MigrationFolderProvider(migrationFolder),
   });
 
   try {
