@@ -127,7 +127,11 @@ const routes = [
   { path: "/api/tasks", module: "./src/modules/tasks/task.routes.js" },
   { path: "/api/projects", module: "./src/modules/tasks/project.routes.js" },
   {path: "/api/media", module: "./src/modules/cdn/cdn.routes.js"},
-  {path: "/api/admin", module: "./src/modules/admin/admin.routes.js"}
+  {path: "/api/admin", module: "./src/modules/admin/admin.routes.js"},
+  // AI screening: runs, rulesets, style guides.
+  { path: "/api/screening", module: "./src/modules/screening/screening.routes.js" },
+  // Human review queue + user reporting. Previously present on disk but never mounted.
+  { path: "/api/moderation", module: "./src/modules/moderation/moderation.routes.js" }
 ];
 
 routes.forEach(({ path, module: mod }) => {

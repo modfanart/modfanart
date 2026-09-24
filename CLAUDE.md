@@ -2,8 +2,8 @@
 
 You are integrating an AI artwork-screening pipeline into an EXISTING, LIVE codebase.
 Ground truth about this repo is in `docs/EXISTING_STATE.md` — read it before structural decisions.
-The screening design rationale is in `docs/MOD_SCREENING_ARCHITECTURE.md` — its *invariants* apply;
-its greenfield schema/layout do NOT (this file supersedes them where they conflict).
+This file is the single working spec. (`docs/MOD_SCREENING_ARCHITECTURE.md` was a byte-identical
+duplicate of this file and has been deleted; do not recreate it.)
 
 ## Scope boundaries (hard)
 
@@ -24,8 +24,8 @@ its greenfield schema/layout do NOT (this file supersedes them where they confli
 | Contest context | `contest_entries` (references artwork; has its own `moderation_status`) |
 | Human review queue | `moderation_queue` table (polymorphic `entity_type`/`entity_id`, `status`, `priority`, `assigned_to`, `reviewed_by`, `decision`, `notes`) — exists in DB, unwired in code. Extend it; do not create `review_items`. |
 | Audit trail | `audited_events` (`actor_id`, `action`, `entity_type`/`entity_id`, `old_values`/`new_values` jsonb) — write to it, don't create `audit_log` |
-| Route prefix | `/api/moderation` — a `src/modules/moderation/` module exists on disk but is NOT mounted in `index.js`. Read it first; wire/replace it to match the frontend contract below. |
-| API contract | `frontend/services/api/moderationApi.ts` already calls `/moderation/submit`, `/moderation/queue`, `/moderation/metrics`. `frontend/app/compliance/*` settings pages define config field names (`confidenceThreshold`, `autoRejectAI`, `sensitivityLevel`, `checkCharacterAccuracy`, …). Implement to THIS contract; extend it, don't contradict it. |
+| Route prefix | Two namespaces. `/api/screening/*` = new screening-specific resources (runs, rulesets, style guides). `/api/moderation/*` = the shared human-review + user-reporting surface (`queue`, `queue/:id/resolve`, `metrics`, and the pre-existing `submit`). The `src/modules/moderation/` module on disk is NOT mounted in `index.js` and is broken; reduce it to the review surface. |
+| API contract | `frontend/services/api/moderationApi.ts` calls `/moderation/submit`, `/moderation/queue`, `/moderation/metrics`. **Read it carefully: `submit` is a USER-REPORTING endpoint** (`{ entity_type, entity_id, violation_type, description }`), not screening. Screening must not squat that path — hence `/api/screening/*`. `frontend/app/compliance/*` settings pages define ruleset config field names (`confidenceThreshold`, `autoRejectAI`, `sensitivityLevel`, `notifyArtist`, `enabled`) and `frontend/lib/db/config-service.ts` defines the rest (`aiDetectionThreshold`, `contentSafetyThreshold`, `ipComplianceThreshold`, `autoRejectThreshold`, `autoApproveThreshold`, `requireHumanReview`). Mirror those names; extend, don't contradict. |
 | Auth | Firebase ID tokens via `authenticateToken` (`src/common/middleware/auth.middleware.js`) + `hasPermission()` from `roles.permissions` jsonb. Use these; do not add a new auth mechanism. |
 | Storage | `CDNFileService` (S3, `src/modules/cdn/services/cdn-file.service.js`). Do not use the dead Vercel Blob wrapper or `cdn.config.js`. |
 | Email | SendGrid via `src/config/sendgrid.js` + `src/common/emails/`. |
@@ -122,6 +122,10 @@ on read in v1's style; a stats table is out of scope until proven slow).
   Redis is NOT port-mapped to the host; API and worker reach it as `redis://modfanart-redis:6379`.
 - New env vars: `REDIS_URL`, `AIORNOT_API_KEY`, `OPENAI_API_KEY`. Read via `process.env` at module
   top like the rest of the codebase; worker crashes at boot if AI keys are missing.
+- Optional env vars: `SCREENING_ADAPTERS=mock` swaps in the fake adapters so the pipeline can be
+  exercised end to end without spending money or holding real keys — this is also what lets the
+  worker boot without the AI keys. `SUBMISSION_RATE_LIMIT` (default 60) and
+  `SUBMISSION_RATE_WINDOW_MS` (default 1h) tune the per-artist submission cap.
 - Queue: `screening`, job `screen-artwork { artworkId, runId, contestEntryId? }`,
   5 attempts, exponential backoff, DLQ = failed set + `screening_runs.status='failed'` +
   admin notification via existing notifications module.
@@ -129,21 +133,49 @@ on read in v1's style; a stats table is out of scope until proven slow).
 ## Module layout (inside existing conventions)
 
 ```
-backend/src/modules/moderation/        # reconcile with what's already on disk here FIRST
-├── moderation.routes.js               # mounted in index.js at /api/moderation
-├── controller/moderation.controller.js
+backend/src/modules/screening/         # NEW: the AI pipeline
+├── screening.routes.js                # mounted in index.js at /api/screening
+├── screening.permissions.js           # permission middleware; see the note below
+├── screening.hook.js                  # failure-tolerant trigger for the upload controllers
+├── db.js                              # lazy getDb(), so requiring a module can't exit the process
+├── controller/screening.controller.js
 ├── services/
 │   ├── decision.engine.js             # pure
 │   ├── transition.service.js          # single write path + audited_events
-│   ├── screening.service.js           # creates runs, enqueues
-│   └── ruleset.service.js             # versioned config, zod schema
+│   ├── screening.service.js           # creates runs, enqueues, orchestrates stages
+│   ├── ruleset.service.js             # versioned config, zod schema
+│   ├── styleGuide.service.js          # text extraction -> parsed_rules -> prompt_block
+│   ├── dedupe.service.js              # sha256 short circuit on resubmitted rejections
+│   ├── notification.service.js        # in-app + SendGrid, gated on notifyArtist
+│   └── image.loader.js                # S3 bytes + per-provider size caps
 ├── adapters/
 │   ├── aiornot.adapter.js  ├── openai-moderation.adapter.js  ├── style.adapter.js
-│   └── mock/                          # phase-1 fakes, same interface
-└── models/                            # thin Kysely classes, matching Artwork/Brand pattern
+│   └── mock/                          # fakes with the same interface, via SCREENING_ADAPTERS=mock
+├── models/                            # thin Kysely classes, matching Artwork/Brand pattern
+└── __fixtures__/fakeDb.js             # in-memory Kysely stand-in used by the unit suites
+backend/src/modules/moderation/        # EXISTING, broken + unmounted: reduce to review surface
+├── moderation.routes.js               # mounted in index.js at /api/moderation
+├── controller/moderation.controller.js  # rewrite: queue, resolve, metrics, report
+└── models/moderation.model.js         # kept, plus enqueueReport for user reports
 backend/worker.js
 backend/src/queue/screening.queue.js   # queue + worker processor
+backend/src/common/middleware/submission.rate-limit.js   # per-artist cap, keyed on user id
 ```
+
+Two things about the surrounding code that this module has to work around:
+
+- `src/config/index.js` calls `process.exit(1)` when it cannot reach Postgres, at import time. Any
+  module that requires it directly is therefore untestable without a live database. Services and
+  models here take `db` as a parameter, and `db.js` resolves it lazily for the route layer.
+- `hasPermission()` in `common/middleware/permission.middleware.js` reads `req.user.role_id`, which
+  `authenticateToken` deletes, so it can never pass. `screening.permissions.js` checks
+  `req.user.permissions` instead (honouring `*`/`all` wildcards) and adds brand scoping. Fixing the
+  shared middleware is a separate change with a much wider blast radius.
+
+The on-disk `moderation.controller.js` imports a nonexistent `../../../config/compliance` and a
+nonexistent `createModeratedSubmission`, and ends with two clobbering `module.exports =`
+assignments. It cannot load. Rewrite it; keep `models/moderation.model.js` (`ModerationQueue`),
+which is correct.
 
 ## Pipeline trigger
 
@@ -152,25 +184,31 @@ set `moderation_status='pending'`, `status='moderation_pending'`, create screeni
 Contest entry creation likewise enqueues with `contest_entry_id` set. Keep the hook to ~5 lines
 calling `screening.service.js` — do not inline pipeline logic into the artwork controller.
 
-## API surface (match frontend contract, then extend)
+## API surface
 
 ```
-POST /api/moderation/submit            # manual (re)screen request — shape per moderationApi.ts
-GET  /api/moderation/queue             # review queue; filters: status, entity_type, brand
-GET  /api/moderation/metrics           # computed on read from screening_runs + moderation_queue
-POST /api/moderation/queue/:id/resolve # { decision: approved|rejected|escalated, notes }
-GET  /api/moderation/runs/:artworkId   # screening history for an artwork
-GET|POST /api/moderation/rulesets      # brand-scoped via brand.middleware; POST = new version
-POST /api/moderation/style-guides      # multipart upload via existing singleUpload middleware
+GET  /api/screening/runs/:artworkId     # screening history for an artwork
+POST /api/screening/runs                # manual (re)screen: { artworkId, contestEntryId? }
+GET  /api/screening/rulesets            # brand-scoped; falls back to platform default
+POST /api/screening/rulesets            # new immutable version
+POST /api/screening/style-guides        # multipart upload via existing singleUpload middleware
+
+GET  /api/moderation/queue              # review queue; filters: status, entity_type, brand
+POST /api/moderation/queue/:id/resolve  # { decision: approved|rejected|escalated, notes }
+GET  /api/moderation/metrics            # computed on read from screening_runs + moderation_queue
 ```
+`POST /api/moderation/submit` stays reserved for the existing user-reporting contract in
+`moderationApi.ts` — do not repurpose it for rescreening; that is `POST /api/screening/runs`.
+
 Response shape: match the loose existing style (`{ success, message, ...payload }` on writes,
 bare objects/lists on reads) — do not introduce a new envelope convention mid-codebase.
-Before finalizing request/response shapes, READ `frontend/services/api/moderationApi.ts` and the
-compliance settings components, and mirror their field names in `rulesets.config`.
 
-## Testing (first tests in this repo — scoped to this module only)
+## Testing (scoped to this module only)
 
-- Add `vitest` as devDependency, `"test": "vitest run"` script.
+- `vitest` is the runner for NEW code. The pre-existing `backend/tests/` suites use `node:test`,
+  which vitest cannot execute, so the two runners coexist: `npm run test:unit` (vitest, scoped by
+  `vitest.config.js` `include` to the new module) and `npm run test:node` (the old suites).
+  `npm test` runs both.
 - Required suites: decision engine (table-driven, every precedence branch, plus property "never
   auto_approved unless all requires met"), transition service (illegal transitions throw; every
   legal one writes audited_events), processor resume-after-retry with mock adapters.
@@ -195,23 +233,39 @@ service + tests; queue + worker with mock adapters; artwork-create hook. Exit: u
 locally → worker runs → decision recorded → `artworks.moderation_status` updated → audited_events
 row exists. Shown via curl + psql output.
 
-**Phase 2 — real adapters:** AIORNOT (verify current endpoint/pricing from their docs before
-coding), OpenAI omni-moderation (image + title/description/tags), retries/DLQ, creator
-notification via existing notifications module + SendGrid template. Exit: real image, real
-verdict; kill worker mid-run, retry resumes at the incomplete stage.
+**Phase 2 — real adapters:** retries/DLQ, creator notification via existing notifications module +
+SendGrid template. Exit: real image, real verdict; kill worker mid-run, retry resumes at the
+incomplete stage. Verified provider contracts (do not re-guess these):
+
+- **AIORNOT:** `POST https://api.aiornot.com/v2/image/sync`, `Authorization: Bearer $AIORNOT_API_KEY`,
+  `multipart/form-data` field `image`. Query params `only` / `excluding` / `external_id`; valid
+  report names are `ai_generated`, `deepfake`, `nsfw`, `quality`, `reverse_search` (`ai_generated`
+  and `deepfake` are separately billed). Max 50MB; jpg/jpeg/png/webp/heic/heif/tiff. Response:
+  `{ id, created_at, external_id, report: { ai_generated: { verdict: 'ai'|'human'|'unknown',
+  ai: { is_detected, confidence }, human: { is_detected, confidence },
+  generator: { <name>: { is_detected, confidence } } }, nsfw, quality, deepfake, meta } }`.
+  Their docs state `verdict` is more reliable than thresholding `confidence` yourself, because
+  confidence drifts as they retrain. Treat `verdict` as primary; use `human.confidence` only for
+  the borderline band.
+- **OpenAI moderation:** model `omni-moderation-latest`, free, image cap 20MB. Returns `flagged`,
+  `categories`, `category_scores`, `category_applied_input_types`. **Images are only scored for
+  `sexual`, `self-harm`, `self-harm/intent`, `self-harm/instructions`, `violence`,
+  `violence/graphic`.** All other categories (`harassment*`, `hate*`, `illicit*`, `sexual/minors`)
+  are text-only and return 0 on image-only input — do not build rules that assume otherwise.
+- **Copyright / IP is NOT an OpenAI moderation category.** The requirement doc's "copyrighted
+  materials" check cannot come from the moderation endpoint. It belongs to the Stage C vision
+  classifier (`style.adapter.js`), which returns an explicit `ip_risk`.
 
 **Phase 3 — brand config + review:** ruleset versioning API mapped to compliance UI field names;
-style guide upload + one-time parse job compiling `prompt_block`; style stage; wire
-`/api/moderation` queue + resolve endpoints with real permission checks. Frontend: connect the
-existing `frontend/app/compliance/*` pages and `pending-entries-review.tsx` to the live API.
-Dashboard: implement the reserved `/review-automation` route for MOD-admin review.
+style guide upload + one-time parse job compiling `prompt_block`; style stage (including `ip_risk`);
+wire `/api/moderation` queue + resolve endpoints with real permission checks.
 Exit: brand edits thresholds → new version; flagged artwork resolved by a human; override visible
-in audited_events.
+in audited_events. **No frontend or dashboard work — backend APIs only.**
 
 **Phase 4 — metrics + hardening:** `/metrics` computed queries (add indexes on
 `screening_runs.artwork_id`, `moderation_queue.status` as needed); per-artist submission rate
 limit reusing `express-rate-limit`; sha256 dedupe (new `file_sha256` column on artworks) flagging
-resubmission of rejected images; `POST /api/moderation/submit` rescreen path. Exit: 200 artworks
+resubmission of rejected images; `POST /api/screening/runs` rescreen path. Exit: 200 artworks
 in 10 min locally, zero stuck runs.
 
 Do not start a later phase early. At each phase exit, stop and report with raw evidence.

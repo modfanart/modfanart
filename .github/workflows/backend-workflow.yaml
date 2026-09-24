@@ -52,11 +52,27 @@ jobs:
             set -e
 
             APP_NAME="modfanart-backend"
+            WORKER_NAME="modfanart-screening-worker"
+            REDIS_NAME="modfanart-redis"
             APP_DIR="/opt/dev/apps/modfanart-backend"
 
             mkdir -p $APP_DIR
 
             docker pull ghcr.io/modfanart/modfanart-backend:latest
+
+            # Redis backs the BullMQ screening queue. Not port-mapped to the host: only the API
+            # and the worker need it, and both are on mod-network. Recreated only when absent, so
+            # a routine deploy does not drop queued jobs on the floor.
+            if [ -z "$(docker ps -q -f name=^/${REDIS_NAME}$)" ]; then
+              docker rm $REDIS_NAME || true
+              docker run -d \
+                --name $REDIS_NAME \
+                --restart unless-stopped \
+                --network mod-network \
+                -v modfanart-redis-data:/data \
+                redis:7-alpine \
+                redis-server --appendonly yes
+            fi
 
             docker stop $APP_NAME || true
             docker rm $APP_NAME || true
@@ -67,7 +83,33 @@ jobs:
               --network mod-network \
               -p 5000:5000 \
               --env-file $APP_DIR/.env \
+              -e REDIS_URL="redis://${REDIS_NAME}:6379" \
               ghcr.io/modfanart/modfanart-backend:latest
+
+            # Same image, different entrypoint. The worker does the slow, billable screening work;
+            # keeping it out of the API container means a long AIORNOT call cannot occupy a request
+            # handler, and the two can be scaled independently.
+            docker stop $WORKER_NAME || true
+            docker rm $WORKER_NAME || true
+
+            docker run -d \
+              --name $WORKER_NAME \
+              --restart unless-stopped \
+              --network mod-network \
+              --env-file $APP_DIR/.env \
+              -e REDIS_URL="redis://${REDIS_NAME}:6379" \
+              ghcr.io/modfanart/modfanart-backend:latest \
+              node worker.js
 
             sleep 5
             docker ps | grep $APP_NAME
+
+            # The worker refuses to boot without AIORNOT_API_KEY / OPENAI_API_KEY, so a missing
+            # secret has to fail the deploy here rather than silently leave submissions unscreened.
+            if [ -z "$(docker ps -q -f name=^/${WORKER_NAME}$)" ]; then
+              echo "Screening worker failed to start:"
+              docker logs $WORKER_NAME --tail 50
+              exit 1
+            fi
+
+            docker ps | grep $WORKER_NAME

@@ -9,6 +9,9 @@ const {
 const ArtworkController = require("./controller/artwork.controller");
 const router = express.Router({ mergeParams: true });
 const { singleUpload } = require("../../common/middleware/upload");
+const {
+  submissionRateLimit,
+} = require("../../common/middleware/submission.rate-limit");
 
 // ────────────────────────────────────────────────
 // Specific/static routes FIRST
@@ -50,10 +53,12 @@ router.patch(
 );
 router.delete("/:id", authenticateToken, ArtworkController.deleteArtwork);
 
-// Create new artwork
+// Create new artwork. The limiter sits after authenticateToken so it can key on the user id, and
+// before singleUpload so a rejected request never pays for the multipart body.
 router.post(
   "/",
   authenticateToken,
+  submissionRateLimit,
   singleUpload("file"),
   ArtworkController.createArtwork
 );
