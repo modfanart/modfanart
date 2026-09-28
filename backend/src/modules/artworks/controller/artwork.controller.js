@@ -8,6 +8,7 @@ const CDNFileService = require("../../cdn/services/cdn-file.service");
 const cdnFileModel = require("../../cdn/models/cdn-file.model");
 const { renderPdfThumbnail } = require("../utils/pdf-thumbnail.util");
 const { applyPublicArtworkFilter } = require("../artwork.visibility");
+const { triggerScreening } = require("../../screening/screening.hook");
 
 const { db } = require("../../../config");
 const path = require("path");
@@ -142,9 +143,17 @@ const cdnFile = await cdnService.createFileRecord(
         );
       }
 
+      // The artwork is already stored with moderation_status 'pending', so it is not publicly
+      // visible until the pipeline (or a moderator) says otherwise.
+      const screeningRun = await triggerScreening({
+        artworkId: artwork.id,
+        actorId: userId,
+      });
+
       return res.status(201).json({
         success: true,
         message: "Artwork created successfully",
+        screening_run_id: screeningRun?.id ?? null,
         artwork: {
           id: artwork.id,
           title: artwork.title,

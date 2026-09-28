@@ -19,6 +19,17 @@ import {
 
 import { Button } from '@/components/ui/button';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import {
   Card,
   CardContent,
   CardDescription,
@@ -30,17 +41,8 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+import { ScreeningDetailPanel } from '@/components/compliance/screening-detail-panel';
+import { useGetScreeningHistoryQuery } from '@/services/api/screeningApi';
 
 import { useAuth } from '@/store/AuthContext';
 import {
@@ -85,6 +87,15 @@ function SubmissionDetailPageContent({ id, slug }: Props) {
   const [revokeLicenseId, setRevokeLicenseId] = useState<string | null>(null);
 
   const backHref = `/brand-manager/${slug}/submissions`;
+
+  const {
+    data: screeningHistory,
+    isLoading: isScreeningLoading,
+    isError: isScreeningError,
+  } = useGetScreeningHistoryQuery(id);
+
+  const latestScreening = screeningHistory?.runs?.[0];
+
 
   const {
     data: artwork,
@@ -600,6 +611,49 @@ function SubmissionDetailPageContent({ id, slug }: Props) {
                     </Badge>
                   ))}
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {isScreeningLoading && (
+            <Card>
+              <CardHeader>
+                <CardTitle>AI Screening</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Skeleton className="h-5 w-28" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+              </CardContent>
+            </Card>
+          )}
+
+          {!isScreeningLoading && !isScreeningError && latestScreening && (
+            <ScreeningDetailPanel screening={latestScreening} />
+          )}
+
+          {!isScreeningLoading && !isScreeningError && !latestScreening && (
+            <Card>
+              <CardHeader>
+                <CardTitle>AI Screening</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  No screening result is available for this submission.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {isScreeningError && (
+            <Card>
+              <CardHeader>
+                <CardTitle>AI Screening</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Unable to load the screening result.
+                </p>
               </CardContent>
             </Card>
           )}
