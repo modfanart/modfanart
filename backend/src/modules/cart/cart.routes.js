@@ -16,4 +16,6 @@ router.patch('/items/:itemId', controller.updateItem);
 
 router.delete('/items/:itemId', controller.removeItem);
 
+router.post('/checkout', controller.checkout);
+
 module.exports = router;

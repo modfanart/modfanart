@@ -21,6 +21,7 @@ async function getOrderFulfillments(req, res) {
 async function createFulfillment(req, res) {
   try {
     const fulfillment = await service.createFulfillment({
+      sellerId: req.user.id,
       orderId: req.params.orderId,
       addressId: req.body.address_id,
       printProviderId: req.body.print_provider_id,
@@ -39,6 +40,7 @@ async function createFulfillment(req, res) {
 async function updateStatus(req, res) {
   try {
     const fulfillment = await service.updateStatus(
+      req.user.id,
       req.params.id,
       req.body.status
     );
@@ -54,7 +56,11 @@ async function updateStatus(req, res) {
 
 async function updateTracking(req, res) {
   try {
-    const fulfillment = await service.updateTracking(req.params.id, req.body);
+    const fulfillment = await service.updateTracking(
+      req.user.id,
+      req.params.id,
+      req.body
+    );
 
     return res.json({
       message: 'Tracking updated',

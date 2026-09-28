@@ -21,6 +21,7 @@ async function findForTarget(targetType, targetId, trx = db) {
     .selectAll()
     .where('target_type', '=', targetType)
     .where('target_id', '=', targetId)
+    .where('deleted_at', 'is', null)
     .orderBy('created_at', 'desc')
     .execute();
 }
@@ -33,9 +34,28 @@ async function findByOrderItem(orderItemId, trx = db) {
     .executeTakeFirst();
 }
 
+async function getRatingSummary(targetType, targetId, trx = db) {
+  const row = await trx
+    .selectFrom('product_reviews')
+    .select([
+      sql`COUNT(*)`.as('review_count'),
+      sql`AVG(rating)`.as('average_rating'),
+    ])
+    .where('target_type', '=', targetType)
+    .where('target_id', '=', targetId)
+    .where('deleted_at', 'is', null)
+    .executeTakeFirst();
+
+  return {
+    review_count: Number(row?.review_count || 0),
+    average_rating: row?.average_rating ? Number(row.average_rating) : null,
+  };
+}
+
 module.exports = {
   createReview,
   findById,
   findForTarget,
   findByOrderItem,
+  getRatingSummary,
 };

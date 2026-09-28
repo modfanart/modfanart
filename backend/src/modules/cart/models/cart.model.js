@@ -52,6 +52,61 @@ async function getCartItems(cartId, trx = db) {
     .execute();
 }
 
+// Fuller read used at checkout time: joins artwork_pricing_tiers for
+// license items (getCartItems above only resolves merch pricing) and pulls
+// the artwork's creator_id as the license "seller", plus enough merch
+// status/stock to re-validate that nothing changed since it was added to
+// the cart.
+async function getCartItemsForCheckout(cartId, trx = db) {
+  return trx
+    .selectFrom('cart_items as ci')
+    .leftJoin('merch_variants as mv', 'mv.id', 'ci.merch_variant_id')
+    .leftJoin('merch_products as mp', 'mp.id', 'mv.merch_product_id')
+    .leftJoin('artworks as a', 'a.id', 'ci.artwork_id')
+    .leftJoin('artwork_pricing_tiers as apt', (join) =>
+      join
+        .onRef('apt.artwork_id', '=', 'ci.artwork_id')
+        .onRef('apt.license_type', '=', 'ci.license_type')
+    )
+    .select([
+      'ci.id',
+      'ci.cart_id',
+      'ci.item_type',
+      'ci.artwork_id',
+      'ci.license_type',
+      'ci.merch_variant_id',
+      'ci.quantity',
+      'mv.sku',
+      'mv.is_active as merch_is_active',
+      'mv.stock_qty as merch_stock_qty',
+      'mv.price_inr_cents as merch_price_inr_cents',
+      'mv.price_usd_cents as merch_price_usd_cents',
+      'mp.title as merch_title',
+      'mp.seller_id as merch_seller_id',
+      'mp.status as merch_product_status',
+      'a.creator_id as license_seller_id',
+      'a.status as artwork_status',
+      'apt.price_inr_cents as license_price_inr_cents',
+      'apt.price_usd_cents as license_price_usd_cents',
+      'apt.is_active as license_tier_is_active',
+    ])
+    .where('ci.cart_id', '=', cartId)
+    .execute();
+}
+
+async function markConverted(cartId, trx = db) {
+  return trx
+    .updateTable('carts')
+    .set({ status: 'converted', updated_at: new Date().toISOString() })
+    .where('id', '=', cartId)
+    .returningAll()
+    .executeTakeFirst();
+}
+
+async function clearItems(cartId, trx = db) {
+  return trx.deleteFrom('cart_items').where('cart_id', '=', cartId).execute();
+}
+
 async function addItem(data, trx = db) {
   return trx
     .insertInto('cart_items')
@@ -90,6 +145,9 @@ module.exports = {
   createCart,
   findCartById,
   getCartItems,
+  getCartItemsForCheckout,
+  markConverted,
+  clearItems,
   addItem,
   findItem,
   updateItemQuantity,

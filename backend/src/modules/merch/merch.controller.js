@@ -68,6 +68,37 @@ async function updateProduct(req, res) {
   }
 }
 
+async function submitForReview(req, res) {
+  try {
+    const product = await service.submitForReview(req.user.id, req.params.id);
+
+    return res.json({
+      message: 'Product submitted for review',
+      product,
+    });
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+
+async function moderateProduct(req, res) {
+  try {
+    const product = await service.moderateProduct(
+      req.user.id,
+      req.params.id,
+      req.body.decision,
+      req.body.notes
+    );
+
+    return res.json({
+      message: 'Moderation decision recorded',
+      product,
+    });
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+
 async function deleteProduct(req, res) {
   try {
     await service.deleteProduct(req.user.id, req.params.id);
@@ -132,6 +163,8 @@ module.exports = {
   getMyProducts,
   getPublishedProducts,
   updateProduct,
+  submitForReview,
+  moderateProduct,
   deleteProduct,
   addVariant,
   updateVariant,

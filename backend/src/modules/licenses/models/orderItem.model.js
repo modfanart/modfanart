@@ -3,8 +3,8 @@ const { db } = require('../../../config'); // ← only db
 const { sql } = require('kysely'); // ← ADD THIS LINE
 
 class OrderItem {
-  static async create(orderId, data) {
-    return db
+  static async create(orderId, data, trx = db) {
+    return trx
       .insertInto('order_items')
       .values({
         order_id: orderId,
@@ -14,8 +14,16 @@ class OrderItem {
       .executeTakeFirst();
   }
 
-  static async findByOrderId(orderId) {
-    return db
+  static async findById(id, trx = db) {
+    return trx
+      .selectFrom('order_items')
+      .selectAll()
+      .where('id', '=', id)
+      .executeTakeFirst();
+  }
+
+  static async findByOrderId(orderId, trx = db) {
+    return trx
       .selectFrom('order_items')
       .selectAll()
       .where('order_id', '=', orderId)

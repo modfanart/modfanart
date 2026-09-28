@@ -627,16 +627,37 @@
 /**
  * @typedef {Object} MerchProductRow
  * @property {string} id UUID
- * @property {string | null} seller_id References UserRow.id — creator/seller
+ * @property {string} seller_id References UserRow.id — creator/seller, any user (see SellerProfileRow)
  * @property {string | null} brand_id References BrandRow.id
  * @property {string | null} artwork_id References ArtworkRow.id
+ * @property {string | null} license_id References LicenseRow.id — required when seller_id is not the artwork's creator_id, enforced in merch.service.js
  * @property {string} title
  * @property {string | null} description
  * @property {string} base_product_type e.g. 'tshirt', 'mug', 'poster'
  * @property {MerchFulfillmentType} fulfillment_type
  * @property {string | null} print_provider_id References PrintProviderRow.id
- * @property {string} status e.g. 'draft', 'published', 'archived', 'suspended'
+ * @property {'draft' | 'pending_review' | 'published' | 'rejected' | 'suspended' | 'archived'} status
  * @property {string} created_at timestamptz ISO string
+ * @property {string} updated_at timestamptz ISO string
+ * @property {string | null} deleted_at timestamptz ISO string (soft delete)
+ */
+
+/**
+ * @typedef {'pending' | 'approved' | 'rejected' | 'suspended'} SellerProfileStatus
+ */
+
+/**
+ * @typedef {Object} SellerProfileRow
+ * @property {string} id UUID
+ * @property {string} user_id References UserRow.id — one profile per user
+ * @property {string} display_name Public seller name, distinct from username
+ * @property {SellerProfileStatus} status
+ * @property {boolean} payout_ready True once a usable Stripe Connect account / payout_method exists
+ * @property {string | null} reviewed_by References UserRow.id (admin/moderator)
+ * @property {string | null} reviewed_at timestamptz ISO string
+ * @property {string | null} notes
+ * @property {string} created_at timestamptz ISO string
+ * @property {string} updated_at timestamptz ISO string
  */
 
 /**
@@ -697,6 +718,7 @@
  * @property {string | null} buyer_id References UserRow.id
  * @property {string | null} seller_id Legacy/optional seller reference
  * @property {string | null} cart_id References CartRow.id
+ * @property {string | null} shipping_address_id References AddressRow.id
  * @property {'license_purchase' | 'contest_prize' | 'refund' | 'manual'} source_type
  * @property {string | null} source_id
  * @property {'pending' | 'paid' | 'fulfilled' | 'refunded' | 'disputed' | 'failed'} status
@@ -747,20 +769,25 @@
 /**
  * @typedef {Object} AddressRow
  * @property {string} id UUID
- * @property {string | null} user_id References UserRow.id
- * @property {string | null} line1
+ * @property {string} user_id References UserRow.id
+ * @property {string} full_name Recipient name
+ * @property {string | null} phone
+ * @property {string} line1
  * @property {string | null} line2
- * @property {string | null} city
+ * @property {string} city
  * @property {string | null} state
- * @property {string | null} postal_code
- * @property {string} country
+ * @property {string} postal_code
+ * @property {string} country ISO 3166-1 alpha-2
  * @property {boolean} is_default
+ * @property {string} created_at timestamptz ISO string
+ * @property {string | null} deleted_at timestamptz ISO string (soft delete)
  */
 
 /**
  * @typedef {Object} FulfillmentRow
  * @property {string} id UUID
  * @property {string} order_id References OrderRow.id
+ * @property {string | null} seller_id References UserRow.id — which seller's line items this shipment covers
  * @property {string | null} address_id References AddressRow.id
  * @property {string | null} print_provider_id References PrintProviderRow.id
  * @property {FulfillmentStatus} status
@@ -769,6 +796,7 @@
  * @property {string | null} tracking_url
  * @property {string | null} shipped_at
  * @property {string | null} delivered_at
+ * @property {string} created_at timestamptz ISO string
  */
 
 /**
@@ -791,12 +819,22 @@
  * @typedef {Object} PayoutRow
  * @property {string} id UUID
  * @property {string} seller_id References UserRow.id
- * @property {string} order_item_id References OrderItemRow.id
+ * @property {string} order_item_id References OrderItemRow.id — unique, one payout per line item
  * @property {number} gross_cents
  * @property {number} platform_fee_cents
  * @property {number} net_cents
  * @property {PayoutStatus} status
  * @property {string | null} stripe_transfer_id
+ * @property {string} created_at timestamptz ISO string
+ */
+
+/**
+ * @typedef {Object} PlatformFeeRuleRow
+ * @property {string} id UUID
+ * @property {MerchFulfillmentType | null} fulfillment_type Null = applies to digital licenses
+ * @property {string | null} base_product_type Null = applies to every product type under fulfillment_type
+ * @property {number} fee_bps Fee in basis points (1500 = 15%)
+ * @property {boolean} is_active
  * @property {string} created_at timestamptz ISO string
  */
 
@@ -816,10 +854,11 @@
  * @property {string} reviewer_id References UserRow.id
  * @property {ProductReviewTargetType} target_type
  * @property {string} target_id ArtworkRow.id or MerchProductRow.id
- * @property {string | null} order_item_id References OrderItemRow.id — verified purchase
+ * @property {string} order_item_id References OrderItemRow.id — unique, verified purchase
  * @property {number} rating Rating from 1 to 5
  * @property {string | null} body
  * @property {string} created_at timestamptz ISO string
+ * @property {string | null} deleted_at timestamptz ISO string (soft delete)
  */
 module.exports = {};
 // This file is only for type documentation / IntelliSense

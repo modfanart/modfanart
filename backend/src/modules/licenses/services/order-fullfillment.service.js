@@ -4,6 +4,7 @@ const {
   generateLicensePDF,
   generateInvoicePDF,
 } = require("../../../common/utils/pdfGenerators");
+const payoutService = require("../../payout/payout.service");
 
 class OrderFulfillmentService {
   static async fulfillOrder(paymentIntent) {
@@ -135,6 +136,21 @@ class OrderFulfillmentService {
         contractUrl,
         invoiceUrl,
       };
+    }).then(async (result) => {
+      // Generate seller payouts once the order is fully fulfilled. Kept
+      // outside the transaction above (payouts read committed order_items)
+      // and wrapped so a payout hiccup never undoes a successful license
+      // issuance the buyer already has PDFs for.
+      try {
+        await payoutService.generatePayoutsForOrder(orderId);
+      } catch (payoutErr) {
+        console.error(
+          `Payout generation failed for order ${orderId}:`,
+          payoutErr
+        );
+      }
+
+      return result;
     });
   }
 

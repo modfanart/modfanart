@@ -58,6 +58,17 @@ class ModerationQueue {
       .offset(offset)
       .execute();
   }
+
+  static async findPendingFor(entityType, entityId) {
+    return db
+      .selectFrom("moderation_queue")
+      .selectAll()
+      .where("entity_type", "=", entityType)
+      .where("entity_id", "=", entityId)
+      .where("status", "=", "pending")
+      .orderBy("created_at", "desc")
+      .executeTakeFirst();
+  }
 }
 
 module.exports = ModerationQueue;

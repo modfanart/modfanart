@@ -150,6 +150,22 @@ async function deleteVariant(id, trx = db) {
 }
 
 /**
+ * Decrement stock for a variant at checkout time, guarded so it can never
+ * go negative under concurrent checkouts. Returns undefined if there wasn't
+ * enough stock (caller should treat that as "sold out").
+ */
+async function decrementStock(variantId, quantity, trx = db) {
+  return trx
+    .updateTable('merch_variants')
+    .set((eb) => ({ stock_qty: eb('stock_qty', '-', quantity) }))
+    .where('id', '=', variantId)
+    .where('stock_qty', 'is not', null)
+    .where('stock_qty', '>=', quantity)
+    .returningAll()
+    .executeTakeFirst();
+}
+
+/**
  * Find print provider
  */
 async function findPrintProviderById(id, trx = db) {
@@ -173,6 +189,7 @@ module.exports = {
   findVariantsByProduct,
   updateVariant,
   deleteVariant,
+  decrementStock,
 
   findPrintProviderById,
 };

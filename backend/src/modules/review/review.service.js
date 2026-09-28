@@ -88,7 +88,12 @@ async function getReviews(targetType, targetId) {
   return model.findForTarget(targetType, targetId);
 }
 
+async function getRatingSummary(targetType, targetId) {
+  return model.getRatingSummary(targetType, targetId);
+}
+
 module.exports = {
   createReview,
   getReviews,
+  getRatingSummary,
 };

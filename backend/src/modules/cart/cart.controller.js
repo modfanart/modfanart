@@ -82,10 +82,27 @@ async function removeItem(req, res) {
   }
 }
 
+async function checkout(req, res) {
+  try {
+    const orders = await service.checkout(req.user.id, {
+      addressId: req.body.address_id,
+      currency: req.body.currency,
+    });
+
+    return res.status(201).json({
+      message: 'Checkout complete',
+      orders,
+    });
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+
 module.exports = {
   getCart,
   addMerchItem,
   addLicenseItem,
   updateItem,
   removeItem,
+  checkout,
 };

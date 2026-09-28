@@ -41,7 +41,21 @@ async function getReviews(req, res) {
   }
 }
 
+async function getRatingSummary(req, res) {
+  try {
+    const summary = await service.getRatingSummary(
+      req.params.targetType,
+      req.params.targetId
+    );
+
+    return res.json({ summary });
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+
 module.exports = {
   createReview,
   getReviews,
+  getRatingSummary,
 };
