@@ -74,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             name: data.user.role.name,
             hierarchy_level: data.user.role.hierarchy_level ?? 0,
             is_system: false,
-            permissions: {},
+            permissions: data.user.role.permissions ?? {},
             created_at: '',
           },
         }),
