@@ -53,7 +53,9 @@ export const sidebarConfig: Record<Role, (base: string) => NavItem[]> = {
     { name: 'Opportunities', href: `${base}/opportunities`, icon: Briefcase },
     { name: 'Licensing & Earnings', href: `${base}/licensing-earnings`, icon: Wallet },
     { name: 'Portfolio', href: `#`, icon: Image },
-    { name: 'Storefront', href: `#`, icon: ShoppingBag },
+    { name: 'Products', href: `${base}/seller/products`, icon: ShoppingBag },
+    { name: 'Orders', href: `${base}/seller/orders`, icon: ClipboardList },
+    { name: 'Payouts', href: `${base}/seller/payouts`, icon: Wallet },
     { name: 'Analytics', href: `#`, icon: BarChart3 },
   ],
 
