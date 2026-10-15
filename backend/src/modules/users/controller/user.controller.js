@@ -160,6 +160,7 @@ class UserController {
           "roles.id as role_id",
           "roles.name as role_name",
           "roles.hierarchy_level as role_hierarchy_level",
+          "roles.permissions as role_permissions",
           // add more role fields if needed: permissions, description, etc.
         ])
         .where("users.id", "=", userId)
@@ -200,6 +201,7 @@ class UserController {
             id: user.role_id,
             name: user.role_name || "unknown",
             hierarchy_level: user.role_hierarchy_level ?? 0,
+            role_permissions: user.role_permissions || {},
           },
           profile: user.profile || {},
           avatar_url: user.avatar_url,

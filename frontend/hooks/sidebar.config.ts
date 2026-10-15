@@ -1,4 +1,5 @@
 import {
+  ShieldCheck,
   LayoutDashboard,
   Upload,
   Settings,
@@ -37,6 +38,11 @@ const brandNavItems = (base: string): NavItem[] => [
   { name: 'Brand Profile', href: `${base}/profile`, icon: Store },
   { name: 'Opportunities', href: `${base}/opportunities`, icon: Megaphone },
   { name: 'Submissions', href: '#', icon: ClipboardList },
+  {
+    name: 'Review Queue',
+    href: `${base}/review-queue`,
+    icon: ShieldCheck,
+  },
   { name: 'Licensing', href: `${base}/licensing-requests`, icon: FileText },
   { name: 'Asset Hub', href: '#', icon: Layers },
   { name: 'Storefront', href: `#`, icon: ShoppingBag },

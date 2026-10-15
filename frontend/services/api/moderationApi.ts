@@ -2,6 +2,7 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { API_BASE_URL } from '..';
 
+
 /**
  * Aligned with ModerationQueueRow + UserViolationRow
  */
@@ -50,6 +51,25 @@ export interface ModerationMetrics {
   average_resolution_time_days?: number;
 }
 
+
+/**
+ * Request body for resolving a moderation queue item.
+ */
+export interface ResolveModerationQueueRequest {
+  decision: 'approved' | 'rejected' | 'needs_review';
+  notes?: string;
+}
+
+/**
+ * Response returned after resolving a moderation queue item.
+ */
+export interface ResolveModerationQueueResponse {
+  success: boolean;
+  message?: string;
+  queueItem?: ModerationQueueItem;
+}
+
+
 // ─────────────────────────────────────────────────────────────
 
 export const moderationApi = createApi({
@@ -91,15 +111,35 @@ export const moderationApi = createApi({
       query: () => '/metrics',
       providesTags: ['ModerationMetrics'],
     }),
+
+    // POST /moderation/queue/:id/resolve
+    resolveModerationQueueItem: builder.mutation<
+      ResolveModerationQueueResponse,
+      {
+        id: string;
+        body: ResolveModerationQueueRequest;
+      }
+    >({
+      query: ({ id, body }) => ({
+        url: `/queue/${id}/resolve`,
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['ModerationQueue', 'ModerationMetrics'],
+    }),
   }),
 });
 
 export const {
   useSubmitModerationReportMutation,
+
   useGetModerationQueueQuery,
-  useGetModerationMetricsQuery,
   useLazyGetModerationQueueQuery,
+
+  useGetModerationMetricsQuery,
   useLazyGetModerationMetricsQuery,
+
+  useResolveModerationQueueItemMutation,
 } = moderationApi;
 
 export default moderationApi;
