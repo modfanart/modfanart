@@ -16,6 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { NotificationDropdown } from '@/components/layouts/notification-dropdown';
 
 export default function DashboardHeader({ onMenuClick }: { onMenuClick?: () => void }) {
   const router = useRouter();
@@ -54,7 +55,9 @@ export default function DashboardHeader({ onMenuClick }: { onMenuClick?: () => v
         </div>
 
         {/* RIGHT */}
-        <div className="flex items-center justify-end min-w-[120px]">
+        <div className="flex items-center justify-end gap-1 min-w-[120px]">
+          {user && <NotificationDropdown />}
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="flex items-center gap-2 px-2">

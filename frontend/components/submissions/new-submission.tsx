@@ -40,6 +40,7 @@ import {
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { toast } from '@/components/ui/use-toast';
 import {
   Command,
   CommandEmpty,
@@ -278,6 +279,9 @@ export default function NewContestSubmissionPage() {
         formData.append('title', target.title.trim() || target.file.name);
         formData.append('description', values.description?.trim() || '');
         formData.append('category_ids', JSON.stringify([values.category]));
+        // Lets the backend screen this upload once, as a contest entry under the brand's rules,
+        // instead of a second time on its own.
+        formData.append('contest_id', contestId!);
 
         const artworkResult = (await createArtwork(formData).unwrap()) as any;
         const artwork = artworkResult.artwork;
@@ -352,6 +356,11 @@ export default function NewContestSubmissionPage() {
     const { failedCount } = await runBatch(targets, values);
 
     if (failedCount === 0) {
+      toast({
+        title: targets.length === 1 ? 'Entry submitted' : `${targets.length} entries submitted`,
+        description:
+          'Each entry is checked automatically before the brand sees it. We will notify you once it has been reviewed.',
+      });
       setTimeout(() => {
         router.push('/');
       }, 1800);

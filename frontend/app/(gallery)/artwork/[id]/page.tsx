@@ -16,6 +16,8 @@ import { useGetArtworkCategoriesQuery } from '@/services/api/artworkApi';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
+import { MODERATION_STATUS_LABELS } from '@/lib/screening-reasons';
+import type { ModerationStatus } from '@/services/types/screening';
 // ────────────────────────────────────────────────
 // Exact models converted to TypeScript interfaces
 // ────────────────────────────────────────────────
@@ -202,8 +204,11 @@ export default function ArtworkDetailPage() {
             <Badge variant={isPublished ? 'default' : 'secondary'} className="text-sm px-3 py-1">
               {artwork.status.charAt(0).toUpperCase() + artwork.status.slice(1)}
             </Badge>
+            {/* The review state in the words the artist is notified with; the raw value
+                ("flagged") is an internal routing term. */}
             <Badge variant="outline" className="text-sm px-3 py-1">
-              {artwork.moderation_status}
+              {MODERATION_STATUS_LABELS[artwork.moderation_status as ModerationStatus] ??
+                artwork.moderation_status}
             </Badge>
           </div>
 

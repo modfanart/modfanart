@@ -1,14 +1,18 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowLeft, Calendar, Check, Clock, ExternalLink, Loader2, Mail, Tag, Trophy, X } from 'lucide-react';
+import { ArrowLeft, Calendar, Check, Clock, ExternalLink, FileText, Loader2, Mail, Tag, Trophy, X } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/components/ui/use-toast';
+import { ScreeningDetailPanel } from '@/components/compliance/screening-detail-panel';
+import { ModerationStatusBadge } from '@/components/compliance/screening-verdict-badge';
+import { artworkPreviewSrc, isPdfArtwork } from '@/lib/artwork-preview';
 import { unpackSubmissionNotes } from '@/lib/contest-notes';
 import { useAuth } from '@/store/AuthContext';
 import {
@@ -16,6 +20,10 @@ import {
   useUpdateEntryStatusMutation,
   type ContestEntry,
 } from '@/services/api/contestsApi';
+import {
+  useGetScreeningHistoryQuery,
+  useStartScreeningRunMutation,
+} from '@/services/api/screeningApi';
 
 const STATUS_STYLES: Record<ContestEntry['status'], string> = {
   pending: 'bg-yellow-100 text-yellow-800',
@@ -117,6 +125,10 @@ export default function SubmissionDetail({ slug, contestId, entryId }: Props) {
 
   const { note, originalIp } = unpackSubmissionNotes(entry.submission_notes);
   const { artwork, creator } = entry;
+  // A PDF cannot be drawn in an <img>: show its rendered first page instead, or nothing.
+  const previewSrc = isPdfArtwork(artwork)
+    ? artworkPreviewSrc(artwork)
+    : artwork.file_url || artwork.thumbnail_url;
 
   return (
     <div className="container mx-auto py-6 px-4 md:px-6">
@@ -127,7 +139,14 @@ export default function SubmissionDetail({ slug, contestId, entryId }: Props) {
             Back to dashboard
           </Link>
         </Button>
-        <Badge className={STATUS_STYLES[entry.status]}>{entry.status}</Badge>
+        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+          Entry <Badge className={STATUS_STYLES[entry.status]}>{entry.status}</Badge>
+        </span>
+        {entry.moderation_status && (
+          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+            AI screening <ModerationStatusBadge status={entry.moderation_status} />
+          </span>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -141,13 +160,20 @@ export default function SubmissionDetail({ slug, contestId, entryId }: Props) {
                   show the whole artwork rather than the cropped thumbnail the
                   dashboard grid shows. */}
               <div className="relative w-full aspect-[4/3] bg-muted rounded-md overflow-hidden">
-                <Image
-                  src={artwork.file_url || artwork.thumbnail_url || '/placeholder.svg'}
-                  alt={artwork.title}
-                  fill
-                  className="object-contain"
-                  sizes="(max-width: 768px) 100vw, 66vw"
-                />
+                {previewSrc ? (
+                  <Image
+                    src={previewSrc}
+                    alt={artwork.title}
+                    fill
+                    className="object-contain"
+                    sizes="(max-width: 768px) 100vw, 66vw"
+                  />
+                ) : (
+                  <div className="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
+                    <FileText className="h-12 w-12" />
+                    <span className="text-sm">PDF submission — open it full size below</span>
+                  </div>
+                )}
               </div>
 
               {artwork.file_url && (
@@ -160,6 +186,13 @@ export default function SubmissionDetail({ slug, contestId, entryId }: Props) {
               )}
             </CardContent>
           </Card>
+
+          <EntryScreening
+            artworkId={artwork.id}
+            entryId={entry.id}
+            awaitingReview={entry.moderation_status === 'flagged'}
+            reviewQueueHref={`/brand-manager/${slug}/review-queue`}
+          />
 
           <Card>
             <CardHeader>
@@ -322,6 +355,81 @@ export default function SubmissionDetail({ slug, contestId, entryId }: Props) {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * The AI screening behind this entry: the run made for it (an artwork can also carry runs from
+ * other contests), refreshed every few seconds while it is still in progress.
+ */
+function EntryScreening({
+  artworkId,
+  entryId,
+  awaitingReview,
+  reviewQueueHref,
+}: {
+  artworkId: string;
+  entryId: string;
+  awaitingReview: boolean;
+  reviewQueueHref: string;
+}) {
+  const [polling, setPolling] = useState(false);
+  const { data, isLoading, isError } = useGetScreeningHistoryQuery(artworkId, {
+    pollingInterval: polling ? 5000 : 0,
+  });
+  const [startScreeningRun, { isLoading: isRescreening }] = useStartScreeningRunMutation();
+
+  const runs = data?.runs ?? [];
+  const run = runs.find((candidate) => candidate.contest_entry_id === entryId) ?? runs[0];
+  const running = run?.status === 'running';
+
+  useEffect(() => setPolling(running), [running]);
+
+  const rescreen = async () => {
+    try {
+      await startScreeningRun({ artworkId, contestEntryId: entryId }).unwrap();
+      toast({ title: 'Rescreen queued', description: 'The verdict will update here shortly.' });
+    } catch (err) {
+      const apiError = (err as { data?: { error?: string } } | undefined)?.data?.error;
+      toast({ title: 'Could not rescreen', description: apiError || 'Please try again.', variant: 'destructive' });
+    }
+  };
+
+  if (isLoading) return null;
+
+  if (isError || !run) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>AI screening</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm text-muted-foreground">
+          <p>{isError ? 'Could not load the screening result.' : 'This entry has not been screened.'}</p>
+          {!isError && (
+            <Button variant="outline" size="sm" onClick={rescreen} disabled={isRescreening}>
+              Screen now
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <ScreeningDetailPanel run={run} onRescreen={rescreen} isRescreening={isRescreening} />
+      {/* Approving the entry below is the contest decision; clearing a screening flag is a
+          separate review, made in the queue. */}
+      {awaitingReview && (
+        <p className="text-sm text-muted-foreground">
+          This submission is waiting for a moderation decision in your{' '}
+          <Link href={reviewQueueHref} className="underline">
+            Review Queue
+          </Link>
+          .
+        </p>
+      )}
     </div>
   );
 }

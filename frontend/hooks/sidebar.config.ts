@@ -43,6 +43,7 @@ const brandNavItems = (base: string): NavItem[] => [
     href: `${base}/review-queue`,
     icon: ShieldCheck,
   },
+  { name: 'AI Screening', href: `${base}/screening`, icon: Shield },
   { name: 'Licensing', href: `${base}/licensing-requests`, icon: FileText },
   { name: 'Asset Hub', href: '#', icon: Layers },
   { name: 'Storefront', href: `#`, icon: ShoppingBag },
