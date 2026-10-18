@@ -5,7 +5,7 @@ const require = createRequire(import.meta.url);
 
 const { createFakeDb } = require("../__fixtures__/fakeDb.js");
 const { DECISIONS } = require("./decision.engine.js");
-const { escapeHtml, notifyDecision } = require("./notification.service.js");
+const { escapeHtml, notifyDecision, notifyReviewOutcome } = require("./notification.service.js");
 
 const ARTWORK_ID = "11111111-1111-4111-8111-111111111111";
 const USER_ID = "22222222-2222-4222-8222-222222222222";
@@ -191,5 +191,70 @@ describe("notifyDecision", () => {
 
     expect(result).toEqual({ notified: false, reason: "unknown_decision" });
     expect(deps.notificationModel.create).not.toHaveBeenCalled();
+  });
+});
+
+describe("notifyReviewOutcome", () => {
+  let deps;
+
+  beforeEach(() => {
+    deps = stubs();
+    vi.spyOn(console, "error").mockImplementation(() => {});
+  });
+
+  function seedReviewed({ notifyArtist = true } = {}) {
+    const db = seed();
+    db._tables.screening_runs = [{ id: RUN_ID, artwork_id: ARTWORK_ID, ruleset_id: "ruleset-1" }];
+    db._tables.rulesets = [{ id: "ruleset-1", config: JSON.stringify({ notifyArtist }) }];
+    return db;
+  }
+
+  it.each([
+    ["approved", "artwork.approved"],
+    ["rejected", "artwork.rejected"],
+  ])("tells the artist the human verdict (%s) on a screening flag", async (decision, type) => {
+    const db = seedReviewed();
+
+    const result = await notifyReviewOutcome(
+      db,
+      { queueItem: { screening_run_id: RUN_ID }, decision },
+      deps
+    );
+
+    expect(result).toMatchObject({ notified: true, inApp: true, email: true });
+    const [notification] = deps.notificationModel.create.mock.calls[0];
+    expect(notification.type).toBe(type);
+    expect(notification.data).toMatchObject({ artwork_id: ARTWORK_ID, decision, reviewed: true });
+  });
+
+  it("says nothing on an escalation, which is not a verdict", async () => {
+    const result = await notifyReviewOutcome(
+      seedReviewed(),
+      { queueItem: { screening_run_id: RUN_ID }, decision: "escalated" },
+      deps
+    );
+
+    expect(result.notified).toBe(false);
+    expect(deps.notificationModel.create).not.toHaveBeenCalled();
+  });
+
+  it("leaves resolved user reports alone", async () => {
+    const result = await notifyReviewOutcome(
+      seedReviewed(),
+      { queueItem: { screening_run_id: null }, decision: "rejected" },
+      deps
+    );
+
+    expect(result).toEqual({ notified: false, reason: "not_a_screening_flag" });
+  });
+
+  it("honours the ruleset the run was judged under", async () => {
+    const result = await notifyReviewOutcome(
+      seedReviewed({ notifyArtist: false }),
+      { queueItem: { screening_run_id: RUN_ID }, decision: "approved" },
+      deps
+    );
+
+    expect(result).toEqual({ notified: false, reason: "disabled_by_ruleset" });
   });
 });

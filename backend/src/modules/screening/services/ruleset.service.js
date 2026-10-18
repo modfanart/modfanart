@@ -52,6 +52,7 @@ const rulesetConfigSchema = z.object({
   authenticityFailAction: z.enum(["flag", "reject"]).default("flag"),
   // Hard override: any AI verdict is rejected outright, no band, no discussion.
   autoRejectAI: z.boolean().default(false),
+  // Moves all three content-safety thresholds together; see `moderationThresholds`.
   sensitivityLevel: z
     .enum(["lenient", "balanced", "strict", "very-strict"])
     .default("balanced"),
@@ -127,9 +128,37 @@ function safeNormalizeRulesetConfig(input = {}) {
  */
 function authenticityBands(config) {
   const margin = config.authenticityBorderlineMargin;
+  // Rounded so float noise cannot move a score sitting exactly on an edge: 0.75 + 0.05 is
+  // 0.8500000000000001, which would push a confidence of exactly 0.85 into the grey zone.
+  const round = (value) => Number(value.toFixed(4));
   return {
-    low: Math.max(0, config.aiDetectionThreshold - margin),
-    high: Math.min(1, config.aiDetectionThreshold + margin),
+    low: Math.max(0, round(config.aiDetectionThreshold - margin)),
+    high: Math.min(1, round(config.aiDetectionThreshold + margin)),
+  };
+}
+
+/** How far each sensitivity level moves the content-safety thresholds. Stricter means lower. */
+const SENSITIVITY_SHIFT = {
+  lenient: 0.1,
+  balanced: 0,
+  strict: -0.1,
+  "very-strict": -0.2,
+};
+
+/**
+ * The content-safety thresholds the engine actually applies: the configured flag, reject and
+ * approve scores, shifted together by `sensitivityLevel`. The settings screen offers sensitivity
+ * as the coarse control and the three numbers as fine tuning, so both have to take effect.
+ * Clamped so no level can push a threshold to 0 (everything flags) or past 1 (nothing does).
+ */
+function moderationThresholds(config) {
+  const shift = SENSITIVITY_SHIFT[config.sensitivityLevel] ?? 0;
+  const apply = (value) => Math.min(1, Math.max(0.01, Number((value + shift).toFixed(4))));
+
+  return {
+    flag: apply(config.contentSafetyThreshold),
+    reject: apply(config.autoRejectThreshold),
+    approve: apply(config.autoApproveThreshold),
   };
 }
 
@@ -176,9 +205,12 @@ async function publishRulesetVersion(db, { brandId, config, createdBy = null }) 
     : await Ruleset.findLatestPlatformDefault(db);
 
   // A partial update should mean "change these knobs", not "reset everything else to default",
-  // so the new version starts from whatever is currently in force.
+  // so the new version starts from whatever is currently in force — for a brand's first version
+  // that is the platform default it has been screened under until now.
+  const base = current ?? (brandId ? await Ruleset.findLatestPlatformDefault(db) : null);
+
   const merged = normalizeRulesetConfig({
-    ...(current ? current.config : {}),
+    ...(base ? base.config : {}),
     ...config,
   });
 
@@ -192,11 +224,11 @@ async function publishRulesetVersion(db, { brandId, config, createdBy = null }) 
 
 module.exports = {
   MODERATION_CATEGORIES,
-  rulesetConfigSchema,
   normalizeRulesetConfig,
   safeNormalizeRulesetConfig,
   authenticityBands,
   maxAcceptableIpRisk,
+  moderationThresholds,
   resolveRuleset,
   publishRulesetVersion,
 };

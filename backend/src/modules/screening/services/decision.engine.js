@@ -13,6 +13,7 @@
 const {
   authenticityBands,
   maxAcceptableIpRisk,
+  moderationThresholds,
 } = require("./ruleset.service");
 
 const DECISIONS = {
@@ -61,6 +62,7 @@ function maxCategoryScore(moderation) {
  * Precedence, highest first:
  *   1. hard-reject moderation category      -> auto_rejected
  *   2. moderation score >= autoRejectThreshold -> auto_rejected
+ *      (all three content-safety thresholds are shifted by sensitivityLevel)
  *   3. AI verdict with autoRejectAI on      -> auto_rejected
  *   4. authenticity borderline band         -> flagged_manual
  *   5. authenticity below the band          -> reject or flag, per authenticityFailAction
@@ -81,6 +83,7 @@ function evaluate(stages = {}, config) {
 
   const { aiornot, moderation, style } = stages;
   const reasons = [];
+  const thresholds = moderationThresholds(config);
 
   // Screening switched off entirely. Recording a run but making no calls must not be mistaken
   // for a clean bill of health, so it defers to a human.
@@ -108,14 +111,14 @@ function evaluate(stages = {}, config) {
 
   // --- 2. Any category confident enough to reject on its own --------------------------------
   if (isUsable(moderation)) {
-    const rejectHits = categoriesAtOrAbove(moderation, config.autoRejectThreshold);
+    const rejectHits = categoriesAtOrAbove(moderation, thresholds.reject);
     if (rejectHits.length) {
       return {
         decision: DECISIONS.AUTO_REJECTED,
         reasons: [
           reason("moderation_auto_reject", {
             categories: rejectHits,
-            threshold: config.autoRejectThreshold,
+            threshold: thresholds.reject,
           }),
         ],
       };
@@ -191,7 +194,7 @@ function evaluate(stages = {}, config) {
 
   // --- 6. Categories worth a second opinion -------------------------------------------------
   if (isUsable(moderation)) {
-    const flagHits = categoriesAtOrAbove(moderation, config.contentSafetyThreshold);
+    const flagHits = categoriesAtOrAbove(moderation, thresholds.flag);
     if (flagHits.length) {
       return {
         decision: DECISIONS.FLAGGED_MANUAL,
@@ -199,7 +202,7 @@ function evaluate(stages = {}, config) {
           ...reasons,
           reason("moderation_flagged", {
             categories: flagHits,
-            threshold: config.contentSafetyThreshold,
+            threshold: thresholds.flag,
           }),
         ],
       };
@@ -280,7 +283,7 @@ function evaluate(stages = {}, config) {
 
   requirements.push({
     code: "content_safe",
-    met: isUsable(moderation) && maxCategoryScore(moderation) <= config.autoApproveThreshold,
+    met: isUsable(moderation) && maxCategoryScore(moderation) <= thresholds.approve,
   });
 
   // The style stage is legitimately absent when the ruleset disables it or the artwork has no

@@ -6,17 +6,24 @@
 // without importing it, and ended with two `module.exports =` assignments where the second
 // discarded the first. The module was never mounted, so none of that surfaced.
 //
-// Field names on the queue and metrics responses match `frontend/services/api/moderationApi.ts`,
-// which already declares these endpoints, so the existing client works without changes.
+// Field names on the queue and metrics responses match `frontend/services/api/moderationApi.ts`.
+// Queue items carry the queue row, the screening run that flagged it, and the artwork, artist and
+// contest it is about.
 const { sql } = require("kysely");
 const { z } = require("zod");
 
 const ModerationQueue = require("../models/moderation.model");
 const ScreeningRun = require("../../screening/models/screeningRun.model");
 const { getDb } = require("../../screening/db");
+const { belongsToAnyBrand, can } = require("../../screening/screening.permissions");
+const {
+  brandIdsForQueueItem,
+  queueBrandCondition,
+} = require("../../screening/services/brandScope.service");
+const { notifyReviewOutcome } = require("../../screening/services/notification.service");
 const { applyHumanReview } = require("../../screening/services/transition.service");
 
-const ENTITY_TABLES = { artwork: "artworks", contest_entry: "contest_entries" };
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const queueQuerySchema = z.object({
   status: z.enum(["pending", "reviewed", "escalated"]).optional(),
@@ -63,11 +70,10 @@ class ModerationController {
       if (!parsed.success) return validationError(res, parsed.error);
 
       const db = getDb();
-      const { status, entity_type: entityType, brandId, limit, offset } = {
-        ...parsed.data,
-        brandId: parsed.data.brand_id,
-      };
+      const { status, entity_type: entityType, brand_id: brandId, limit, offset } = parsed.data;
 
+      // The route guard lets a brand member through only with their own brand_id, so an
+      // unscoped request here always comes from a platform reviewer.
       let query = db
         .selectFrom("moderation_queue")
         .leftJoin(
@@ -95,38 +101,36 @@ class ModerationController {
           "screening_runs.moderation as moderation",
           "screening_runs.style as style",
         ])
-        .orderBy("moderation_queue.priority", "desc")
-        .orderBy("moderation_queue.created_at", "asc")
         .limit(limit)
         .offset(offset);
 
-      query = query.where(
-        "moderation_queue.status",
-        "=",
-        status ?? "pending"
-      );
+      // An escalation stays `pending` in the table (it still needs a decision) but is marked by its
+      // `decision`, and belongs to platform moderators rather than the brand's own reviewers.
+      if (status === "reviewed") {
+        query = query
+          .where("moderation_queue.status", "=", "reviewed")
+          .orderBy("moderation_queue.reviewed_at", "desc");
+      } else {
+        query = query
+          .where("moderation_queue.status", "=", "pending")
+          .where(
+            status === "escalated"
+              ? sql`moderation_queue.decision = 'escalated'`
+              : sql`moderation_queue.decision IS DISTINCT FROM 'escalated'`
+          )
+          .orderBy("moderation_queue.priority", "desc")
+          .orderBy("moderation_queue.created_at", "asc");
+      }
 
       if (entityType) {
         query = query.where("moderation_queue.entity_type", "=", entityType);
       }
 
       if (brandId) {
-        // Brand scope runs through the contest that owns the entry, the only link between a queued
-        // item and a brand. Raw SQL because `moderation_queue.entity_id` is `text` while
-        // `contest_entries.id` is `uuid`: Postgres has no `uuid = text` operator, so the join needs
-        // an explicit cast that the query builder will not add for us.
-        query = query.where(
-          sql`EXISTS (
-            SELECT 1
-            FROM contest_entries ce
-            JOIN contests c ON c.id = ce.contest_id
-            WHERE ce.id::text = moderation_queue.entity_id
-              AND c.brand_id = ${brandId}
-          )`
-        );
+        query = query.where(queueBrandCondition(brandId));
       }
 
-      return res.json(await query.execute());
+      return res.json(await attachSubjects(db, await query.execute()));
     } catch (error) {
       console.error("Moderation queue fetch error:", error);
       return res.status(500).json({ error: "Failed to fetch the moderation queue" });
@@ -145,12 +149,44 @@ class ModerationController {
 
       if (!parsed.success) return validationError(res, parsed.error);
 
-      const result = await applyHumanReview(getDb(), {
+      const db = getDb();
+
+      if (!can(req.user, "moderation.review")) {
+        // A brand member may decide only items that belong to one of their brands, and not ones
+        // their own team already escalated upwards.
+        const item = UUID_PATTERN.test(req.params.id)
+          ? await ModerationQueue.findById(db, req.params.id)
+          : null;
+
+        if (!item) {
+          return res.status(404).json({ error: "Moderation queue item not found" });
+        }
+
+        if (!belongsToAnyBrand(req.user, await brandIdsForQueueItem(db, item))) {
+          return res.status(403).json({ error: "You cannot review this item" });
+        }
+
+        if (item.decision === "escalated") {
+          return res
+            .status(403)
+            .json({ error: "Escalated items are decided by platform moderators" });
+        }
+      }
+
+      const result = await applyHumanReview(db, {
         queueItemId: req.params.id,
         reviewerId: req.user.id,
         decision: parsed.data.decision,
         notes: parsed.data.notes ?? null,
       });
+
+      // After the commit, and never allowed to fail the request: the verdict already stands.
+      await notifyReviewOutcome(db, {
+        queueItem: result.queueItem,
+        decision: parsed.data.decision,
+      }).catch((error) =>
+        console.error(`[moderation] review notification failed: ${error.message}`)
+      );
 
       return res.json({
         success: true,
@@ -215,7 +251,7 @@ class ModerationController {
     try {
       const db = getDb();
 
-      const [byStatus, byEntityType, resolution, decisions, runStatuses] =
+      const [byStatus, byEntityType, resolution, rejected, escalated, decisions, runStatuses] =
         await Promise.all([
           db
             .selectFrom("moderation_queue")
@@ -238,6 +274,21 @@ class ModerationController {
             )
             .where("reviewed_at", "is not", null)
             .executeTakeFirst(),
+          // A rejection is a decision on a reviewed item, not a queue status of its own.
+          db
+            .selectFrom("moderation_queue")
+            .select((eb) => eb.fn.countAll().as("count"))
+            .where("status", "=", "reviewed")
+            .where("decision", "=", "rejected")
+            .executeTakeFirst(),
+          // Escalations stay `pending` (they still need a decision) but wait on platform
+          // moderators, so they are counted apart from ordinary pending work.
+          db
+            .selectFrom("moderation_queue")
+            .select((eb) => eb.fn.countAll().as("count"))
+            .where("status", "=", "pending")
+            .where("decision", "=", "escalated")
+            .executeTakeFirst(),
           ScreeningRun.decisionCounts(db),
           ScreeningRun.statusCounts(db),
         ]);
@@ -251,9 +302,10 @@ class ModerationController {
       return res.json({
         // The shape ModerationMetrics in moderationApi.ts declares.
         total_reports: total,
-        pending_reports: countsByStatus.pending ?? 0,
+        pending_reports: (countsByStatus.pending ?? 0) - Number(escalated?.count ?? 0),
+        escalated_reports: Number(escalated?.count ?? 0),
         resolved_reports: countsByStatus.reviewed ?? 0,
-        rejected_reports: countsByStatus.rejected ?? 0,
+        rejected_reports: Number(rejected?.count ?? 0),
         reports_by_entity_type: Object.fromEntries(
           byEntityType.map((row) => [row.entity_type, Number(row.count)])
         ),
@@ -292,6 +344,97 @@ function toDays(value) {
   return Number.isFinite(days) ? Number(days.toFixed(2)) : undefined;
 }
 
+/**
+ * Adds what a reviewer needs to judge an item without a second request: the artwork itself, who
+ * made it, and the contest it was entered in. `entity_id` is polymorphic text, so ids are
+ * batch-loaded per type and anything that is not a uuid (a reported comment, say) is left bare.
+ */
+async function attachSubjects(db, items) {
+  const idsOf = (type) =>
+    items
+      .filter((item) => item.entity_type === type && UUID_PATTERN.test(item.entity_id))
+      .map((item) => item.entity_id);
+
+  const entryIds = idsOf("contest_entry");
+
+  const entries = entryIds.length
+    ? await db
+        .selectFrom("contest_entries")
+        .innerJoin("contests", "contests.id", "contest_entries.contest_id")
+        .select([
+          "contest_entries.id as id",
+          "contest_entries.artwork_id as artwork_id",
+          "contest_entries.status as status",
+          "contest_entries.moderation_status as moderation_status",
+          "contests.id as contest_id",
+          "contests.title as contest_title",
+          "contests.brand_id as brand_id",
+        ])
+        .where("contest_entries.id", "in", entryIds)
+        .execute()
+    : [];
+
+  const artworkIds = [...new Set([...idsOf("artwork"), ...entries.map((e) => e.artwork_id)])];
+
+  const artworks = artworkIds.length
+    ? await db
+        .selectFrom("artworks")
+        .leftJoin("users", "users.id", "artworks.creator_id")
+        .select([
+          "artworks.id as id",
+          "artworks.title as title",
+          "artworks.description as description",
+          "artworks.file_url as file_url",
+          "artworks.thumbnail_url as thumbnail_url",
+          "artworks.status as status",
+          "artworks.moderation_status as moderation_status",
+          "users.id as creator_id",
+          "users.username as creator_username",
+          "users.avatar_url as creator_avatar_url",
+        ])
+        .where("artworks.id", "in", artworkIds)
+        .execute()
+    : [];
+
+  const entryById = new Map(entries.map((entry) => [entry.id, entry]));
+  const artworkById = new Map(artworks.map((artwork) => [artwork.id, artwork]));
+
+  return items.map((item) => {
+    const entry = item.entity_type === "contest_entry" ? entryById.get(item.entity_id) : null;
+    const artwork = artworkById.get(
+      entry ? entry.artwork_id : item.entity_type === "artwork" ? item.entity_id : null
+    );
+
+    return {
+      ...item,
+      artwork: artwork
+        ? {
+            id: artwork.id,
+            title: artwork.title,
+            description: artwork.description,
+            file_url: artwork.file_url,
+            thumbnail_url: artwork.thumbnail_url,
+            status: artwork.status,
+            moderation_status: artwork.moderation_status,
+            creator: {
+              id: artwork.creator_id,
+              username: artwork.creator_username,
+              avatar_url: artwork.creator_avatar_url,
+            },
+          }
+        : null,
+      contest_entry: entry
+        ? {
+            id: entry.id,
+            status: entry.status,
+            moderation_status: entry.moderation_status,
+            contest_id: entry.contest_id,
+            contest_title: entry.contest_title,
+            brand_id: entry.brand_id,
+          }
+        : null,
+    };
+  });
+}
+
 module.exports = ModerationController;
-module.exports.ENTITY_TABLES = ENTITY_TABLES;
-module.exports.toDays = toDays;

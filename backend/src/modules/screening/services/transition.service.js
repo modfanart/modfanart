@@ -97,6 +97,15 @@ function assertTransitionAllowed(from, to) {
   }
 }
 
+/**
+ * Runs `work` inside a transaction, joining the caller's when there already is one. Kysely refuses
+ * to nest `transaction()`, and the worker needs to commit "run complete" and "status changed" as
+ * one unit so a crash between the two cannot leave a decided run whose artwork is still pending.
+ */
+function inTransaction(db, work) {
+  return db.isTransaction ? work(db) : db.transaction().execute(work);
+}
+
 async function insertAuditEvent(trx, { actorId, action, entityType, entityId, oldValues, newValues }) {
   return trx
     .insertInto("audited_events")
@@ -119,6 +128,15 @@ async function insertAuditEvent(trx, { actorId, action, entityType, entityId, ol
  * Everything happens in one transaction: the status changes, the audit row and the review-queue
  * enqueue either all land or none do. A flagged decision that failed to enqueue would strand the
  * submission in a state nobody is looking at.
+ *
+ * The artwork and the entry are settled independently. Submitting to a contest screens the same
+ * artwork twice — once standalone at upload under the platform ruleset, once as an entry under
+ * the brand's — and the two runs finish in either order. So:
+ *   - a standalone run owns the artwork's platform verdict;
+ *   - a contest run owns the entry's verdict, and settles the artwork only while nothing else has
+ *     (`pending`), since a brand's style rules should not overturn a platform verdict;
+ *   - an entity already at the target status is left alone rather than "transitioned" to itself.
+ * The review queue and the audit row are written regardless: the run did reach a verdict.
  *
  * @param {import('kysely').Kysely<any>} db
  * @param {object} params
@@ -148,7 +166,7 @@ async function applyScreeningDecision(
     throw new Error(`Unknown screening decision: ${decision}`);
   }
 
-  return db.transaction().execute(async (trx) => {
+  return inTransaction(db, async (trx) => {
     const artwork = await trx
       .selectFrom("artworks")
       .select(["id", "moderation_status"])
@@ -159,22 +177,30 @@ async function applyScreeningDecision(
       throw new Error(`Artwork not found: ${artworkId}`);
     }
 
-    assertTransitionAllowed(artwork.moderation_status, target);
+    const artworkStatus = artwork.moderation_status ?? MODERATION_STATUS.PENDING;
+    const settleArtwork =
+      artworkStatus !== target &&
+      (!contestEntryId || artworkStatus === MODERATION_STATUS.PENDING);
 
-    await trx
-      .updateTable("artworks")
-      .set({
-        moderation_status: target,
-        // An automated decision has no human moderator; leaving `moderated_by` null is what
-        // distinguishes a machine verdict from a human one in the audit trail.
-        moderated_by: actorId,
-        moderated_at: sql`NOW()`,
-        updated_at: sql`NOW()`,
-      })
-      .where("id", "=", artworkId)
-      .execute();
+    if (settleArtwork) {
+      assertTransitionAllowed(artworkStatus, target);
+
+      await trx
+        .updateTable("artworks")
+        .set({
+          moderation_status: target,
+          // An automated decision has no human moderator; leaving `moderated_by` null is what
+          // distinguishes a machine verdict from a human one in the audit trail.
+          moderated_by: actorId,
+          moderated_at: sql`NOW()`,
+          updated_at: sql`NOW()`,
+        })
+        .where("id", "=", artworkId)
+        .execute();
+    }
 
     const entries = [];
+    let entryStatus = null;
 
     if (contestEntryId) {
       const entry = await trx
@@ -184,18 +210,22 @@ async function applyScreeningDecision(
         .executeTakeFirst();
 
       if (entry) {
-        assertTransitionAllowed(entry.moderation_status, target);
+        entryStatus = entry.moderation_status ?? MODERATION_STATUS.PENDING;
 
-        await trx
-          .updateTable("contest_entries")
-          .set({
-            moderation_status: target,
-            moderated_by: actorId,
-            moderated_at: sql`NOW()`,
-            updated_at: sql`NOW()`,
-          })
-          .where("id", "=", contestEntryId)
-          .execute();
+        if (entryStatus !== target) {
+          assertTransitionAllowed(entryStatus, target);
+
+          await trx
+            .updateTable("contest_entries")
+            .set({
+              moderation_status: target,
+              moderated_by: actorId,
+              moderated_at: sql`NOW()`,
+              updated_at: sql`NOW()`,
+            })
+            .where("id", "=", contestEntryId)
+            .execute();
+        }
 
         entries.push(entry.id);
       }
@@ -218,9 +248,15 @@ async function applyScreeningDecision(
       action: "screening.decision",
       entityType: "artwork",
       entityId: artworkId,
-      oldValues: { moderation_status: artwork.moderation_status },
+      oldValues: {
+        moderation_status: artwork.moderation_status,
+        ...(contestEntryId ? { contest_entry_moderation_status: entryStatus } : {}),
+      },
       newValues: {
-        moderation_status: target,
+        moderation_status: settleArtwork ? target : artwork.moderation_status,
+        ...(contestEntryId && entries.length
+          ? { contest_entry_moderation_status: target }
+          : {}),
         decision,
         screening_run_id: runId,
         contest_entry_id: contestEntryId,
@@ -230,6 +266,7 @@ async function applyScreeningDecision(
 
     return {
       moderationStatus: target,
+      artworkModerationStatus: settleArtwork ? target : artwork.moderation_status,
       artworkId,
       contestEntryIds: entries,
       queueItem,
@@ -371,9 +408,11 @@ async function applyHumanReview(
         .where("id", "=", item.entity_id)
         .execute();
 
-      // Approving or rejecting a contest entry should settle the underlying artwork too,
-      // otherwise the artwork stays flagged and invisible in the gallery.
-      if (item.entity_type === "contest_entry") {
+      // Approving or rejecting a contest entry also settles the underlying artwork when nothing
+      // else has (pending, or flagged by the same submission), otherwise it stays flagged and out
+      // of the gallery forever. An artwork with its own settled platform verdict keeps it: a
+      // brand turning down an entry is a statement about the contest, not the artwork.
+      if (item.entity_type === "contest_entry" && decision !== "escalated") {
         const entry = await trx
           .selectFrom("contest_entries")
           .select(["artwork_id"])
@@ -387,7 +426,11 @@ async function applyHumanReview(
             .where("id", "=", entry.artwork_id)
             .executeTakeFirst();
 
-          if (artwork && artwork.moderation_status !== target) {
+          const unsettled = [MODERATION_STATUS.PENDING, MODERATION_STATUS.FLAGGED].includes(
+            artwork?.moderation_status ?? MODERATION_STATUS.PENDING
+          );
+
+          if (artwork && unsettled && artwork.moderation_status !== target) {
             assertTransitionAllowed(artwork.moderation_status, target);
 
             await trx
@@ -502,13 +545,11 @@ async function markPending(db, { artworkId, contestEntryId = null, actorId = nul
 }
 
 module.exports = {
-  ALLOWED_TRANSITIONS,
-  DECISION_TO_STATUS,
-  HUMAN_DECISION_TO_STATUS,
   IllegalTransitionError,
   MODERATION_STATUS,
   applyHumanReview,
   applyScreeningDecision,
   assertTransitionAllowed,
+  inTransaction,
   markPending,
 };

@@ -710,3 +710,99 @@ describe("processScreeningRun — resubmission of rejected bytes", () => {
     expect(calls.aiornot).toBe(1);
   });
 });
+
+describe("processScreeningRun: hardening", () => {
+  it("sends a permanently failing stage to a human on the first attempt instead of discarding the job", async () => {
+    const db = seed();
+    const permanent = Object.assign(new Error("AIORNOT rejected the request: 400"), { permanent: true });
+    const { adapters } = trackingAdapters({
+      aiornot: async () => {
+        throw permanent;
+      },
+    });
+
+    const result = await processScreeningRun(
+      db,
+      { runId: RUN_ID, isFinalAttempt: false },
+      deps(adapters)
+    );
+
+    expect(result.decision).toBe("flagged_manual");
+    expect(db.rows("artworks")[0].moderation_status).toBe("flagged");
+    expect(db.rows("moderation_queue")).toHaveLength(1);
+    expect(JSON.parse(db.rows("screening_runs")[0].aiornot)).toMatchObject({
+      status: "unavailable",
+      error: "AIORNOT rejected the request: 400",
+    });
+  });
+
+  it("records a permanent failure at once, so a retry does not call that provider again", async () => {
+    const db = seed();
+    let aiornotCalls = 0;
+    let moderationFails = true;
+    const { adapters } = trackingAdapters({
+      aiornot: async () => {
+        aiornotCalls += 1;
+        throw Object.assign(new Error("bad key"), { permanent: true });
+      },
+      moderation: async () => {
+        if (moderationFails) throw new Error("503 from provider");
+        return { flagged: false, categories: {}, categoryScores: { violence: 0.01 } };
+      },
+    });
+
+    await expect(
+      processScreeningRun(db, { runId: RUN_ID, isFinalAttempt: false }, deps(adapters))
+    ).rejects.toThrow(/moderation: 503/);
+
+    moderationFails = false;
+    const result = await processScreeningRun(
+      db,
+      { runId: RUN_ID, isFinalAttempt: false },
+      deps(adapters)
+    );
+
+    expect(aiornotCalls).toBe(1);
+    expect(result.decision).toBe("flagged_manual");
+  });
+
+  it("routes a PDF or video to a human without calling any provider", async () => {
+    const db = seed();
+    const { adapters, calls } = trackingAdapters();
+
+    const result = await processScreeningRun(db, { runId: RUN_ID }, {
+      adapters,
+      loadImage: async () => ({ ...image, contentType: "application/pdf", filename: "a.pdf" }),
+    });
+
+    expect(calls).toEqual({ aiornot: 0, moderation: 0, style: 0 });
+    expect(result.decision).toBe("flagged_manual");
+    expect(JSON.parse(db.rows("screening_runs")[0].moderation)).toMatchObject({
+      status: "unavailable",
+      error: "unsupported_media_type: application/pdf",
+    });
+  });
+
+  it("never settles a run that is no longer running, such as one already dead-lettered", async () => {
+    const db = seed({ runOverrides: { status: "failed" } });
+    const { adapters } = trackingAdapters();
+
+    const result = await processScreeningRun(db, { runId: RUN_ID }, deps(adapters));
+
+    expect(result.skipped).toBe(true);
+    expect(db.rows("artworks")[0].moderation_status).toBe("pending");
+    expect(db.rows("audited_events")).toHaveLength(0);
+  });
+
+  it("gives the text checks the artwork's tags from the polymorphic taggings table", async () => {
+    const db = seed();
+    db._tables.tags.push({ id: "tag-1", name: "superhero" });
+    db._tables.taggings.push({ tag_id: "tag-1", taggable_type: "artwork", taggable_id: ARTWORK_ID });
+    db._tables.taggings.push({ tag_id: "tag-1", taggable_type: "brand_post", taggable_id: ARTWORK_ID });
+    const { adapters } = trackingAdapters();
+
+    await processScreeningRun(db, { runId: RUN_ID }, deps(adapters));
+
+    expect(adapters.moderation.run.mock.calls[0][0].tags).toEqual(["superhero"]);
+  });
+});

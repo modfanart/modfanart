@@ -89,6 +89,10 @@ class ScreeningRun {
       .executeTakeFirst();
   }
 
+  /**
+   * Records the decision. Only a run that is still `running` can complete, so a duplicate delivery
+   * that lost the race gets `undefined` back and must not apply the decision a second time.
+   */
   static async complete(db, runId, { decision, reasons }) {
     return db
       .updateTable("screening_runs")
@@ -100,10 +104,12 @@ class ScreeningRun {
         updated_at: sql`NOW()`,
       })
       .where("id", "=", runId)
+      .where("status", "=", "running")
       .returningAll()
       .executeTakeFirst();
   }
 
+  /** Dead-letters a run. A run that already completed keeps its decision. */
   static async fail(db, runId, message) {
     return db
       .updateTable("screening_runs")
@@ -114,6 +120,7 @@ class ScreeningRun {
         updated_at: sql`NOW()`,
       })
       .where("id", "=", runId)
+      .where("status", "=", "running")
       .returningAll()
       .executeTakeFirst();
   }
@@ -137,4 +144,3 @@ class ScreeningRun {
 }
 
 module.exports = ScreeningRun;
-module.exports.STAGES = STAGES;

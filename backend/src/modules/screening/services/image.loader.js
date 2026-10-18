@@ -89,6 +89,15 @@ async function loadImage(fileUrl) {
   };
 }
 
+/**
+ * Whether the providers can judge these bytes at all. Uploads also accept PDFs and video, which
+ * no stage can read; per-format limits beyond that are each adapter's own check.
+ */
+function isScreenableImage(image) {
+  const type = (image?.contentType ?? "").toLowerCase();
+  return type.startsWith("image/") && type !== "image/svg+xml";
+}
+
 /** A data URL, which is how the OpenAI endpoints accept image bytes we hold in memory. */
 function toDataUrl(image) {
   return `data:${image.contentType};base64,${image.buffer.toString("base64")}`;
@@ -97,6 +106,7 @@ function toDataUrl(image) {
 module.exports = {
   AIORNOT_MAX_BYTES,
   OPENAI_MAX_BYTES,
+  isScreenableImage,
   keyFromUrl,
   loadImage,
   toDataUrl,

@@ -82,15 +82,7 @@ inventing a plausible rule.`;
  */
 async function extractText({ buffer, mimeType }) {
   if (mimeType === "application/pdf") {
-    const { PDFParse } = require("pdf-parse");
-    const parser = new PDFParse({ data: buffer });
-
-    try {
-      const result = await parser.getText();
-      return result.text ?? "";
-    } finally {
-      await parser.destroy();
-    }
+    return extractPdfText(buffer);
   }
 
   if (
@@ -104,6 +96,37 @@ async function extractText({ buffer, mimeType }) {
   const error = new Error(`Cannot extract style guide text from ${mimeType}`);
   error.permanent = true;
   throw error;
+}
+
+/**
+ * Pulls the text out of a PDF with pdfjs — the same copy and build pdf-to-img uses for artwork
+ * thumbnails. pdfjs registers a single worker per process, so a second pdfjs version (pdf-parse
+ * bundled 5.4 while pdf-to-img uses 5.6) made whichever PDF feature ran second fail with "The API
+ * version does not match the Worker version".
+ */
+async function extractPdfText(buffer) {
+  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  const document = await pdfjs.getDocument({
+    data: new Uint8Array(buffer),
+    isEvalSupported: false,
+    useSystemFonts: true,
+  }).promise;
+
+  try {
+    const pages = [];
+
+    for (let number = 1; number <= document.numPages; number += 1) {
+      const page = await document.getPage(number);
+      const content = await page.getTextContent();
+      pages.push(
+        content.items.map((item) => `${item.str ?? ""}${item.hasEOL ? "\n" : " "}`).join("")
+      );
+    }
+
+    return pages.join("\n");
+  } finally {
+    await document.destroy();
+  }
 }
 
 /**
@@ -237,7 +260,7 @@ async function parseStyleGuide(db, styleGuideId, deps = {}) {
       throw new Error("The style guide contained no readable text");
     }
 
-    const compile = deps.compile ?? compileRules;
+    const compile = deps.compile ?? defaultCompiler();
     const rules = await compile(sourceText);
 
     return StyleGuide.saveParsedResult(db, styleGuideId, {
@@ -250,6 +273,14 @@ async function parseStyleGuide(db, styleGuideId, deps = {}) {
   }
 }
 
+/** The model call, or its stand-in when SCREENING_ADAPTERS=mock swaps the providers out. */
+function defaultCompiler() {
+  if ((process.env.SCREENING_ADAPTERS ?? "").toLowerCase() === "mock") {
+    return require("../adapters/mock").compileStyleGuide;
+  }
+  return compileRules;
+}
+
 /** Reuses the screening image loader, which already handles S3-with-credentials plus fallback. */
 async function defaultLoadSource(url) {
   const { loadImage } = require("./image.loader");
@@ -258,7 +289,6 @@ async function defaultLoadSource(url) {
 }
 
 module.exports = {
-  MAX_SOURCE_CHARS,
   RESPONSE_JSON_SCHEMA,
   SYSTEM_PROMPT,
   compilePromptBlock,

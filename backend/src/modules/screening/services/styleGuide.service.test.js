@@ -220,3 +220,33 @@ describe("parseStyleGuide", () => {
     await expect(parseStyleGuide(seed(), "nope")).rejects.toThrow(/not found/);
   });
 });
+
+describe("extractText: PDFs alongside artwork thumbnails", () => {
+  // Both PDF features share one pdfjs worker per process. With two pdfjs versions installed,
+  // whichever ran second failed with "The API version does not match the Worker version".
+  it("reads a PDF guide after an artwork PDF thumbnail was rendered in the same process", async () => {
+    const PDFDocument = require("pdfkit");
+    const { writeFile } = require("node:fs/promises");
+    const { tmpdir } = require("node:os");
+    const { join } = require("node:path");
+    const { renderPdfThumbnail } = require("../../artworks/utils/pdf-thumbnail.util.js");
+
+    const pdf = await new Promise((resolve) => {
+      const doc = new PDFDocument();
+      const chunks = [];
+      doc.on("data", (chunk) => chunks.push(chunk));
+      doc.on("end", () => resolve(Buffer.concat(chunks)));
+      doc.text("No purple");
+      doc.text("The hero must wear the red jacket");
+      doc.end();
+    });
+
+    const path = join(tmpdir(), `style-guide-${process.pid}.pdf`);
+    await writeFile(path, pdf);
+
+    expect(await renderPdfThumbnail(path)).toBeTruthy();
+
+    const text = await extractText({ buffer: pdf, mimeType: "application/pdf" });
+    expect(text).toMatch(/No purple\s*\n\s*The hero must wear the red jacket/);
+  }, 30000);
+});

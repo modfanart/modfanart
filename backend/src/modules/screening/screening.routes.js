@@ -8,10 +8,7 @@ const express = require("express");
 const ScreeningController = require("./controller/screening.controller");
 const { authenticateToken } = require("../../common/middleware/auth.middleware");
 const { singleUpload } = require("../../common/middleware/upload");
-const {
-  requireBrandOrPermission,
-  requirePermission,
-} = require("./screening.permissions");
+const { requireBrandOrPermission } = require("./screening.permissions");
 
 const router = express.Router();
 
@@ -19,18 +16,12 @@ const router = express.Router();
 router.use(authenticateToken);
 
 // Reading a screening history exposes the provider verdicts behind a moderation decision, so it is
-// a moderator/admin view rather than something an artist can poll.
-router.get(
-  "/runs/:artworkId",
-  requirePermission("moderation.review"),
-  ScreeningController.getRunsForArtwork
-);
+// a reviewer view rather than something an artist can poll: platform reviewers, plus members of a
+// brand the artwork was submitted to. Rescreening follows the same rule. Brand membership depends
+// on the artwork, so both checks happen in the controller once it is loaded.
+router.get("/runs/:artworkId", ScreeningController.getRunsForArtwork);
 
-router.post(
-  "/runs",
-  requirePermission("moderation.review"),
-  ScreeningController.createRun
-);
+router.post("/runs", ScreeningController.createRun);
 
 router.get(
   "/rulesets",

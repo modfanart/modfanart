@@ -156,8 +156,6 @@ async function run({ image, artwork, tags = [] }) {
 }
 
 module.exports = {
-  IMAGE_CAPABLE_CATEGORIES,
-  MODEL,
   buildTextInput,
   name: "moderation",
   responseSchema,

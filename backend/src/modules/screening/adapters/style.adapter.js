@@ -203,7 +203,6 @@ async function run({ image, artwork, tags = [], styleGuide }) {
 module.exports = {
   RESPONSE_JSON_SCHEMA,
   SYSTEM_PROMPT,
-  assessmentSchema,
   buildUserContent,
   name: "style",
   run,

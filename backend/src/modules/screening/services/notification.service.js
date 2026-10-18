@@ -7,6 +7,7 @@
 // Two channels: an in-app row via the existing notifications module, and an email via the existing
 // SendGrid `EmailService`. Neither is reimplemented.
 const EmailService = require("../../../common/emails/email.service");
+const Ruleset = require("../models/ruleset.model");
 const { DECISIONS } = require("./decision.engine");
 
 // `notification.model.js` requires `src/config` at module scope, and that module calls
@@ -25,13 +26,14 @@ function defaultNotificationModel() {
  */
 const MESSAGES = {
   [DECISIONS.AUTO_APPROVED]: {
+    // Approval clears moderation; it does not by itself publish anything (a contest entry still
+    // waits on the brand), so the copy promises only what has actually happened.
     type: "artwork.approved",
     title: "Your artwork was approved",
-    body: (artwork) => `"${artwork.title}" passed review and is now live.`,
+    body: (artwork) => `"${artwork.title}" passed review.`,
     emailSubject: "Your artwork was approved",
     emailContent: (artwork) => `
-      <p>Good news — <strong>${escapeHtml(artwork.title)}</strong> passed our checks and is now
-      published.</p>
+      <p>Good news — <strong>${escapeHtml(artwork.title)}</strong> passed our review.</p>
     `,
     color: "#16a34a",
   },
@@ -71,6 +73,12 @@ function escapeHtml(value) {
     .replace(/'/g, "&#39;");
 }
 
+/** A reviewer's verdict, mapped onto the message the artist gets. Escalation tells them nothing. */
+const HUMAN_DECISION_MESSAGES = {
+  approved: DECISIONS.AUTO_APPROVED,
+  rejected: DECISIONS.AUTO_REJECTED,
+};
+
 /**
  * Notifies the artwork's creator of a screening decision.
  *
@@ -79,11 +87,7 @@ function escapeHtml(value) {
  * @param {{notificationModel?: object, emailService?: object}} [deps]
  */
 async function notifyDecision(db, { run, decision, config }, deps = {}) {
-  const emails = deps.emailService ?? EmailService;
-
-  const message = MESSAGES[decision];
-
-  if (!message) {
+  if (!MESSAGES[decision]) {
     console.error(`[screening] no notification defined for decision: ${decision}`);
     return { notified: false, reason: "unknown_decision" };
   }
@@ -93,6 +97,55 @@ async function notifyDecision(db, { run, decision, config }, deps = {}) {
   if (config?.notifyArtist === false) {
     return { notified: false, reason: "disabled_by_ruleset" };
   }
+
+  return deliver(db, {
+    artworkId: run.artwork_id,
+    message: MESSAGES[decision],
+    data: { screening_run_id: run.id, decision },
+    deps,
+  });
+}
+
+/**
+ * Tells the artist how a human review of their flagged submission ended — the follow-up the
+ * "being reviewed" message promised. Only screening flags are covered: a resolved user report is
+ * not news the reported artist asked for.
+ *
+ * @param {import('kysely').Kysely<any>} db
+ * @param {{queueItem: object, decision: 'approved'|'rejected'|'escalated'}} event
+ * @param {{notificationModel?: object, emailService?: object}} [deps]
+ */
+async function notifyReviewOutcome(db, { queueItem, decision }, deps = {}) {
+  const messageKey = HUMAN_DECISION_MESSAGES[decision];
+
+  if (!messageKey) return { notified: false, reason: "no_message_for_decision" };
+  if (!queueItem?.screening_run_id) return { notified: false, reason: "not_a_screening_flag" };
+
+  const run = await db
+    .selectFrom("screening_runs")
+    .select(["id", "artwork_id", "ruleset_id"])
+    .where("id", "=", queueItem.screening_run_id)
+    .executeTakeFirst();
+
+  if (!run) return { notified: false, reason: "run_not_found" };
+
+  const ruleset = await Ruleset.findById(db, run.ruleset_id);
+
+  if (ruleset?.config?.notifyArtist === false) {
+    return { notified: false, reason: "disabled_by_ruleset" };
+  }
+
+  return deliver(db, {
+    artworkId: run.artwork_id,
+    message: MESSAGES[messageKey],
+    data: { screening_run_id: run.id, decision, reviewed: true },
+    deps,
+  });
+}
+
+/** Sends one message to an artwork's creator over both channels, each failing independently. */
+async function deliver(db, { artworkId, message, data, deps }) {
+  const emails = deps.emailService ?? EmailService;
 
   const artwork = await db
     .selectFrom("artworks")
@@ -104,7 +157,7 @@ async function notifyDecision(db, { run, decision, config }, deps = {}) {
       "users.email as email",
       "users.username as username",
     ])
-    .where("artworks.id", "=", run.artwork_id)
+    .where("artworks.id", "=", artworkId)
     .executeTakeFirst();
 
   if (!artwork?.user_id) {
@@ -122,11 +175,7 @@ async function notifyDecision(db, { run, decision, config }, deps = {}) {
       type: message.type,
       title: message.title,
       body: message.body(artwork),
-      data: {
-        artwork_id: artwork.id,
-        screening_run_id: run.id,
-        decision,
-      },
+      data: { artwork_id: artwork.id, ...data },
     });
     result.inApp = true;
   } catch (error) {
@@ -163,4 +212,4 @@ async function notifyDecision(db, { run, decision, config }, deps = {}) {
   return result;
 }
 
-module.exports = { MESSAGES, escapeHtml, notifyDecision };
+module.exports = { escapeHtml, notifyDecision, notifyReviewOutcome };

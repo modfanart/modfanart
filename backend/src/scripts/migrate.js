@@ -19,6 +19,11 @@ async function main() {
   const migrator = new Migrator({
     db,
     provider: new MigrationFolderProvider(migrationFolder),
+    // Branches land out of date order: the screening migrations (2026-08-16) merged after the
+    // contest ones (2026-08-20/27) were already applied in prod, while dev databases ran them the
+    // other way round. Strict ordering would refuse both as "corrupted". Every migration in this
+    // folder is written to be idempotent (IF NOT EXISTS), so applying whichever are pending is safe.
+    allowUnorderedMigrations: true,
   });
 
   try {

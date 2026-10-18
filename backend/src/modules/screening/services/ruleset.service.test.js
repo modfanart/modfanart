@@ -5,6 +5,7 @@ const require = createRequire(import.meta.url);
 const {
   authenticityBands,
   maxAcceptableIpRisk,
+  moderationThresholds,
   normalizeRulesetConfig,
   publishRulesetVersion,
   resolveRuleset,
@@ -204,5 +205,42 @@ describe("publishRulesetVersion", () => {
     // Untouched fields survive.
     expect(created.config.requireHumanReview).toBe(false);
     expect(created.config.brandFitThreshold).toBeCloseTo(0.9);
+  });
+});
+
+describe("moderationThresholds", () => {
+  it.each([
+    ["lenient", { flag: 0.9, reject: 1, approve: 0.3 }],
+    ["balanced", { flag: 0.8, reject: 0.9, approve: 0.2 }],
+    ["strict", { flag: 0.7, reject: 0.8, approve: 0.1 }],
+    ["very-strict", { flag: 0.6, reject: 0.7, approve: 0.01 }],
+  ])("shifts every content threshold together at %s", (sensitivityLevel, expected) => {
+    expect(moderationThresholds(normalizeRulesetConfig({ sensitivityLevel }))).toEqual(expected);
+  });
+});
+
+describe("authenticityBands rounding", () => {
+  it("keeps an edge exact despite float arithmetic", () => {
+    const bands = authenticityBands(normalizeRulesetConfig({ confidenceThreshold: 80 }));
+    expect(bands).toEqual({ low: 0.75, high: 0.85 });
+  });
+});
+
+describe("publishRulesetVersion: a brand's first version", () => {
+  it("starts from the platform default it was inheriting, not from schema defaults", async () => {
+    const db = fakeDb([{ ...platformRow, config: { requireHumanReview: false, confidenceThreshold: 85 } }]);
+
+    const created = await publishRulesetVersion(db, {
+      brandId: "brand-new",
+      config: { notifyArtist: false },
+    });
+
+    expect(created.version).toBe(1);
+    expect(created.brand_id).toBe("brand-new");
+    expect(created.config).toMatchObject({
+      requireHumanReview: false,
+      confidenceThreshold: 85,
+      notifyArtist: false,
+    });
   });
 });

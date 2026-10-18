@@ -144,13 +144,8 @@ async function close() {
 }
 
 module.exports = {
-  DEFAULT_JOB_OPTIONS,
-  JOB_NAME,
-  MAX_ATTEMPTS,
   QUEUE_NAME,
   close,
-  createConnection,
   enqueueScreening,
-  getQueue,
   startWorker,
 };

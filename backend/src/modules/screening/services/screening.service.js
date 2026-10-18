@@ -12,9 +12,9 @@ const StyleGuide = require("../models/styleGuide.model");
 const Ruleset = require("../models/ruleset.model");
 const { DECISIONS, evaluate } = require("./decision.engine");
 const { findRejectedDuplicate, hashBuffer, recordHash } = require("./dedupe.service");
-const { loadImage } = require("./image.loader");
+const { isScreenableImage, loadImage } = require("./image.loader");
 const { normalizeRulesetConfig, resolveRuleset } = require("./ruleset.service");
-const { applyScreeningDecision, markPending } = require("./transition.service");
+const { applyScreeningDecision, inTransaction, markPending } = require("./transition.service");
 
 const STAGE_ORDER = ["aiornot", "moderation", "style"];
 
@@ -181,13 +181,19 @@ async function processScreeningRun(db, { runId, isFinalAttempt = false }, deps =
 
   const styleGuide = brandId ? await StyleGuide.findActiveForBrand(db, brandId) : null;
 
+  // `taggings` is polymorphic. Tags are context for the text checks, not a requirement, so a
+  // failed lookup screens without them — but says so, rather than hiding a broken query.
   const tags = await db
     .selectFrom("taggings")
     .innerJoin("tags", "tags.id", "taggings.tag_id")
     .select(["tags.name as name"])
-    .where("taggings.artwork_id", "=", run.artwork_id)
+    .where("taggings.taggable_type", "=", "artwork")
+    .where("taggings.taggable_id", "=", run.artwork_id)
     .execute()
-    .catch(() => []);
+    .catch((error) => {
+      console.error(`[screening] could not load tags for run ${run.id}: ${error.message}`);
+      return [];
+    });
 
   const needsImage = STAGE_ORDER.some((stage) => stages[stage] === null);
   let image = null;
@@ -257,6 +263,25 @@ async function processScreeningRun(db, { runId, isFinalAttempt = false }, deps =
     }
   }
 
+  // PDFs and videos are accepted uploads, but none of the providers can judge them. Sending them
+  // anyway buys three permanent 4xx failures; recording that up front sends them to a human
+  // without the wasted calls. A rendered first page is not screened in its place: a passing cover
+  // would auto-approve every page behind it.
+  if (image && !isScreenableImage(image)) {
+    for (const stage of STAGE_ORDER) {
+      if (stages[stage] === null) {
+        const result = {
+          status: "unavailable",
+          error: `unsupported_media_type: ${image.contentType}`,
+        };
+        await ScreeningRun.saveStageResult(db, run.id, stage, result);
+        stages[stage] = result;
+      }
+    }
+
+    return finish(db, { run, config, stages, deps });
+  }
+
   const input = {
     runId: run.id,
     artwork,
@@ -302,6 +327,17 @@ async function processScreeningRun(db, { runId, isFinalAttempt = false }, deps =
       await ScreeningRun.saveStageResult(db, run.id, stage, result);
       stages[stage] = result;
     } catch (error) {
+      if (error.permanent) {
+        // A permanent failure (bad key, oversized file, a 4xx) fails identically on every attempt,
+        // so it is recorded now: a retry skips the stage instead of re-calling the provider, and
+        // a run where nothing retryable remains goes to a human immediately rather than being
+        // discarded with the artwork left `pending` and nobody looking at it.
+        const result = { status: "unavailable", error: error.message };
+        await ScreeningRun.saveStageResult(db, run.id, stage, result);
+        stages[stage] = result;
+        continue;
+      }
+
       // Collected rather than thrown immediately: the remaining stages still run so their
       // results are cached before the retry, and so a single flaky provider does not hide what
       // the others found.
@@ -310,12 +346,8 @@ async function processScreeningRun(db, { runId, isFinalAttempt = false }, deps =
   }
 
   if (failures.length && !isFinalAttempt) {
-    const permanent = failures.find(({ error }) => error.permanent);
-    if (permanent) permanent.error.permanent = true;
-
     const summary = failures.map(({ stage, error }) => `${stage}: ${error.message}`).join("; ");
     const aggregate = new Error(`Screening stage failure — ${summary}`);
-    aggregate.permanent = failures.every(({ error }) => error.permanent);
     aggregate.stageFailures = failures.map(({ stage }) => stage);
     throw aggregate;
   }
@@ -340,15 +372,27 @@ async function processScreeningRun(db, { runId, isFinalAttempt = false }, deps =
 async function finish(db, { run, config, stages, deps, forced = null }) {
   const { decision, reasons } = forced ?? evaluate(stages, config);
 
-  await ScreeningRun.complete(db, run.id, { decision, reasons });
+  // One transaction for "run decided" and "status changed". Separately, a crash between them left
+  // a run marked complete — which every redelivery then skips — with its artwork still pending.
+  // `complete` only matches a run that is still running, so a concurrent duplicate delivery that
+  // got here first wins and this one records nothing.
+  const transition = await inTransaction(db, async (trx) => {
+    const completed = await ScreeningRun.complete(trx, run.id, { decision, reasons });
 
-  const transition = await applyScreeningDecision(db, {
-    runId: run.id,
-    artworkId: run.artwork_id,
-    contestEntryId: run.contest_entry_id,
-    decision,
-    reasons,
+    if (!completed) return null;
+
+    return applyScreeningDecision(trx, {
+      runId: run.id,
+      artworkId: run.artwork_id,
+      contestEntryId: run.contest_entry_id,
+      decision,
+      reasons,
+    });
   });
+
+  if (!transition) {
+    return { runId: run.id, skipped: true, decision, reasons };
+  }
 
   // Notification is a side effect that must not undo a recorded decision, so it runs after the
   // transaction and its failure is swallowed rather than triggering a retry of the whole run.
@@ -372,8 +416,6 @@ async function failRun(db, runId, message) {
 }
 
 module.exports = {
-  STAGE_ORDER,
-  defaultAdapters,
   failRun,
   processScreeningRun,
   resolveBrandContext,

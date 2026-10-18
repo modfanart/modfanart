@@ -635,3 +635,38 @@ describe("evaluate: invariants", () => {
     expect(approvals.length).toBeGreaterThan(0);
   });
 });
+
+// --- Sensitivity ---------------------------------------------------------------------------
+
+describe("evaluate: sensitivityLevel", () => {
+  it("flags a score under the configured threshold once sensitivity is strict", () => {
+    const stages = cleanStages({ moderation: withScore("violence", 0.75) });
+
+    expect(evaluate(stages, autoApproveConfig()).decision).toBe(DECISIONS.FLAGGED_MANUAL);
+    expect(evaluate(stages, autoApproveConfig({ sensitivityLevel: "strict" }))).toMatchObject({
+      decision: DECISIONS.FLAGGED_MANUAL,
+      reasons: [expect.objectContaining({ code: "authenticity_pass" }), expect.objectContaining({ code: "moderation_flagged", threshold: 0.7 })],
+    });
+  });
+
+  it("rejects at a lower score when strict, and tolerates a higher one when lenient", () => {
+    const stages = cleanStages({ moderation: withScore("violence", 0.85) });
+
+    expect(evaluate(stages, autoApproveConfig()).decision).toBe(DECISIONS.FLAGGED_MANUAL);
+    expect(evaluate(stages, autoApproveConfig({ sensitivityLevel: "strict" })).decision).toBe(
+      DECISIONS.AUTO_REJECTED
+    );
+    expect(evaluate(stages, autoApproveConfig({ sensitivityLevel: "lenient" })).decision).toBe(
+      DECISIONS.FLAGGED_MANUAL
+    );
+  });
+
+  it("narrows auto-approval as sensitivity rises", () => {
+    const stages = cleanStages({ moderation: withScore("violence", 0.15) });
+
+    expect(evaluate(stages, autoApproveConfig()).decision).toBe(DECISIONS.AUTO_APPROVED);
+    expect(evaluate(stages, autoApproveConfig({ sensitivityLevel: "strict" })).decision).toBe(
+      DECISIONS.FLAGGED_MANUAL
+    );
+  });
+});

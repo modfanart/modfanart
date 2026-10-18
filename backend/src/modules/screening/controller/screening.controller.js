@@ -11,9 +11,14 @@ const Ruleset = require("../models/ruleset.model");
 const ScreeningRun = require("../models/screeningRun.model");
 const StyleGuide = require("../models/styleGuide.model");
 const { getDb } = require("../db");
-const { belongsToBrand, can } = require("../screening.permissions");
+const { belongsToAnyBrand, can } = require("../screening.permissions");
+const {
+  brandIdsForArtwork,
+  brandIdsForContestEntry,
+} = require("../services/brandScope.service");
 const { parseStyleGuide } = require("../services/styleGuide.service");
 const {
+  normalizeRulesetConfig,
   publishRulesetVersion,
   resolveRuleset,
   safeNormalizeRulesetConfig,
@@ -65,6 +70,13 @@ class ScreeningController {
         return res.status(400).json({ error: "Invalid artwork id" });
       }
 
+      if (
+        !can(req.user, "moderation.review") &&
+        !belongsToAnyBrand(req.user, await brandIdsForArtwork(db, artworkId.data))
+      ) {
+        return res.status(403).json({ error: "You cannot view screening for this artwork" });
+      }
+
       const runs = await ScreeningRun.listForArtwork(db, artworkId.data);
 
       return res.json({ artwork_id: artworkId.data, runs });
@@ -97,6 +109,25 @@ class ScreeningController {
 
       if (!artwork) {
         return res.status(404).json({ error: "Artwork not found" });
+      }
+
+      // The entry decides which brand's ruleset applies and which row the verdict lands on, so it
+      // has to be an entry of this artwork.
+      const entry = contestEntryId ? await brandIdsForContestEntry(db, contestEntryId) : null;
+
+      if (contestEntryId && entry?.artworkId !== artworkId) {
+        return res
+          .status(400)
+          .json({ error: "That contest entry does not belong to this artwork" });
+      }
+
+      if (!can(req.user, "moderation.review")) {
+        // A brand rescreens through its own contest entry; a storefront artwork without one.
+        const brandIds = entry ? entry.brandIds : await brandIdsForArtwork(db, artworkId);
+
+        if (!belongsToAnyBrand(req.user, brandIds)) {
+          return res.status(403).json({ error: "You cannot rescreen this artwork" });
+        }
       }
 
       const run = await startRun(db, {
@@ -143,6 +174,9 @@ class ScreeningController {
       return res.json({
         brand_id: brandId,
         effective_ruleset: effective,
+        // Stored rows may predate a field (the seeded platform default does), so the settings
+        // screen is given the config exactly as the engine will read it, defaults filled in.
+        effective_config: normalizeRulesetConfig(effective.config),
         versions,
       });
     } catch (error) {
@@ -262,10 +296,6 @@ class ScreeningController {
 
       if (!uuid.safeParse(brandId).success) {
         return res.status(400).json({ error: "A valid brand_id is required" });
-      }
-
-      if (!can(req.user, "screening.manage") && !belongsToBrand(req.user, brandId)) {
-        return res.status(403).json({ error: "You do not manage this brand" });
       }
 
       const guides = await StyleGuide.listForBrand(getDb(), brandId);

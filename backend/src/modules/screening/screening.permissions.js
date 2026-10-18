@@ -30,6 +30,11 @@ function belongsToBrand(user, brandId) {
   return (user.brands ?? []).some((brand) => brand.id === brandId);
 }
 
+/** Whether the user belongs to any of these brands. */
+function belongsToAnyBrand(user, brandIds = []) {
+  return brandIds.some((brandId) => belongsToBrand(user, brandId));
+}
+
 /** Requires a platform-level permission. */
 function requirePermission(permission) {
   return (req, res, next) => {
@@ -77,7 +82,7 @@ function requireBrandOrPermission(permission, brandIdFrom = (req) => req.body?.b
 }
 
 module.exports = {
-  belongsToBrand,
+  belongsToAnyBrand,
   can,
   requireBrandOrPermission,
   requirePermission,

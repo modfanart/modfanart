@@ -249,7 +249,7 @@ describe("applyScreeningDecision", () => {
   });
 
   it("throws on an illegal transition and writes nothing at all", async () => {
-    const db = seed({ artworkStatus: "approved" });
+    const db = seed({ artworkStatus: "legacy_unknown" });
 
     await expect(
       applyScreeningDecision(db, {
@@ -259,14 +259,14 @@ describe("applyScreeningDecision", () => {
       })
     ).rejects.toThrow(IllegalTransitionError);
 
-    expect(db.rows("artworks")[0].moderation_status).toBe("approved");
+    expect(db.rows("artworks")[0].moderation_status).toBe("legacy_unknown");
     expect(db.rows("audited_events")).toHaveLength(0);
   });
 
   it("rolls the whole transaction back when a later step fails", async () => {
-    const db = seed({ artworkStatus: "pending", entryStatus: "approved" });
+    const db = seed({ artworkStatus: "pending", entryStatus: "legacy_unknown" });
 
-    // artwork pending -> approved is legal; entry approved -> approved is not, so the entry
+    // artwork pending -> approved is legal; the entry's unrecognised status is not, so the entry
     // check must undo the artwork write rather than leave a half-applied decision.
     await expect(
       applyScreeningDecision(db, {
@@ -279,6 +279,59 @@ describe("applyScreeningDecision", () => {
 
     expect(db.rows("artworks")[0].moderation_status).toBe("pending");
     expect(db.rows("audited_events")).toHaveLength(0);
+  });
+
+  it("leaves an entity already at the target alone but still audits and queues the verdict", async () => {
+    // The standalone upload run and the contest-entry run screen the same artwork and finish in
+    // either order. When both flag it, the second must not trip over flagged -> flagged and leave
+    // the entry unqueued.
+    const db = seed({ artworkStatus: "flagged" });
+
+    const result = await applyScreeningDecision(db, {
+      runId: RUN_ID,
+      artworkId: ARTWORK_ID,
+      contestEntryId: ENTRY_ID,
+      decision: DECISIONS.FLAGGED_MANUAL,
+    });
+
+    expect(db.rows("artworks")[0].moderation_status).toBe("flagged");
+    expect(db.rows("contest_entries")[0].moderation_status).toBe("flagged");
+    expect(result.queueItem.entity_type).toBe("contest_entry");
+    expect(db.rows("audited_events")).toHaveLength(1);
+    expect(db._log.filter((q) => q.kind === "update" && q.table === "artworks")).toHaveLength(0);
+  });
+
+  it("does not let a contest run overturn an artwork's settled platform verdict", async () => {
+    const db = seed({ artworkStatus: "approved" });
+
+    const result = await applyScreeningDecision(db, {
+      runId: RUN_ID,
+      artworkId: ARTWORK_ID,
+      contestEntryId: ENTRY_ID,
+      decision: DECISIONS.FLAGGED_MANUAL,
+    });
+
+    expect(db.rows("artworks")[0].moderation_status).toBe("approved");
+    expect(db.rows("contest_entries")[0].moderation_status).toBe("flagged");
+    expect(result.artworkModerationStatus).toBe("approved");
+
+    const [event] = db.rows("audited_events");
+    expect(JSON.parse(event.new_values)).toMatchObject({
+      moderation_status: "approved",
+      contest_entry_moderation_status: "flagged",
+    });
+  });
+
+  it("lets a standalone run settle an artwork a contest run settled first", async () => {
+    const db = seed({ artworkStatus: "flagged" });
+
+    await applyScreeningDecision(db, {
+      runId: RUN_ID,
+      artworkId: ARTWORK_ID,
+      decision: DECISIONS.AUTO_APPROVED,
+    });
+
+    expect(db.rows("artworks")[0].moderation_status).toBe("approved");
   });
 
   it("fails loudly when the artwork does not exist", async () => {
@@ -401,6 +454,31 @@ describe("applyHumanReview", () => {
     });
 
     expect(entryDb.rows("contest_entries")[0].moderation_status).toBe("approved");
+    expect(entryDb.rows("artworks")[0].moderation_status).toBe("approved");
+  });
+
+  it("leaves an artwork with its own settled verdict alone when its entry is reviewed", async () => {
+    const entryDb = seed({
+      artworkStatus: "approved",
+      entryStatus: "flagged",
+      queue: [
+        {
+          id: "queue-3",
+          entity_type: "contest_entry",
+          entity_id: ENTRY_ID,
+          status: "pending",
+          priority: 0,
+        },
+      ],
+    });
+
+    await applyHumanReview(entryDb, {
+      queueItemId: "queue-3",
+      reviewerId: REVIEWER_ID,
+      decision: "rejected",
+    });
+
+    expect(entryDb.rows("contest_entries")[0].moderation_status).toBe("rejected");
     expect(entryDb.rows("artworks")[0].moderation_status).toBe("approved");
   });
 

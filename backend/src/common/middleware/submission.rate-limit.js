@@ -6,7 +6,7 @@
 //
 // Deliberately generous: it exists to bound the cost of an automated flood, not to shape the
 // behaviour of a prolific artist.
-const rateLimit = require("express-rate-limit");
+const { ipKeyGenerator, rateLimit } = require("express-rate-limit");
 
 const WINDOW_MS = Number(process.env.SUBMISSION_RATE_WINDOW_MS ?? 60 * 60 * 1000);
 const LIMIT = Number(process.env.SUBMISSION_RATE_LIMIT ?? 60);
@@ -18,12 +18,13 @@ const submissionRateLimit = rateLimit({
   legacyHeaders: false,
   // Falls back to IP for the unauthenticated case. That should not happen — every route using this
   // sits behind authenticateToken — but a limiter that silently stops limiting is worse than one
-  // that degrades to the weaker key.
-  keyGenerator: (req) => req.user?.id ?? req.ip,
+  // that degrades to the weaker key. `ipKeyGenerator` groups an IPv6 /64, so the fallback cannot be
+  // dodged by rotating addresses within one allocation.
+  keyGenerator: (req) => req.user?.id ?? ipKeyGenerator(req.ip),
   message: {
     error: "Submission limit reached",
     message: "You have submitted too many artworks in a short period. Please try again later.",
   },
 });
 
-module.exports = { LIMIT, WINDOW_MS, submissionRateLimit };
+module.exports = { submissionRateLimit };

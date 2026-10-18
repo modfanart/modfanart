@@ -80,9 +80,13 @@ SCREENING_ADAPTERS=mock
 ```
 
 `SCREENING_ADAPTERS=mock` is the important one for a standup: the pipeline runs end to end with fake
-adapters, so you need no AIORNOT or OpenAI key and spend nothing. The mock adapters read the artwork
-title — a title containing `ai generated` comes back as AI, `explicit` or `violence` trips
-moderation, anything else screens clean. Drop the variable and add real keys to demo live providers.
+adapters, so you need no AIORNOT or OpenAI key and spend nothing. The mock adapters read whole
+words in the artwork title: `ai` or `midjourney` comes back as AI, `borderline` lands in the
+authenticity grey zone, `flag` / `reject` score high enough on content safety to flag / reject,
+`offstyle` and `infringing` fail the style and IP check, and `mockfail` makes every stage throw.
+The style check also reports any term the brand's style guide bans (`No pink` bans "pink"), and
+style guides compile without OpenAI in this mode. Anything else screens clean. Drop the variable
+and add real keys to demo live providers.
 
 ## Start the stack (4 terminals, ~2 minutes)
 
@@ -172,6 +176,14 @@ If someone asks about the audit trail, every status change writes an `audited_ev
 select action, entity_type, entity_id, new_values, created_at
 from audited_events order by created_at desc limit 10;
 ```
+
+## The whole flow in the UI, fully local
+
+Step-by-step instructions, including what you should see at each step, are in
+[`docs/AI_SCREENING_LOCAL_TESTING.md`](../../docs/AI_SCREENING_LOCAL_TESTING.md). In short, the
+`e2e:*` scripts run the stack against local stand-ins (Docker Postgres/Redis/MinIO and the
+Firebase Auth emulator) using `backend/e2e.env`, and `npm run e2e:seed` creates the artist,
+brand and admin accounts plus a live contest.
 
 ## If something doesn't work
 

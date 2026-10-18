@@ -12,7 +12,10 @@ const rateLimit = require("express-rate-limit");
 
 const ModerationController = require("./controller/moderation.controller");
 const { authenticateToken } = require("../../common/middleware/auth.middleware");
-const { requirePermission } = require("../screening/screening.permissions");
+const {
+  requireBrandOrPermission,
+  requirePermission,
+} = require("../screening/screening.permissions");
 
 const router = express.Router();
 
@@ -30,17 +33,17 @@ router.use(authenticateToken);
 
 router.post("/submit", reportLimiter, ModerationController.submitReport);
 
+// Platform reviewers see everything. A brand member sees their own brand's items, and must say
+// which brand: `brand_id` is required for them and checked against their memberships.
 router.get(
   "/queue",
-  requirePermission("moderation.review"),
+  requireBrandOrPermission("moderation.review", (req) => req.query?.brand_id),
   ModerationController.getQueue
 );
 
-router.post(
-  "/queue/:id/resolve",
-  requirePermission("moderation.review"),
-  ModerationController.resolveQueueItem
-);
+// Which brand an item belongs to is only known once it is loaded, so the brand check for
+// non-platform reviewers happens in the controller.
+router.post("/queue/:id/resolve", ModerationController.resolveQueueItem);
 
 router.get(
   "/metrics",
