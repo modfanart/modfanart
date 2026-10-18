@@ -11,6 +11,7 @@ import rolesApi from '@/services/api/rolesApi';
 import productsApi from '@/services/api/productApi';
 import ordersApi from '@/services/api/orderApi';
 import moderationApi from '@/services/api/moderationApi';
+import screeningApi from '@/services/api/screeningApi';
 import licensesApi from '@/services/api/licenseApi';
 import favoritesApi from '@/services/api/favoriteApi';
 import contestsApi from '@/services/api/contestsApi';
@@ -53,6 +54,7 @@ export const store = configureStore({
     [productsApi.reducerPath]: productsApi.reducer,
     [ordersApi.reducerPath]: ordersApi.reducer,
     [moderationApi.reducerPath]: moderationApi.reducer,
+    [screeningApi.reducerPath]: screeningApi.reducer,
     [licensesApi.reducerPath]: licensesApi.reducer,
     [favoritesApi.reducerPath]: favoritesApi.reducer,
     [contestsApi.reducerPath]: contestsApi.reducer,
@@ -84,6 +86,7 @@ export const store = configureStore({
       adminApi.middleware,
       ordersApi.middleware,
       moderationApi.middleware,
+      screeningApi.middleware,
       licensesApi.middleware,
       favoritesApi.middleware,
       contestsApi.middleware,

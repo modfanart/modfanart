@@ -160,7 +160,7 @@ class UserController {
           "roles.id as role_id",
           "roles.name as role_name",
           "roles.hierarchy_level as role_hierarchy_level",
-          // add more role fields if needed: permissions, description, etc.
+          "roles.permissions as role_permissions",
         ])
         .where("users.id", "=", userId)
         // Optional: exclude soft-deleted users
@@ -200,6 +200,7 @@ class UserController {
             id: user.role_id,
             name: user.role_name || "unknown",
             hierarchy_level: user.role_hierarchy_level ?? 0,
+            permissions: user.role_permissions || {},
           },
           profile: user.profile || {},
           avatar_url: user.avatar_url,

@@ -35,6 +35,13 @@ const nextConfig = {
       { protocol: 'https', hostname: 'img.freepik.com' },
       { protocol: 'https', hostname: 'images.pexels.com' },
       { protocol: 'https', hostname: 'cdn.pixabay.com' },
+      // Local S3 stand-ins (MinIO on the loopback interface) during development only.
+      ...(process.env.NODE_ENV === 'development'
+        ? [
+            { protocol: 'http', hostname: '127.0.0.1' },
+            { protocol: 'http', hostname: 'localhost' },
+          ]
+        : []),
     ],
   },
 };

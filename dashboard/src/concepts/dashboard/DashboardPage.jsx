@@ -36,9 +36,10 @@ import { Skeleton } from "../../components/ui/skeleton";
 import {
   useGetPlatformStatsQuery,
   useGetPendingBrandVerificationsQuery,
-  useGetModerationQueueQuery,
   useGetAdminUsersQuery,
 } from "../../services/api/adminApi";
+
+import { useGetModerationQueueQuery } from "../../services/api/moderationApi";
 
 import { toast } from "sonner";
 
@@ -270,8 +271,8 @@ const ModerationItem = ({ item }) => {
             {formatStatus(item.entity_type)}
           </p>
 
-          <p className="mt-0.5 text-xs text-zinc-500">
-            Moderation item
+          <p className="mt-0.5 truncate text-xs text-zinc-500">
+            {item.artwork?.title || "Moderation item"}
           </p>
         </div>
       </div>
@@ -458,7 +459,8 @@ const AdminDashboardPage = () => {
   const statsData = stats?.data || {};
 
   const verificationItems = verifications?.data || [];
-  const moderationItems = moderation?.data || [];
+  // The moderation queue endpoint returns a bare array.
+  const moderationItems = Array.isArray(moderation) ? moderation : [];
   const recentUsers = users?.data || [];
 
   /* =======================================================

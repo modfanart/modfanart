@@ -32,9 +32,13 @@ const keepAlive = setInterval(() => {}, 60 * 60 * 1000); // 1 hour
 
 const TEMP_DIR = process.env.TEMP_UPLOAD_DIR || '/tmp/cdn_uploads';
 // ====================== RATE LIMITER ======================
+// A blanket per-IP cap. At 100 a brand reviewer working through the review queue was locked out
+// within two minutes: every dashboard page load fans out into several API calls. Expensive or
+// abusable endpoints carry their own tighter limits (artwork submission, user reports), so this
+// one only needs to stop floods. Tunable with API_RATE_LIMIT.
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: Number(process.env.API_RATE_LIMIT ?? 1000),
   message: {
     status: 429,
     message: 'Too many requests, please try again later.',
@@ -127,10 +131,14 @@ const routes = [
     path: '/api/notifications',
     module: './src/modules/notifications/notification.routes.js',
   },
-  { path: '/api/tasks', module: './src/modules/tasks/task.routes.js' },
-  { path: '/api/projects', module: './src/modules/tasks/project.routes.js' },
-  { path: '/api/media', module: './src/modules/cdn/cdn.routes.js' },
-  { path: '/api/admin', module: './src/modules/admin/admin.routes.js' },
+  { path: "/api/tasks", module: "./src/modules/tasks/task.routes.js" },
+  { path: "/api/projects", module: "./src/modules/tasks/project.routes.js" },
+  {path: "/api/media", module: "./src/modules/cdn/cdn.routes.js"},
+  {path: "/api/admin", module: "./src/modules/admin/admin.routes.js"},
+  // AI screening: runs, rulesets, style guides.
+  { path: "/api/screening", module: "./src/modules/screening/screening.routes.js" },
+  // Human review queue + user reporting. Previously present on disk but never mounted.
+  { path: "/api/moderation", module: "./src/modules/moderation/moderation.routes.js" }
 ];
 
 routes.forEach(({ path, module: mod }) => {

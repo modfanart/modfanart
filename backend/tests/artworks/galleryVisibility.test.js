@@ -212,10 +212,12 @@ describe('public gallery lists only finalized winners', () => {
     const res = await setEntryStatus(fx.draft.entryId, 'approved');
     assert.equal(res.statusCode, 200, JSON.stringify(res.body));
 
-    // The publish side-effect is unchanged: the artwork becomes addressable...
+    // The publish side-effect is unchanged: the artwork becomes addressable. Its moderation
+    // verdict is not: that belongs to AI screening and the review queue, which audit every change,
+    // so a brand approving the entry cannot clear an artwork screening has not.
     assert.deepEqual(await artworkRow(fx.draft.artworkId), {
       status: 'published',
-      moderation_status: 'approved',
+      moderation_status: 'pending',
     });
 
     // ...but approval no longer puts it in the public gallery list.

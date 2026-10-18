@@ -74,12 +74,17 @@ class Artwork {
       .executeTakeFirstOrThrow();
   }
 
+  /**
+   * Marks an artwork released. Publishing used to write `moderation_status = 'approved'` as well,
+   * which let a creator approve their own submission while screening was still running, or after
+   * it had rejected them. The verdict is owned by the screening transition service; this only
+   * records the release, and every public surface checks the verdict separately.
+   */
   static async publish(id) {
     return db
       .updateTable('artworks')
       .set({
         status: 'published',
-        moderation_status: 'approved',
         updated_at: sql`NOW()`,
       })
       .where('id', '=', id)

@@ -8,12 +8,30 @@ const CDNFileService = require("../../cdn/services/cdn-file.service");
 const cdnFileModel = require("../../cdn/models/cdn-file.model");
 const { renderPdfThumbnail } = require("../utils/pdf-thumbnail.util");
 const { applyPublicArtworkFilter } = require("../artwork.visibility");
+const { triggerScreening } = require("../../screening/screening.hook");
 
 const { db } = require("../../../config");
 const path = require("path");
 const crypto = require("crypto");
 const fs = require("fs/promises");
 const { sql } = require("kysely");
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Whether an upload's `contest_id` names a contest that will screen the entry itself. */
+async function isLiveContest(contestId) {
+  if (typeof contestId !== "string" || !UUID_PATTERN.test(contestId)) return false;
+
+  const contest = await db
+    .selectFrom("contests")
+    .select(["id"])
+    .where("id", "=", contestId)
+    .where("status", "=", "live")
+    .executeTakeFirst();
+
+  return Boolean(contest);
+}
+
 class ArtworkController {
   static async createArtwork(req, res) {
     try {
@@ -30,6 +48,7 @@ class ArtworkController {
         description,
         category_ids = [],
         pricing_tiers = [],
+        contest_id: contestId,
       } = req.body;
 
       if (!title?.trim()) {
@@ -57,40 +76,22 @@ class ArtworkController {
         });
       }
 
-const cdnService = new CDNFileService(cdnFileModel);
+      const cdnService = new CDNFileService(cdnFileModel);
 
-let pdfThumbnailUrl = null;
-if (ext === ".pdf") {
-  const thumbBuffer = await renderPdfThumbnail(req.file.path);
-  if (thumbBuffer) {
-    const thumbFilename = `${path.parse(req.file.filename).name}-thumb.png`;
-    pdfThumbnailUrl = await cdnService.uploadBufferToCDN(
-      thumbBuffer,
-      thumbFilename,
-      "image/png"
-    );
-  }
-}
+      let pdfThumbnailUrl = null;
+      if (ext === ".pdf") {
+        const thumbBuffer = await renderPdfThumbnail(req.file.path);
+        if (thumbBuffer) {
+          const thumbFilename = `${path.parse(req.file.filename).name}-thumb.png`;
+          pdfThumbnailUrl = await cdnService.uploadBufferToCDN(
+            thumbBuffer,
+            thumbFilename,
+            "image/png"
+          );
+        }
+      }
 
-const cdnFile = await cdnService.createFileRecord(req.file, userId);
-
-// Create artwork
-const artwork = await Artwork.create(userId, {
-  title: title.trim(),
-  description: description?.trim() || null,
-
-  file_url: cdnFile.url,
-  thumbnail_url: pdfThumbnailUrl || cdnFile.url,
-  source_file_url: cdnFile.url,
-
-  status: "draft",
-  moderation_status: "pending",
-});
-
-const cdnFile = await cdnService.createFileRecord(
-  req.file,
-  userId
-);
+      const cdnFile = await cdnService.createFileRecord(req.file, userId);
 
       // Create artwork
       const artwork = await Artwork.create(userId, {
@@ -98,7 +99,7 @@ const cdnFile = await cdnService.createFileRecord(
         description: description?.trim() || null,
 
         file_url: cdnFile.url,
-        thumbnail_url: cdnFile.url,
+        thumbnail_url: pdfThumbnailUrl || cdnFile.url,
         source_file_url: cdnFile.url,
 
         status: "draft",
@@ -142,9 +143,26 @@ const cdnFile = await cdnService.createFileRecord(
         );
       }
 
+      // The artwork is already stored with moderation_status 'pending', so it is not publicly
+      // visible until the pipeline (or a moderator) says otherwise.
+      //
+      // An upload made for a contest is screened once, when the entry is submitted, under that
+      // contest brand's ruleset. Screening it here as well would bill every provider twice and
+      // put two review tasks for the same image in front of different reviewers. If the entry
+      // never arrives the artwork simply stays pending and private.
+      const screeningDeferred = await isLiveContest(contestId);
+      const screeningRun = screeningDeferred
+        ? null
+        : await triggerScreening({
+            artworkId: artwork.id,
+            actorId: userId,
+          });
+
       return res.status(201).json({
         success: true,
         message: "Artwork created successfully",
+        screening_run_id: screeningRun?.id ?? null,
+        screening_deferred_to_contest: screeningDeferred,
         artwork: {
           id: artwork.id,
           title: artwork.title,
@@ -230,6 +248,16 @@ const cdnFile = await cdnService.createFileRecord(
         return res
           .status(400)
           .json({ error: "Only draft artworks can be published" });
+      }
+
+      if (artwork.moderation_status !== "approved") {
+        return res.status(409).json({
+          error:
+            artwork.moderation_status === "rejected"
+              ? "This artwork did not pass review and cannot be published"
+              : "This artwork is still being reviewed and can be published once it is approved",
+          moderation_status: artwork.moderation_status,
+        });
       }
 
       await Artwork.publish(id);
@@ -501,6 +529,9 @@ const cdnFile = await cdnService.createFileRecord(
         ])
         .where("creator_id", "=", creatorId)
         .where("status", "=", "published") // 🔥 STRICT FILTER
+        // A brand approving a contest entry publishes its artwork, whatever screening said;
+        // a public profile shows only work that also passed moderation.
+        .where("moderation_status", "=", "approved")
         .where("deleted_at", "is", null)
         .orderBy("created_at", "desc");
 
@@ -521,6 +552,7 @@ const cdnFile = await cdnService.createFileRecord(
         .selectFrom("artworks")
         .where("creator_id", "=", creatorId)
         .where("status", "=", "published")
+        .where("moderation_status", "=", "approved")
         .where("deleted_at", "is", null);
 
       if (search) {

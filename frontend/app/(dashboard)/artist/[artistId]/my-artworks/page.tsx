@@ -9,8 +9,11 @@ import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from '@/components/ui/use-toast';
+import { ModerationStatusBadge } from '@/components/compliance/screening-verdict-badge';
+import { artworkPreviewSrc } from '@/lib/artwork-preview';
 
-import { PlusCircle, Trash2, Eye, CheckCircle, XCircle, Clock, Trophy, Rocket } from 'lucide-react';
+import { PlusCircle, Trash2, Eye, CheckCircle, XCircle, Clock, Trophy, Rocket, FileText } from 'lucide-react';
 
 import type { LucideIcon } from 'lucide-react';
 
@@ -24,6 +27,7 @@ import {
 import { useGetMyContestEntriesQuery } from '@/services/api/contestsApi';
 
 import type { ArtworkListItem } from '@/services/api/artworkApi';
+import type { ModerationStatus } from '@/services/types/screening';
 
 // ────────────────────────────────────────────────
 // Types
@@ -92,6 +96,26 @@ const STATUS_MAP: Record<StatusKey, { label: string; className: string; icon: Lu
 // ────────────────────────────────────────────────
 // Components
 // ────────────────────────────────────────────────
+
+const MODERATION_STATUSES: ModerationStatus[] = ['pending', 'flagged', 'approved', 'rejected'];
+
+/** The review verdict on an artwork; anything unrecognised reads as still pending. */
+const moderationOf = (item: ArtworkListItem): ModerationStatus =>
+  MODERATION_STATUSES.find((status) => status === item.moderation_status) ?? 'pending';
+
+/**
+ * Which tab an artwork belongs in. Uploads stay drafts while AI screening and any human review run,
+ * so "Pending" and "Rejected" follow the review verdict, and "Draft" holds only work that has been
+ * approved and is ready to publish.
+ */
+const tabOf = (item: ArtworkListItem): Exclude<SubmissionTab, 'all' | 'in-contests'> => {
+  const moderation = moderationOf(item);
+
+  if (normalizeStatus(item.status) === 'published') return 'published';
+  if (moderation === 'rejected' || normalizeStatus(item.status) === 'rejected') return 'rejected';
+  if (moderation === 'pending' || moderation === 'flagged') return 'pending';
+  return 'draft';
+};
 
 const StatusUI = ({ status }: { status?: string }) => {
   const key = normalizeStatus(status);
@@ -170,7 +194,7 @@ export default function ManageSubmissionsPage() {
   if (activeTab === 'in-contests') {
     displayed = unified.filter((i) => i.isContestSubmission);
   } else if (activeTab !== 'all') {
-    displayed = unified.filter((i) => normalizeStatus(i.status) === activeTab);
+    displayed = unified.filter((i) => tabOf(i) === activeTab);
   }
 
   const handleDelete = async (id: string) => {
@@ -178,7 +202,17 @@ export default function ManageSubmissionsPage() {
   };
 
   const handlePublish = async (id: string) => {
-    await publishArtwork(id);
+    try {
+      await publishArtwork(id).unwrap();
+      toast({ title: 'Artwork published' });
+    } catch (err) {
+      const apiError = (err as { data?: { error?: string } } | undefined)?.data?.error;
+      toast({
+        title: 'Could not publish',
+        description: apiError || 'Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
@@ -215,19 +249,31 @@ export default function ManageSubmissionsPage() {
                 <Card key={item.id} className="overflow-hidden hover:shadow-lg transition">
                   {/* Image */}
                   <div className="relative aspect-square">
-                    <Image
-                      src={item.thumbnail_url || item.file_url || '/placeholder.svg'}
-                      alt={item.title}
-                      fill
-                      className="object-cover"
-                    />
+                    {artworkPreviewSrc(item) ? (
+                      <Image
+                        src={artworkPreviewSrc(item)!}
+                        alt={item.title}
+                        fill
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full flex-col items-center justify-center gap-2 bg-muted text-muted-foreground">
+                        <FileText className="h-10 w-10" />
+                        <span className="text-sm">PDF</span>
+                      </div>
+                    )}
                   </div>
 
                   {/* Content */}
                   <CardContent className="space-y-2 pt-4">
                     <h3 className="font-semibold truncate">{item.title}</h3>
 
-                    <StatusUI status={item.status} />
+                    <div className="flex flex-wrap items-center gap-2">
+                      <StatusUI status={item.status} />
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                        Review: <ModerationStatusBadge status={moderationOf(item)} />
+                      </span>
+                    </div>
                   </CardContent>
 
                   {/* Actions */}
@@ -238,7 +284,7 @@ export default function ManageSubmissionsPage() {
                       </Button>
                     </Link>
 
-                    {normalizeStatus(item.status) === 'draft' && (
+                    {normalizeStatus(item.status) === 'draft' && moderationOf(item) === 'approved' && (
                       <Button
                         size="sm"
                         onClick={() => handlePublish(item.id)}

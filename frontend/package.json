@@ -9,7 +9,8 @@
     "test": "node --test tests/",
     "lint": "eslint ./src --ext .ts,.tsx,.js,.jsx --fix",
     "lint:check": "eslint ./src --ext .ts,.tsx,.js,.jsx",
-    "start": "next start"
+    "start": "next start",
+    "dev:e2e": "NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 NEXT_PUBLIC_FIREBASE_API_KEY=e2e-local NEXT_PUBLIC_FIREBASE_PROJECT_ID=modfanart NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=localhost next dev"
   },
   "dependencies": {
     "@auth/core": "latest",

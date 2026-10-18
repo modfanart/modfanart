@@ -7,14 +7,15 @@
  * Artwork is public only when all three hold:
  *
  *   1. status = 'published'            - the creator released it
- *   2. moderation_status = 'approved'  - set alongside (1) by Artwork.publish
+ *   2. moderation_status = 'approved'  - the screening pipeline or a reviewer
+ *                                        cleared it
  *   3. a contest entry for it is status='winner' AND
  *      licensing_status='finalized'    - selected by the brand, and its
  *                                        licensing agreement completed
  *
- * (1) and (2) alone are not a review: Artwork.publish writes both columns on
- * the creator's own say-so, so a contest submission could reach the gallery
- * the moment its author pressed Publish, before any brand had looked at it.
+ * (1) and (2) alone are not a brand review: (2) is the automated screening
+ * verdict, so without (3) a contest submission could reach the gallery the
+ * moment screening passed it, before any brand had looked at it.
  * (3) is the real gate, and since the licensing check-in (2026-08-27) brand
  * approval alone no longer publishes: an entry must be a selected winner
  * whose licensing the brand explicitly finalized in the Licensing tab.

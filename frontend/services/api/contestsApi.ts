@@ -1,6 +1,7 @@
 // src/services/api/contestApi.ts
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { API_BASE_URL } from '..';
+import type { ModerationStatus } from '../types/screening';
 
 // ────────────────────────────────────────────────
 // Core Types
@@ -153,6 +154,9 @@ export interface ContestEntry {
   status: 'pending' | 'approved' | 'rejected' | 'disqualified' | 'winner';
   rank: number | null;
   licensing_status: LicensingStatus;
+  // The AI screening verdict for this entry ('flagged' = waiting on a human reviewer). The
+  // artwork's own platform verdict is artwork.moderation_status.
+  moderation_status: ModerationStatus;
   // Packed by packSubmissionNotes: the entrant's note plus a trailing
   // "Fandom / Original IP: ..." line. Use unpackSubmissionNotes to display.
   // The API has returned this since the note feature landed; it was missing

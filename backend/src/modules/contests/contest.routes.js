@@ -9,9 +9,10 @@ const ContestJudgeScoreController = require('./controller/contestJudgeScore.cont
 const ContestVoteController = require('./controller/contestVote.controller');
 const ContestWinnerController = require('./controller/contestWinner.controller');
 
+const { authenticateToken } = require('../../common/middleware/auth.middleware');
 const {
-  authenticateToken,
-} = require('../../common/middleware/auth.middleware');
+  submissionRateLimit,
+} = require('../../common/middleware/submission.rate-limit');
 // const { hasPermission } = require('../middleware/permission.middleware'); // Commented if not used
 
 const router = express.Router();
@@ -104,7 +105,12 @@ router.delete(
 router.get('/:contestId/categories', ContestCategoryController.getCategories);
 
 // ====================== ENTRIES ======================
-router.post('/:contestId/entries', ContestEntryController.submitEntry);
+// Rate limited for the same reason as artwork upload: each entry triggers a screening run.
+router.post(
+  '/:contestId/entries',
+  submissionRateLimit,
+  ContestEntryController.submitEntry
+);
 router.get('/:contestId/entries', ContestEntryController.getEntries);
 router.get('/:contestId/entries/:entryId', ContestEntryController.getEntry);
 router.patch(

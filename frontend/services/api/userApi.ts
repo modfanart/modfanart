@@ -28,6 +28,7 @@ export interface UserProfile {
     name: string;
     slug?: string;
     hierarchy_level?: number;
+    permissions?: Record<string, boolean>;
   };
 
   profile: {

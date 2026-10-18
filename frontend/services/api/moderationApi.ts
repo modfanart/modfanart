@@ -2,6 +2,16 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { API_BASE_URL } from '..';
 
+import type {
+  AuthenticityStage,
+  ContentSafetyStage,
+  ModerationStatus,
+  ScreeningDecision,
+  ScreeningReason,
+  StyleStage,
+} from '../types/screening';
+
+
 /**
  * Aligned with ModerationQueueRow + UserViolationRow
  */
@@ -20,35 +30,87 @@ export interface ModerationSubmissionResponse {
 }
 
 /**
- * Mirrors ModerationQueueRow
+ * A review-queue item: the `moderation_queue` row, the screening run that flagged it (when it came
+ * from screening rather than a user report), and the artwork, artist and contest it is about.
  */
 export interface ModerationQueueItem {
   id: string;
-  entity_type: string;
+  entity_type: 'artwork' | 'contest_entry' | (string & {});
   entity_id: string;
-  status: string;
+  status: 'pending' | 'reviewed';
   priority: number;
-  assigned_to?: string | null;
-  reviewed_by?: string | null;
-  reviewed_at?: string | null;
-  decision?: string | null;
-  notes?: string | null;
+  assigned_to: string | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  /** null while undecided; 'escalated' items stay pending for platform moderators. */
+  decision: ModerationDecision | null;
+  notes: string | null;
   created_at: string;
   updated_at: string;
+
+  screening_run_id: string | null;
+  /** The engine's reasons for a screening flag, or the report payload for a user report. */
+  rule_matches: ScreeningReason[] | UserReportMatch | null;
+  screening_decision: ScreeningDecision | null;
+  aiornot: AuthenticityStage | null;
+  moderation: ContentSafetyStage | null;
+  style: StyleStage | null;
+
+  artwork: {
+    id: string;
+    title: string;
+    description: string | null;
+    file_url: string | null;
+    thumbnail_url: string | null;
+    status: string;
+    moderation_status: ModerationStatus;
+    creator: { id: string; username: string; avatar_url: string | null };
+  } | null;
+  contest_entry: {
+    id: string;
+    status: string;
+    moderation_status: ModerationStatus;
+    contest_id: string;
+    contest_title: string;
+    brand_id: string;
+  } | null;
+}
+
+export interface UserReportMatch {
+  source: 'user_report';
+  violation_type: string;
+  description: string | null;
+  reporter_id: string | null;
+}
+
+export type ModerationDecision = 'approved' | 'rejected' | 'escalated';
+
+/** `escalated` lists pending items handed up to platform moderators; `pending` excludes them. */
+export interface ModerationQueueQuery {
+  brand_id?: string;
+  status?: 'pending' | 'escalated' | 'reviewed';
+  limit?: number;
+  offset?: number;
 }
 
 /**
- * Aggregated admin metrics (derived, not a table)
+ * Request body for resolving a moderation queue item.
  */
-export interface ModerationMetrics {
-  total_reports: number;
-  pending_reports: number;
-  resolved_reports: number;
-  rejected_reports: number;
-  reports_by_entity_type: Record<string, number>;
-  reports_by_status: Record<string, number>;
-  average_resolution_time_days?: number;
+export interface ResolveModerationQueueRequest {
+  decision: ModerationDecision;
+  notes?: string;
 }
+
+/**
+ * Response returned after resolving a moderation queue item.
+ */
+export interface ResolveModerationQueueResponse {
+  success: boolean;
+  message: string;
+  moderation_status: ModerationStatus;
+  queue_item: ModerationQueueItem;
+}
+
 
 // ─────────────────────────────────────────────────────────────
 
@@ -65,7 +127,7 @@ export const moderationApi = createApi({
     },
   }),
 
-  tagTypes: ['ModerationQueue', 'ModerationMetrics'],
+  tagTypes: ['ModerationQueue'],
 
   endpoints: (builder) => ({
     // POST /moderation/submit
@@ -80,16 +142,28 @@ export const moderationApi = createApi({
       }),
     }),
 
-    // GET /moderation/queue (admin/moderator)
-    getModerationQueue: builder.query<ModerationQueueItem[], void>({
-      query: () => '/queue',
+    // GET /moderation/queue — platform moderators see everything; a brand member must pass
+    // their own brand_id and sees that brand's items.
+    getModerationQueue: builder.query<ModerationQueueItem[], ModerationQueueQuery>({
+      query: (params) => ({ url: '/queue', params }),
       providesTags: ['ModerationQueue'],
     }),
 
-    // GET /moderation/metrics (admin)
-    getModerationMetrics: builder.query<ModerationMetrics, void>({
-      query: () => '/metrics',
-      providesTags: ['ModerationMetrics'],
+
+    // POST /moderation/queue/:id/resolve
+    resolveModerationQueueItem: builder.mutation<
+      ResolveModerationQueueResponse,
+      {
+        id: string;
+        body: ResolveModerationQueueRequest;
+      }
+    >({
+      query: ({ id, body }) => ({
+        url: `/queue/${id}/resolve`,
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: ['ModerationQueue'],
     }),
   }),
 });
@@ -97,9 +171,7 @@ export const moderationApi = createApi({
 export const {
   useSubmitModerationReportMutation,
   useGetModerationQueueQuery,
-  useGetModerationMetricsQuery,
-  useLazyGetModerationQueueQuery,
-  useLazyGetModerationMetricsQuery,
+  useResolveModerationQueueItemMutation,
 } = moderationApi;
 
 export default moderationApi;

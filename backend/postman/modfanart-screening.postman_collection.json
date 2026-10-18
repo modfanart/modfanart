@@ -1,0 +1,851 @@
+{
+  "info": {
+    "name": "MOD — AI Screening Pipeline",
+    "description": "Backend demo for the AI artwork screening pipeline.\n\nRun the requests top to bottom. Each one stores what the next needs (id_token, artwork_id, run_id, queue_item_id) in collection variables, so there is nothing to copy by hand.\n\nAuth is a real Firebase ID token: request 01 signs in against Firebase's REST API using the same web API key the frontend uses, and every later request inherits that bearer token from the collection.\n\nSet SCREENING_ADAPTERS=mock on the API and worker so the pipeline runs end to end without AIORNOT/OpenAI keys.\n\nThe mock adapters steer off the artwork title (verified, with requireHumanReview disabled):\n  plain title  -> auto_approved\n  'reject'     -> auto_rejected\n  'flag'       -> flagged_manual (moderation)\n  'ai'         -> flagged_manual (authenticity fail)\n  'borderline' -> flagged_manual (borderline band)\n  'mockfail'   -> flagged_manual (stage unavailable)\n\nNote POST /api/artwork needs AWS S3 credentials. Without them, seed artworks with `npm run demo:seed` — they use public image URLs, which screening fetches over plain HTTP — and start from request 06 instead.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{id_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "firebase_api_key",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "demo_email",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "demo_password",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "id_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "firebase_uid",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "artwork_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "run_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "queue_item_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "brand_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "contest_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "contest_entry_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "00 — Setup",
+      "item": [
+        {
+          "name": "01 Sign in (mint Firebase ID token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('signed in', () => pm.response.to.have.status(200));",
+                  "",
+                  "if (body.idToken) {",
+                  "  pm.collectionVariables.set('id_token', body.idToken);",
+                  "  pm.collectionVariables.set('firebase_uid', body.localId);",
+                  "  console.log('Token stored. Firebase UID:', body.localId);",
+                  "} else {",
+                  "  console.log('No idToken in response:', JSON.stringify(body));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={{firebase_api_key}}",
+              "protocol": "https",
+              "host": [
+                "identitytoolkit",
+                "googleapis",
+                "com"
+              ],
+              "path": [
+                "v1",
+                "accounts:signInWithPassword"
+              ],
+              "query": [
+                {
+                  "key": "key",
+                  "value": "{{firebase_api_key}}"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{demo_email}}\",\n  \"password\": \"{{demo_password}}\",\n  \"returnSecureToken\": true\n}"
+            },
+            "description": "Exchanges the demo account's email/password for a real Firebase ID token, exactly as the web app does. The backend verifies this token with the Admin SDK, so no auth is stubbed or bypassed for the demo.\n\nNeeds `firebase_api_key` = NEXT_PUBLIC_FIREBASE_API_KEY from frontend/.env.local."
+          }
+        },
+        {
+          "name": "02 Sync user into local DB",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('user exists locally', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "console.log(pm.response.text());"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/sync",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "sync"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "description": "The Firebase token proves who you are; this creates the matching `users` row keyed on firebase_uid. Without it every authenticated route answers 403 'User not found. Call /api/auth/sync first.'\n\nAfter this, run `npm run demo:grant -- <email>` once so the account holds moderation.review and screening.manage."
+          }
+        }
+      ]
+    },
+    {
+      "name": "01 — Trigger the pipeline",
+      "item": [
+        {
+          "name": "03 Upload artwork (clean) — starts a screening run",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test('created', () => pm.response.to.have.status(201));",
+                  "",
+                  "if (body.artwork) {",
+                  "  pm.collectionVariables.set('artwork_id', body.artwork.id);",
+                  "  console.log('artwork_id =', body.artwork.id);",
+                  "}",
+                  "",
+                  "pm.test('a screening run was started', () => {",
+                  "  pm.expect(body.screening_run_id, 'screening_run_id').to.be.a('string');",
+                  "});",
+                  "",
+                  "if (body.screening_run_id) {",
+                  "  pm.collectionVariables.set('run_id', body.screening_run_id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/artwork",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "artwork"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "Pick any jpg/png. Required."
+                },
+                {
+                  "key": "title",
+                  "value": "A hand drawn cat",
+                  "type": "text",
+                  "description": "Mock adapters read the title. This one screens clean."
+                },
+                {
+                  "key": "description",
+                  "value": "ink on paper",
+                  "type": "text"
+                }
+              ]
+            },
+            "description": "The trigger. After the S3 upload and insert succeed, the controller sets moderation_status='pending' and enqueues a screening run — the response carries `screening_run_id`.\n\nThe hook is failure-tolerant: if Redis is down the upload still succeeds and screening_run_id comes back null, which is the behaviour you want on an artist-facing path."
+          }
+        },
+        {
+          "name": "04 Upload artwork (prohibited) — should be rejected",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test('created', () => pm.response.to.have.status(201));",
+                  "if (body.artwork) {",
+                  "  pm.collectionVariables.set('rejected_artwork_id', body.artwork.id);",
+                  "  console.log('rejected_artwork_id =', body.artwork.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/artwork",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "artwork"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                },
+                {
+                  "key": "title",
+                  "value": "reject this artwork",
+                  "type": "text",
+                  "description": "'reject' in the title drives the mock moderation adapter to 0.97, past autoRejectThreshold."
+                },
+                {
+                  "key": "description",
+                  "value": "demo of the reject path",
+                  "type": "text"
+                }
+              ]
+            },
+            "description": "Same endpoint, a title the mock moderation adapter flags. Use this to show the reject path and, immediately after, the dedupe path: upload the *same file* a third time and the pipeline short-circuits to manual review without calling a single paid API."
+          }
+        },
+        {
+          "name": "05 Find a live contest — grab a contestId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"ok\", () => pm.response.to.have.status(200));",
+                  "",
+                  "const body = pm.response.json();",
+                  "const list = Array.isArray(body) ? body : (body.contests || body.data || []);",
+                  "const live = list.find(c => c.status === \"live\") || list[0];",
+                  "",
+                  "if (live) {",
+                  "  pm.collectionVariables.set(\"contest_id\", live.id);",
+                  "  console.log(\"contest_id =\", live.id, \"|\", live.title);",
+                  "} else {",
+                  "  console.log(\"No contest found. Seed one, or set contest_id by hand.\");",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/contests?status=live",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "contests"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "live"
+                }
+              ]
+            },
+            "description": "Convenience step. Stores the first live contest as {{contest_id}} for the entry submission below.\n\nIf your dev data has no live contest, set contest_id manually — the entry endpoint requires status=live and an open submission window."
+          }
+        },
+        {
+          "name": "06 Submit artwork to a contest — screens again, in brand context",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "",
+                  "pm.test(\"entry created\", () => pm.response.to.have.status(201));",
+                  "",
+                  "if (body.entry) {",
+                  "  pm.collectionVariables.set(\"contest_entry_id\", body.entry.id);",
+                  "  console.log(\"contest_entry_id =\", body.entry.id);",
+                  "}",
+                  "",
+                  "pm.test(\"a second screening run was started\", () => {",
+                  "  pm.expect(body.screening_run_id, \"screening_run_id\").to.be.a(\"string\");",
+                  "});",
+                  "",
+                  "if (body.screening_run_id) {",
+                  "  pm.collectionVariables.set(\"run_id\", body.screening_run_id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/contests/{{contest_id}}/entries",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "contests",
+                "{{contest_id}}",
+                "entries"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"artworkId\": \"{{artwork_id}}\",\n  \"submissionNotes\": \"Ink on paper, drawn over two evenings.\\\\n\\\\nFandom / Original IP: Original\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "The second entry point into the pipeline, and the important one: this is the ONLY path where the style + IP stage actually runs.\n\nA standalone gallery upload has no brand context, so the style stage is skipped as `no_brand_context` and the run decides on authenticity + content safety alone. A contest entry inherits the contest owner brand, which means:\n\n  - the ruleset resolves to that brand latest version, not the platform default\n  - the brand style guide is loaded and the style stage runs\n  - the run records contest_entry_id, and BOTH artworks and contest_entries get the verdict\n\nRequires: the contest is `live`, the submission window is open, the artwork is yours and is published or draft, and you are under the per-user entry cap. Rate limited on the same per-artist budget as artwork upload.\n\nNote the response returns 201 with `screening_run_id` — the entry is created and screened even though a verdict has not landed yet."
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 — Screening resources",
+      "item": [
+        {
+          "name": "07 Screening history for an artwork",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('ok', () => pm.response.to.have.status(200));",
+                  "const runs = pm.response.json();",
+                  "",
+                  "if (Array.isArray(runs) && runs.length) {",
+                  "  const latest = runs[0];",
+                  "  pm.collectionVariables.set('run_id', latest.id);",
+                  "  console.log('status  :', latest.status);",
+                  "  console.log('decision:', latest.decision);",
+                  "  console.log('reasons :', JSON.stringify(latest.decision_reasons));",
+                  "  console.log('aiornot :', JSON.stringify(latest.aiornot));",
+                  "  console.log('modrn   :', JSON.stringify(latest.moderation));",
+                  "  console.log('style   :', JSON.stringify(latest.style));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/screening/runs/{{artwork_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "screening",
+                "runs",
+                "{{artwork_id}}"
+              ]
+            },
+            "description": "The money request for a demo. Shows every run for the artwork with the raw per-stage provider output, the decision, and the ordered rule hits that produced it.\n\nGive the worker a second after upload, then send this. status goes running -> complete.\n\nRequires the moderation.review permission."
+          }
+        },
+        {
+          "name": "08 Rescreen (manual re-run)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/screening/runs",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "screening",
+                "runs"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"artworkId\": \"{{artwork_id}}\"\n}"
+            },
+            "description": "Re-screens an artwork. Resets it to pending first so the eventual verdict is a legal transition, and writes a `screening.rescreen_requested` audit row — an override is never silent.\n\nThis is the rescreen path, deliberately separate from POST /api/moderation/submit, which is the user-reporting contract the frontend already calls."
+          }
+        },
+        {
+          "name": "09 Effective ruleset",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('ok', () => pm.response.to.have.status(200));",
+                  "console.log(JSON.stringify(pm.response.json(), null, 2));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/screening/rulesets",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "screening",
+                "rulesets"
+              ],
+              "query": [
+                {
+                  "key": "brand_id",
+                  "value": "{{brand_id}}",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Without brand_id you get the platform default (brand_id IS NULL). With it you get that brand's latest version, falling back to the platform default if the brand has never published one.\n\nNote the seeded default has requireHumanReview: true — nothing auto-approves on a fresh install until an operator publishes a ruleset that permits it. Field names mirror the compliance UI so the frontend maps 1:1."
+          }
+        },
+        {
+          "name": "10 Publish a new ruleset version (enables auto-approve)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "console.log(JSON.stringify(pm.response.json(), null, 2));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/screening/rulesets",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "screening",
+                "rulesets"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"brand_id\": \"{{brand_id}}\",\n  \"config\": {\n    \"enabled\": true,\n    \"requireHumanReview\": false,\n    \"aiDetectionThreshold\": 0.7,\n    \"confidenceThreshold\": 75,\n    \"autoRejectAI\": false,\n    \"contentSafetyThreshold\": 0.8,\n    \"autoRejectThreshold\": 0.9,\n    \"autoApproveThreshold\": 0.2,\n    \"ipComplianceThreshold\": 0.75,\n    \"styleEnabled\": false,\n    \"notifyArtist\": true,\n    \"sensitivityLevel\": \"balanced\"\n  }\n}"
+            },
+            "description": "Rulesets are immutable: an edit inserts a new version, never an UPDATE, so every past run stays explainable against the exact config that produced it. The response shows the version number incrementing.\n\nSetting requireHumanReview: false is what lets a clean submission reach auto_approved — good thing to show before/after. Drop brand_id to publish a new platform default instead.\n\nRequires screening.manage, or ownership of the brand."
+          }
+        },
+        {
+          "name": "11 Upload a brand style guide",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/screening/style-guides",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "screening",
+                "style-guides"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "brand_id",
+                  "value": "{{brand_id}}",
+                  "type": "text"
+                },
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "PDF or txt. Optional if you send source_text."
+                },
+                {
+                  "key": "source_text",
+                  "value": "Never depict the mascot without its helmet. Avoid pink and neon green. Tone: heroic, never comedic. No competitor logos or other studios' characters.",
+                  "type": "text",
+                  "description": "Simplest demo path — skip the file entirely and send text."
+                }
+              ]
+            },
+            "description": "Uploads the guide, extracts its text, and compiles it once into `parsed_rules` plus a `prompt_block` that gets injected into the style stage. Compiling at upload rather than per screening keeps the cost off the hot path.\n\nOnce a brand has a guide, the style stage stops skipping and starts returning style_score, brand_fit_score, ip_risk and violations[]. Copyright/IP lives here, not in OpenAI moderation, which has no such category."
+          }
+        },
+        {
+          "name": "12 List style guides",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/screening/style-guides?brand_id={{brand_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "screening",
+                "style-guides"
+              ],
+              "query": [
+                {
+                  "key": "brand_id",
+                  "value": "{{brand_id}}"
+                }
+              ]
+            },
+            "description": "Shows parse_status per guide, so a failed parse is visible rather than silently degrading the style stage."
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 — Human review",
+      "item": [
+        {
+          "name": "13 Review queue",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('ok', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "const items = body.items ?? body;",
+                  "",
+                  "if (Array.isArray(items) && items.length) {",
+                  "  pm.collectionVariables.set('queue_item_id', items[0].id);",
+                  "  console.log('queue_item_id =', items[0].id);",
+                  "  console.log('entity        :', items[0].entity_type, items[0].entity_id);",
+                  "  console.log('rule_matches  :', JSON.stringify(items[0].rule_matches));",
+                  "} else {",
+                  "  console.log('Queue empty — upload something that flags first.');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/moderation/queue?status=pending&limit=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "moderation",
+                "queue"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "entity_type",
+                  "value": "artwork",
+                  "disabled": true
+                },
+                {
+                  "key": "brand_id",
+                  "value": "{{brand_id}}",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Everything waiting on a human, newest-priority first, enriched with the screening run that flagged it — so a reviewer sees why without a second request.\n\nThis reuses the pre-existing polymorphic moderation_queue table rather than adding a parallel review table; the screening_run_id and rule_matches columns are the only additions."
+          }
+        },
+        {
+          "name": "14 Resolve a queue item (human override)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('resolved', () => pm.response.to.have.status(200));",
+                  "console.log(JSON.stringify(pm.response.json(), null, 2));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/moderation/queue/{{queue_item_id}}/resolve",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "moderation",
+                "queue",
+                "{{queue_item_id}}",
+                "resolve"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decision\": \"approved\",\n  \"notes\": \"Checked by hand at standup — genuine hand-drawn work.\"\n}"
+            },
+            "description": "decision is approved | rejected | escalated. Goes through the same single transition function as the automated path, in one transaction: queue item, artwork status, moderated_by/at, and the audited_events row all move together or not at all.\n\nSend it twice to show it refuses to double-review an already-resolved item."
+          }
+        },
+        {
+          "name": "15 Metrics",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('ok', () => pm.response.to.have.status(200));",
+                  "console.log(JSON.stringify(pm.response.json(), null, 2));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/moderation/metrics",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "moderation",
+                "metrics"
+              ]
+            },
+            "description": "Decision split, run statuses, queue depth and average human resolution time, all computed on read from screening_runs and moderation_queue. No stats table until one is proven necessary."
+          }
+        },
+        {
+          "name": "16 User report (existing frontend contract)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/moderation/submit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "moderation",
+                "submit"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"entity_type\": \"artwork\",\n  \"entity_id\": \"{{artwork_id}}\",\n  \"violation_type\": \"copyright\",\n  \"description\": \"Looks traced from a published comic panel.\"\n}"
+            },
+            "description": "Worth showing so nobody assumes screening squatted this path. moderationApi.ts in the frontend has always called /moderation/submit as a *user reporting* endpoint; it still does, and reports land in the same review queue. Rescreening is POST /api/screening/runs instead.\n\nRate limited to 30/min per account."
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 — Negative checks (worth showing)",
+      "item": [
+        {
+          "name": "17 No token → 401",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/moderation/queue",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "moderation",
+                "queue"
+              ]
+            },
+            "description": "Every new route sits behind authenticateToken. Expect 401 'No token provided'."
+          }
+        },
+        {
+          "name": "18 Bad UUID → 400 with field detail",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/screening/runs",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "screening",
+                "runs"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"artworkId\": \"not-a-uuid\"\n}"
+            },
+            "description": "zod validates every new route's body and reports the offending path, rather than surfacing a Postgres cast error as a 500."
+          }
+        }
+      ]
+    }
+  ]
+}

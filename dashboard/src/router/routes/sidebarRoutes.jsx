@@ -1,6 +1,6 @@
 // src/routes/sidebarRoutes.js
 import {
-  Users, Storefront, ShieldCheck, Trophy, ClipboardTextIcon, SquaresFour, Question, ShoppingBag
+  Users, Storefront, ShieldCheck, Trophy, ClipboardTextIcon, SquaresFour, Question, ShoppingBag, Robot
 } from "@phosphor-icons/react"
 import Dashboard from "../../concepts/dashboard/DashboardPage"
 import ProjectsTasksList from "../../concepts/tasks/ProjectTasksList"
@@ -9,6 +9,7 @@ import BrandsListPage from "../../concepts/brands/BrandsList"
 import UsersPage from "../../concepts/team-permissions/UsersPage";
 import OpportunitiesPage from "../../concepts/opportunities/OpportunitiesPage";
 import SubmissionsPage from "../../concepts/submissions/SubmissionsPage";
+import ModerationPage from "../../concepts/moderation/ModerationPage";
 import Queries from "../../concepts/queries/QueriesPage";
 import JudgeList from "../../concepts/judges/JudgesList";
 import { File } from "@phosphor-icons/react/dist/ssr";
@@ -56,6 +57,13 @@ export const sidebarRoutes = [
     icon: <ClipboardTextIcon {...iconProps} />,
     isSidebarActive: true,
     element: <SubmissionsPage />,
+  },
+  {
+    path: "/admin/moderation",
+    name: "AI Moderation",
+    icon: <Robot {...iconProps} />,
+    isSidebarActive: true,
+    element: <ModerationPage />,
   },
   {
     path: "/judging",
