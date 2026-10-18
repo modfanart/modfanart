@@ -25,7 +25,6 @@ export const adminApi = createApi({
     "UsersList",
     "UserDetail",
     "PendingVerifications",
-    "ModerationQueue",
   ],
 
   endpoints: (builder) => ({
@@ -117,22 +116,6 @@ export const adminApi = createApi({
 
       invalidatesTags: ["PendingVerifications", "PlatformStats"],
     }),
-
-    // ─────────────────────────────────────
-    // Moderation Queue
-    // ─────────────────────────────────────
-    getModerationQueue: builder.query({
-      query: (params = {}) => ({
-        url: "/admin/moderation/queue",
-        params: {
-          entity_type: params.entity_type,
-          limit: params.limit ?? 20,
-          page: params.page ?? 1,
-        },
-      }),
-
-      providesTags: ["ModerationQueue"],
-    }),
   }),
 });
 
@@ -147,5 +130,4 @@ export const {
   useDeleteUserMutation,
   useGetPendingBrandVerificationsQuery,
   useVerifyBrandMutation,
-  useGetModerationQueueQuery,
 } = adminApi;
