@@ -28,6 +28,9 @@ import { contactApi } from '@/services/api/contactApi';
 // ────────────────────────────────────────────────
 import authReducer from '@/services/api/features/authSlice';
 import { adminApi } from '@/services/api/adminApi';
+import { merchApi } from '@/services/api/merchApi';
+import { cartApi } from '@/services/api/cartApi';
+
 // import otherSliceReducer from '@/features/other/otherSlice';  // add more as needed
 
 // Auth state is restored via the Firebase onIdTokenChanged listener in Providers.tsx.
@@ -62,6 +65,8 @@ export const store = configureStore({
     [collectionsApi.reducerPath]: collectionsApi.reducer,
     [searchApi.reducerPath]: searchApi.reducer,
     [notifyApi.reducerPath]: notifyApi.reducer,
+    [merchApi.reducerPath]: merchApi.reducer,
+    [cartApi.reducerPath]: cartApi.reducer,
   },
 
   middleware: (getDefaultMiddleware) =>
@@ -88,7 +93,10 @@ export const store = configureStore({
       brandApi.middleware,
       collectionsApi.middleware,
       searchApi.middleware,
-      notifyApi.middleware
+      notifyApi.middleware,
+      merchApi.middleware,
+      cartApi.middleware
+
       // add more .middleware when you create new api slices
     ),
 

@@ -1,260 +1,292 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
+import {
+  useGetProductQuery,
+} from '@/services/api/merchApi';
+import { useAddMerchItemMutation } from '@/services/api/cartApi';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { ShoppingCart, Heart, Share2, ArrowLeft, Check, Star, StarHalf } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { useToast } from '@/components/ui/use-toaster';
+import { Loader2, ShoppingCart, ArrowLeft } from 'lucide-react';
+import type { MerchVariant } from '@/types/merch';
 
-// → Import your RTK Query hook
-import { useGetArtworkQuery } from '@/services/api/artworkApi';
-
-// You can keep or remove this type — we're moving toward Artwork shape
-interface RelatedProductCardProps {
-  id: string;
-  title: string;
-  price: number;
-  imageUrl: string;
-  artist: string;
-  brand: string;
-  isNew: boolean;
-  isBestseller: boolean;
-  slug: string;
-}
-
-export default function ProductPage() {
+export default function ProductDetailPage() {
   const params = useParams();
-  const { id } = useParams<{ id: string }>();
+  const id = params.id as string;
   const router = useRouter();
   const { toast } = useToast();
 
-  // Fetch real artwork from backend
-  const {
-    data: artwork,
-    isLoading,
-    isError,
-    error,
-  } = useGetArtworkQuery(id, {
-    skip: !id,
-  });
+  const { data, isLoading, isError } = useGetProductQuery(id);
+  const [addMerchItem, { isLoading: isAdding }] = useAddMerchItemMutation();
 
-  const [selectedImage] = useState(0); // only one image for now
+  const product = data?.product;
+  const variants = (product?.variants ?? []).filter((v) => v.is_active);
+
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(
+    null
+  );
   const [quantity, setQuantity] = useState(1);
 
-  // You can derive these from artwork later (or add pricing to backend)
-  const price = 24.99; // ← placeholder — add to Artwork model?
-  const rating = 4.6; // ← placeholder
-  const reviewCount = 83; // ← placeholder
-  const inStock = true;
+  // Auto-select first variant when loaded
+  const activeVariant: MerchVariant | null = useMemo(() => {
+    if (!variants.length) return null;
+    if (selectedVariantId) {
+      return variants.find((v) => v.id === selectedVariantId) ?? variants[0];
+    }
+    return variants[0];
+  }, [variants, selectedVariantId]);
 
-  // You can map categories or hardcode brand/artist for display
-  const brand = 'Marvel'; // ← derive from categories / metadata later
-  const artist = 'Official Studio'; // ← placeholder
+  const sizes = useMemo(
+    () =>
+      Array.from(
+        new Set(variants.map((v) => v.size).filter(Boolean) as string[])
+      ),
+    [variants]
+  );
+  const colors = useMemo(
+    () =>
+      Array.from(
+        new Set(variants.map((v) => v.color).filter(Boolean) as string[])
+      ),
+    [variants]
+  );
+
+  const handleAddToCart = async () => {
+    if (!activeVariant) {
+      toast({
+        title: 'Select options',
+        description: 'Please choose a variant first.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    try {
+      await addMerchItem({
+        merch_variant_id: activeVariant.id,
+        quantity,
+      }).unwrap();
+      toast({
+        title: 'Added to cart',
+        description: `${product?.title} × ${quantity}`,
+      });
+    } catch (err: any) {
+      toast({
+        title: 'Could not add to cart',
+        description: err?.data?.error || 'Please sign in and try again.',
+        variant: 'destructive',
+      });
+    }
+  };
 
   if (isLoading) {
     return (
-      <div className="container flex h-[70vh] items-center justify-center">
-        <div className="text-center">
-          <div className="h-16 w-16 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="mt-4 text-muted-foreground">Loading artwork...</p>
-        </div>
+      <div className="container mx-auto flex min-h-[50vh] items-center justify-center px-4">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
-  if (isError || !artwork) {
+  if (isError || !product) {
     return (
-      <div className="container flex h-[50vh] items-center justify-center px-4 py-8 md:px-6 md:py-12">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold">Artwork Not Found</h1>
-          <p className="mt-2 text-muted-foreground">
-            {error ? 'Failed to load artwork.' : "The item you're looking for doesn't exist."}
-          </p>
-          <Button className="mt-4" asChild>
-            <Link href="/marketplace">Back to Marketplace</Link>
-          </Button>
-        </div>
+      <div className="container mx-auto flex min-h-[50vh] flex-col items-center justify-center gap-4 px-4">
+        <p className="text-muted-foreground">Product not found.</p>
+        <Button asChild variant="outline">
+          <Link href="/storefront">Back to marketplace</Link>
+        </Button>
       </div>
     );
   }
 
-  const handleAddToCart = () => {
-    toast({
-      title: 'Added to cart',
-      description: `${artwork.title} × ${quantity}`,
-    });
-  };
+  const imageUrl =
+    product.primary_image_url ||
+    product.artwork?.thumbnail_url ||
+    '/placeholder-product.png';
 
-  const handleBuyNow = () => {
-    toast({ title: 'Proceeding to checkout...' });
-    router.push('/marketplace/checkout');
-  };
-
-  const renderStars = (rating: number) => {
-    const stars = [];
-    const full = Math.floor(rating);
-    const half = rating % 1 >= 0.5;
-
-    for (let i = 0; i < full; i++) {
-      stars.push(<Star key={`f-${i}`} className="h-4 w-4 fill-yellow-400 text-yellow-400" />);
-    }
-    if (half) {
-      stars.push(<StarHalf key="half" className="h-4 w-4 fill-yellow-400 text-yellow-400" />);
-    }
-    const empty = 5 - stars.length;
-    for (let i = 0; i < empty; i++) {
-      stars.push(<Star key={`e-${i}`} className="h-4 w-4 text-gray-300" />);
-    }
-    return stars;
-  };
+  const priceCents = activeVariant?.price_usd_cents ?? 0;
 
   return (
-    <div className="container px-4 py-8 md:px-6 md:py-12">
-      <div className="mb-6">
-        <Button variant="ghost" size="sm" asChild className="mb-4">
-          <Link href="/marketplace" className="flex items-center">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Marketplace
-          </Link>
-        </Button>
+    <div className="container mx-auto px-4 py-8">
+      <Button
+        variant="ghost"
+        size="sm"
+        className="mb-6"
+        onClick={() => router.back()}
+      >
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Back
+      </Button>
 
-        <div className="flex flex-col gap-8 lg:flex-row">
-          {/* Image Section */}
-          <div className="flex flex-col gap-4 lg:w-1/2">
-            <div className="relative aspect-square overflow-hidden rounded-lg border">
-              <Image
-                src={
-                  artwork.file_url ||
-                  artwork.thumbnail_url ||
-                  '/placeholder.svg?height=600&width=600'
-                }
-                alt={artwork.title}
-                fill
-                className="object-cover"
-                priority
-              />
-            </div>
-            {/* Add thumbnail carousel later when multiple images supported */}
-          </div>
-
-          {/* Info Section */}
-          <div className="flex flex-col lg:w-1/2">
-            <div>
-              <div className="flex items-start justify-between">
-                <div>
-                  <h1 className="text-2xl font-bold md:text-3xl">{artwork.title}</h1>
-                  <div className="mt-1 text-sm text-muted-foreground">
-                    {brand} • {artist}
-                  </div>
-                  <div className="mt-2 flex items-center">
-                    <div className="flex">{renderStars(rating)}</div>
-                    <span className="ml-2 text-sm text-muted-foreground">
-                      ({reviewCount} reviews)
-                    </span>
-                    {inStock ? (
-                      <span className="ml-4 text-sm font-medium text-green-600">In Stock</span>
-                    ) : (
-                      <span className="ml-4 text-sm font-medium text-red-600">Out of Stock</span>
-                    )}
-                  </div>
-                </div>
-                <div className="text-2xl font-bold">${price.toFixed(2)}</div>
-              </div>
-
-              <p className="mt-4">{artwork.description || 'No description provided.'}</p>
-
-              {/* Quantity + Actions */}
-              <div className="mt-8 space-y-6">
-                <div>
-                  <h3 className="mb-3 text-sm font-medium">Quantity</h3>
-                  <div className="flex h-10 w-32 items-center">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-full rounded-r-none"
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      disabled={quantity <= 1}
-                    >
-                      -
-                    </Button>
-                    <div className="flex h-full flex-1 items-center justify-center border-y">
-                      {quantity}
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-full rounded-l-none"
-                      onClick={() => setQuantity(quantity + 1)}
-                    >
-                      +
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-3 sm:flex-row">
-                  <Button className="flex-1 gap-2" onClick={handleAddToCart}>
-                    <ShoppingCart className="h-4 w-4" />
-                    Add to Cart
-                  </Button>
-                  <Button variant="secondary" className="flex-1 gap-2" onClick={handleBuyNow}>
-                    Buy Now
-                  </Button>
-                </div>
-
-                <div className="flex gap-4">
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <Heart className="h-4 w-4" /> Wishlist
-                  </Button>
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <Share2 className="h-4 w-4" /> Share
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            <Separator className="my-8" />
-
-            <Tabs defaultValue="details">
-              <TabsList>
-                <TabsTrigger value="details">Details</TabsTrigger>
-                <TabsTrigger value="shipping">Shipping</TabsTrigger>
-              </TabsList>
-              <TabsContent value="details" className="mt-4 space-y-4">
-                <ul className="space-y-2">
-                  <li className="flex items-start gap-2">
-                    <Check className="h-5 w-5 shrink-0 text-green-500" />
-                    <span>Digital download / Physical print (depending on product)</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="h-5 w-5 shrink-0 text-green-500" />
-                    <span>Created {new Date(artwork.created_at).toLocaleDateString()}</span>
-                  </li>
-                  {/* Add more from metadata when available */}
-                </ul>
-              </TabsContent>
-              <TabsContent value="shipping" className="mt-4 space-y-4">
-                <p>Shipping details coming soon...</p>
-              </TabsContent>
-            </Tabs>
-          </div>
+      <div className="grid gap-8 lg:grid-cols-2">
+        <div className="relative aspect-square overflow-hidden rounded-xl border bg-muted">
+          <Image
+            src={imageUrl}
+            alt={product.title}
+            fill
+            className="object-cover"
+            priority
+            sizes="(max-width: 1024px) 100vw, 50vw"
+          />
         </div>
-      </div>
 
-      {/* Reviews, related products — keep your existing code or placeholder */}
-      <div className="mt-16">
-        <h2 className="mb-6 text-2xl font-bold">Customer Reviews</h2>
-        <p className="text-muted-foreground">Reviews coming soon...</p>
-      </div>
+        <div className="flex flex-col gap-6">
+          <div>
+            <div className="mb-2 flex flex-wrap gap-2">
+              <Badge variant="secondary" className="capitalize">
+                {product.base_product_type.replace('_', ' ')}
+              </Badge>
+              <Badge variant="outline" className="capitalize">
+                {product.fulfillment_type.replace(/_/g, ' ')}
+              </Badge>
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight">
+              {product.title}
+            </h1>
+            {product.seller?.username && (
+              <p className="mt-1 text-sm text-muted-foreground">
+                Sold by {product.seller.username}
+              </p>
+            )}
+          </div>
 
-      <div className="mt-16">
-        <h2 className="mb-6 text-2xl font-bold">You May Also Like</h2>
-        <p className="text-muted-foreground">Related products coming soon...</p>
+          <p className="text-2xl font-semibold">
+            {new Intl.NumberFormat('en-US', {
+              style: 'currency',
+              currency: 'USD',
+            }).format(priceCents / 100)}
+          </p>
+
+          {product.description && (
+            <p className="text-muted-foreground whitespace-pre-wrap">
+              {product.description}
+            </p>
+          )}
+
+          {variants.length > 0 && (
+            <div className="space-y-4">
+              {sizes.length > 0 && (
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium">
+                    Size
+                  </label>
+                  <Select
+                    value={activeVariant?.size ?? undefined}
+                    onValueChange={(size) => {
+                      const match = variants.find(
+                        (v) =>
+                          v.size === size &&
+                          (activeVariant?.color
+                            ? v.color === activeVariant.color
+                            : true)
+                      );
+                      if (match) setSelectedVariantId(match.id);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select size" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {sizes.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {s}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {colors.length > 0 && (
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium">
+                    Color
+                  </label>
+                  <Select
+                    value={activeVariant?.color ?? undefined}
+                    onValueChange={(color) => {
+                      const match = variants.find(
+                        (v) =>
+                          v.color === color &&
+                          (activeVariant?.size
+                            ? v.size === activeVariant.size
+                            : true)
+                      );
+                      if (match) setSelectedVariantId(match.id);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select color" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {colors.map((c) => (
+                        <SelectItem key={c} value={c}>
+                          {c}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div>
+                <label className="mb-1.5 block text-sm font-medium">
+                  Quantity
+                </label>
+                <Select
+                  value={String(quantity)}
+                  onValueChange={(v) => setQuantity(Number(v))}
+                >
+                  <SelectTrigger className="w-24">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                      <SelectItem key={n} value={String(n)}>
+                        {n}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-3 pt-2">
+            <Button
+              size="lg"
+              onClick={handleAddToCart}
+              disabled={!activeVariant || isAdding}
+            >
+              {isAdding ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <ShoppingCart className="mr-2 h-4 w-4" />
+              )}
+              Add to cart
+            </Button>
+            <Button size="lg" variant="outline" asChild>
+              <Link href="/cart">Go to cart</Link>
+            </Button>
+          </div>
+
+          {activeVariant?.stock_qty != null && (
+            <p className="text-sm text-muted-foreground">
+              {activeVariant.stock_qty > 0
+                ? `${activeVariant.stock_qty} in stock`
+                : 'Out of stock'}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

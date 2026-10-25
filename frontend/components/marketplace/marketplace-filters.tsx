@@ -1,152 +1,58 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-
-import { Checkbox } from '@/components/ui/checkbox';
-import { Separator } from '@/components/ui/separator';
-import { Slider } from '@/components/ui/slider';
-
-type Filters = {
-  priceRange: number[];
-  categories: string[];
-  brands: string[];
-};
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface MarketplaceFiltersProps {
-  onFilterChange: (filters: Filters) => void;
+  baseType: string;
+  onBaseTypeChange: (v: string) => void;
+  sortBy: 'newest' | 'price_asc' | 'price_desc';
+  onSortByChange: (v: 'newest' | 'price_asc' | 'price_desc') => void;
+  baseTypes: readonly string[];
 }
 
-export function MarketplaceFilters({ onFilterChange }: MarketplaceFiltersProps) {
-  const [priceRange, setPriceRange] = useState<number[]>([0, 100]);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
-  const isInitialMount = useRef(true);
-
-  // Available categories
-  const categories = [
-    { id: 'apparel', label: 'Apparel' },
-    { id: 'posters', label: 'Posters & Prints' },
-    { id: 'accessories', label: 'Accessories' },
-    { id: 'stickers', label: 'Stickers' },
-    { id: 'collectibles', label: 'Collectibles' },
-    { id: 'digital', label: 'Digital Items' },
-  ];
-
-  // Popular brands/IPs
-  const brands = [
-    { id: 'marvel', label: 'Marvel' },
-    { id: 'nintendo', label: 'Nintendo' },
-    { id: 'fantasy', label: 'Fantasy Realms' },
-    { id: 'anime', label: 'Anime Studio' },
-    { id: 'scifi', label: 'Sci-Fi Universe' },
-    { id: 'gaming', label: 'Classic Gaming' },
-  ];
-
-  useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
-
-    onFilterChange({
-      priceRange,
-      categories: selectedCategories,
-      brands: selectedBrands,
-    });
-  }, [priceRange, selectedCategories, selectedBrands, onFilterChange]);
-
-  const handleCategoryChange = (categoryId: string, checked: boolean) => {
-    setSelectedCategories((prev) =>
-      checked ? [...prev, categoryId] : prev.filter((id) => id !== categoryId)
-    );
-  };
-
-  const handleBrandChange = (brandId: string, checked: boolean) => {
-    setSelectedBrands((prev) =>
-      checked ? [...prev, brandId] : prev.filter((id) => id !== brandId)
-    );
-  };
-
-  const handlePriceChange = (value: number[]) => {
-    setPriceRange(value);
-  };
-
-  const resetFilters = () => {
-    setPriceRange([0, 100]);
-    setSelectedCategories([]);
-    setSelectedBrands([]);
-  };
-
+export function MarketplaceFilters({
+  baseType,
+  onBaseTypeChange,
+  sortBy,
+  onSortByChange,
+  baseTypes,
+}: MarketplaceFiltersProps) {
   return (
-    <div className="space-y-6">
-      <div>
-        <h3 className="mb-4 text-lg font-medium">Filters</h3>
-        <button onClick={resetFilters} className="text-sm text-primary hover:underline">
-          Reset all filters
-        </button>
-      </div>
-
-      <div>
-        <h4 className="mb-2 text-sm font-medium">Price Range</h4>
-        <Slider
-          defaultValue={[0, 100]}
-          max={100}
-          step={1}
-          value={priceRange}
-          onValueChange={handlePriceChange}
-          className="my-6"
-        />
-        <div className="flex items-center justify-between">
-          <span className="text-sm">${priceRange[0]}</span>
-          <span className="text-sm">${priceRange[1]}+</span>
-        </div>
-      </div>
-
-      <Separator />
-
-      <div>
-        <h4 className="mb-2 text-sm font-medium">Categories</h4>
-        <div className="space-y-2">
-          {categories.map((category) => (
-            <div key={category.id} className="flex items-center space-x-2">
-              <Checkbox
-                id={`category-${category.id}`}
-                checked={selectedCategories.includes(category.id)}
-                onCheckedChange={(checked) => handleCategoryChange(category.id, checked === true)}
-              />
-              <label
-                htmlFor={`category-${category.id}`}
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                {category.label}
-              </label>
-            </div>
+    <div className="flex flex-wrap gap-2">
+      <Select value={baseType} onValueChange={onBaseTypeChange}>
+        <SelectTrigger className="w-[160px]">
+          <SelectValue placeholder="Product type" />
+        </SelectTrigger>
+        <SelectContent>
+          {baseTypes.map((t) => (
+            <SelectItem key={t} value={t} className="capitalize">
+              {t === 'all' ? 'All types' : t.replace('_', ' ')}
+            </SelectItem>
           ))}
-        </div>
-      </div>
+        </SelectContent>
+      </Select>
 
-      <Separator />
-
-      <div>
-        <h4 className="mb-2 text-sm font-medium">Brands</h4>
-        <div className="space-y-2">
-          {brands.map((brand) => (
-            <div key={brand.id} className="flex items-center space-x-2">
-              <Checkbox
-                id={`brand-${brand.id}`}
-                checked={selectedBrands.includes(brand.id)}
-                onCheckedChange={(checked) => handleBrandChange(brand.id, checked === true)}
-              />
-              <label
-                htmlFor={`brand-${brand.id}`}
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                {brand.label}
-              </label>
-            </div>
-          ))}
-        </div>
-      </div>
+      <Select
+        value={sortBy}
+        onValueChange={(v) =>
+          onSortByChange(v as 'newest' | 'price_asc' | 'price_desc')
+        }
+      >
+        <SelectTrigger className="w-[160px]">
+          <SelectValue placeholder="Sort by" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="newest">Newest</SelectItem>
+          <SelectItem value="price_asc">Price: Low to High</SelectItem>
+          <SelectItem value="price_desc">Price: High to Low</SelectItem>
+        </SelectContent>
+      </Select>
     </div>
   );
 }
