@@ -97,6 +97,9 @@ class LicensePurchaseController {
           quantity: 1,
           description: `${tier.license_type} license for "${artwork.title || 'Artwork'}"`,
           metadata: { pricing_tier_id },
+          // payout.service skips lines without a seller, and the migration's
+          // backfill only covered rows that existed at migration time.
+          seller_id: artwork.creator_id,
         })
         .execute();
 

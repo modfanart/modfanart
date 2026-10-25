@@ -36,4 +36,13 @@ router.patch(
   controller.markFailed
 );
 
+// Retry automatic Stripe Connect settlement for one payout (seller connected
+// after the sale, or the transfer failed). The amount is always the ledger's
+// net_cents; nothing about the payout can be set from the request.
+router.post(
+  '/:id/settle',
+  hasPermission('payouts.manage'),
+  controller.settle
+);
+
 module.exports = router;

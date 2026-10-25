@@ -49,6 +49,36 @@ async function findAllWithContext({ status, sellerId, limit = 100, offset = 0 } 
   return q.execute();
 }
 
+async function findByOrder(orderId, trx = db) {
+  return trx
+    .selectFrom('payouts')
+    .innerJoin('order_items', 'order_items.id', 'payouts.order_item_id')
+    .selectAll('payouts')
+    .where('order_items.order_id', '=', orderId)
+    .orderBy('payouts.created_at', 'asc')
+    .execute();
+}
+
+async function findOrderRefForPayout(payoutId, trx = db) {
+  return trx
+    .selectFrom('payouts')
+    .innerJoin('order_items', 'order_items.id', 'payouts.order_item_id')
+    .innerJoin('orders', 'orders.id', 'order_items.order_id')
+    .select(['orders.id as order_id', 'orders.stripe_payment_intent_id'])
+    .where('payouts.id', '=', payoutId)
+    .executeTakeFirst();
+}
+
+async function findPaymentIntentIdForOrder(orderId, trx = db) {
+  const row = await trx
+    .selectFrom('orders')
+    .select('stripe_payment_intent_id')
+    .where('id', '=', orderId)
+    .executeTakeFirst();
+
+  return row?.stripe_payment_intent_id || null;
+}
+
 async function findByOrderItem(orderItemId, trx = db) {
   return trx
     .selectFrom('payouts')
@@ -71,6 +101,9 @@ module.exports = {
   findById,
   findBySeller,
   findAllWithContext,
+  findByOrder,
   findByOrderItem,
+  findOrderRefForPayout,
+  findPaymentIntentIdForOrder,
   updateStatus,
 };
