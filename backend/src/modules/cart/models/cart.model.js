@@ -42,7 +42,7 @@ async function getCartItems(cartId, trx = db) {
     .leftJoin('artwork_pricing_tiers as apt', (join) =>
       join
         .onRef('apt.artwork_id', '=', 'ci.artwork_id')
-        .onRef('apt.license_type', '=', 'ci.license_type')
+        .on(sql`apt.license_type::text = ci.license_type`)
     )
     .select([
       'ci.id',
@@ -94,7 +94,7 @@ async function getCartItemsForCheckout(cartId, trx = db) {
     .leftJoin('artwork_pricing_tiers as apt', (join) =>
       join
         .onRef('apt.artwork_id', '=', 'ci.artwork_id')
-        .onRef('apt.license_type', '=', 'ci.license_type')
+        .on(sql`apt.license_type::text = ci.license_type`)
     )
     .select([
       'ci.id',
