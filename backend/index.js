@@ -74,6 +74,12 @@ app.use(
 app.use(limiter);
 
 // ====================== MIDDLEWARE ======================
+// Stripe signature verification needs the *raw* request body. The webhook
+// router used to apply express.raw itself, but by then the global
+// express.json() below had already consumed and parsed the body, so
+// constructEvent always failed. Register the raw parser for that one path
+// first; express.json() skips requests whose body has already been read.
+app.use('/api/payout/stripe', express.raw({ type: 'application/json' }));
 app.use(express.json());
 app.use(requestLogger);
 app.use(attachDb);
@@ -145,6 +151,17 @@ const routes = [
     path: '/api/review',
     module: './src/modules/review/review.route.js',
   },
+  // ── Merch marketplace ──────────────────────────────────────────────
+  // Cart-checkout orders: list/detail/pay/confirm/cancel, plus the
+  // /:orderId/fulfillments sub-router (shipping + tracking).
+  { path: '/api/orders', module: './src/modules/orders/order.routes.js' },
+  // Seller onboarding + admin approval.
+  {
+    path: '/api/seller-profiles',
+    module: './src/modules/merch/sellerProfile.routes.js',
+  },
+  // Buyer shipping address book.
+  { path: '/api/addresses', module: './src/modules/address/address.routes.js' },
 ];
 
 routes.forEach(({ path, module: mod }) => {

@@ -43,9 +43,47 @@ async function getMyProducts(req, res) {
 
 async function getPublishedProducts(req, res) {
   try {
-    const products = await service.getPublishedProducts();
+    const products = await service.getPublishedProducts({
+      search: req.query.search,
+      type: req.query.type,
+      fulfillment_type: req.query.fulfillment_type,
+      brand_id: req.query.brand_id,
+      seller_id: req.query.seller_id,
+      artwork_id: req.query.artwork_id,
+      sort: req.query.sort,
+    });
 
     return res.json({ products });
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+
+async function getPendingProducts(req, res) {
+  try {
+    const products = await service.getPendingReviewProducts();
+
+    return res.json({ products });
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+
+async function getPrintProviders(req, res) {
+  try {
+    const providers = await service.listPrintProviders();
+
+    return res.json({ providers });
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+
+async function getMySummary(req, res) {
+  try {
+    const summary = await service.getSellerSummary(req.user.id);
+
+    return res.json({ summary });
   } catch (error) {
     return handleError(res, error);
   }
@@ -162,6 +200,9 @@ module.exports = {
   getProduct,
   getMyProducts,
   getPublishedProducts,
+  getPendingProducts,
+  getPrintProviders,
+  getMySummary,
   updateProduct,
   submitForReview,
   moderateProduct,

@@ -7,16 +7,33 @@ const {
 const payoutService = require("../../payout/payout.service");
 
 class OrderFulfillmentService {
+  // Entry point for a succeeded PaymentIntent. Handles both shapes:
+  //  - legacy single-license purchases:  metadata.order_id
+  //  - cart checkouts (one payment, N per-seller orders): metadata.order_ids
+  // Idempotent per order — already-processed orders are skipped, so the
+  // Stripe webhook and the frontend's confirm-payment call can both run.
   static async fulfillOrder(paymentIntent) {
-    const orderId = paymentIntent.metadata?.order_id;
+    const raw =
+      paymentIntent.metadata?.order_ids || paymentIntent.metadata?.order_id;
 
-    if (!orderId) {
+    if (!raw) {
       throw new Error("Missing order_id in payment intent metadata");
     }
 
+    const orderIds = raw.split(",").filter(Boolean);
+    const results = [];
+
+    for (const orderId of orderIds) {
+      results.push(await this.fulfillSingleOrder(orderId, paymentIntent));
+    }
+
+    return results.length === 1 ? results[0] : { success: true, results };
+  }
+
+  static async fulfillSingleOrder(orderId, paymentIntent) {
     const order = await db
       .selectFrom("orders")
-      .select(["id", "status"])
+      .selectAll()
       .where("id", "=", orderId)
       .executeTakeFirst();
 
@@ -26,38 +43,29 @@ class OrderFulfillmentService {
 
     if (order.status !== "pending") {
       console.log(`Order ${orderId} already ${order.status} - skipping`);
-      return { alreadyProcessed: true };
+      return { alreadyProcessed: true, orderId };
     }
 
-    return await db.transaction().execute(async (trx) => {
-      const orderItem = await trx
+    const buyerId = order.buyer_id || paymentIntent.metadata?.buyer_id;
+
+    const outcome = await db.transaction().execute(async (trx) => {
+      const items = await trx
         .selectFrom("order_items")
-        .select(["id", "artwork_id", "license_type"])
+        .selectAll()
         .where("order_id", "=", orderId)
-        .executeTakeFirstOrThrow();
-
-      const artwork = await trx
-        .selectFrom("artworks")
-        .select(["id", "title", "creator_id"])
-        .where("id", "=", orderItem.artwork_id)
-        .executeTakeFirstOrThrow();
-
-      const seller = await trx
-        .selectFrom("users")
-        .select(["id", "username", "email"])
-        .where("id", "=", artwork.creator_id)
-        .executeTakeFirstOrThrow();
+        .execute();
 
       const buyer = await trx
         .selectFrom("users")
         .select(["id", "username", "email"])
-        .where("id", "=", paymentIntent.metadata.buyer_id)
+        .where("id", "=", buyerId)
         .executeTakeFirstOrThrow();
 
       await trx
         .updateTable("orders")
         .set({
           status: "paid",
+          stripe_payment_intent_id: paymentIntent.id,
           stripe_charge_id:
             paymentIntent.latest_charge || paymentIntent.charges?.data?.[0]?.id,
           paid_at: new Date().toISOString(),
@@ -66,103 +74,153 @@ class OrderFulfillmentService {
         .where("id", "=", orderId)
         .execute();
 
-      const licenseId = randomUUID();
+      // Digital licenses are issued the moment payment lands. Merch lines
+      // stay open until the seller ships them (see fulfillment.service).
+      const licenseItems = items.filter(
+        (i) => (i.item_type || "license") === "license"
+      );
+      const hasMerch = items.some((i) => i.item_type === "merch_variant");
+      const issued = [];
 
-      await trx
-        .insertInto("licenses")
-        .values({
-          id: licenseId,
-          order_item_id: orderItem.id,
-          artwork_id: orderItem.artwork_id,
-          buyer_id: paymentIntent.metadata.buyer_id,
-          seller_id: artwork.creator_id,
-          license_type: orderItem.license_type,
-          contract_pdf_url: null,
-          is_active: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .execute();
+      for (const item of licenseItems) {
+        const artwork = await trx
+          .selectFrom("artworks")
+          .select(["id", "title", "creator_id"])
+          .where("id", "=", item.artwork_id)
+          .executeTakeFirstOrThrow();
 
-      let contractUrl = null;
-      let invoiceUrl = null;
+        const seller = await trx
+          .selectFrom("users")
+          .select(["id", "username", "email"])
+          .where("id", "=", item.seller_id || artwork.creator_id)
+          .executeTakeFirstOrThrow();
 
-      try {
-        [contractUrl, invoiceUrl] = await Promise.all([
-          generateLicensePDF(
+        const licenseId = randomUUID();
+
+        await trx
+          .insertInto("licenses")
+          .values({
+            id: licenseId,
+            order_item_id: item.id,
+            artwork_id: item.artwork_id,
+            buyer_id: buyerId,
+            seller_id: seller.id,
+            license_type: item.license_type,
+            contract_pdf_url: null,
+            is_active: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .execute();
+
+        let contractUrl = null;
+
+        try {
+          contractUrl = await generateLicensePDF(
             {
               id: licenseId,
-              license_type: orderItem.license_type,
+              license_type: item.license_type,
               created_at: new Date().toISOString(),
             },
             order,
             buyer,
             seller,
             artwork
-          ),
-          generateInvoicePDF(order),
-        ]);
-      } catch (pdfErr) {
-        console.error("PDF generation failed:", pdfErr);
-      }
+          );
+        } catch (pdfErr) {
+          console.error("License PDF generation failed:", pdfErr);
+        }
 
-      await Promise.all([
-        trx
+        await trx
           .updateTable("licenses")
           .set({
             contract_pdf_url: contractUrl || "generation_failed",
             updated_at: new Date().toISOString(),
           })
           .where("id", "=", licenseId)
-          .execute(),
+          .execute();
 
-        trx
-          .updateTable("orders")
-          .set({
-            status: "fulfilled",
-            invoice_pdf_url: invoiceUrl || "generation_failed",
-            invoice_number: `INV-${Date.now().toString().slice(-8)}`,
-            fulfilled_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .where("id", "=", orderId)
-          .execute(),
-      ]);
+        issued.push(licenseId);
+      }
 
-      return {
-        success: true,
-        orderId,
-        licenseId,
-        contractUrl,
-        invoiceUrl,
+      let invoiceUrl = null;
+
+      try {
+        invoiceUrl = await generateInvoicePDF({
+          ...order,
+          paid_at: new Date().toISOString(),
+        });
+      } catch (pdfErr) {
+        console.error("Invoice PDF generation failed:", pdfErr);
+      }
+
+      const update = {
+        invoice_pdf_url: invoiceUrl || "generation_failed",
+        invoice_number: `INV-${Date.now().toString().slice(-8)}`,
+        updated_at: new Date().toISOString(),
       };
-    }).then(async (result) => {
-      // Generate seller payouts once the order is fully fulfilled. Kept
-      // outside the transaction above (payouts read committed order_items)
-      // and wrapped so a payout hiccup never undoes a successful license
-      // issuance the buyer already has PDFs for.
+
+      // A license-only order is complete now; one with physical goods
+      // becomes "fulfilled" when the last shipment is delivered.
+      if (!hasMerch) {
+        update.status = "fulfilled";
+        update.fulfilled_at = new Date().toISOString();
+      }
+
+      await trx.updateTable("orders").set(update).where("id", "=", orderId).execute();
+
+      return { success: true, orderId, licenseIds: issued, hasMerch };
+    });
+
+    // Digital-only orders are done, so their payouts can be generated now.
+    // Kept outside the transaction (payouts read committed order_items) and
+    // wrapped so a payout hiccup never undoes licenses the buyer already has.
+    if (!outcome.hasMerch) {
       try {
         await payoutService.generatePayoutsForOrder(orderId);
       } catch (payoutErr) {
-        console.error(
-          `Payout generation failed for order ${orderId}:`,
-          payoutErr
-        );
+        console.error(`Payout generation failed for order ${orderId}:`, payoutErr);
       }
+    }
 
-      return result;
-    });
+    return outcome;
   }
 
+  // Marks an unpaid order failed/cancelled and puts reserved merch stock
+  // back — checkout decrements stock up-front, so without this a failed or
+  // abandoned payment would leave inventory stuck.
   static async markOrderAsFailed(orderId) {
-    await db
-      .updateTable("orders")
-      .set({
-        status: "failed",
-        updated_at: new Date().toISOString(),
-      })
-      .where("id", "=", orderId)
-      .execute();
+    await db.transaction().execute(async (trx) => {
+      const order = await trx
+        .selectFrom("orders")
+        .select(["id", "status"])
+        .where("id", "=", orderId)
+        .executeTakeFirst();
+
+      if (!order || order.status !== "pending") return;
+
+      const merchItems = await trx
+        .selectFrom("order_items")
+        .select(["merch_variant_id", "quantity"])
+        .where("order_id", "=", orderId)
+        .where("item_type", "=", "merch_variant")
+        .execute();
+
+      for (const item of merchItems) {
+        await trx
+          .updateTable("merch_variants")
+          .set((eb) => ({ stock_qty: eb("stock_qty", "+", item.quantity) }))
+          .where("id", "=", item.merch_variant_id)
+          .where("stock_qty", "is not", null)
+          .execute();
+      }
+
+      await trx
+        .updateTable("orders")
+        .set({ status: "failed", updated_at: new Date().toISOString() })
+        .where("id", "=", orderId)
+        .execute();
+    });
   }
 
   static async handleRefund(chargeId) {

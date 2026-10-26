@@ -1,4 +1,5 @@
-const { db, sql } = require('../../../config');
+const { db } = require('../../../config');
+const { sql } = require('kysely');
 
 async function findActiveCart(userId, trx = db) {
   return trx
@@ -29,11 +30,20 @@ async function findCartById(id, trx = db) {
     .executeTakeFirst();
 }
 
+// Display read for the cart UI: resolves enough about each line (image,
+// variant attributes, stock, live price for both merch *and* license lines)
+// that the page doesn't need a second round-trip per item.
 async function getCartItems(cartId, trx = db) {
   return trx
     .selectFrom('cart_items as ci')
     .leftJoin('merch_variants as mv', 'mv.id', 'ci.merch_variant_id')
     .leftJoin('merch_products as mp', 'mp.id', 'mv.merch_product_id')
+    .leftJoin('artworks as a', 'a.id', 'ci.artwork_id')
+    .leftJoin('artwork_pricing_tiers as apt', (join) =>
+      join
+        .onRef('apt.artwork_id', '=', 'ci.artwork_id')
+        .onRef('apt.license_type', '=', 'ci.license_type')
+    )
     .select([
       'ci.id',
       'ci.cart_id',
@@ -43,12 +53,30 @@ async function getCartItems(cartId, trx = db) {
       'ci.merch_variant_id',
       'ci.quantity',
       'mv.sku',
-      'mv.price_inr_cents',
-      'mv.price_usd_cents',
-      'mp.title',
+      'mv.size',
+      'mv.color',
+      'mv.material',
+      'mv.stock_qty',
+      'mv.is_active as variant_is_active',
+      'mp.id as merch_product_id',
+      'mp.status as product_status',
+      'mp.fulfillment_type',
       'mp.seller_id',
+      sql`coalesce(mp.title, a.title)`.as('title'),
+      sql`coalesce(apt.price_inr_cents, mv.price_inr_cents)`.as(
+        'price_inr_cents'
+      ),
+      sql`coalesce(apt.price_usd_cents, mv.price_usd_cents)`.as(
+        'price_usd_cents'
+      ),
+      sql`coalesce(
+        a.thumbnail_url,
+        (select pa.thumbnail_url from artworks pa where pa.id = mp.artwork_id),
+        mv.print_file_url
+      )`.as('image_url'),
     ])
     .where('ci.cart_id', '=', cartId)
+    .orderBy('ci.created_at', 'asc')
     .execute();
 }
 
@@ -115,6 +143,26 @@ async function addItem(data, trx = db) {
     .executeTakeFirstOrThrow();
 }
 
+async function findItemByVariant(cartId, variantId, trx = db) {
+  return trx
+    .selectFrom('cart_items')
+    .selectAll()
+    .where('cart_id', '=', cartId)
+    .where('merch_variant_id', '=', variantId)
+    .executeTakeFirst();
+}
+
+async function findLicenseItem(cartId, artworkId, licenseType, trx = db) {
+  return trx
+    .selectFrom('cart_items')
+    .selectAll()
+    .where('cart_id', '=', cartId)
+    .where('item_type', '=', 'license')
+    .where('artwork_id', '=', artworkId)
+    .where('license_type', '=', licenseType)
+    .executeTakeFirst();
+}
+
 async function findItem(id, trx = db) {
   return trx
     .selectFrom('cart_items')
@@ -150,6 +198,8 @@ module.exports = {
   clearItems,
   addItem,
   findItem,
+  findItemByVariant,
+  findLicenseItem,
   updateItemQuantity,
   removeItem,
 };

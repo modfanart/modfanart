@@ -10,7 +10,10 @@ function handleError(res, error) {
 
 async function getOrderFulfillments(req, res) {
   try {
-    const fulfillments = await service.getOrderFulfillments(req.params.orderId);
+    const fulfillments = await service.getOrderFulfillments(
+      req.params.orderId,
+      req.user
+    );
 
     return res.json({ fulfillments });
   } catch (error) {

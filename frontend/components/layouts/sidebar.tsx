@@ -60,7 +60,11 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
       <ScrollArea className="flex-1 px-3 py-4">
         <div className="space-y-1">
           {navigation.map((item) => {
-            const isActive = item.href !== '#' && pathname.startsWith(item.href);
+            // The first item (Overview) is the dashboard root, a prefix of every other
+            // route — match it exactly or it would always look active.
+            const isRoot = item.href === basePath;
+            const isActive =
+              item.href !== '#' && (isRoot ? pathname === item.href : pathname.startsWith(item.href));
 
             return (
               <Link

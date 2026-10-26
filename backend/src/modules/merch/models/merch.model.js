@@ -1,4 +1,5 @@
-const { db, sql } = require('../../../config');
+const { db } = require('../../../config');
+const { sql } = require('kysely');
 /**
  * Create a merch product
  */
@@ -176,6 +177,151 @@ async function findPrintProviderById(id, trx = db) {
     .executeTakeFirst();
 }
 
+// Shared SELECT for storefront / dashboard listings: product + seller name +
+// brand + a representative image + price range across active variants. The
+// plain findProductById stays as-is for write paths.
+function enrichedProductQuery(trx = db) {
+  return trx
+    .selectFrom('merch_products as mp')
+    .leftJoin('users as u', 'u.id', 'mp.seller_id')
+    .leftJoin('seller_profiles as sp', 'sp.user_id', 'mp.seller_id')
+    .leftJoin('brands as b', 'b.id', 'mp.brand_id')
+    .leftJoin('artworks as a', 'a.id', 'mp.artwork_id')
+    .select([
+      'mp.id',
+      'mp.seller_id',
+      'mp.brand_id',
+      'mp.artwork_id',
+      'mp.license_id',
+      'mp.title',
+      'mp.description',
+      'mp.base_product_type',
+      'mp.fulfillment_type',
+      'mp.print_provider_id',
+      'mp.status',
+      'mp.created_at',
+      'mp.updated_at',
+      'u.username as seller_username',
+      sql`coalesce(b.name, sp.display_name, u.username)`.as('seller_name'),
+      'b.name as brand_name',
+      'b.slug as brand_slug',
+      'a.title as artwork_title',
+      sql`coalesce(
+        a.thumbnail_url,
+        a.file_url,
+        (select mv.print_file_url from merch_variants mv
+          where mv.merch_product_id = mp.id and mv.print_file_url is not null
+          order by mv.created_at asc limit 1)
+      )`.as('image_url'),
+      sql`(select min(mv.price_inr_cents) from merch_variants mv
+            where mv.merch_product_id = mp.id and mv.is_active = true)`.as(
+        'min_price_inr_cents'
+      ),
+      sql`(select max(mv.price_inr_cents) from merch_variants mv
+            where mv.merch_product_id = mp.id and mv.is_active = true)`.as(
+        'max_price_inr_cents'
+      ),
+      sql`(select min(mv.price_usd_cents) from merch_variants mv
+            where mv.merch_product_id = mp.id and mv.is_active = true)`.as(
+        'min_price_usd_cents'
+      ),
+      sql`(select max(mv.price_usd_cents) from merch_variants mv
+            where mv.merch_product_id = mp.id and mv.is_active = true)`.as(
+        'max_price_usd_cents'
+      ),
+      sql`(select count(*) from merch_variants mv
+            where mv.merch_product_id = mp.id)::int`.as('variant_count'),
+      sql`(select coalesce(avg(r.rating), 0)::float from product_reviews r
+            where r.target_type = 'merch_product' and r.target_id = mp.id
+              and r.deleted_at is null)`.as('rating_avg'),
+      sql`(select count(*) from product_reviews r
+            where r.target_type = 'merch_product' and r.target_id = mp.id
+              and r.deleted_at is null)::int`.as('rating_count'),
+    ])
+    .where('mp.deleted_at', 'is', null);
+}
+
+async function findEnrichedPublished(filters = {}, trx = db) {
+  let q = enrichedProductQuery(trx).where('mp.status', '=', 'published');
+
+  if (filters.search) {
+    const term = `%${String(filters.search).trim()}%`;
+    q = q.where((eb) =>
+      eb.or([
+        eb('mp.title', 'ilike', term),
+        eb('mp.description', 'ilike', term),
+        eb('mp.base_product_type', 'ilike', term),
+      ])
+    );
+  }
+
+  if (filters.type) q = q.where('mp.base_product_type', '=', filters.type);
+  if (filters.fulfillment_type)
+    q = q.where('mp.fulfillment_type', '=', filters.fulfillment_type);
+  if (filters.brand_id) q = q.where('mp.brand_id', '=', filters.brand_id);
+  if (filters.seller_id) q = q.where('mp.seller_id', '=', filters.seller_id);
+  if (filters.artwork_id) q = q.where('mp.artwork_id', '=', filters.artwork_id);
+
+  switch (filters.sort) {
+    case 'oldest':
+      q = q.orderBy('mp.created_at', 'asc');
+      break;
+    case 'title':
+      q = q.orderBy('mp.title', 'asc');
+      break;
+    default:
+      q = q.orderBy('mp.created_at', 'desc');
+  }
+
+  return q.execute();
+}
+
+async function findEnrichedBySeller(sellerId, trx = db) {
+  return enrichedProductQuery(trx)
+    .where('mp.seller_id', '=', sellerId)
+    .orderBy('mp.created_at', 'desc')
+    .execute();
+}
+
+async function findEnrichedByStatus(status, trx = db) {
+  return enrichedProductQuery(trx)
+    .where('mp.status', '=', status)
+    .orderBy('mp.updated_at', 'asc')
+    .execute();
+}
+
+async function findEnrichedById(id, trx = db) {
+  return enrichedProductQuery(trx).where('mp.id', '=', id).executeTakeFirst();
+}
+
+async function listPrintProviders(trx = db) {
+  return trx
+    .selectFrom('print_providers')
+    .select(['id', 'name', 'integration_type', 'is_active'])
+    .where('is_active', '=', true)
+    .orderBy('name', 'asc')
+    .execute();
+}
+
+/**
+ * Seller sales roll-up used by the seller dashboard.
+ */
+async function getSellerSalesSummary(sellerId, trx = db) {
+  return trx
+    .selectFrom('order_items as oi')
+    .innerJoin('orders as o', 'o.id', 'oi.order_id')
+    .select([
+      sql`count(distinct o.id)::int`.as('orders_count'),
+      sql`coalesce(sum(oi.quantity), 0)::int`.as('units_sold'),
+      sql`coalesce(sum(oi.unit_price_cents * oi.quantity), 0)::bigint`.as(
+        'gross_cents'
+      ),
+    ])
+    .where('oi.seller_id', '=', sellerId)
+    .where('o.status', 'in', ['paid', 'fulfilled'])
+    .executeTakeFirst();
+}
+
 module.exports = {
   createProduct,
   findProductById,
@@ -192,4 +338,11 @@ module.exports = {
   decrementStock,
 
   findPrintProviderById,
+
+  findEnrichedPublished,
+  findEnrichedBySeller,
+  findEnrichedByStatus,
+  findEnrichedById,
+  listPrintProviders,
+  getSellerSalesSummary,
 };

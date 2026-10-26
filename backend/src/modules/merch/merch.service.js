@@ -147,7 +147,7 @@ async function createProduct(userId, payload) {
 }
 
 async function getProduct(id) {
-  const product = await model.findProductById(id);
+  const product = await model.findEnrichedById(id);
 
   if (!product) {
     throw new Error('Merch product not found');
@@ -162,11 +162,38 @@ async function getProduct(id) {
 }
 
 async function getSellerProducts(userId) {
-  return model.findProductsBySeller(userId);
+  return model.findEnrichedBySeller(userId);
 }
 
-async function getPublishedProducts() {
-  return model.findPublishedProducts();
+async function getPublishedProducts(filters = {}) {
+  return model.findEnrichedPublished(filters);
+}
+
+// Admin moderation queue: everything a seller has submitted for review.
+async function getPendingReviewProducts() {
+  return model.findEnrichedByStatus('pending_review');
+}
+
+async function listPrintProviders() {
+  return model.listPrintProviders();
+}
+
+async function getSellerSummary(userId) {
+  const sales = await model.getSellerSalesSummary(userId);
+  const products = await model.findProductsBySeller(userId);
+
+  const byStatus = products.reduce((acc, p) => {
+    acc[p.status] = (acc[p.status] || 0) + 1;
+    return acc;
+  }, {});
+
+  return {
+    orders_count: sales?.orders_count ?? 0,
+    units_sold: sales?.units_sold ?? 0,
+    gross_cents: Number(sales?.gross_cents ?? 0),
+    products_total: products.length,
+    products_by_status: byStatus,
+  };
 }
 
 async function updateProduct(userId, productId, payload) {
@@ -341,6 +368,9 @@ module.exports = {
   getProduct,
   getSellerProducts,
   getPublishedProducts,
+  getPendingReviewProducts,
+  listPrintProviders,
+  getSellerSummary,
   updateProduct,
   submitForReview,
   moderateProduct,

@@ -48,6 +48,24 @@ async function addMerchItem(userId, variantId, quantity = 1) {
   const cart =
     (await model.findActiveCart(userId)) || (await model.createCart(userId));
 
+  // Adding the same variant again bumps the existing line instead of
+  // creating a duplicate row — and the stock check must cover the total.
+  const existing = await model.findItemByVariant(cart.id, variantId);
+
+  if (existing) {
+    const total = existing.quantity + quantity;
+
+    if (
+      product.fulfillment_type === 'in_house_stock' &&
+      variant.stock_qty !== null &&
+      variant.stock_qty < total
+    ) {
+      throw new Error('Insufficient stock');
+    }
+
+    return model.updateItemQuantity(existing.id, total);
+  }
+
   return model.addItem({
     cart_id: cart.id,
     item_type: 'merch_variant',
@@ -65,6 +83,15 @@ async function addLicenseItem(userId, artworkId, licenseType, quantity = 1) {
 
   const cart =
     (await model.findActiveCart(userId)) || (await model.createCart(userId));
+
+  // A license is a one-off grant — re-adding it is a no-op, not quantity 2.
+  const existing = await model.findLicenseItem(
+    cart.id,
+    artworkId,
+    licenseType
+  );
+
+  if (existing) return existing;
 
   return model.addItem({
     cart_id: cart.id,

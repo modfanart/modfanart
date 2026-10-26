@@ -3,8 +3,38 @@ const model = require('./models/fulfillment.model');
 const Order = require('../licenses/models/order.model');
 const OrderItem = require('../licenses/models/orderItem.model');
 const addressModel = require('../address/models/address.model');
+const payoutService = require('../payout/payout.service');
 
-async function getOrderFulfillments(orderId) {
+// Who may read an order's shipments: buyer, a seller with a line item on it,
+// or an admin/finance user. (Previously any logged-in user could read any
+// order's fulfillments by id.)
+async function assertCanViewOrder(user, orderId) {
+  const order = await Order.findById(orderId);
+
+  if (!order) throw new Error('Order not found');
+  if (!user) return order;
+  if (order.buyer_id === user.id) return order;
+
+  const perms = user.permissions || {};
+  if (perms['orders.view_all'] || perms['payouts.manage']) return order;
+
+  const mine = await db
+    .selectFrom('order_items')
+    .select('id')
+    .where('order_id', '=', orderId)
+    .where('seller_id', '=', user.id)
+    .executeTakeFirst();
+
+  if (!mine && order.seller_id !== user.id) {
+    throw new Error('You do not have access to this order');
+  }
+
+  return order;
+}
+
+async function getOrderFulfillments(orderId, user) {
+  await assertCanViewOrder(user, orderId);
+
   const fulfillments = await model.findByOrderId(orderId);
 
   for (const fulfillment of fulfillments) {
@@ -38,6 +68,9 @@ async function createFulfillment({
   if (order.status !== 'paid' && order.status !== 'fulfilled') {
     throw new Error('Order must be paid before it can be fulfilled');
   }
+
+  // Default to the address the buyer chose at checkout.
+  addressId = addressId || order.shipping_address_id || null;
 
   if (addressId) {
     const address = await addressModel.findById(addressId);
@@ -114,7 +147,59 @@ async function updateStatus(sellerId, id, status) {
     throw new Error('You do not own this fulfillment');
   }
 
-  return model.updateStatus(id, status);
+  const updated = await model.updateStatus(id, status);
+
+  if (status === 'delivered') {
+    await completeOrderIfDelivered(updated.order_id);
+  }
+
+  return updated;
+}
+
+// An order with physical goods becomes "fulfilled" once every merch line has
+// been delivered. That is also the moment its seller payouts are generated
+// (digital-only orders get theirs at payment time instead).
+async function completeOrderIfDelivered(orderId) {
+  const order = await Order.findById(orderId);
+
+  if (!order || order.status !== 'paid') return;
+
+  const merchItems = await db
+    .selectFrom('order_items')
+    .select('id')
+    .where('order_id', '=', orderId)
+    .where('item_type', '=', 'merch_variant')
+    .execute();
+
+  if (!merchItems.length) return;
+
+  const delivered = await db
+    .selectFrom('fulfillment_items as fi')
+    .innerJoin('fulfillments as f', 'f.id', 'fi.fulfillment_id')
+    .select('fi.order_item_id')
+    .where('f.order_id', '=', orderId)
+    .where('f.status', '=', 'delivered')
+    .execute();
+
+  const deliveredIds = new Set(delivered.map((d) => d.order_item_id));
+
+  if (!merchItems.every((i) => deliveredIds.has(i.id))) return;
+
+  await db
+    .updateTable('orders')
+    .set({
+      status: 'fulfilled',
+      fulfilled_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .where('id', '=', orderId)
+    .execute();
+
+  try {
+    await payoutService.generatePayoutsForOrder(orderId);
+  } catch (err) {
+    console.error(`Payout generation failed for order ${orderId}:`, err);
+  }
 }
 
 async function updateTracking(sellerId, id, data) {

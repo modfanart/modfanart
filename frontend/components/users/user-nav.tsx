@@ -161,6 +161,10 @@ return (
           </DropdownMenuItem>
         )}
 
+        <DropdownMenuItem onClick={() => router.push('/marketplace/orders')}>
+          My orders
+        </DropdownMenuItem>
+
         <DropdownMenuItem
           onClick={() =>
             router.push(`/u/${user.username || displayName}`)

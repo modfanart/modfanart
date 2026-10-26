@@ -13,6 +13,7 @@ router.post('/', controller.apply);
 
 // Admin/moderation-only.
 router.get('/pending', hasPermission('sellers.manage'), controller.listPending);
+router.get('/', hasPermission('sellers.manage'), controller.listAll);
 router.patch('/:id', hasPermission('sellers.manage'), controller.decide);
 
 module.exports = router;

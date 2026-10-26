@@ -91,6 +91,7 @@ class LicensePurchaseController {
           id: orderItemId,
           order_id: orderId,
           artwork_id,
+          seller_id: artwork.creator_id, // payouts key off order_items.seller_id
           license_type: tier.license_type,
           unit_price_cents: amountCents,
           quantity: 1,

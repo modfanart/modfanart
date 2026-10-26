@@ -8,8 +8,7 @@ import { setupListeners } from '@reduxjs/toolkit/query';
 import authApi from '@/services/api/authApi';
 import userApi from '@/services/api/userApi';
 import rolesApi from '@/services/api/rolesApi';
-import productsApi from '@/services/api/productApi';
-import ordersApi from '@/services/api/orderApi';
+import marketplaceApi from '@/services/api/marketplaceApi';
 import moderationApi from '@/services/api/moderationApi';
 import licensesApi from '@/services/api/licenseApi';
 import favoritesApi from '@/services/api/favoriteApi';
@@ -28,9 +27,6 @@ import { contactApi } from '@/services/api/contactApi';
 // ────────────────────────────────────────────────
 import authReducer from '@/services/api/features/authSlice';
 import { adminApi } from '@/services/api/adminApi';
-import { merchApi } from '@/services/api/merchApi';
-import { cartApi } from '@/services/api/cartApi';
-
 // import otherSliceReducer from '@/features/other/otherSlice';  // add more as needed
 
 // Auth state is restored via the Firebase onIdTokenChanged listener in Providers.tsx.
@@ -50,8 +46,7 @@ export const store = configureStore({
     [authApi.reducerPath]: authApi.reducer,
     [userApi.reducerPath]: userApi.reducer,
     [rolesApi.reducerPath]: rolesApi.reducer,
-    [productsApi.reducerPath]: productsApi.reducer,
-    [ordersApi.reducerPath]: ordersApi.reducer,
+    [marketplaceApi.reducerPath]: marketplaceApi.reducer,
     [moderationApi.reducerPath]: moderationApi.reducer,
     [licensesApi.reducerPath]: licensesApi.reducer,
     [favoritesApi.reducerPath]: favoritesApi.reducer,
@@ -65,8 +60,6 @@ export const store = configureStore({
     [collectionsApi.reducerPath]: collectionsApi.reducer,
     [searchApi.reducerPath]: searchApi.reducer,
     [notifyApi.reducerPath]: notifyApi.reducer,
-    [merchApi.reducerPath]: merchApi.reducer,
-    [cartApi.reducerPath]: cartApi.reducer,
   },
 
   middleware: (getDefaultMiddleware) =>
@@ -78,10 +71,9 @@ export const store = configureStore({
       authApi.middleware,
       userApi.middleware,
       rolesApi.middleware,
-      productsApi.middleware,
+      marketplaceApi.middleware,
       contactApi.middleware,
       adminApi.middleware,
-      ordersApi.middleware,
       moderationApi.middleware,
       licensesApi.middleware,
       favoritesApi.middleware,
@@ -93,10 +85,7 @@ export const store = configureStore({
       brandApi.middleware,
       collectionsApi.middleware,
       searchApi.middleware,
-      notifyApi.middleware,
-      merchApi.middleware,
-      cartApi.middleware
-
+      notifyApi.middleware
       // add more .middleware when you create new api slices
     ),
 

@@ -22,6 +22,10 @@ async function listPending() {
   return model.findPending();
 }
 
+async function listAll(status) {
+  return model.findAll(status);
+}
+
 async function decide(reviewerId, profileId, status, notes) {
   if (!['approved', 'rejected', 'suspended'].includes(status)) {
     throw new Error('Invalid decision');
@@ -34,5 +38,6 @@ module.exports = {
   apply,
   getMine,
   listPending,
+  listAll,
   decide,
 };

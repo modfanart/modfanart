@@ -11,6 +11,9 @@ router.use(authenticateToken);
 // A seller viewing their own payout history.
 router.get('/mine', controller.getMyPayouts);
 
+// Admin/finance overview of every payout across sellers.
+router.get('/', hasPermission('payouts.manage'), controller.listAllPayouts);
+
 // Admin/finance-only from here down — a seller must never be able to create
 // or settle their own payout.
 router.post('/', hasPermission('payouts.manage'), controller.createPayout);

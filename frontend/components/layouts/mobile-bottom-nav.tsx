@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Trophy, Image, Layers } from 'lucide-react';
+import { Home, Trophy, Image, Layers, ShoppingBag } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const items = [
@@ -10,6 +10,7 @@ const items = [
   { href: '/explore/contests', icon: Trophy, label: 'Contests' },
   { href: '/gallery/featured', icon: Image, label: 'Gallery' },
   { href: '/collections', icon: Layers, label: 'Collections' },
+  { href: '/marketplace', icon: ShoppingBag, label: 'Shop' },
 ];
 
 export function MobileBottomNav() {

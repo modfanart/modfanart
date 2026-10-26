@@ -114,6 +114,10 @@ async function getSellerPayouts(sellerId) {
   return model.findBySeller(sellerId);
 }
 
+async function getAllPayouts(filters) {
+  return model.findAllWithContext(filters);
+}
+
 async function markPaid(id, stripeTransferId) {
   const payout = await model.findById(id);
 
@@ -143,6 +147,7 @@ module.exports = {
   createPayout,
   generatePayoutsForOrder,
   getSellerPayouts,
+  getAllPayouts,
   markPaid,
   markFailed,
 };

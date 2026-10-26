@@ -47,14 +47,30 @@ async function setPayoutReady(userId, ready, trx = db) {
 
 async function findPending(trx = db) {
   return trx
-    .selectFrom('seller_profiles')
-    .selectAll()
-    .where('status', '=', 'pending')
-    .orderBy('created_at', 'asc')
+    .selectFrom('seller_profiles as sp')
+    .leftJoin('users as u', 'u.id', 'sp.user_id')
+    .selectAll('sp')
+    .select(['u.username', 'u.email'])
+    .where('sp.status', '=', 'pending')
+    .orderBy('sp.created_at', 'asc')
     .execute();
 }
 
+async function findAll(status, trx = db) {
+  let q = trx
+    .selectFrom('seller_profiles as sp')
+    .leftJoin('users as u', 'u.id', 'sp.user_id')
+    .selectAll('sp')
+    .select(['u.username', 'u.email'])
+    .orderBy('sp.created_at', 'desc');
+
+  if (status) q = q.where('sp.status', '=', status);
+
+  return q.execute();
+}
+
 module.exports = {
+  findAll,
   findByUser,
   create,
   decide,

@@ -22,6 +22,8 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ProductCard } from '@/components/marketplace/product-card';
+import { useGetMerchProductsQuery } from '@/services/api/marketplaceApi';
+import { useCurrency } from '@/lib/marketplace/use-currency';
 
 import { useGetBrandBySlugQuery } from '@/services/api/brands';
 
@@ -201,20 +203,52 @@ export default function BrandStorefrontPage() {
         ) : (
           <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {filteredArtworks.map((art: any) => (
-              <ProductCard
+              <Link
                 key={art.id}
-                id={art.id}
-                title={art.title}
-                price={art.price ?? 0}
-                imageUrl={getImage(art.thumbnail_url)}
-                artist={name}
-                slug={art.id}
-              />
+                href={`/artwork/${art.id}`}
+                className="group block overflow-hidden rounded-xl border bg-card transition-shadow hover:shadow-md"
+              >
+                <div className="relative aspect-square overflow-hidden bg-muted">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={getImage(art.thumbnail_url)}
+                    alt={art.title}
+                    loading="lazy"
+                    className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                  />
+                </div>
+                <p className="line-clamp-2 p-3 text-sm font-medium">{art.title}</p>
+              </Link>
             ))}
           </div>
         )}
+
+        <BrandMerch brandId={brand.id} />
       </div>
     </div>
+  );
+}
+
+function BrandMerch({ brandId }: { brandId: string }) {
+  const [currency] = useCurrency();
+  const { data: products } = useGetMerchProductsQuery({ brand_id: brandId });
+
+  if (!products?.length) return null;
+
+  return (
+    <section className="mt-16">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold md:text-4xl">Official merch</h2>
+        <Link href={`/marketplace/storefront/${brandId}`} className="text-sm underline">
+          View all
+        </Link>
+      </div>
+      <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {products.slice(0, 4).map((p) => (
+          <ProductCard key={p.id} product={p} currency={currency} />
+        ))}
+      </div>
+    </section>
   );
 }
 

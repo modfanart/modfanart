@@ -8,6 +8,18 @@ const { hasPermission } = require('../../common/middleware/permission.middleware
 
 router.get('/', controller.getPublishedProducts);
 router.get('/mine', authenticateToken, controller.getMyProducts);
+router.get('/mine/summary', authenticateToken, controller.getMySummary);
+router.get('/print-providers', authenticateToken, controller.getPrintProviders);
+
+// Admin/moderation-only queue of listings awaiting a decision. Must be
+// registered before '/:id' or "pending" would be treated as a product id.
+router.get(
+  '/pending',
+  authenticateToken,
+  hasPermission('merch.moderate'),
+  controller.getPendingProducts
+);
+
 router.get('/:id', controller.getProduct);
 
 router.post('/', authenticateToken, controller.createProduct);

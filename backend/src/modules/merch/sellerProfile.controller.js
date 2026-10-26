@@ -41,6 +41,16 @@ async function listPending(req, res) {
   }
 }
 
+async function listAll(req, res) {
+  try {
+    const profiles = await service.listAll(req.query.status);
+
+    return res.json({ profiles });
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+
 async function decide(req, res) {
   try {
     const profile = await service.decide(
@@ -63,5 +73,6 @@ module.exports = {
   apply,
   getMine,
   listPending,
+  listAll,
   decide,
 };

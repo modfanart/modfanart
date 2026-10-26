@@ -18,6 +18,21 @@ async function getMyPayouts(req, res) {
   }
 }
 
+async function listAllPayouts(req, res) {
+  try {
+    const payouts = await service.getAllPayouts({
+      status: req.query.status,
+      sellerId: req.query.seller_id,
+      limit: req.query.limit,
+      offset: req.query.offset,
+    });
+
+    return res.json({ payouts });
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+
 // Admin-only: manually (re)generate a payout for a specific order item, e.g.
 // to correct a payout that failed to auto-generate. The fee is still always
 // computed server-side from platform_fee_rules — this endpoint cannot be
@@ -83,6 +98,7 @@ async function markFailed(req, res) {
 
 module.exports = {
   getMyPayouts,
+  listAllPayouts,
   createPayout,
   generateForOrder,
   markPaid,
