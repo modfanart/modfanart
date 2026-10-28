@@ -17,6 +17,7 @@ import { firebaseAuth } from '@/lib/firebase';
 import { API_BASE_URL } from '@/services';
 import { TERMS_VERSION, PASSWORD_RULES, passwordProblems } from '@/lib/policy';
 import { Checkbox } from '@/components/ui/checkbox';
+import Image from 'next/image';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -365,6 +366,17 @@ function SignupPageInner() {
       {/* Step 1: Personal Information */}
       {step === 1 && (
         <>
+
+          <Link href="/" className="inline-block">
+            <Image
+              src="/house-backup.svg"
+              alt="Return to Home"
+              width={120}
+              height={44}
+              className="h-9 w-auto"
+            />
+          </Link>
+
           <div className="text-center">
             <h1 className="text-3xl font-bold">Sign Up</h1>
             <p className="text-muted-foreground mt-2">Create your account to get started.</p>
