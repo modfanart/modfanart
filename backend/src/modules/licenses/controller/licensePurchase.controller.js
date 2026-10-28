@@ -25,13 +25,14 @@ class LicensePurchaseController {
 
       const artwork = await db
         .selectFrom('artworks')
-        .select('creator_id')
+        .select(['creator_id', 'title'])
         .where('id', '=', artwork_id)
+        .where('status', '=', 'published')
         .executeTakeFirstOrThrow();
 
       const seller = await db
         .selectFrom('users')
-        .select(['stripe_connect_id', 'location'])
+        .select(['stripe_connect_id'])
         .where('id', '=', artwork.creator_id)
         .executeTakeFirstOrThrow();
 
@@ -41,24 +42,23 @@ class LicensePurchaseController {
           .json({ error: 'Creator has not connected Stripe account yet' });
       }
 
-      // ─── 2. Currency & tax logic (India-focused) ───
-      const buyer = await db
-        .selectFrom('users')
-        .select('location')
-        .where('id', '=', buyerId)
-        .executeTakeFirst();
+      // ─── 2. Pricing (USD only) ───
+      const amountCents = tier.price_usd_cents;
+      const currency = 'usd';
 
-      const useINR =
-        (buyer?.location?.includes('IN') || false) && tier.price_inr_cents > 0;
-      const amountCents = useINR ? tier.price_inr_cents : tier.price_usd_cents;
-      const currency = useINR ? 'inr' : 'usd';
+      if (!Number.isInteger(amountCents) || amountCents <= 0) {
+        return res.status(400).json({ error: 'This license has no USD price' });
+      }
+
+      if (artwork.creator_id === buyerId) {
+        return res
+          .status(400)
+          .json({ error: "You can't purchase your own artwork" });
+      }
 
       const platformFeePercent = 0.1; // 10%
       const platformFeeCents = Math.floor(amountCents * platformFeePercent);
-
-      // GST 18% example for India (simplified – real tax logic is more complex)
-      const taxRate = useINR ? 0.18 : 0;
-      const taxCents = Math.floor(amountCents * taxRate);
+      const taxCents = 0; // tax handling is out of scope
       const totalCents = amountCents + taxCents;
 
       // ─── 3. Create pending Order ───
@@ -75,7 +75,7 @@ class LicensePurchaseController {
           source_type: 'license_purchase',
           source_id: artwork_id,
           status: 'pending',
-          currency,
+          currency: 'USD',
           subtotal_cents: amountCents,
           platform_fee_cents: platformFeeCents,
           tax_cents: taxCents,

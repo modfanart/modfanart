@@ -21,6 +21,33 @@ async function createProduct(req, res) {
   }
 }
 
+async function getEligibleArtworks(req, res) {
+  try {
+    const artworks = await service.getEligibleArtworks(
+      req.user.id,
+      req.query.brand_id || null
+    );
+
+    return res.json({ artworks });
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+
+async function setArtwork(req, res) {
+  try {
+    const product = await service.setArtwork(
+      req.user.id,
+      req.params.id,
+      req.body || {}
+    );
+
+    return res.json({ message: 'Artwork updated', product });
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+
 async function getProduct(req, res) {
   try {
     const product = await service.getProduct(req.params.id);
@@ -196,6 +223,8 @@ async function deleteVariant(req, res) {
 }
 
 module.exports = {
+  getEligibleArtworks,
+  setArtwork,
   createProduct,
   getProduct,
   getMyProducts,

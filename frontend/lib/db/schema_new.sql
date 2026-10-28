@@ -145,7 +145,6 @@ CREATE TABLE artwork_pricing_tiers (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     artwork_id uuid NOT NULL REFERENCES artworks(id) ON DELETE CASCADE,
     license_type varchar(30) NOT NULL CHECK (license_type IN ('personal', 'commercial', 'exclusive')),
-    price_inr_cents bigint NOT NULL,
     price_usd_cents bigint NOT NULL,
     is_active boolean DEFAULT true,
     created_at timestamptz DEFAULT now()
@@ -170,7 +169,7 @@ CREATE TABLE contests (
     slug text UNIQUE NOT NULL,
     description text NOT NULL,
     rules text,
-    prizes jsonb, -- [{rank: 1, amount_inr: 500000, type: 'cash'}]
+    prizes jsonb, -- [{rank: 1, amount_usd: 5000, type: 'cash'}]
     start_date timestamptz NOT NULL,
     submission_end_date timestamptz NOT NULL,
     voting_end_date timestamptz,
@@ -248,7 +247,7 @@ CREATE TABLE orders (
     source_type varchar(30) NOT NULL CHECK (source_type IN ('license_purchase', 'contest_prize', 'refund', 'manual')),
     source_id uuid, -- artwork_id, contest_entry_id, etc.
     status varchar(20) DEFAULT 'pending' CHECK (status IN ('pending', 'paid', 'fulfilled', 'refunded', 'disputed', 'failed')),
-    currency char(3) DEFAULT 'INR',
+    currency char(3) DEFAULT 'USD',
     subtotal_cents bigint NOT NULL,
     platform_fee_cents bigint NOT NULL,
     tax_cents bigint DEFAULT 0,

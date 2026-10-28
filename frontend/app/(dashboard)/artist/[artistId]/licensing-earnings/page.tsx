@@ -42,7 +42,6 @@ import {
   ShieldCheck,
   ShieldX,
   Clock,
-  IndianRupee,
   Download,
   AlertTriangle,
 } from 'lucide-react';

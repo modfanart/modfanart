@@ -94,7 +94,7 @@ function SellerOrderCard({ order }: { order: Order }) {
           <CardTitle className="text-base">{order.order_number}</CardTitle>
           <p className="text-sm text-muted-foreground">
             {formatDate(order.created_at)} · {order.buyer_username ?? 'Customer'} ·{' '}
-            {formatMoney(earned, order.currency)}
+            {formatMoney(earned)}
           </p>
         </div>
         <StatusBadge map={ORDER_STATUS} status={order.status} />
@@ -113,7 +113,7 @@ function SellerOrderCard({ order }: { order: Order }) {
                   {i.quantity}
                 </p>
               </div>
-              <span>{formatMoney(i.unit_price_cents * i.quantity, order.currency)}</span>
+              <span>{formatMoney(i.unit_price_cents * i.quantity)}</span>
             </li>
           ))}
         </ul>

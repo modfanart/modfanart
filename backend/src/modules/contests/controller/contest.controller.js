@@ -509,9 +509,9 @@ class ContestController {
             source_type: "contest_prize",
             source_id: winner.id,
             status: "fulfilled",
-            currency: "INR",
-            subtotal_cents: (prize.amount_inr || 0) * 100,
-            total_cents: (prize.amount_inr || 0) * 100,
+            currency: "USD",
+            subtotal_cents: Math.round((Number(prize.amount_usd) || 0) * 100),
+            total_cents: Math.round((Number(prize.amount_usd) || 0) * 100),
             created_at: sql`NOW()`,
             updated_at: sql`NOW()`,
           })

@@ -23,7 +23,6 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ProductCard } from '@/components/marketplace/product-card';
 import { useGetMerchProductsQuery } from '@/services/api/marketplaceApi';
-import { useCurrency } from '@/lib/marketplace/use-currency';
 
 import { useGetBrandBySlugQuery } from '@/services/api/brands';
 
@@ -230,7 +229,6 @@ export default function BrandStorefrontPage() {
 }
 
 function BrandMerch({ brandId }: { brandId: string }) {
-  const [currency] = useCurrency();
   const { data: products } = useGetMerchProductsQuery({ brand_id: brandId });
 
   if (!products?.length) return null;
@@ -245,7 +243,7 @@ function BrandMerch({ brandId }: { brandId: string }) {
       </div>
       <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {products.slice(0, 4).map((p) => (
-          <ProductCard key={p.id} product={p} currency={currency} />
+          <ProductCard key={p.id} product={p} />
         ))}
       </div>
     </section>

@@ -46,7 +46,6 @@ export interface MerchVariant {
   size?: string | null;
   color?: string | null;
   material?: string | null;
-  price_inr_cents: number;
   price_usd_cents: number;
   stock_qty?: number | null;
   weight_grams?: number | null;
@@ -90,7 +89,6 @@ export interface MerchProduct {
     thumbnail_url?: string | null;
   };
   // convenience for UI (derived from first active variant or min)
-  price_inr_cents?: number;
   price_usd_cents?: number;
   primary_image_url?: string | null;
 }
@@ -124,7 +122,6 @@ export interface CartItem {
   created_at?: string;
   // joined from getCartItems
   sku?: string | null;
-  price_inr_cents?: number | null;
   price_usd_cents?: number | null;
   title?: string | null;
   seller_id?: string | null;
@@ -209,7 +206,6 @@ export interface CreateVariantPayload {
   size?: string;
   color?: string;
   material?: string;
-  price_inr_cents: number;
   price_usd_cents: number;
   stock_qty?: number | null;
   weight_grams?: number | null;
@@ -222,7 +218,6 @@ export interface UpdateVariantPayload {
   size?: string;
   color?: string;
   material?: string;
-  price_inr_cents?: number;
   price_usd_cents?: number;
   stock_qty?: number | null;
   weight_grams?: number | null;
@@ -247,5 +242,5 @@ export interface DecideSellerPayload {
 
 export interface CheckoutPayload {
   address_id?: string;
-  currency?: 'INR' | 'USD';
+  currency?: 'USD';
 }

@@ -81,7 +81,6 @@ CREATE TABLE IF NOT EXISTS merch_variants (
   size             text,
   color            text,
   material         text,
-  price_inr_cents  integer NOT NULL,
   price_usd_cents  integer NOT NULL,
   stock_qty        integer,          -- null for pure POD (unbounded)
   weight_grams     integer,
@@ -89,7 +88,6 @@ CREATE TABLE IF NOT EXISTS merch_variants (
   is_active        boolean NOT NULL DEFAULT true,
   created_at       timestamptz NOT NULL DEFAULT now()
 );
-SELECT pg_temp.add_check('merch_variants', 'merch_variants_price_inr_check', 'price_inr_cents >= 0');
 SELECT pg_temp.add_check('merch_variants', 'merch_variants_price_usd_check', 'price_usd_cents >= 0');
 SELECT pg_temp.add_check('merch_variants', 'merch_variants_stock_qty_check', 'stock_qty IS NULL OR stock_qty >= 0');
 CREATE INDEX IF NOT EXISTS merch_variants_product_idx ON merch_variants (merch_product_id);
@@ -302,3 +300,64 @@ NOTIFY pgrst, 'reload schema';
 
 ALTER TABLE contest_entries
 ADD COLUMN IF NOT EXISTS licensing_status VARCHAR(50);
+
+BEGIN;
+
+-- 1. Remove INR pricing from merchandise variants.
+ALTER TABLE merch_variants
+    DROP CONSTRAINT IF EXISTS merch_variants_price_inr_check;
+
+ALTER TABLE merch_variants
+    DROP COLUMN IF EXISTS price_inr_cents;
+
+-- 2. Remove INR pricing from artwork pricing tiers.
+ALTER TABLE artwork_pricing_tiers
+    DROP COLUMN IF EXISTS price_inr_cents;
+
+-- 3. Add currency to orders, defaulting to USD.
+ALTER TABLE orders
+    ADD COLUMN IF NOT EXISTS currency VARCHAR(3) NOT NULL DEFAULT 'USD';
+
+-- 4. Rename amount_inr to amount_usd in contest prize JSONB.
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = current_schema()
+          AND table_name = 'contests'
+          AND column_name = 'prizes'
+          AND data_type = 'jsonb'
+    ) THEN
+        UPDATE contests AS c
+        SET prizes = (
+            SELECT jsonb_agg(
+                CASE
+                    WHEN p ? 'amount_inr' THEN
+                        (p - 'amount_inr')
+                        || jsonb_build_object(
+                            'amount_usd',
+                            p -> 'amount_inr'
+                        )
+                    ELSE p
+                END
+            )
+            FROM jsonb_array_elements(c.prizes) AS p
+        )
+        WHERE jsonb_typeof(c.prizes) = 'array'
+          AND c.prizes::text LIKE '%amount_inr%';
+    END IF;
+END
+$$;
+
+COMMIT;
+
+UPDATE roles
+SET permissions = COALESCE(permissions, '{}'::jsonb)
+    || '{"marketplace.manage": true}'::jsonb
+WHERE UPPER(name) IN (
+    'ADMIN',
+    'SUPER_ADMIN',
+    'SUPERADMIN',
+    'DEVELOPER'
+);

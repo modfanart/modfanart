@@ -54,6 +54,10 @@ async function assertArtworkUsageAllowed(userId, artworkId, licenseId, trx) {
     return null; // own artwork, no license needed
   }
 
+  if (artwork.status !== 'published') {
+    throw new Error('This artwork is not published and cannot be used on merch');
+  }
+
   if (!licenseId) {
     throw new Error(
       'A commercial or exclusive license for this artwork is required to print it on merch'
@@ -85,6 +89,39 @@ async function assertArtworkUsageAllowed(userId, artworkId, licenseId, trx) {
   }
 
   return licenseId;
+}
+
+// The seller who created a product may always manage it; so may any owner or
+// manager of the brand it is listed under (a brand's catalogue belongs to
+// the brand, not to whichever manager happened to click "create").
+async function assertCanManage(userId, product, message = 'You do not own this product') {
+  if (!product) throw new Error('Merch product not found');
+  if (product.seller_id === userId) return;
+
+  if (product.brand_id) {
+    const access = await BrandManager.hasAccess(product.brand_id, userId, [
+      'owner',
+      'manager',
+    ]);
+
+    if (access) return;
+  }
+
+  throw new Error(message);
+}
+
+function assertValidPrice(cents) {
+  if (!Number.isInteger(cents) || cents < 0) {
+    throw new Error('A USD price (in cents) of 0 or more is required');
+  }
+}
+
+function assertValidStock(qty) {
+  if (qty == null) return;
+
+  if (!Number.isInteger(qty) || qty < 0) {
+    throw new Error('Stock must be a whole number of 0 or more');
+  }
 }
 
 async function createProduct(userId, payload) {
@@ -162,7 +199,7 @@ async function getProduct(id) {
 }
 
 async function getSellerProducts(userId) {
-  return model.findEnrichedBySeller(userId);
+  return model.findEnrichedManagedBy(userId);
 }
 
 async function getPublishedProducts(filters = {}) {
@@ -203,9 +240,7 @@ async function updateProduct(userId, productId, payload) {
     throw new Error('Merch product not found');
   }
 
-  if (product.seller_id !== userId) {
-    throw new Error('You do not own this product');
-  }
+  await assertCanManage(userId, product);
 
   if (payload.status === 'published') {
     throw new Error(
@@ -213,7 +248,52 @@ async function updateProduct(userId, productId, payload) {
     );
   }
 
-  return model.updateProduct(productId, payload);
+  // Whitelist editable fields. Status, seller_id, license_id etc. are
+  // controlled by the moderation / ownership flows, not the request body.
+  const patch = {};
+
+  // Listing copy is what moderation approved. Changing it on a live or
+  // in-review product would bypass review, so it's only editable while the
+  // product is a draft, rejected or archived. Prices and stock (variants)
+  // stay editable at any time.
+  if (
+    (payload.title !== undefined || payload.description !== undefined) &&
+    !['draft', 'rejected', 'archived'].includes(product.status)
+  ) {
+    throw new Error(
+      'Title and description can only be edited on a draft, rejected or archived product. Archive it, edit, then submit for review again.'
+    );
+  }
+
+  if (payload.title !== undefined) {
+    if (!String(payload.title).trim()) throw new Error('Title cannot be empty');
+    patch.title = String(payload.title).trim();
+  }
+
+  if (payload.description !== undefined) patch.description = payload.description;
+
+  // A suspended listing was pulled by an admin; the seller can't archive or
+  // restore it to get around that.
+  if (product.status === 'suspended') {
+    throw new Error('This product was suspended by an admin. Contact support to have it reviewed.');
+  }
+
+  if (payload.status !== undefined) {
+    if (!['draft', 'archived'].includes(payload.status)) {
+      throw new Error(
+        'Status can only be set to draft or archived here; use submit-for-review to go live'
+      );
+    }
+    patch.status = payload.status;
+  }
+
+  if (!Object.keys(patch).length) {
+    throw new Error('Nothing to update');
+  }
+
+  patch.updated_at = new Date().toISOString();
+
+  return model.updateProduct(productId, patch);
 }
 
 // Reuses the existing generic moderation_queue (entity_type/entity_id)
@@ -226,9 +306,7 @@ async function submitForReview(userId, productId) {
     throw new Error('Merch product not found');
   }
 
-  if (product.seller_id !== userId) {
-    throw new Error('You do not own this product');
-  }
+  await assertCanManage(userId, product);
 
   if (!['draft', 'rejected'].includes(product.status)) {
     throw new Error(`Cannot submit a product in "${product.status}" status`);
@@ -238,6 +316,17 @@ async function submitForReview(userId, productId) {
 
   if (!variants.length) {
     throw new Error('Add at least one variant before submitting for review');
+  }
+
+  // The artwork/licence link was checked when it was made; re-check now so a
+  // licence that has since expired or been revoked can't slip into review.
+  if (product.artwork_id) {
+    await assertArtworkUsageAllowed(
+      product.seller_id,
+      product.artwork_id,
+      product.license_id,
+      db
+    );
   }
 
   return db.transaction().execute(async (trx) => {
@@ -260,8 +349,14 @@ async function deleteProduct(userId, productId) {
     throw new Error('Merch product not found');
   }
 
-  if (product.seller_id !== userId) {
-    throw new Error('You do not own this product');
+  await assertCanManage(userId, product);
+
+  // A product that has already sold can't be hard-deleted without orphaning
+  // order history (and the buyer's receipt). Archive it instead.
+  if (await model.countSoldItemsForProduct(productId)) {
+    throw new Error(
+      'This product has orders against it and cannot be deleted. Archive it instead.'
+    );
   }
 
   return model.deleteProduct(productId);
@@ -274,17 +369,14 @@ async function addVariant(userId, productId, payload) {
     throw new Error('Merch product not found');
   }
 
-  if (product.seller_id !== userId) {
-    throw new Error('You do not own this product');
-  }
+  await assertCanManage(userId, product);
 
   if (!payload.sku) {
     throw new Error('SKU is required');
   }
 
-  if (payload.price_inr_cents == null || payload.price_usd_cents == null) {
-    throw new Error('Both INR and USD prices are required');
-  }
+  assertValidPrice(payload.price_usd_cents);
+  assertValidStock(payload.stock_qty);
 
   return model.createVariant({
     ...payload,
@@ -301,11 +393,39 @@ async function updateVariant(userId, variantId, payload) {
 
   const product = await model.findProductById(variant.merch_product_id);
 
-  if (!product || product.seller_id !== userId) {
-    throw new Error('You do not own this variant');
+  await assertCanManage(userId, product, 'You do not own this variant');
+
+  // Whitelist: never pass the raw body to the UPDATE (it could re-parent
+  // the variant onto another product or rewrite its id/created_at).
+  const patch = {};
+
+  if (payload.price_usd_cents !== undefined) {
+    assertValidPrice(payload.price_usd_cents);
+    patch.price_usd_cents = payload.price_usd_cents;
   }
 
-  return model.updateVariant(variantId, payload);
+  if (payload.stock_qty !== undefined) {
+    assertValidStock(payload.stock_qty);
+    patch.stock_qty = payload.stock_qty;
+  }
+
+  for (const key of [
+    'sku',
+    'size',
+    'color',
+    'material',
+    'weight_grams',
+    'print_file_url',
+    'is_active',
+  ]) {
+    if (payload[key] !== undefined) patch[key] = payload[key];
+  }
+
+  if (!Object.keys(patch).length) {
+    throw new Error('Nothing to update');
+  }
+
+  return model.updateVariant(variantId, patch);
 }
 
 async function deleteVariant(userId, variantId) {
@@ -317,9 +437,7 @@ async function deleteVariant(userId, variantId) {
 
   const product = await model.findProductById(variant.merch_product_id);
 
-  if (!product || product.seller_id !== userId) {
-    throw new Error('You do not own this variant');
-  }
+  await assertCanManage(userId, product, 'You do not own this variant');
 
   return model.deleteVariant(variantId);
 }
@@ -363,7 +481,103 @@ async function moderateProduct(reviewerId, productId, decision, notes) {
   });
 }
 
+// Artworks a user may print on merch: their own, plus artworks they hold an
+// active commercial/exclusive licence for. For a brand listing, access to the
+// brand is verified first. Each row carries the license_id the client must
+// send back when linking a licensed artwork.
+async function getEligibleArtworks(userId, brandId = null) {
+  if (brandId) {
+    const access = await BrandManager.hasAccess(brandId, userId, [
+      'owner',
+      'manager',
+    ]);
+
+    if (!access) throw new Error('You do not manage this brand');
+  }
+
+  const own = await db
+    .selectFrom('artworks')
+    .select(['id', 'title', 'thumbnail_url'])
+    .where('creator_id', '=', userId)
+    .where('status', '=', 'published')
+    .where('deleted_at', 'is', null)
+    .orderBy('created_at', 'desc')
+    .execute();
+
+  const licensed = await db
+    .selectFrom('licenses as l')
+    .innerJoin('artworks as a', 'a.id', 'l.artwork_id')
+    .select([
+      'a.id as id',
+      'a.title as title',
+      'a.thumbnail_url as thumbnail_url',
+      'l.id as license_id',
+      'l.license_type as license_type',
+      'l.expires_at as license_expires_at',
+    ])
+    .where('l.buyer_id', '=', userId)
+    .where('l.is_active', '=', true)
+    .where('l.revoked_at', 'is', null)
+    .where('l.license_type', 'in', ['commercial', 'exclusive'])
+    .where('a.status', '=', 'published')
+    .where('a.deleted_at', 'is', null)
+    .where('a.creator_id', '!=', userId)
+    .where((eb) =>
+      eb.or([
+        eb('l.expires_at', 'is', null),
+        eb('l.expires_at', '>', new Date().toISOString()),
+      ])
+    )
+    .orderBy('l.created_at', 'desc')
+    .execute();
+
+  return [
+    ...own.map((a) => ({ ...a, source: 'own', license_id: null })),
+    ...licensed.map((a) => ({ ...a, source: 'licensed' })),
+  ];
+}
+
+// Link (or unlink, with artwork_id = null) an artwork on an existing product.
+// Only while the product is a draft/rejected: changing the artwork on a live
+// or in-review listing would sidestep moderation.
+async function setArtwork(userId, productId, { artwork_id, license_id } = {}) {
+  const product = await model.findProductById(productId);
+
+  await assertCanManage(userId, product);
+
+  if (!['draft', 'rejected'].includes(product.status)) {
+    throw new Error(
+      'The artwork can only be changed while the product is a draft or has been rejected'
+    );
+  }
+
+  if (!artwork_id) {
+    return model.updateProduct(productId, {
+      artwork_id: null,
+      license_id: null,
+      updated_at: new Date().toISOString(),
+    });
+  }
+
+  // Licences are held by whoever bought them; for a brand product that is
+  // the acting manager, so validate against the person making the change.
+  const licenseId = await assertArtworkUsageAllowed(
+    userId,
+    artwork_id,
+    license_id,
+    db
+  );
+
+  return model.updateProduct(productId, {
+    artwork_id,
+    license_id: licenseId,
+    updated_at: new Date().toISOString(),
+  });
+}
+
 module.exports = {
+  getEligibleArtworks,
+  setArtwork,
   createProduct,
   getProduct,
   getSellerProducts,

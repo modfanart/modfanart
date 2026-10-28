@@ -5,15 +5,12 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { CurrencyToggle } from '@/components/marketplace/currency-toggle';
 import { ProductCard, ProductGridSkeleton } from '@/components/marketplace/product-card';
 import { useGetMerchProductsQuery } from '@/services/api/marketplaceApi';
-import { useCurrency } from '@/lib/marketplace/use-currency';
 
 // A single brand's merch (linked from contest pages and product pages).
 export default function BrandStorefrontMerchPage() {
   const { brandId } = useParams<{ brandId: string }>();
-  const [currency] = useCurrency();
   const { data: products, isLoading } = useGetMerchProductsQuery({ brand_id: brandId });
 
   const brandName = products?.[0]?.brand_name;
@@ -28,7 +25,6 @@ export default function BrandStorefrontMerchPage() {
 
       <header className="flex items-end justify-between gap-4">
         <h1 className="text-3xl font-bold">{brandName ? `${brandName} storefront` : 'Brand storefront'}</h1>
-        <CurrencyToggle />
       </header>
 
       {isLoading ? (
@@ -36,7 +32,7 @@ export default function BrandStorefrontMerchPage() {
       ) : products && products.length ? (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {products.map((p) => (
-            <ProductCard key={p.id} product={p} currency={currency} />
+            <ProductCard key={p.id} product={p} />
           ))}
         </div>
       ) : (

@@ -105,7 +105,6 @@ const cdnFile = await cdnService.createFileRecord(
 
             return ArtworkPricingTier.create(artwork.id, {
               license_type: tier.license_type,
-              price_inr_cents: Number(tier.price_inr_cents) || 0,
               price_usd_cents: Number(tier.price_usd_cents) || 0,
               is_active: true,
             }).catch(console.error);

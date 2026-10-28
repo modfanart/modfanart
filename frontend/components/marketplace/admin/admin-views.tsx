@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Check, ClipboardCheck, CircleDollarSign, Store, Users, X } from 'lucide-react';
+import { Check, ClipboardCheck, CircleDollarSign, Package, Settings, Store, Users, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,6 +36,7 @@ import { StatTile } from '@/components/marketplace/seller/seller-overview';
 import {
   getApiErrorMessage,
   useDecideSellerProfileMutation,
+  useAdminCancelOrderMutation,
   useGenerateOrderPayoutsMutation,
   useGetAdminOrdersQuery,
   useGetAllPayoutsQuery,
@@ -80,11 +81,13 @@ export function AdminOverview({ root }: { root: string }) {
     { href: `${root}/moderation`, label: 'Listings to review', value: pending?.length ?? 0, icon: ClipboardCheck },
     { href: `${root}/sellers`, label: 'Seller applications', value: sellers?.length ?? 0, icon: Users },
     { href: `${root}/payouts`, label: 'Payouts due', value: formatMoney(payoutDue), icon: CircleDollarSign },
+    { href: `${root}/products`, label: 'Manage products', value: 'All', icon: Package },
+    { href: `${root}/settings`, label: 'Fees & providers', value: 'Configure', icon: Settings },
   ];
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
         {cards.map((c) => (
           <Link key={c.label} href={c.href} className="block transition-transform hover:-translate-y-0.5">
             <StatTile label={c.label} value={c.value} icon={c.icon} />
@@ -96,7 +99,7 @@ export function AdminOverview({ root }: { root: string }) {
         <CardHeader>
           <CardTitle className="text-base">Orders by status</CardTitle>
           <CardDescription>
-            Combined paid + completed volume: {formatMoney(revenue)} (mixed currencies shown as-is)
+            Combined paid + completed volume: {formatMoney(revenue)}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -160,7 +163,7 @@ export function ModerationQueue() {
                 <p className="text-sm text-muted-foreground">
                   {titleCase(p.base_product_type)} · {FULFILLMENT_LABEL[p.fulfillment_type]} ·{' '}
                   {p.variant_count} variant{p.variant_count === 1 ? '' : 's'} ·{' '}
-                  {formatProductPrice(p, 'INR')}
+                  {formatProductPrice(p)}
                 </p>
                 <p className="text-sm">
                   Seller: <span className="font-medium">{p.brand_name || p.seller_name}</span>
@@ -318,6 +321,7 @@ export function AdminOrders() {
     limit: 100,
   });
   const [generate, { isLoading: generating }] = useGenerateOrderPayoutsMutation();
+  const [cancelOrder, { isLoading: cancelling }] = useAdminCancelOrderMutation();
 
   return (
     <div className="space-y-4">
@@ -365,12 +369,37 @@ export function AdminOrders() {
                   <TableCell className="max-w-xs truncate text-sm">
                     {o.items.map((i) => i.product_title || i.artwork_title || i.description).join(', ')}
                   </TableCell>
-                  <TableCell>{formatMoney(o.total_cents, o.currency)}</TableCell>
+                  <TableCell>{formatMoney(o.total_cents)}</TableCell>
                   <TableCell>
                     <StatusBadge map={ORDER_STATUS} status={o.status} />
                   </TableCell>
                   <TableCell>{formatDate(o.created_at)}</TableCell>
                   <TableCell>
+                    {o.status === 'pending' && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-destructive"
+                        disabled={cancelling}
+                        title="Cancel this unpaid order and return its stock"
+                        onClick={() => {
+                          if (!window.confirm(`Cancel order ${o.order_number}? Reserved stock is returned.`)) return;
+
+                          cancelOrder(o.id)
+                            .unwrap()
+                            .then(() => toast({ title: 'Order cancelled' }))
+                            .catch((err) =>
+                              toast({
+                                title: 'Action failed',
+                                description: getApiErrorMessage(err),
+                                variant: 'destructive',
+                              })
+                            );
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    )}
                     {['paid', 'fulfilled'].includes(o.status) && (
                       <Button
                         size="sm"
@@ -453,8 +482,6 @@ export function AdminPayouts() {
             </TableHeader>
             <TableBody>
               {payouts.map((p) => {
-                const cur = p.currency ?? 'INR';
-
                 return (
                   <TableRow key={p.id}>
                     <TableCell>
@@ -467,9 +494,9 @@ export function AdminPayouts() {
                       <br />
                       <span className="text-xs text-muted-foreground">{p.item_description}</span>
                     </TableCell>
-                    <TableCell>{formatMoney(p.gross_cents, cur)}</TableCell>
-                    <TableCell>{formatMoney(p.platform_fee_cents, cur)}</TableCell>
-                    <TableCell className="font-medium">{formatMoney(p.net_cents, cur)}</TableCell>
+                    <TableCell>{formatMoney(p.gross_cents)}</TableCell>
+                    <TableCell>{formatMoney(p.platform_fee_cents)}</TableCell>
+                    <TableCell className="font-medium">{formatMoney(p.net_cents)}</TableCell>
                     <TableCell className="text-xs">
                       {p.seller_stripe_connect_id ? 'Connected' : <span className="text-destructive">Not connected</span>}
                     </TableCell>

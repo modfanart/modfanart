@@ -25,7 +25,7 @@ interface PaymentFormProps {
    */
   prepare?: () => Promise<string[]>;
   disabled?: boolean;
-  /** Label for the pay button, e.g. "Pay ₹1,299.00". */
+  /** Label for the pay button, e.g. "Pay $12.99". */
   label: string;
   onPaid: (orderIds: string[]) => void;
 }

@@ -88,8 +88,8 @@ export function SellerOverview({ storeBase }: { storeBase: string }) {
         <StatTile
           label="Gross sales"
           icon={CircleDollarSign}
-          value={formatMoney(summary?.gross_cents ?? 0, 'INR')}
-          hint="Paid orders, before fees (INR-equivalent display)"
+          value={formatMoney(summary?.gross_cents ?? 0)}
+          hint="Paid orders, before fees (USD)"
         />
         <StatTile label="Units sold" icon={ShoppingBag} value={summary?.units_sold ?? 0} />
         <StatTile
@@ -101,8 +101,8 @@ export function SellerOverview({ storeBase }: { storeBase: string }) {
         <StatTile
           label="Pending payouts"
           icon={Wallet}
-          value={formatMoney(pendingNet, 'INR')}
-          hint={`${formatMoney(paidNet, 'INR')} paid out so far`}
+          value={formatMoney(pendingNet)}
+          hint={`${formatMoney(paidNet)} paid out so far`}
         />
       </div>
 

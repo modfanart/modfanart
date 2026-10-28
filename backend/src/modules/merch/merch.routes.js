@@ -9,6 +9,11 @@ const { hasPermission } = require('../../common/middleware/permission.middleware
 router.get('/', controller.getPublishedProducts);
 router.get('/mine', authenticateToken, controller.getMyProducts);
 router.get('/mine/summary', authenticateToken, controller.getMySummary);
+router.get(
+  '/eligible-artworks',
+  authenticateToken,
+  controller.getEligibleArtworks
+);
 router.get('/print-providers', authenticateToken, controller.getPrintProviders);
 
 // Admin/moderation-only queue of listings awaiting a decision. Must be
@@ -25,6 +30,8 @@ router.get('/:id', controller.getProduct);
 router.post('/', authenticateToken, controller.createProduct);
 
 router.patch('/:id', authenticateToken, controller.updateProduct);
+
+router.put('/:id/artwork', authenticateToken, controller.setArtwork);
 
 router.post(
   '/:id/submit-for-review',

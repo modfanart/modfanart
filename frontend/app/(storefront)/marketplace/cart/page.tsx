@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/use-toast';
-import { CurrencyToggle } from '@/components/marketplace/currency-toggle';
 import { ProductImage } from '@/components/marketplace/product-image';
 import { RequireAuth } from '@/components/marketplace/require-auth';
 import {
@@ -19,11 +18,9 @@ import {
 } from '@/services/api/marketplaceApi';
 import { cartItemProblem } from '@/lib/marketplace/cart';
 import { formatMoney, priceCents, titleCase } from '@/lib/marketplace/format';
-import { useCurrency } from '@/lib/marketplace/use-currency';
 
 function CartContent() {
   const { toast } = useToast();
-  const [currency] = useCurrency();
 
   const { data: cart, isLoading, isError } = useGetCartQuery();
   const [updateItem, { isLoading: updating }] = useUpdateCartItemMutation();
@@ -33,7 +30,7 @@ function CartContent() {
     toast({ title: 'Cart update failed', description: getApiErrorMessage(err), variant: 'destructive' });
 
   const items = cart?.items ?? [];
-  const subtotal = items.reduce((sum, i) => sum + (priceCents(i, currency) ?? 0) * i.quantity, 0);
+  const subtotal = items.reduce((sum, i) => sum + (priceCents(i) ?? 0) * i.quantity, 0);
   const problems = items.filter((i) => cartItemProblem(i));
   const sellerCount = new Set(items.map((i) => i.seller_id ?? i.artwork_id)).size;
 
@@ -71,14 +68,13 @@ function CartContent() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-2xl font-bold">Your cart</h1>
-        <CurrencyToggle />
       </div>
 
       <div className="grid gap-8 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
           <ul className="divide-y rounded-lg border">
             {items.map((item) => {
-              const unit = priceCents(item, currency);
+              const unit = priceCents(item);
               const problem = cartItemProblem(item);
               const href =
                 item.item_type === 'merch_variant' && item.merch_product_id
@@ -112,7 +108,7 @@ function CartContent() {
                         )}
                       </div>
                       <div className="font-semibold">
-                        {unit != null ? formatMoney(unit * item.quantity, currency) : '—'}
+                        {unit != null ? formatMoney(unit * item.quantity) : '—'}
                       </div>
                     </div>
 
@@ -188,7 +184,7 @@ function CartContent() {
           <div className="space-y-3 text-sm">
             <div className="flex justify-between">
               <span>Subtotal</span>
-              <span>{formatMoney(subtotal, currency)}</span>
+              <span>{formatMoney(subtotal)}</span>
             </div>
             <div className="flex justify-between text-muted-foreground">
               <span>Shipping &amp; tax</span>
@@ -197,7 +193,7 @@ function CartContent() {
             <Separator />
             <div className="flex justify-between text-base font-semibold">
               <span>Total</span>
-              <span>{formatMoney(subtotal, currency)}</span>
+              <span>{formatMoney(subtotal)}</span>
             </div>
           </div>
 

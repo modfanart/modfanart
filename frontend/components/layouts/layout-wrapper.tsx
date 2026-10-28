@@ -18,7 +18,7 @@ export function LayoutWrapper({ children }: LayoutWrapperProps) {
     pathname?.startsWith('/artist') ||
     pathname?.startsWith('/judge') ||
     pathname?.startsWith('/login') ||
-    pathname?.startsWith('/signup') ||
+    pathname?.startsWith('/signup') ||     pathname?.startsWith('/seller') ||
     pathname?.startsWith('/forgot-password') ||
     pathname?.startsWith('/verify-account') ||
     pathname?.startsWith('/brand-manager');

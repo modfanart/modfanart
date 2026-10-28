@@ -22,7 +22,6 @@ export interface ArtworkPricingTier {
   id: string;
   artwork_id: string;
   license_type: 'personal' | 'commercial' | 'exclusive'; // adjust enum as needed
-  price_inr_cents: number;
   price_usd_cents: number;
   is_active: boolean;
   created_at: string;

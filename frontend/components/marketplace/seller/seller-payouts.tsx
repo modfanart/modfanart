@@ -52,20 +52,19 @@ export function SellerPayouts() {
       )}
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <StatTile label="Pending" icon={Clock} value={formatMoney(sum('pending', 'net_cents'), 'INR')} />
-        <StatTile label="Paid out" icon={Landmark} value={formatMoney(sum('paid', 'net_cents'), 'INR')} />
+        <StatTile label="Pending" icon={Clock} value={formatMoney(sum('pending', 'net_cents'))} />
+        <StatTile label="Paid out" icon={Landmark} value={formatMoney(sum('paid', 'net_cents'))} />
         <StatTile
           label="Platform fees"
           icon={CircleDollarSign}
           value={formatMoney(
             sum('pending', 'platform_fee_cents') +
-              sum('paid', 'platform_fee_cents'),
-            'INR'
+              sum('paid', 'platform_fee_cents')
           )}
         />
       </div>
       <p className="-mt-3 text-xs text-muted-foreground">
-        Totals add up amounts in each order&apos;s own currency; see rows below for exact figures.
+        All amounts are in USD.
       </p>
 
       {isLoading ? (

@@ -131,7 +131,7 @@ function OrderContent({ id }: { id: string }) {
                       </div>
                     </div>
                     <p className="font-medium">
-                      {formatMoney(item.unit_price_cents * item.quantity, order.currency)}
+                      {formatMoney(item.unit_price_cents * item.quantity)}
                     </p>
                   </li>
                 );
@@ -190,7 +190,7 @@ function OrderContent({ id }: { id: string }) {
               <h2 className="font-semibold">Complete your payment</h2>
               <PaymentForm
                 orderIds={[order.id]}
-                label={`Pay ${formatMoney(order.total_cents, order.currency)}`}
+                label={`Pay ${formatMoney(order.total_cents)}`}
                 onPaid={() => router.refresh()}
               />
               <Button
@@ -221,18 +221,18 @@ function OrderContent({ id }: { id: string }) {
             <h2 className="text-base font-semibold">Summary</h2>
             <div className="flex justify-between">
               <span>Subtotal</span>
-              <span>{formatMoney(order.subtotal_cents, order.currency)}</span>
+              <span>{formatMoney(order.subtotal_cents)}</span>
             </div>
             {order.tax_cents > 0 && (
               <div className="flex justify-between">
                 <span>Tax</span>
-                <span>{formatMoney(order.tax_cents, order.currency)}</span>
+                <span>{formatMoney(order.tax_cents)}</span>
               </div>
             )}
             <Separator />
             <div className="flex justify-between text-base font-semibold">
               <span>Total</span>
-              <span>{formatMoney(order.total_cents, order.currency)}</span>
+              <span>{formatMoney(order.total_cents)}</span>
             </div>
           </div>
 

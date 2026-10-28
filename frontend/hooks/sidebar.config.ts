@@ -24,8 +24,7 @@ import {
 
 import { LucideIcon } from 'lucide-react';
 
-type Role = 'artist' | 'brand_manager' | 'brand_owner' | 'judge' | 'admin';
-
+type Role = 'artist' | 'brand_manager' | 'brand_owner' | 'judge' | 'admin' | 'seller';
 type NavItem = {
   name: string;
   href: string;
@@ -56,7 +55,13 @@ export const sidebarConfig: Record<Role, (base: string) => NavItem[]> = {
     { name: 'Store', href: `${base}/store`, icon: ShoppingBag },
     { name: 'Analytics', href: `#`, icon: BarChart3 },
   ],
-
+  seller: (base: string): NavItem[] => [
+    { name: 'Overview', href: `${base}`, icon: LayoutDashboard },
+    { name: 'Store', href: `${base}/store`, icon: Store },
+    { name: 'Products', href: `${base}/products`, icon: ShoppingBag },
+    { name: 'Orders', href: `${base}/orders`, icon: ClipboardList },
+    { name: 'Profile', href: `${base}/profile`, icon: Users },
+  ],
   brand_manager: brandNavItems,
   brand_owner: brandNavItems,
 

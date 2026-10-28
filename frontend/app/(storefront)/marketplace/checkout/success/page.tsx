@@ -22,7 +22,6 @@ function SuccessContent() {
 
   const allPaid = mine.length > 0 && mine.every((o) => o.status !== 'pending');
   const total = mine.reduce((s, o) => s + o.total_cents, 0);
-  const currency = mine[0]?.currency ?? 'INR';
   const hasLicenses = mine.some((o) => o.items.some((i) => i.item_type === 'license'));
   const hasMerch = mine.some((o) => o.items.some((i) => i.item_type === 'merch_variant'));
 
@@ -63,13 +62,13 @@ function SuccessContent() {
               </div>
               <div className="flex items-center gap-3">
                 <StatusBadge map={ORDER_STATUS} status={o.status} />
-                <span className="font-medium">{formatMoney(o.total_cents, o.currency)}</span>
+                <span className="font-medium">{formatMoney(o.total_cents)}</span>
               </div>
             </Link>
           ))}
           <div className="flex justify-between p-4 font-semibold">
             <span>Total paid</span>
-            <span>{formatMoney(total, currency)}</span>
+            <span>{formatMoney(total)}</span>
           </div>
         </div>
       )}

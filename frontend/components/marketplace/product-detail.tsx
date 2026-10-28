@@ -24,8 +24,6 @@ import {
   titleCase,
   variantAvailability,
 } from '@/lib/marketplace/format';
-import { useCurrency } from '@/lib/marketplace/use-currency';
-import { CurrencyToggle } from './currency-toggle';
 import { ProductImage } from './product-image';
 import { ProductReviews, Stars } from './product-reviews';
 
@@ -36,7 +34,6 @@ export function ProductDetail({ id }: { id: string }) {
   const router = useRouter();
   const { toast } = useToast();
   const { user } = useAuth();
-  const [currency] = useCurrency();
 
   const { data: product, isLoading, isError } = useGetMerchProductQuery(id);
   const [addToCart, { isLoading: adding }] = useAddMerchToCartMutation();
@@ -136,7 +133,7 @@ export function ProductDetail({ id }: { id: string }) {
     );
   }
 
-  const unit = selected ? priceCents(selected, currency) : null;
+  const unit = selected ? priceCents(selected) : null;
 
   return (
     <div className="space-y-12">
@@ -183,9 +180,8 @@ export function ProductDetail({ id }: { id: string }) {
 
           <div className="flex items-end justify-between gap-4">
             <p className="text-3xl font-semibold">
-              {unit != null ? formatMoney(unit, currency) : 'Select options'}
+              {unit != null ? formatMoney(unit) : 'Select options'}
             </p>
-            <CurrencyToggle />
           </div>
 
           {product.description && (

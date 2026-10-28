@@ -10,7 +10,6 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AddressForm, AddressSummary } from '@/components/marketplace/address-form';
-import { CurrencyToggle } from '@/components/marketplace/currency-toggle';
 import { PaymentForm } from '@/components/marketplace/payment-form';
 import { ProductImage } from '@/components/marketplace/product-image';
 import { RequireAuth } from '@/components/marketplace/require-auth';
@@ -19,15 +18,12 @@ import {
   useGetAddressesQuery,
   useGetCartQuery,
   type CartItem,
-  type Currency,
 } from '@/services/api/marketplaceApi';
 import { formatMoney, priceCents, titleCase } from '@/lib/marketplace/format';
-import { useCurrency } from '@/lib/marketplace/use-currency';
 import { cartItemProblem } from '@/lib/marketplace/cart';
 
 function CheckoutContent() {
   const router = useRouter();
-  const [currency] = useCurrency();
 
   const { data: cart, isLoading: cartLoading } = useGetCartQuery();
   const { data: addresses, isLoading: addressesLoading } = useGetAddressesQuery();
@@ -41,17 +37,15 @@ function CheckoutContent() {
   // same orders with the summary and amount still showing.
   const [snapshot, setSnapshot] = useState<{
     items: CartItem[];
-    currency: Currency;
     needsShipping: boolean;
   } | null>(null);
 
   const liveItems = cart?.items ?? [];
   const items = snapshot?.items ?? liveItems;
-  const activeCurrency = snapshot?.currency ?? currency;
   const needsShipping =
     snapshot?.needsShipping ?? liveItems.some((i) => i.item_type === 'merch_variant');
   const subtotal = items.reduce(
-    (sum, i) => sum + (priceCents(i, activeCurrency) ?? 0) * i.quantity,
+    (sum, i) => sum + (priceCents(i) ?? 0) * i.quantity,
     0
   );
   const hasProblem = !snapshot && liveItems.some((i) => cartItemProblem(i));
@@ -97,7 +91,6 @@ function CheckoutContent() {
           <h1 className="text-2xl font-bold md:text-3xl">Checkout</h1>
           <p className="mt-1 text-muted-foreground">Review your order and pay securely.</p>
         </div>
-        {!snapshot && <CurrencyToggle />}
       </div>
 
       <div className="grid gap-8 lg:grid-cols-3">
@@ -163,13 +156,12 @@ function CheckoutContent() {
 
             <PaymentForm
               disabled={!canPay}
-              label={`Pay ${formatMoney(subtotal, activeCurrency)}`}
+              label={`Pay ${formatMoney(subtotal)}`}
               prepare={async () => {
                 const orders = await checkout({
                   address_id: needsShipping ? addressId : null,
-                  currency,
                 }).unwrap();
-                setSnapshot({ items: liveItems, currency, needsShipping });
+                setSnapshot({ items: liveItems, needsShipping });
                 return orders.map((o) => o.id);
               }}
               onPaid={(ids) => router.push(`/marketplace/checkout/success?orders=${ids.join(',')}`)}
@@ -204,7 +196,7 @@ function CheckoutContent() {
                   </p>
                 </div>
                 <span className="text-sm font-medium">
-                  {formatMoney((priceCents(i, activeCurrency) ?? 0) * i.quantity, activeCurrency)}
+                  {formatMoney((priceCents(i) ?? 0) * i.quantity)}
                 </span>
               </li>
             ))}
@@ -213,7 +205,7 @@ function CheckoutContent() {
           <Separator />
           <div className="flex justify-between font-semibold">
             <span>Total</span>
-            <span>{formatMoney(subtotal, activeCurrency)}</span>
+            <span>{formatMoney(subtotal)}</span>
           </div>
         </aside>
       </div>

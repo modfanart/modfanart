@@ -160,6 +160,11 @@ const routes = [
     path: '/api/seller-profiles',
     module: './src/modules/merch/sellerProfile.routes.js',
   },
+  // Marketplace admin: products, sellers, fee rules, print providers, reviews.
+  {
+    path: '/api/marketplace-admin',
+    module: './src/modules/marketplace-admin/marketplaceAdmin.routes.js',
+  },
   // Buyer shipping address book.
   { path: '/api/addresses', module: './src/modules/address/address.routes.js' },
 ];
@@ -184,6 +189,19 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Backend running on port ${PORT}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
+
+// Release stock held by cart orders that were never paid (every 10 minutes).
+const { expireStalePendingOrders } = require('./src/modules/orders/order.service');
+
+const staleOrderTimer = setInterval(async () => {
+  try {
+    const n = await expireStalePendingOrders(60);
+    if (n) console.log(`🧹 Expired ${n} unpaid order(s)`);
+  } catch (err) {
+    console.error('Stale order sweep failed:', err.message);
+  }
+}, 10 * 60 * 1000);
+staleOrderTimer.unref();
 
 // Graceful shutdown
 process.on('SIGTERM', () => {

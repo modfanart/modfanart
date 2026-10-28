@@ -45,7 +45,7 @@ export interface LicenseCheckoutSessionResponse {
   clientSecret: string; // paymentIntent.client_secret
   orderId: string;
   amount: number; // total in cents
-  currency: string; // 'inr' | 'usd'
+  currency: string; // always 'usd'
   // optional extras you might return
   paymentIntentId?: string;
   metadata?: Record<string, any>;

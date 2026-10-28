@@ -30,7 +30,15 @@ export interface SellerContext {
 
 export function useSellerContext(basePath: string): SellerContext {
   const { user } = useAuth();
-  const brandId = isBrandRole(user?.role?.name) ? (user?.brands?.[0]?.id ?? null) : null;
+
+  // A brand manager can run several brands, so resolve the one whose slug is
+  // in the dashboard URL (/brand-manager/<slug>) instead of assuming the
+  // first. Falls back to the first brand only when the slug isn't matched.
+  const slug = /^\/brand-manager\/([^/]+)/.exec(basePath)?.[1];
+  const brands = user?.brands ?? [];
+  const brandId = isBrandRole(user?.role?.name)
+    ? ((slug ? brands.find((b) => b.slug === slug) : undefined)?.id ?? brands[0]?.id ?? null)
+    : null;
 
   return { basePath, brandId };
 }

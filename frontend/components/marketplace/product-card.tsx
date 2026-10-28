@@ -5,13 +5,13 @@ import { Star } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import type { Currency, MerchProduct } from '@/services/api/marketplaceApi';
+import type { MerchProduct } from '@/services/api/marketplaceApi';
 import { FULFILLMENT_LABEL, formatProductPrice, titleCase } from '@/lib/marketplace/format';
 import { ProductImage } from './product-image';
 
 const NEW_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
 
-export function ProductCard({ product, currency }: { product: MerchProduct; currency: Currency }) {
+export function ProductCard({ product }: { product: MerchProduct }) {
   const isNew = Date.now() - new Date(product.created_at).getTime() < NEW_WINDOW_MS;
 
   return (
@@ -43,7 +43,7 @@ export function ProductCard({ product, currency }: { product: MerchProduct; curr
           </p>
 
           <div className="flex items-center justify-between pt-1">
-            <span className="font-semibold">{formatProductPrice(product, currency)}</span>
+            <span className="font-semibold">{formatProductPrice(product)}</span>
             {product.rating_count > 0 && (
               <span className="flex items-center gap-1 text-sm text-muted-foreground">
                 <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />

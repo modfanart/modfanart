@@ -16,7 +16,7 @@ import { API_BASE_URL } from '..';
 // Types (aligned with the backend rows / joins)
 // ────────────────────────────────────────────────
 
-export type Currency = 'INR' | 'USD';
+export type Currency = 'USD';
 
 export type FulfillmentType = 'print_on_demand' | 'in_house_stock' | 'dropship';
 
@@ -35,7 +35,6 @@ export interface MerchVariant {
   size: string | null;
   color: string | null;
   material: string | null;
-  price_inr_cents: number;
   price_usd_cents: number;
   stock_qty: number | null; // null = unlimited (print on demand)
   weight_grams: number | null;
@@ -66,8 +65,6 @@ export interface MerchProduct {
   brand_slug: string | null;
   artwork_title: string | null;
   image_url: string | null;
-  min_price_inr_cents: number | null;
-  max_price_inr_cents: number | null;
   min_price_usd_cents: number | null;
   max_price_usd_cents: number | null;
   variant_count: number;
@@ -99,12 +96,24 @@ export interface CreateMerchProductRequest {
   license_id?: string | null | undefined;
 }
 
+// An artwork the current user may print on merch: their own, or one they
+// hold an active commercial/exclusive licence for (license_id is then set and
+// must be sent back when linking it).
+export interface EligibleArtwork {
+  id: string;
+  title: string;
+  thumbnail_url: string | null;
+  source: 'own' | 'licensed';
+  license_id: string | null;
+  license_type?: 'commercial' | 'exclusive';
+  license_expires_at?: string | null;
+}
+
 export interface VariantInput {
   sku: string;
   size?: string | null | undefined;
   color?: string | null | undefined;
   material?: string | null | undefined;
-  price_inr_cents: number;
   price_usd_cents: number;
   stock_qty?: number | null | undefined;
   weight_grams?: number | null | undefined;
@@ -148,7 +157,6 @@ export interface CartItem {
   fulfillment_type: FulfillmentType | null;
   seller_id: string | null;
   title: string | null;
-  price_inr_cents: number | null;
   price_usd_cents: number | null;
   image_url: string | null;
 }
@@ -284,6 +292,72 @@ export interface PaymentSession {
 
 export type SellerStatus = 'pending' | 'approved' | 'rejected' | 'suspended';
 
+// ── Marketplace admin ──────────────────────────────────────────────
+
+export interface AdminProduct {
+  id: string;
+  title: string;
+  status: MerchStatus;
+  base_product_type: string;
+  fulfillment_type: FulfillmentType;
+  seller_id: string;
+  brand_id: string | null;
+  artwork_id: string | null;
+  license_id: string | null;
+  created_at: string;
+  updated_at: string;
+  seller_username: string | null;
+  brand_name: string | null;
+  artwork_title: string | null;
+  variant_count: number;
+  min_price_usd_cents: number | null;
+  max_price_usd_cents: number | null;
+  units_sold: number;
+}
+
+export interface AdminProductsResponse {
+  products: AdminProduct[];
+  counts: { status: MerchStatus; count: number }[];
+}
+
+export interface AdminSeller extends SellerProfile {
+  stripe_connected: boolean;
+  products_total: number;
+  products_live: number;
+  gross_cents: number;
+}
+
+export interface FeeRule {
+  id: string;
+  fulfillment_type: FulfillmentType | null;
+  base_product_type: string | null;
+  fee_bps: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+export type IntegrationType = 'printful' | 'printify' | 'manual';
+
+export interface AdminPrintProvider {
+  id: string;
+  name: string;
+  integration_type: IntegrationType;
+  is_active: boolean;
+  has_api_config: boolean;
+  created_at: string;
+}
+
+export interface AdminReview {
+  id: string;
+  rating: number;
+  body: string | null;
+  target_type: string;
+  target_id: string;
+  created_at: string;
+  reviewer_username: string | null;
+  product_title: string | null;
+}
+
 export interface SellerProfile {
   id: string;
   user_id: string;
@@ -387,6 +461,11 @@ export const marketplaceApi = createApi({
     'AllPayouts',
     'Reviews',
     'ConnectStatus',
+    'AdminProducts',
+    'AdminSellers',
+    'FeeRules',
+    'PrintProviders',
+    'AdminReviews',
   ],
 
   endpoints: (builder) => ({
@@ -401,6 +480,14 @@ export const marketplaceApi = createApi({
       query: (id) => `/merch/${id}`,
       transformResponse: (res: { product: MerchProduct }) => res.product,
       providesTags: (_r, _e, id) => [{ type: 'Product', id }],
+    }),
+
+    getEligibleArtworks: builder.query<EligibleArtwork[], { brandId?: string | null | undefined } | void>({
+      query: (arg) => ({
+        url: '/merch/eligible-artworks',
+        params: arg && arg.brandId ? { brand_id: arg.brandId } : undefined,
+      }),
+      transformResponse: (res: { artworks: EligibleArtwork[] }) => res.artworks,
     }),
 
     getPrintProviders: builder.query<PrintProvider[], void>({
@@ -425,6 +512,16 @@ export const marketplaceApi = createApi({
       query: (body) => ({ url: '/merch', method: 'POST', body }),
       transformResponse: (res: { product: MerchProduct }) => res.product,
       invalidatesTags: ['MyProducts', 'SellerSummary'],
+    }),
+
+    // artwork_id = null unlinks. Only allowed while draft/rejected.
+    setMerchArtwork: builder.mutation<
+      MerchProduct,
+      { id: string; artwork_id: string | null; license_id?: string | null | undefined }
+    >({
+      query: ({ id, ...body }) => ({ url: `/merch/${id}/artwork`, method: 'PUT', body }),
+      transformResponse: (res: { product: MerchProduct }) => res.product,
+      invalidatesTags: (_r, _e, { id }) => ['MyProducts', { type: 'Product', id }, 'Catalog'],
     }),
 
     updateMerchProduct: builder.mutation<
@@ -549,7 +646,7 @@ export const marketplaceApi = createApi({
 
     // Splits the cart into one *pending* order per seller. Payment is a
     // separate step (createOrderPayment).
-    checkoutCart: builder.mutation<Order[], { address_id?: string | null | undefined; currency: Currency }>({
+    checkoutCart: builder.mutation<Order[], { address_id?: string | null | undefined }>({
       query: (body) => ({ url: '/cart/checkout', method: 'POST', body }),
       transformResponse: (res: { orders: Order[] }) => res.orders,
       invalidatesTags: ['Cart', 'MyOrders'],
@@ -709,6 +806,109 @@ export const marketplaceApi = createApi({
       invalidatesTags: ['SellerProfile', 'SellerProfiles'],
     }),
 
+    // ═════════════ Marketplace admin ═════════════
+    getAdminProducts: builder.query<
+      AdminProductsResponse,
+      { status?: MerchStatus | undefined; search?: string | undefined; limit?: number | undefined } | void
+    >({
+      query: (params) => ({ url: '/marketplace-admin/products', params: (params || {}) as any }),
+      providesTags: ['AdminProducts'],
+    }),
+
+    setAdminProductStatus: builder.mutation<MerchProduct, { id: string; status: MerchStatus }>({
+      query: ({ id, ...body }) => ({ url: `/marketplace-admin/products/${id}/status`, method: 'PATCH', body }),
+      transformResponse: (res: { product: MerchProduct }) => res.product,
+      invalidatesTags: ['AdminProducts', 'Catalog', 'PendingProducts'],
+    }),
+
+    getAdminSellers: builder.query<
+      AdminSeller[],
+      { status?: SellerStatus | undefined; search?: string | undefined } | void
+    >({
+      query: (params) => ({ url: '/marketplace-admin/sellers', params: (params || {}) as any }),
+      transformResponse: (res: { sellers: AdminSeller[] }) => res.sellers,
+      providesTags: ['AdminSellers'],
+    }),
+
+    setAdminSellerStatus: builder.mutation<
+      SellerProfile,
+      { id: string; status: Exclude<SellerStatus, 'pending'>; notes?: string | undefined }
+    >({
+      query: ({ id, ...body }) => ({ url: `/marketplace-admin/sellers/${id}/status`, method: 'PATCH', body }),
+      transformResponse: (res: { profile: SellerProfile }) => res.profile,
+      invalidatesTags: ['AdminSellers', 'SellerProfiles', 'AdminProducts', 'Catalog'],
+    }),
+
+    getFeeRules: builder.query<FeeRule[], void>({
+      query: () => '/marketplace-admin/fee-rules',
+      transformResponse: (res: { rules: FeeRule[] }) => res.rules,
+      providesTags: ['FeeRules'],
+    }),
+
+    createFeeRule: builder.mutation<
+      FeeRule,
+      { fulfillment_type: FulfillmentType | null; base_product_type: string | null; fee_bps: number }
+    >({
+      query: (body) => ({ url: '/marketplace-admin/fee-rules', method: 'POST', body }),
+      transformResponse: (res: { rule: FeeRule }) => res.rule,
+      invalidatesTags: ['FeeRules'],
+    }),
+
+    updateFeeRule: builder.mutation<FeeRule, { id: string; fee_bps?: number; is_active?: boolean }>({
+      query: ({ id, ...body }) => ({ url: `/marketplace-admin/fee-rules/${id}`, method: 'PATCH', body }),
+      transformResponse: (res: { rule: FeeRule }) => res.rule,
+      invalidatesTags: ['FeeRules'],
+    }),
+
+    getAdminPrintProviders: builder.query<AdminPrintProvider[], void>({
+      query: () => '/marketplace-admin/print-providers',
+      transformResponse: (res: { providers: AdminPrintProvider[] }) => res.providers,
+      providesTags: ['PrintProviders'],
+    }),
+
+    createPrintProvider: builder.mutation<
+      AdminPrintProvider,
+      { name: string; integration_type: IntegrationType; api_config?: Record<string, unknown> | undefined }
+    >({
+      query: (body) => ({ url: '/marketplace-admin/print-providers', method: 'POST', body }),
+      transformResponse: (res: { provider: AdminPrintProvider }) => res.provider,
+      invalidatesTags: ['PrintProviders'],
+    }),
+
+    updatePrintProvider: builder.mutation<
+      AdminPrintProvider,
+      {
+        id: string;
+        name?: string | undefined;
+        integration_type?: IntegrationType | undefined;
+        is_active?: boolean | undefined;
+        api_config?: Record<string, unknown> | undefined;
+      }
+    >({
+      query: ({ id, ...body }) => ({ url: `/marketplace-admin/print-providers/${id}`, method: 'PATCH', body }),
+      transformResponse: (res: { provider: AdminPrintProvider }) => res.provider,
+      invalidatesTags: ['PrintProviders'],
+    }),
+
+    adminCancelOrder: builder.mutation<void, string>({
+      query: (id) => ({ url: `/marketplace-admin/orders/${id}/cancel`, method: 'POST' }),
+      invalidatesTags: ['AdminOrders', 'MyOrders', 'SellerOrders'],
+    }),
+
+    getAdminReviews: builder.query<
+      AdminReview[],
+      { rating?: number | undefined; search?: string | undefined } | void
+    >({
+      query: (params) => ({ url: '/marketplace-admin/reviews', params: (params || {}) as any }),
+      transformResponse: (res: { reviews: AdminReview[] }) => res.reviews,
+      providesTags: ['AdminReviews'],
+    }),
+
+    removeAdminReview: builder.mutation<void, string>({
+      query: (id) => ({ url: `/marketplace-admin/reviews/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['AdminReviews', 'Reviews'],
+    }),
+
     getSellerProfiles: builder.query<SellerProfile[], { status?: SellerStatus } | void>({
       query: (params) => ({ url: '/seller-profiles', params: (params || {}) as any }),
       transformResponse: (res: { profiles: SellerProfile[] }) => res.profiles,
@@ -804,6 +1004,8 @@ export const {
   useGetMerchProductsQuery,
   useGetMerchProductQuery,
   useGetPrintProvidersQuery,
+  useGetEligibleArtworksQuery,
+  useSetMerchArtworkMutation,
   // seller products
   useGetMyMerchProductsQuery,
   useGetMySellerSummaryQuery,
@@ -855,6 +1057,20 @@ export const {
   useMarkPayoutFailedMutation,
   useGetConnectStatusQuery,
   useCreateConnectAccountMutation,
+  // marketplace admin
+  useGetAdminProductsQuery,
+  useSetAdminProductStatusMutation,
+  useGetAdminSellersQuery,
+  useSetAdminSellerStatusMutation,
+  useGetFeeRulesQuery,
+  useCreateFeeRuleMutation,
+  useUpdateFeeRuleMutation,
+  useGetAdminPrintProvidersQuery,
+  useCreatePrintProviderMutation,
+  useUpdatePrintProviderMutation,
+  useAdminCancelOrderMutation,
+  useGetAdminReviewsQuery,
+  useRemoveAdminReviewMutation,
   // reviews
   useGetReviewsQuery,
   useGetRatingSummaryQuery,

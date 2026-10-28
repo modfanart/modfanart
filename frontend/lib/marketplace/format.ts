@@ -1,5 +1,4 @@
 import type {
-  Currency,
   FulfillmentStatus,
   FulfillmentType,
   MerchProduct,
@@ -10,33 +9,32 @@ import type {
   SellerStatus,
 } from '@/services/api/marketplaceApi';
 
-// All money from the backend is integer minor units (paise / cents).
-export function formatMoney(cents: number | null | undefined, currency: Currency = 'INR'): string {
+// All money from the backend is integer USD cents. The platform is USD-only.
+const USD = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  maximumFractionDigits: 2,
+});
+
+export function formatMoney(cents: number | null | undefined): string {
   if (cents == null || Number.isNaN(Number(cents))) return '—';
 
-  return new Intl.NumberFormat(currency === 'INR' ? 'en-IN' : 'en-US', {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: 2,
-  }).format(Number(cents) / 100);
+  return USD.format(Number(cents) / 100);
 }
 
-export function priceCents(
-  row: { price_inr_cents?: number | null; price_usd_cents?: number | null },
-  currency: Currency
-): number | null {
-  return currency === 'INR' ? (row.price_inr_cents ?? null) : (row.price_usd_cents ?? null);
+export function priceCents(row: { price_usd_cents?: number | null }): number | null {
+  return row.price_usd_cents ?? null;
 }
 
-// "₹499" or "₹499 – ₹899" for a product with several variant prices.
-export function formatProductPrice(product: MerchProduct, currency: Currency): string {
-  const min = currency === 'INR' ? product.min_price_inr_cents : product.min_price_usd_cents;
-  const max = currency === 'INR' ? product.max_price_inr_cents : product.max_price_usd_cents;
+// "$12.00" or "$12.00 – $24.00" for a product with several variant prices.
+export function formatProductPrice(product: MerchProduct): string {
+  const min = product.min_price_usd_cents;
+  const max = product.max_price_usd_cents;
 
   if (min == null) return 'Unavailable';
-  if (max == null || max === min) return formatMoney(min, currency);
+  if (max == null || max === min) return formatMoney(min);
 
-  return `${formatMoney(min, currency)} – ${formatMoney(max, currency)}`;
+  return `${formatMoney(min)} – ${formatMoney(max)}`;
 }
 
 // Whether a variant can be bought right now, and how many are left.

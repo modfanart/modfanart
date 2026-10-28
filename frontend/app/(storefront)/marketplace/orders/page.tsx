@@ -74,7 +74,7 @@ function OrdersContent() {
                   </p>
                 </div>
 
-                <span className="font-semibold">{formatMoney(order.total_cents, order.currency)}</span>
+                <span className="font-semibold">{formatMoney(order.total_cents)}</span>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </Link>
             </li>

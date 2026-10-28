@@ -57,12 +57,12 @@ type LicenseFormValues = z.infer<typeof formSchema>;
 // Helpers
 // ────────────────────────────────────────────────
 
-const formatPrice = (cents: number, currency: 'USD' | 'INR' = 'USD') => {
+const formatPrice = (cents: number) => {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency,
+    currency: 'USD',
     minimumFractionDigits: 0,
-    maximumFractionDigits: currency === 'INR' ? 0 : 2,
+    maximumFractionDigits: 2,
   }).format(cents / 100);
 };
 
@@ -317,9 +317,6 @@ function LicenseFormContent() {
                         <div className="text-right">
                           <div className="text-2xl font-bold">
                             {formatPrice(tier.price_usd_cents)}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            ≈ {formatPrice(tier.price_inr_cents, 'INR')}
                           </div>
                         </div>
                       </div>

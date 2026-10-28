@@ -10,6 +10,7 @@ async function createProduct(data, trx = db) {
       seller_id: data.seller_id,
       brand_id: data.brand_id || null,
       artwork_id: data.artwork_id || null,
+      license_id: data.license_id || null,
       title: data.title,
       description: data.description || null,
       base_product_type: data.base_product_type,
@@ -93,7 +94,6 @@ async function createVariant(data, trx = db) {
       size: data.size || null,
       color: data.color || null,
       material: data.material || null,
-      price_inr_cents: data.price_inr_cents,
       price_usd_cents: data.price_usd_cents,
       stock_qty: data.stock_qty ?? null,
       weight_grams: data.weight_grams ?? null,
@@ -213,14 +213,6 @@ function enrichedProductQuery(trx = db) {
           where mv.merch_product_id = mp.id and mv.print_file_url is not null
           order by mv.created_at asc limit 1)
       )`.as('image_url'),
-      sql`(select min(mv.price_inr_cents) from merch_variants mv
-            where mv.merch_product_id = mp.id and mv.is_active = true)`.as(
-        'min_price_inr_cents'
-      ),
-      sql`(select max(mv.price_inr_cents) from merch_variants mv
-            where mv.merch_product_id = mp.id and mv.is_active = true)`.as(
-        'max_price_inr_cents'
-      ),
       sql`(select min(mv.price_usd_cents) from merch_variants mv
             where mv.merch_product_id = mp.id and mv.is_active = true)`.as(
         'min_price_usd_cents'
@@ -283,6 +275,40 @@ async function findEnrichedBySeller(sellerId, trx = db) {
     .execute();
 }
 
+// Everything a user can manage: products they sell themselves plus products
+// listed under any brand they own or manage (so a second brand manager sees
+// and can edit the brand's catalogue, not just the person who created it).
+async function findEnrichedManagedBy(userId, trx = db) {
+  return enrichedProductQuery(trx)
+    .where((eb) =>
+      eb.or([
+        eb('mp.seller_id', '=', userId),
+        eb(
+          'mp.brand_id',
+          'in',
+          eb
+            .selectFrom('brand_managers')
+            .select('brand_id')
+            .where('user_id', '=', userId)
+            .where('role', 'in', ['owner', 'manager'])
+        ),
+      ])
+    )
+    .orderBy('mp.created_at', 'desc')
+    .execute();
+}
+
+async function countSoldItemsForProduct(productId, trx = db) {
+  const row = await trx
+    .selectFrom('order_items as oi')
+    .innerJoin('merch_variants as mv', 'mv.id', 'oi.merch_variant_id')
+    .select(sql`count(*)::int`.as('n'))
+    .where('mv.merch_product_id', '=', productId)
+    .executeTakeFirst();
+
+  return row?.n ?? 0;
+}
+
 async function findEnrichedByStatus(status, trx = db) {
   return enrichedProductQuery(trx)
     .where('mp.status', '=', status)
@@ -341,6 +367,8 @@ module.exports = {
 
   findEnrichedPublished,
   findEnrichedBySeller,
+  findEnrichedManagedBy,
+  countSoldItemsForProduct,
   findEnrichedByStatus,
   findEnrichedById,
   listPrintProviders,

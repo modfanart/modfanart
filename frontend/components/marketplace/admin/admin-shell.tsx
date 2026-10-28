@@ -11,9 +11,12 @@ import { cn } from '@/lib/utils';
 const TABS = [
   { label: 'Overview', path: '' },
   { label: 'Moderation', path: '/moderation' },
+  { label: 'Products', path: '/products' },
   { label: 'Sellers', path: '/sellers' },
   { label: 'Orders', path: '/orders' },
   { label: 'Payouts', path: '/payouts' },
+  { label: 'Reviews', path: '/reviews' },
+  { label: 'Settings', path: '/settings' },
 ];
 
 export function AdminShell({

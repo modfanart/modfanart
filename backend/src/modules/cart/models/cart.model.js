@@ -1,6 +1,18 @@
 const { db } = require('../../../config');
 const { sql } = require('kysely');
 
+// Locks the active cart row for the rest of the transaction so two
+// concurrent checkouts of the same cart can't both convert it.
+async function lockActiveCart(userId, trx) {
+  return trx
+    .selectFrom('carts')
+    .selectAll()
+    .where('user_id', '=', userId)
+    .where('status', '=', 'active')
+    .forUpdate()
+    .executeTakeFirst();
+}
+
 async function findActiveCart(userId, trx = db) {
   return trx
     .selectFrom('carts')
@@ -42,7 +54,7 @@ async function getCartItems(cartId, trx = db) {
     .leftJoin('artwork_pricing_tiers as apt', (join) =>
       join
         .onRef('apt.artwork_id', '=', 'ci.artwork_id')
-        .on(sql`apt.license_type::text = ci.license_type`)
+        .on(sql`apt.license_type::text = ci.license_type::text`)
     )
     .select([
       'ci.id',
@@ -63,9 +75,6 @@ async function getCartItems(cartId, trx = db) {
       'mp.fulfillment_type',
       'mp.seller_id',
       sql`coalesce(mp.title, a.title)`.as('title'),
-      sql`coalesce(apt.price_inr_cents, mv.price_inr_cents)`.as(
-        'price_inr_cents'
-      ),
       sql`coalesce(apt.price_usd_cents, mv.price_usd_cents)`.as(
         'price_usd_cents'
       ),
@@ -94,7 +103,7 @@ async function getCartItemsForCheckout(cartId, trx = db) {
     .leftJoin('artwork_pricing_tiers as apt', (join) =>
       join
         .onRef('apt.artwork_id', '=', 'ci.artwork_id')
-        .on(sql`apt.license_type::text = ci.license_type`)
+        .on(sql`apt.license_type::text = ci.license_type::text`)
     )
     .select([
       'ci.id',
@@ -107,14 +116,13 @@ async function getCartItemsForCheckout(cartId, trx = db) {
       'mv.sku',
       'mv.is_active as merch_is_active',
       'mv.stock_qty as merch_stock_qty',
-      'mv.price_inr_cents as merch_price_inr_cents',
       'mv.price_usd_cents as merch_price_usd_cents',
       'mp.title as merch_title',
       'mp.seller_id as merch_seller_id',
       'mp.status as merch_product_status',
+      'mp.license_id as merch_license_id',
       'a.creator_id as license_seller_id',
       'a.status as artwork_status',
-      'apt.price_inr_cents as license_price_inr_cents',
       'apt.price_usd_cents as license_price_usd_cents',
       'apt.is_active as license_tier_is_active',
     ])
@@ -189,6 +197,7 @@ async function removeItem(id, trx = db) {
 }
 
 module.exports = {
+  lockActiveCart,
   findActiveCart,
   createCart,
   findCartById,

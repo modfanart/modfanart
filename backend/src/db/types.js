@@ -157,7 +157,6 @@
  * @property {string} id
  * @property {string} artwork_id
  * @property {'personal' | 'commercial' | 'exclusive'} license_type
- * @property {number} price_inr_cents
  * @property {number} price_usd_cents
  * @property {boolean} is_active
  * @property {string} created_at
@@ -177,7 +176,7 @@
  * @property {string} slug
  * @property {string} description
  * @property {string | null} rules
- * @property {Array<{rank: number, amount_inr?: number, type: string, ...}> | null} prizes
+ * @property {Array<{rank: number, amount_usd?: number, type: string, ...}> | null} prizes
  * @property {string} start_date
  * @property {string} submission_end_date
  * @property {string | null} voting_end_date
@@ -668,7 +667,6 @@
  * @property {string | null} size
  * @property {string | null} color
  * @property {string | null} material
- * @property {number} price_inr_cents
  * @property {number} price_usd_cents
  * @property {number | null} stock_qty Null for pure POD products
  * @property {number | null} weight_grams

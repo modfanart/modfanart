@@ -5,15 +5,12 @@ import Link from 'next/link';
 import { PackageSearch } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { CurrencyToggle } from '@/components/marketplace/currency-toggle';
 import { MarketplaceFilters } from '@/components/marketplace/marketplace-filters';
 import { ProductCard, ProductGridSkeleton } from '@/components/marketplace/product-card';
 import { useGetMerchProductsQuery, type MerchFilters } from '@/services/api/marketplaceApi';
-import { useCurrency } from '@/lib/marketplace/use-currency';
 
 export default function MarketplacePage() {
   const [filters, setFilters] = useState<MerchFilters>({ sort: 'newest' });
-  const [currency] = useCurrency();
 
   // Don't fire a request on every keystroke.
   const deferred = useDeferredValue(filters);
@@ -30,7 +27,6 @@ export default function MarketplacePage() {
             Official merch from MOD artists and brands — tees, prints, mugs and more.
           </p>
         </div>
-        <CurrencyToggle />
       </header>
 
       <MarketplaceFilters value={filters} onChange={setFilters} />
@@ -51,7 +47,7 @@ export default function MarketplacePage() {
           }`}
         >
           {products.map((p) => (
-            <ProductCard key={p.id} product={p} currency={currency} />
+            <ProductCard key={p.id} product={p} />
           ))}
         </div>
       ) : (

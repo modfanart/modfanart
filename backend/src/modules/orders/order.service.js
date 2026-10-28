@@ -249,9 +249,15 @@ async function createPayment(userId, orderIds) {
     }
   }
 
-  const currency = orders[0].currency;
-  if (orders.some((o) => o.currency !== currency)) {
-    throw new Error('All orders in one payment must share a currency');
+  // The platform is USD-only. A pending order in any other currency can
+  // only be a leftover from before that change — refuse to charge it
+  // rather than quietly re-labelling its amount.
+  const currency = 'USD';
+
+  if (orders.some((o) => String(o.currency).toUpperCase() !== currency)) {
+    throw new Error(
+      'This order was created in a currency we no longer support. Please cancel it and check out again.'
+    );
   }
 
   // Physical goods need somewhere to go.
@@ -303,7 +309,7 @@ async function createPayment(userId, orderIds) {
 
   const intent = await stripe.paymentIntents.create({
     amount,
-    currency: currency.toLowerCase(),
+    currency: 'usd',
     payment_method_types: ['card'],
     transfer_group: `orders_${ids[0]}`,
     metadata: {
@@ -373,7 +379,63 @@ async function cancelOrder(userId, orderId) {
   return db.selectFrom('orders').selectAll().where('id', '=', orderId).executeTakeFirst();
 }
 
+// Checkout reserves stock up-front, so an order the buyer never pays for
+// would hold that inventory forever. This sweeper fails cart-created orders
+// that have sat unpaid past `maxAgeMinutes`, returning their stock.
+//
+// Because the webhook can lag behind a real payment, each candidate's
+// PaymentIntent is checked first: a succeeded one is fulfilled instead of
+// expired, and a still-open one is cancelled so it can't be paid after the
+// stock has been released.
+async function expireStalePendingOrders(maxAgeMinutes = 60) {
+  const cutoff = new Date(Date.now() - maxAgeMinutes * 60 * 1000).toISOString();
+
+  const stale = await db
+    .selectFrom('orders')
+    .select(['id', 'stripe_payment_intent_id'])
+    .where('status', '=', 'pending')
+    .where('cart_id', 'is not', null)
+    .where('created_at', '<', cutoff)
+    .limit(100)
+    .execute();
+
+  let expired = 0;
+
+  for (const order of stale) {
+    try {
+      if (order.stripe_payment_intent_id) {
+        const intent = await stripe.paymentIntents.retrieve(
+          order.stripe_payment_intent_id
+        );
+
+        if (intent.status === 'succeeded') {
+          await OrderFulfillmentService.fulfillOrder(intent);
+          continue;
+        }
+
+        if (
+          ['requires_payment_method', 'requires_confirmation', 'requires_action'].includes(
+            intent.status
+          )
+        ) {
+          await stripe.paymentIntents.cancel(intent.id);
+        } else if (intent.status === 'processing') {
+          continue; // money is in flight — let the webhook decide
+        }
+      }
+
+      await OrderFulfillmentService.markOrderAsFailed(order.id);
+      expired += 1;
+    } catch (err) {
+      console.error(`Could not expire order ${order.id}:`, err.message);
+    }
+  }
+
+  return expired;
+}
+
 module.exports = {
+  expireStalePendingOrders,
   getOrderAccess,
   getBuyerOrders,
   getSellerOrders,

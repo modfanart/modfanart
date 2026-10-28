@@ -1,7 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
-import { Pencil, Plus, Send, Trash2 } from 'lucide-react';
+import { Archive, ArchiveRestore, Pencil, Plus, Send, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -19,6 +20,7 @@ import {
   getApiErrorMessage,
   useDeleteMerchProductMutation,
   useGetMyMerchProductsQuery,
+  useUpdateMerchProductMutation,
   useSubmitMerchForReviewMutation,
 } from '@/services/api/marketplaceApi';
 import {
@@ -34,13 +36,31 @@ export function SellerProducts({ storeBase }: { storeBase: string }) {
   const { data: products, isLoading } = useGetMyMerchProductsQuery();
   const [submit, { isLoading: submitting }] = useSubmitMerchForReviewMutation();
   const [remove] = useDeleteMerchProductMutation();
+  const [setStatus] = useUpdateMerchProductMutation();
+  const [filter, setFilter] = useState<string>('all');
+
+  const STATUS_FILTERS = ['all', 'draft', 'pending_review', 'published', 'rejected', 'archived'];
+  const visible = (products ?? []).filter((p) => filter === 'all' || p.status === filter);
 
   const fail = (err: unknown) =>
     toast({ title: 'Action failed', description: getApiErrorMessage(err), variant: 'destructive' });
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap gap-1" role="group" aria-label="Filter by status">
+          {STATUS_FILTERS.map((s) => (
+            <Button
+              key={s}
+              size="sm"
+              variant={filter === s ? 'default' : 'outline'}
+              onClick={() => setFilter(s)}
+            >
+              {s === 'all' ? 'All' : MERCH_STATUS[s as keyof typeof MERCH_STATUS].label}
+              {s !== 'all' && ` (${(products ?? []).filter((p) => p.status === s).length})`}
+            </Button>
+          ))}
+        </div>
         <Button asChild>
           <Link href={`${storeBase}/products/new`}>
             <Plus className="mr-2 h-4 w-4" /> New product
@@ -62,23 +82,28 @@ export function SellerProducts({ storeBase }: { storeBase: string }) {
                 <TableHead>Product</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Variants</TableHead>
-                <TableHead>Price (INR)</TableHead>
+                <TableHead>Price (USD)</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Updated</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {products.map((p) => (
+              {visible.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className="h-10 w-10 shrink-0 overflow-hidden rounded border">
                         <ProductImage src={p.image_url} alt={p.title} />
                       </div>
-                      <Link href={`${storeBase}/products/${p.id}`} className="font-medium hover:underline">
-                        {p.title}
-                      </Link>
+                      <div>
+                        <Link href={`${storeBase}/products/${p.id}`} className="font-medium hover:underline">
+                          {p.title}
+                        </Link>
+                        <p className="text-xs text-muted-foreground">
+                          {p.artwork_title ? `Artwork: ${p.artwork_title}` : 'Standalone'}
+                        </p>
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
@@ -87,7 +112,7 @@ export function SellerProducts({ storeBase }: { storeBase: string }) {
                     {FULFILLMENT_LABEL[p.fulfillment_type]}
                   </TableCell>
                   <TableCell>{p.variant_count}</TableCell>
-                  <TableCell>{formatProductPrice(p, 'INR')}</TableCell>
+                  <TableCell>{formatProductPrice(p)}</TableCell>
                   <TableCell>
                     <StatusBadge map={MERCH_STATUS} status={p.status} />
                   </TableCell>
@@ -108,6 +133,35 @@ export function SellerProducts({ storeBase }: { storeBase: string }) {
                           }
                         >
                           <Send className="mr-1 h-3.5 w-3.5" /> Submit
+                        </Button>
+                      )}
+                      {['draft', 'rejected', 'published'].includes(p.status) && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          title="Take off the marketplace but keep order history"
+                          onClick={() =>
+                            setStatus({ id: p.id, status: 'archived' })
+                              .unwrap()
+                              .then(() => toast({ title: 'Product archived' }))
+                              .catch(fail)
+                          }
+                        >
+                          <Archive className="mr-1 h-3.5 w-3.5" /> Archive
+                        </Button>
+                      )}
+                      {p.status === 'archived' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            setStatus({ id: p.id, status: 'draft' })
+                              .unwrap()
+                              .then(() => toast({ title: 'Moved back to drafts' }))
+                              .catch(fail)
+                          }
+                        >
+                          <ArchiveRestore className="mr-1 h-3.5 w-3.5" /> Restore
                         </Button>
                       )}
                       <Button size="icon" variant="ghost" asChild aria-label={`Edit ${p.title}`}>

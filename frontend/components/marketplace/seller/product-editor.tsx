@@ -29,13 +29,14 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { StatusBadge } from '@/components/marketplace/status-badge';
-import { useGetMyArtworksQuery } from '@/services/api/artworkApi';
 import {
   getApiErrorMessage,
   useAddMerchVariantMutation,
   useCreateMerchProductMutation,
   useDeleteMerchVariantMutation,
+  useGetEligibleArtworksQuery,
   useGetMerchProductQuery,
+  useSetMerchArtworkMutation,
   useGetPrintProvidersQuery,
   useSubmitMerchForReviewMutation,
   useUpdateMerchProductMutation,
@@ -58,7 +59,7 @@ export function ProductCreateForm({ ctx }: { ctx: SellerContext }) {
   const storeBase = `${ctx.basePath}/store`;
 
   const { data: providers } = useGetPrintProvidersQuery();
-  const { data: artworkRes } = useGetMyArtworksQuery({ status: 'published', limit: 100 });
+  const { data: eligible } = useGetEligibleArtworksQuery({ brandId: ctx.brandId });
   const [create, { isLoading }] = useCreateMerchProductMutation();
 
   const [form, setForm] = useState({
@@ -72,7 +73,8 @@ export function ProductCreateForm({ ctx }: { ctx: SellerContext }) {
   const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
 
-  const artworks = artworkRes?.artworks ?? [];
+  const artworks = eligible ?? [];
+  const chosenArtwork = artworks.find((a) => a.id === form.artwork_id);
   const isPod = form.fulfillment_type === 'print_on_demand';
 
   const submit = async (e: React.FormEvent) => {
@@ -86,6 +88,7 @@ export function ProductCreateForm({ ctx }: { ctx: SellerContext }) {
         fulfillment_type: form.fulfillment_type,
         print_provider_id: isPod && form.print_provider_id !== NONE ? form.print_provider_id : null,
         artwork_id: form.artwork_id !== NONE ? form.artwork_id : null,
+        license_id: chosenArtwork?.license_id ?? null,
         brand_id: ctx.brandId,
       }).unwrap();
 
@@ -192,14 +195,16 @@ export function ProductCreateForm({ ctx }: { ctx: SellerContext }) {
               <SelectContent>
                 <SelectItem value={NONE}>Standalone product</SelectItem>
                 {artworks.map((a) => (
-                  <SelectItem key={a.id} value={a.id}>
+                  <SelectItem key={`${a.id}:${a.license_id ?? 'own'}`} value={a.id}>
                     {a.title}
+                    {a.source === 'licensed' ? ` · licensed (${a.license_type})` : ' · yours'}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <p className="mt-1 text-xs text-muted-foreground">
-              Your own published artworks need no extra licence. Its thumbnail becomes the product image.
+              Your own published artworks need no extra licence. Artwork you hold an active commercial or
+              exclusive licence for is listed too. The artwork thumbnail becomes the product image.
             </p>
           </div>
 
@@ -233,6 +238,7 @@ export function ProductEditor({ id, ctx }: { id: string; ctx: SellerContext }) {
   const values = draft ?? { title: product.title, description: product.description ?? '' };
   const variants = product.variants ?? [];
   const canSubmit = ['draft', 'rejected'].includes(product.status);
+  const copyEditable = ['draft', 'rejected', 'archived'].includes(product.status);
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -292,6 +298,7 @@ export function ProductEditor({ id, ctx }: { id: string; ctx: SellerContext }) {
             <Label htmlFor="e-title">Title</Label>
             <Input
               id="e-title"
+              disabled={!copyEditable}
               className="mt-1"
               value={values.title}
               onChange={(e) => setDraft({ ...values, title: e.target.value })}
@@ -301,6 +308,7 @@ export function ProductEditor({ id, ctx }: { id: string; ctx: SellerContext }) {
             <Label htmlFor="e-desc">Description</Label>
             <Textarea
               id="e-desc"
+              disabled={!copyEditable}
               rows={4}
               className="mt-1"
               value={values.description}
@@ -308,7 +316,7 @@ export function ProductEditor({ id, ctx }: { id: string; ctx: SellerContext }) {
             />
           </div>
           <Button
-            disabled={!draft || saving || !values.title.trim()}
+            disabled={!copyEditable || !draft || saving || !values.title.trim()}
             onClick={() =>
               update({ id: product.id, title: values.title.trim(), description: values.description })
                 .unwrap()
@@ -321,8 +329,22 @@ export function ProductEditor({ id, ctx }: { id: string; ctx: SellerContext }) {
           >
             <Save className="mr-2 h-4 w-4" /> Save details
           </Button>
+          {!copyEditable && (
+            <p className="text-xs text-muted-foreground">
+              Title and description are locked while a product is live or in review. Archive it to edit, then
+              submit it for review again. Prices and stock can still be changed below.
+            </p>
+          )}
         </CardContent>
       </Card>
+
+      <ArtworkCard
+        productId={product.id}
+        brandId={ctx.brandId}
+        editable={canSubmit}
+        currentArtworkId={product.artwork_id ?? null}
+        currentArtworkTitle={product.artwork_title ?? null}
+      />
 
       <VariantsCard
         productId={product.id}
@@ -330,6 +352,86 @@ export function ProductEditor({ id, ctx }: { id: string; ctx: SellerContext }) {
         variants={variants}
       />
     </div>
+  );
+}
+
+// ─────────────────────────── artwork link ───────────────────────────
+
+function ArtworkCard({
+  productId,
+  brandId,
+  editable,
+  currentArtworkId,
+  currentArtworkTitle,
+}: {
+  productId: string;
+  brandId: string | null;
+  editable: boolean;
+  currentArtworkId: string | null;
+  currentArtworkTitle: string | null;
+}) {
+  const { toast } = useToast();
+  const { data: eligible } = useGetEligibleArtworksQuery({ brandId }, { skip: !editable });
+  const [setArtwork, { isLoading }] = useSetMerchArtworkMutation();
+  const [choice, setChoice] = useState<string>(NONE);
+
+  const artworks = eligible ?? [];
+  const picked = artworks.find((a) => `${a.id}:${a.license_id ?? 'own'}` === choice);
+
+  const run = (artwork_id: string | null, license_id?: string | null) =>
+    setArtwork({ id: productId, artwork_id, license_id })
+      .unwrap()
+      .then(() => {
+        setChoice(NONE);
+        toast({ title: artwork_id ? 'Artwork linked' : 'Artwork removed' });
+      })
+      .catch((err) =>
+        toast({ title: 'Action failed', description: getApiErrorMessage(err), variant: 'destructive' })
+      );
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Artwork</CardTitle>
+        <CardDescription>
+          {currentArtworkId
+            ? `Printing “${currentArtworkTitle ?? 'Untitled'}”.`
+            : 'Standalone product — not tied to an artwork.'}
+          {!editable && ' The artwork can only be changed while the product is a draft or rejected.'}
+        </CardDescription>
+      </CardHeader>
+      {editable && (
+        <CardContent className="space-y-3">
+          <Select value={choice} onValueChange={setChoice}>
+            <SelectTrigger>
+              <SelectValue placeholder="Choose an artwork" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NONE}>Choose an artwork…</SelectItem>
+              {artworks.map((a) => (
+                <SelectItem key={`${a.id}:${a.license_id ?? 'own'}`} value={`${a.id}:${a.license_id ?? 'own'}`}>
+                  {a.title}
+                  {a.source === 'licensed' ? ` · licensed (${a.license_type})` : ' · yours'}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="flex gap-2">
+            <Button
+              disabled={!picked || isLoading}
+              onClick={() => picked && run(picked.id, picked.license_id)}
+            >
+              {currentArtworkId ? 'Change artwork' : 'Link artwork'}
+            </Button>
+            {currentArtworkId && (
+              <Button variant="outline" disabled={isLoading} onClick={() => run(null)}>
+                Remove artwork
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      )}
+    </Card>
   );
 }
 
@@ -353,7 +455,6 @@ function VariantsCard({
     size: '',
     color: '',
     material: '',
-    price_inr: '',
     price_usd: '',
     stock_qty: '',
     print_file_url: '',
@@ -373,7 +474,6 @@ function VariantsCard({
         size: form.size.trim() || null,
         color: form.color.trim() || null,
         material: form.material.trim() || null,
-        price_inr_cents: toCents(form.price_inr),
         price_usd_cents: toCents(form.price_usd),
         stock_qty: tracksStock && form.stock_qty !== '' ? parseInt(form.stock_qty, 10) : null,
         print_file_url: form.print_file_url.trim() || null,
@@ -390,7 +490,7 @@ function VariantsCard({
       <CardHeader>
         <CardTitle className="text-base">Variants &amp; pricing</CardTitle>
         <CardDescription>
-          Each size/colour combination is a variant with its own SKU and price in both currencies.
+          Each size/colour combination is a variant with its own SKU and a price in USD.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -401,7 +501,6 @@ function VariantsCard({
                 <TableRow>
                   <TableHead>SKU</TableHead>
                   <TableHead>Options</TableHead>
-                  <TableHead>₹ INR</TableHead>
                   <TableHead>$ USD</TableHead>
                   {tracksStock && <TableHead>Stock</TableHead>}
                   <TableHead>Active</TableHead>
@@ -437,11 +536,7 @@ function VariantsCard({
               <Input id="v-material" className="mt-1" value={form.material} onChange={(e) => set('material', e.target.value)} />
             </div>
             <div>
-              <Label htmlFor="v-inr">Price ₹ INR</Label>
-              <Input id="v-inr" required type="number" min="0" step="0.01" className="mt-1" value={form.price_inr} onChange={(e) => set('price_inr', e.target.value)} />
-            </div>
-            <div>
-              <Label htmlFor="v-usd">Price $ USD</Label>
+              <Label htmlFor="v-usd">Price (USD)</Label>
               <Input id="v-usd" required type="number" min="0" step="0.01" className="mt-1" value={form.price_usd} onChange={(e) => set('price_usd', e.target.value)} />
             </div>
             {tracksStock && (
@@ -455,7 +550,7 @@ function VariantsCard({
               <Input id="v-file" type="url" className="mt-1" placeholder="https://…" value={form.print_file_url} onChange={(e) => set('print_file_url', e.target.value)} />
             </div>
           </div>
-          <Button type="submit" disabled={adding || !form.sku.trim() || form.price_inr === '' || form.price_usd === ''}>
+          <Button type="submit" disabled={adding || !form.sku.trim() || form.price_usd === '' || Number.isNaN(parseFloat(form.price_usd))}>
             <Plus className="mr-2 h-4 w-4" /> {adding ? 'Adding…' : 'Add variant'}
           </Button>
         </form>
@@ -477,12 +572,10 @@ function VariantRow({
   const [update, { isLoading }] = useUpdateMerchVariantMutation();
   const [remove] = useDeleteMerchVariantMutation();
 
-  const [inr, setInr] = useState(toMajor(variant.price_inr_cents));
   const [usd, setUsd] = useState(toMajor(variant.price_usd_cents));
   const [stock, setStock] = useState(variant.stock_qty == null ? '' : String(variant.stock_qty));
 
   const dirty =
-    inr !== toMajor(variant.price_inr_cents) ||
     usd !== toMajor(variant.price_usd_cents) ||
     stock !== (variant.stock_qty == null ? '' : String(variant.stock_qty));
 
@@ -494,9 +587,6 @@ function VariantRow({
       <TableCell className="font-mono text-xs">{variant.sku}</TableCell>
       <TableCell className="text-sm">
         {[variant.size, variant.color, variant.material].filter(Boolean).join(' · ') || '—'}
-      </TableCell>
-      <TableCell>
-        <Input aria-label="Price INR" type="number" min="0" step="0.01" className="h-8 w-24" value={inr} onChange={(e) => setInr(e.target.value)} />
       </TableCell>
       <TableCell>
         <Input aria-label="Price USD" type="number" min="0" step="0.01" className="h-8 w-24" value={usd} onChange={(e) => setUsd(e.target.value)} />
@@ -525,7 +615,6 @@ function VariantRow({
               update({
                 productId,
                 variantId: variant.id,
-                price_inr_cents: toCents(inr),
                 price_usd_cents: toCents(usd),
                 ...(tracksStock ? { stock_qty: stock === '' ? null : parseInt(stock, 10) } : {}),
               })

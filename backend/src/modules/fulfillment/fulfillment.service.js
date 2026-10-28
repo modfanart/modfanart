@@ -59,6 +59,8 @@ async function createFulfillment({
     throw new Error('At least one order item is required');
   }
 
+  orderItemIds = [...new Set(orderItemIds)];
+
   const order = await Order.findById(orderId);
 
   if (!order) {
@@ -96,6 +98,27 @@ async function createFulfillment({
       if (sellerId && item.seller_id !== sellerId) {
         throw new Error(
           `Order item ${orderItemId} does not belong to you`
+        );
+      }
+
+      // Only physical goods are shipped; licenses are delivered digitally.
+      if (item.item_type !== 'merch_variant') {
+        throw new Error(`Order item ${orderItemId} is not a shippable item`);
+      }
+
+      // An item may only be in one live shipment at a time, otherwise it
+      // could be "delivered" twice or counted against two payouts.
+      const alreadyShipping = await trx
+        .selectFrom('fulfillment_items as fi')
+        .innerJoin('fulfillments as f', 'f.id', 'fi.fulfillment_id')
+        .select('f.id')
+        .where('fi.order_item_id', '=', orderItemId)
+        .where('f.status', 'not in', ['failed', 'returned'])
+        .executeTakeFirst();
+
+      if (alreadyShipping) {
+        throw new Error(
+          `Order item ${orderItemId} is already part of a shipment`
         );
       }
     }

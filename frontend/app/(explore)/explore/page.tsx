@@ -52,8 +52,8 @@ export default function ExplorePage() {
 
   const formatPrize = (prizes: any[] | null) => {
     if (!prizes?.length) return 'Prizes';
-    const total = prizes.reduce((sum, p) => sum + (p.amount_inr || 0), 0);
-    return total > 0 ? `₹${(total / 100).toLocaleString('en-IN')}` : 'Prizes';
+    const total = prizes.reduce((sum, p) => sum + (Number(p.amount_usd) || 0), 0);
+    return total > 0 ? `$${total.toLocaleString('en-US')}` : 'Prizes';
   };
 
   return (
