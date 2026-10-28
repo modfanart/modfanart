@@ -3,6 +3,7 @@
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -146,6 +147,16 @@ function LoginPageInner() {
 
   return (
     <>
+
+      <Link href="/" className="inline-block">
+          <Image
+            src="/house-backup.svg"
+            alt="Return to Home"
+            width={120}
+            height={44}
+            className="h-9 w-auto"
+          />
+        </Link>
       
       <h1 className="text-3xl font-bold mb-2">Sign in</h1>
       <p className="text-gray-600 mb-8">Welcome back! Please enter your information.</p>
