@@ -259,9 +259,6 @@ export const userApi = createApi({
         }
         return response.user;
       },
-      extraOptions: {
-        refetchOnMountOrArgChange: true,
-      },
     }),
 
     // PATCH /users/me/password
