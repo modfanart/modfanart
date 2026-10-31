@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-import { Gavel } from 'lucide-react';
+import { Gavel, Settings, Store } from 'lucide-react';
 
 import { useAuth } from '@/store/AuthContext';
 import { sidebarConfig } from '@/hooks/sidebar.config';
@@ -40,8 +40,16 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
   // brand account with no brand attached. That used to mean no navigation at
   // all, which would strand an assigned judge whose role happens not to be one
   // of the five the sidebar understands. Judging is reachable either way.
+  // A brand account with no brand yet (verification pending) still needs a way back to
+  // /brand-manager, which shows the application status.
+  const isBrandRole = ['brand_manager', 'brand_owner', 'brand_editor', 'brand_member'].includes(
+    rawRole || ''
+  );
+  const brandSetupNav =
+    isBrandRole && !basePath ? [{ name: 'Brand setup', href: '/brand-manager', icon: Store }] : [];
+
   if (!role || !basePath) {
-    if (!judgeHref) {
+    if (!judgeHref && brandSetupNav.length === 0) {
       return (
         <div className="flex h-full items-center justify-center p-6 text-red-500">
           Missing profile identifier
@@ -51,6 +59,7 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
   }
 
   const navigation = [
+    ...brandSetupNav,
     ...((role && basePath && sidebarConfig[role]?.(basePath)) || []),
     ...(judgeHref ? [{ name: 'Judging', href: judgeHref, icon: Gavel }] : []),
   ];
@@ -60,7 +69,13 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
       <ScrollArea className="flex-1 px-3 py-4">
         <div className="space-y-1">
           {navigation.map((item) => {
-            const isActive = item.href !== '#' && pathname.startsWith(item.href);
+            // Overview's href is the dashboard root, a prefix of every other item, so it
+            // only counts as active on an exact match (otherwise two items light up).
+            const isActive =
+              item.href !== '#' &&
+              (item.href === basePath
+                ? pathname === item.href
+                : pathname === item.href || pathname.startsWith(`${item.href}/`));
 
             return (
               <Link
@@ -88,8 +103,11 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
       <Separator />
 
       <div className="p-4">
-        <Button variant="outline" className="w-full justify-start gap-2">
-          Settings
+        <Button asChild variant="outline" className="w-full justify-start gap-2">
+          <Link href="/settings" onClick={() => onClose?.()}>
+            <Settings className="h-4 w-4" />
+            Settings
+          </Link>
         </Button>
       </div>
     </aside>
