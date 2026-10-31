@@ -2,6 +2,7 @@ const express = require("express");
 const ArtworkCategoryController = require("./controller/artworkCategory.controller");
 const {
   authenticateToken,
+  requireVerifiedEmail,
 } = require("../../common/middleware/auth.middleware");
 const {
   hasPermission,
@@ -54,6 +55,7 @@ router.delete("/:id", authenticateToken, ArtworkController.deleteArtwork);
 router.post(
   "/",
   authenticateToken,
+  requireVerifiedEmail,
   singleUpload("file"),
   ArtworkController.createArtwork
 );
