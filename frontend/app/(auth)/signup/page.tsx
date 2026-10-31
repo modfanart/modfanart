@@ -6,8 +6,15 @@ import Link from 'next/link';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { ArrowLeft, Eye, EyeOff, Palette, Building2, Heart } from 'lucide-react';
-import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { AlertCircle, ArrowLeft, Eye, EyeOff, Palette, Building2, Heart } from 'lucide-react';
+import {
+  createUserWithEmailAndPassword,
+  sendEmailVerification,
+  signInWithPopup,
+  updatePassword,
+  GoogleAuthProvider,
+  type User as FirebaseUser,
+} from 'firebase/auth';
 import { firebaseAuth } from '@/lib/firebase';
 import { API_BASE_URL } from '@/services';
 
@@ -15,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -23,11 +31,17 @@ import {
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Textarea } from '@/components/ui/textarea';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from '@/components/ui/use-toast';
-import { useSubmitBrandVerificationRequestMutation } from '@/services/api/brands';
+import { PasswordChecklist } from '@/components/auth/password-checklist';
+import { TermsConsent } from '@/components/auth/terms-consent';
 import { useAppDispatch } from '@/store/hooks';
 import { setCredentials } from '@/services/api/features/authSlice';
+import { resolvePostLoginRedirect } from '@/lib/auth/redirect';
+import { AuthApiError, authErrorMessage, syncSession } from '@/lib/auth/session';
+import { acceptTermsSchema, newPasswordSchema, usernameSchema } from '@/lib/auth/schemas';
+import { USERNAME_HINT } from '@/lib/auth/username';
+import { fetchWithTimeout, withTimeout } from '@/lib/auth/timeout';
 
 const personalInfoSchema = z.object({
   firstName: z.string().min(2, 'First name must be at least 2 characters.'),
@@ -41,32 +55,23 @@ const accountTypeSchema = z.object({
 
 const accountInfoSchema = z
   .object({
-    username: z
-      .string()
-      .min(3, 'Username must be at least 3 characters.')
-      .regex(/^[a-zA-Z0-9_]+$/, 'Only letters, numbers, and underscores allowed.'),
-    password: z.string().min(8, 'Password must be at least 8 characters.'),
+    username: usernameSchema,
+    password: newPasswordSchema,
     confirmPassword: z.string(),
+    acceptTerms: acceptTermsSchema,
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
     path: ['confirmPassword'],
   });
 
-const brandRequestSchema = z.object({
-  companyName: z.string().min(2, 'Brand / company name is required.'),
-  website: z.string().url({ message: 'Please enter a valid URL' }).optional().or(z.literal('')),
-  contactEmail: z.string().email('Valid email is required.'),
-  contactPhone: z.string().optional(),
-  description: z.string().min(30, 'Please describe your brand (min 30 characters).'),
-  teamSize: z.string(),
-  howHeard: z.string(),
-});
-
+type AccountType = 'fan' | 'artist' | 'brand';
 type PersonalInfoValues = z.infer<typeof personalInfoSchema>;
 type AccountTypeValues = z.infer<typeof accountTypeSchema>;
 type AccountInfoValues = z.infer<typeof accountInfoSchema>;
-type BrandRequestValues = z.infer<typeof brandRequestSchema>;
+
+/** An error shown inline on the current step; toasts were easy to miss (AUTH-06). */
+type StepError = { message: string; emailInUse?: boolean } | null;
 
 export default function SignupPage() {
   return (
@@ -76,23 +81,41 @@ export default function SignupPage() {
   );
 }
 
+/** Brand accounts finish onboarding (verification request) on /brand-manager. */
+function landingFor(accountType: AccountType, redirectTo: string) {
+  return accountType === 'brand' ? '/brand-manager' : redirectTo;
+}
+
+/** null when the username is free, a message when taken. Unknown → let the server decide. */
+async function usernameTakenMessage(username: string): Promise<string | null> {
+  try {
+    const res = await fetchWithTimeout(
+      `${API_BASE_URL}/users/by-username/${encodeURIComponent(username)}`,
+      {},
+      8000
+    );
+    return res.ok ? 'That username is already taken.' : null;
+  } catch {
+    return null;
+  }
+}
+
 function SignupPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
-  const redirectTo = searchParams.get('redirect') || '/';
+  const redirectTo = resolvePostLoginRedirect(searchParams.get('redirect'));
 
   const [step, setStep] = useState<number>(1);
   const [personalInfo, setPersonalInfo] = useState<PersonalInfoValues | null>(null);
-  const [selectedAccountType, setSelectedAccountType] = useState<'fan' | 'artist' | 'brand' | null>(null);
+  const [selectedAccountType, setSelectedAccountType] = useState<AccountType | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [googleIdToken, setGoogleIdToken] = useState<string | null>(null);
-
-  const [submitBrandRequest, { isLoading: isBrandSubmitting }] =
-    useSubmitBrandVerificationRequestMutation();
+  const [googleAcceptedTerms, setGoogleAcceptedTerms] = useState(false);
+  const [stepError, setStepError] = useState<StepError>(null);
 
   useEffect(() => {
     const pendingToken = sessionStorage.getItem('pendingGoogleIdToken');
@@ -102,6 +125,11 @@ function SignupPageInner() {
       setStep(2);
     }
   }, []);
+
+  const goToStep = (next: number) => {
+    setStepError(null);
+    setStep(next);
+  };
 
   const personalForm = useForm<PersonalInfoValues>({
     resolver: zodResolver(personalInfoSchema),
@@ -115,57 +143,38 @@ function SignupPageInner() {
 
   const accountForm = useForm<AccountInfoValues>({
     resolver: zodResolver(accountInfoSchema),
-    defaultValues: { username: '', password: '', confirmPassword: '' },
+    // Validate as they type once a field has been touched, so the username rules and
+    // password checklist show up before submit rather than after (AUTH-10).
+    mode: 'onTouched',
+    defaultValues: { username: '', password: '', confirmPassword: '', acceptTerms: false },
   });
-
-  const brandForm = useForm<BrandRequestValues>({
-    resolver: zodResolver(brandRequestSchema),
-    defaultValues: {
-      companyName: '',
-      website: '',
-      contactEmail: '',
-      contactPhone: '',
-      description: '',
-      teamSize: '1-10',
-      howHeard: 'search',
-    },
-  });
+  const passwordValue = accountForm.watch('password');
 
   const onPersonalSubmit = (values: PersonalInfoValues) => {
     setPersonalInfo(values);
-    setStep(2);
+    goToStep(2);
   };
 
   const onGoogleSignIn = async () => {
     setIsGoogleLoading(true);
+    setStepError(null);
     try {
       const provider = new GoogleAuthProvider();
       const credential = await signInWithPopup(firebaseAuth, provider);
-      const idToken = await credential.user.getIdToken();
+      const idToken = await withTimeout(credential.user.getIdToken());
+      const { user, isNewUser } = await syncSession(idToken);
 
-      const syncRes = await fetch(`${API_BASE_URL}/auth/sync`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!syncRes.ok) throw new Error('Auth sync failed');
-
-      const { user, isNewUser } = await syncRes.json();
-
-      if (!isNewUser) {
+      if (!isNewUser && user) {
         dispatch(setCredentials({ accessToken: idToken, user }));
         router.push(redirectTo);
         return;
       }
 
       setGoogleIdToken(idToken);
-      setStep(2);
+      goToStep(2);
     } catch (err: any) {
-      if (err?.code !== 'auth/popup-closed-by-user') {
-        toast({ title: 'Google sign-in failed', description: 'Please try again.', variant: 'destructive' });
+      if (err?.code !== 'auth/popup-closed-by-user' && err?.code !== 'auth/cancelled-popup-request') {
+        setStepError({ message: `Google sign-in failed. ${authErrorMessage(err)}` });
       }
     } finally {
       setIsGoogleLoading(false);
@@ -174,38 +183,35 @@ function SignupPageInner() {
 
   const onTypeSubmit = async (values: AccountTypeValues) => {
     setSelectedAccountType(values.accountType);
+    setStepError(null);
 
     if (!googleIdToken) {
       setStep(3);
       return;
     }
 
+    // Google signups skip step 3, so they accept the terms here.
+    if (!googleAcceptedTerms) {
+      setStepError({ message: 'Please accept the Terms of Service and Privacy Policy to continue.' });
+      return;
+    }
+
     setIsRegistering(true);
     try {
-      const syncRes = await fetch(`${API_BASE_URL}/auth/sync`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${googleIdToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ accountType: values.accountType }),
+      // The token may be up to an hour old if they came from the login page.
+      const freshToken = firebaseAuth.currentUser
+        ? await withTimeout(firebaseAuth.currentUser.getIdToken())
+        : googleIdToken;
+      const { user } = await syncSession(freshToken, {
+        accountType: values.accountType,
+        acceptedTerms: true,
       });
 
-      if (!syncRes.ok) throw new Error('Auth sync failed');
-
-      const { user } = await syncRes.json();
-      dispatch(setCredentials({ accessToken: googleIdToken, user }));
-
-      if (values.accountType === 'brand') {
-        brandForm.setValue('companyName', user.username || '');
-        brandForm.setValue('contactEmail', user.email || '');
-        setStep(4);
-      } else {
-        toast({ title: 'Account Created!', description: 'Welcome to Modfanart.' });
-        router.push(redirectTo);
-      }
-    } catch (err: any) {
-      toast({ title: 'Registration Failed', description: 'Please try again.', variant: 'destructive' });
+      dispatch(setCredentials({ accessToken: freshToken, user }));
+      toast({ title: 'Account created', description: 'Welcome to MOD Fan Official.' });
+      router.push(landingFor(values.accountType, redirectTo));
+    } catch (err) {
+      setStepError({ message: authErrorMessage(err) });
     } finally {
       setIsRegistering(false);
     }
@@ -214,83 +220,81 @@ function SignupPageInner() {
   const onAccountSubmit = async (values: AccountInfoValues) => {
     if (!personalInfo || !selectedAccountType) return;
     setIsRegistering(true);
+    setStepError(null);
+
+    const email = personalInfo.email.trim();
+    const username = values.username.trim().toLowerCase();
 
     try {
-      const credential = await createUserWithEmailAndPassword(
-        firebaseAuth,
-        personalInfo.email.trim(),
-        values.password
-      );
+      const takenMessage = await usernameTakenMessage(username);
+      if (takenMessage) {
+        accountForm.setError('username', { type: 'manual', message: takenMessage });
+        return;
+      }
 
-      const idToken = await credential.user.getIdToken();
+      // A previous attempt may have created the Firebase user and then failed at the
+      // server step (taken username, timeout). Reuse it rather than hitting
+      // "email already in use" for an account this same form just made.
+      let firebaseUser: FirebaseUser;
+      const existing = firebaseAuth.currentUser;
+      if (existing && existing.email?.toLowerCase() === email.toLowerCase()) {
+        firebaseUser = existing;
+        await withTimeout(updatePassword(firebaseUser, values.password));
+      } else {
+        const credential = await withTimeout(
+          createUserWithEmailAndPassword(firebaseAuth, email, values.password),
+          undefined,
+          'Creating your account'
+        );
+        firebaseUser = credential.user;
+      }
 
-      const syncRes = await fetch(`${API_BASE_URL}/auth/sync`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username: values.username.trim().toLowerCase(),
-          accountType: selectedAccountType,
-        }),
+      const idToken = await withTimeout(firebaseUser.getIdToken());
+      const { user } = await syncSession(idToken, {
+        username,
+        accountType: selectedAccountType,
+        acceptedTerms: true,
       });
 
-      if (!syncRes.ok) throw new Error('Auth sync failed');
+      const next = landingFor(selectedAccountType, redirectTo);
 
-      const { user } = await syncRes.json();
-      dispatch(setCredentials({ accessToken: idToken, user }));
-
-      if (selectedAccountType === 'brand') {
-        brandForm.setValue('companyName', `${personalInfo.firstName} ${personalInfo.lastName}`);
-        brandForm.setValue('contactEmail', personalInfo.email);
-        setStep(4);
-      } else {
-        toast({
-          title: 'Account Created!',
-          description: 'Welcome to Modfanart.',
-        });
-        router.push(redirectTo);
+      // Email/password accounts start unverified (AUTH-03). Send the link now; the verify
+      // page can resend it if this fails.
+      let sent = true;
+      try {
+        await withTimeout(
+          sendEmailVerification(firebaseUser, {
+            url: `${window.location.origin}/verify-account?next=${encodeURIComponent(next)}`,
+          })
+        );
+      } catch {
+        sent = false;
       }
-    } catch (err: any) {
-      const message =
-        err?.code === 'auth/email-already-in-use'
-          ? 'An account with this email already exists.'
-          : err?.code === 'auth/weak-password'
-          ? 'Password is too weak.'
-          : err?.message || 'Registration failed. Please try again.';
 
-      toast({ title: 'Registration Failed', description: message, variant: 'destructive' });
+      dispatch(setCredentials({ accessToken: idToken, user }));
+      // The verify page is the confirmation that the account exists (AUTH-13).
+      router.push(
+        `/verify-account?next=${encodeURIComponent(next)}${sent ? '&sent=1' : ''}`
+      );
+    } catch (err: any) {
+      if (err instanceof AuthApiError && err.code === 'USERNAME_TAKEN') {
+        accountForm.setError('username', { type: 'manual', message: err.message });
+      } else if (err?.code === 'auth/email-already-in-use') {
+        setStepError({ message: authErrorMessage(err), emailInUse: true });
+      } else {
+        setStepError({ message: authErrorMessage(err) });
+      }
     } finally {
       setIsRegistering(false);
     }
   };
 
-  const onBrandRequestSubmit = async (values: BrandRequestValues) => {
-    try {
-      await submitBrandRequest({
-        company_name: values.companyName,
-        website: values.website || null,
-        contact_email: values.contactEmail,
-        contact_phone: values.contactPhone || null,
-        description: values.description,
-        team_size: values.teamSize,
-        how_heard: values.howHeard,
-      }).unwrap();
-
-      toast({
-        title: 'Brand Verification Request Submitted',
-        description: 'Our team will review your request shortly.',
-      });
-
-      setTimeout(() => router.push('/'), 2000);
-    } catch (err: any) {
-      toast({
-        title: 'Submission Failed',
-        description: err?.data?.message || err?.data?.error || 'Please try again.',
-        variant: 'destructive',
-      });
-    }
+  const switchToDifferentEmail = () => {
+    goToStep(1);
+    personalForm.setError('email', {
+      type: 'manual',
+      message: 'An account with this email already exists. Use a different email or sign in.',
+    });
   };
 
   const getStep3Title = () => {
@@ -306,19 +310,42 @@ function SignupPageInner() {
     switch (selectedAccountType) {
       case 'fan': return 'Create your fan account to discover and support amazing fan art.';
       case 'artist': return 'Set up your username and password to start submitting fan art.';
-      case 'brand': return 'Your user account will be created first. Then tell us about your brand for verification.';
+      case 'brand':
+        return 'Your user account is created first. After you confirm your email, you can tell us about your brand for verification.';
       default: return '';
     }
   };
 
+  const errorAlert = stepError && (
+    <Alert variant="destructive">
+      <AlertCircle className="h-4 w-4" />
+      <AlertDescription>
+        <p>{stepError.message}</p>
+        {stepError.emailInUse && (
+          <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+            <Link href="/login" className="font-medium underline">
+              Sign in instead
+            </Link>
+            <button type="button" onClick={switchToDifferentEmail} className="font-medium underline">
+              Use a different email
+            </button>
+            <Link href="/forgot-password" className="font-medium underline">
+              Forgot password?
+            </Link>
+          </p>
+        )}
+      </AlertDescription>
+    </Alert>
+  );
+
   return (
     <div className="max-w-2xl mx-auto space-y-8 py-12 px-4">
-      {step > 1 && step < 4 && (
+      {step > 1 && (
         <button
           type="button"
           onClick={() => {
             if (step === 2 && googleIdToken) setGoogleIdToken(null);
-            setStep(step - 1);
+            goToStep(step - 1);
           }}
           className="flex items-center text-gray-600 hover:text-black transition-colors"
         >
@@ -333,6 +360,8 @@ function SignupPageInner() {
             <h1 className="text-3xl font-bold">Sign Up</h1>
             <p className="text-gray-600 mt-2">Create your account to get started.</p>
           </div>
+
+          {errorAlert}
 
           <Button
             type="button"
@@ -368,7 +397,7 @@ function SignupPageInner() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>First Name</FormLabel>
-                      <FormControl><Input {...field} /></FormControl>
+                      <FormControl><Input autoComplete="given-name" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -379,7 +408,7 @@ function SignupPageInner() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Last Name</FormLabel>
-                      <FormControl><Input {...field} /></FormControl>
+                      <FormControl><Input autoComplete="family-name" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -392,7 +421,7 @@ function SignupPageInner() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Email</FormLabel>
-                    <FormControl><Input type="email" {...field} /></FormControl>
+                    <FormControl><Input type="email" autoComplete="email" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -477,8 +506,21 @@ function SignupPageInner() {
                 )}
               />
 
+              {googleIdToken && (
+                <TermsConsent
+                  id="google-terms"
+                  checked={googleAcceptedTerms}
+                  onCheckedChange={(checked) => {
+                    setGoogleAcceptedTerms(checked);
+                    if (checked) setStepError(null);
+                  }}
+                />
+              )}
+
+              {errorAlert}
+
               <Button type="submit" disabled={isRegistering} className="w-full bg-black hover:bg-gray-900 h-11">
-                {isRegistering ? 'Creating Account...' : 'Continue'}
+                {isRegistering ? 'Creating Account...' : googleIdToken ? 'Create Account' : 'Continue'}
               </Button>
             </form>
           </Form>
@@ -501,7 +543,10 @@ function SignupPageInner() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Username</FormLabel>
-                    <FormControl><Input {...field} /></FormControl>
+                    <FormControl>
+                      <Input autoComplete="username" autoCapitalize="none" spellCheck={false} {...field} />
+                    </FormControl>
+                    <FormDescription>{USERNAME_HINT}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -515,12 +560,23 @@ function SignupPageInner() {
                     <FormLabel>Password</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <Input type={showPassword ? 'text' : 'password'} {...field} />
-                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <Input
+                          type={showPassword ? 'text' : 'password'}
+                          autoComplete="new-password"
+                          aria-describedby="password-rules"
+                          {...field}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2"
+                          aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        >
                           {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                         </button>
                       </div>
                     </FormControl>
+                    <PasswordChecklist id="password-rules" password={passwordValue} />
                     <FormMessage />
                   </FormItem>
                 )}
@@ -534,8 +590,13 @@ function SignupPageInner() {
                     <FormLabel>Confirm Password</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <Input type={showConfirmPassword ? 'text' : 'password'} {...field} />
-                        <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <Input type={showConfirmPassword ? 'text' : 'password'} autoComplete="new-password" {...field} />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2"
+                          aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                        >
                           {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                         </button>
                       </div>
@@ -545,6 +606,23 @@ function SignupPageInner() {
                 )}
               />
 
+              <FormField
+                control={accountForm.control}
+                name="acceptTerms"
+                render={({ field }) => (
+                  <FormItem>
+                    <TermsConsent
+                      id="email-terms"
+                      checked={field.value}
+                      onCheckedChange={(checked) => field.onChange(checked)}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {errorAlert}
+
               <Button type="submit" disabled={isRegistering} className="w-full bg-black hover:bg-gray-900 h-12">
                 {isRegistering ? 'Creating Account...' : 'Create Account'}
               </Button>
@@ -553,149 +631,10 @@ function SignupPageInner() {
         </>
       )}
 
-      {/* Step 4: Brand Details */}
-      {step === 4 && selectedAccountType === 'brand' && (
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-10">
-            <h1 className="text-3xl font-bold">Almost There!</h1>
-            <p className="text-gray-600 mt-3 text-lg">
-              Your user account has been created. Now please provide details about your brand for verification.
-            </p>
-          </div>
-
-          <Form {...brandForm}>
-            <form onSubmit={brandForm.handleSubmit(onBrandRequestSubmit)} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={brandForm.control}
-                  name="companyName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Brand / Company Name *</FormLabel>
-                      <FormControl><Input {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={brandForm.control}
-                  name="website"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Website (optional)</FormLabel>
-                      <FormControl><Input placeholder="https://yourbrand.com" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={brandForm.control}
-                  name="contactEmail"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Contact Email *</FormLabel>
-                      <FormControl><Input type="email" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={brandForm.control}
-                  name="contactPhone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Contact Phone (optional)</FormLabel>
-                      <FormControl><Input placeholder="+91 98765 43210" {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={brandForm.control}
-                name="teamSize"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Approximate Team Size</FormLabel>
-                    <select
-                      {...field}
-                      className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-500"
-                    >
-                      <option value="1-10">1–10 people</option>
-                      <option value="11-50">11–50 people</option>
-                      <option value="51-200">51–200 people</option>
-                      <option value="201-500">201–500 people</option>
-                      <option value="501+">501+ people</option>
-                      <option value="agency">Creative Agency / Studio</option>
-                    </select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={brandForm.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>About Your Brand & Goals *</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        {...field}
-                        className="min-h-32"
-                        placeholder="Tell us about your brand, what you do, and what you hope to achieve with fan creations..."
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={brandForm.control}
-                name="howHeard"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>How did you hear about us?</FormLabel>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      className="grid grid-cols-2 sm:grid-cols-3 gap-4"
-                    >
-                      {['search', 'social', 'referral', 'event', 'article', 'other'].map((option) => (
-                        <div key={option} className="flex items-center space-x-2">
-                          <RadioGroupItem value={option} id={option} />
-                          <label htmlFor={option} className="capitalize cursor-pointer text-sm">{option}</label>
-                        </div>
-                      ))}
-                    </RadioGroup>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <Button
-                type="submit"
-                disabled={isBrandSubmitting}
-                className="w-full bg-violet-600 hover:bg-violet-700 h-12 text-lg font-medium"
-              >
-                {isBrandSubmitting ? 'Submitting Request...' : 'Submit Brand Verification Request'}
-              </Button>
-            </form>
-          </Form>
-        </div>
-      )}
-
-      {step !== 4 && (
-        <p className="text-center text-sm text-gray-600 mt-8">
-          Already have an account?{' '}
-          <Link href="/login" className="text-violet-600 hover:underline">Sign in</Link>
-        </p>
-      )}
+      <p className="text-center text-sm text-gray-600 mt-8">
+        Already have an account?{' '}
+        <Link href="/login" className="text-violet-600 hover:underline">Sign in</Link>
+      </p>
     </div>
   );
 }
