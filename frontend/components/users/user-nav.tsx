@@ -17,6 +17,7 @@ DropdownMenuTrigger,
 
 import { useAuth } from '@/store/AuthContext';
 import { useJudgeAreaHref } from '@/hooks/use-judge-area-href';
+import { roleLabel } from '@/lib/auth/roles';
 
 export function UserNav() {
 const router = useRouter();
@@ -114,7 +115,7 @@ return (
         {displayName}
       </p>
       <p className="text-xs text-gray-500">
-        {user.role?.name || 'Member'}
+        {roleLabel(user.role?.name)}
       </p>
     </div>
 
