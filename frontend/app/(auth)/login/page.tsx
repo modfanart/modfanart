@@ -23,11 +23,14 @@ import { Eye, EyeOff } from 'lucide-react';
 import { useAppDispatch } from '@/store/hooks';
 import { setCredentials } from '@/services/api/features/authSlice';
 import { resolvePostLoginRedirect } from '@/lib/auth/redirect';
-import { API_BASE_URL } from '@/services';
+import { authErrorMessage, syncSession } from '@/lib/auth/session';
+import { withTimeout } from '@/lib/auth/timeout';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address.' }),
-  password: z.string().min(8, { message: 'Password must be at least 8 characters.' }),
+  // No strength rules at sign-in: accounts created before the password policy (AUTH-05)
+  // may have shorter passwords, and Firebase is the judge of whether it is correct.
+  password: z.string().min(1, { message: 'Please enter your password.' }),
   rememberMe: z.boolean().optional(),
 });
 
@@ -55,53 +58,39 @@ function LoginPageInner() {
     defaultValues: { email: '', password: '', rememberMe: false },
   });
 
+  /** Exchange a Firebase sign-in for our session and leave the login page. */
+  async function finishSignIn(idToken: string) {
+    const { user, isNewUser } = await syncSession(idToken);
+
+    // Signed in with Firebase but no account here yet (e.g. first Google sign-in, or a
+    // signup that failed after Firebase created the user): finish signup by picking a role.
+    if (isNewUser || !user) {
+      sessionStorage.setItem('pendingGoogleIdToken', idToken);
+      router.push('/signup');
+      return;
+    }
+
+    dispatch(setCredentials({ accessToken: idToken, user }));
+
+    // Return the user to wherever a guard sent them from (e.g. the contest
+    // submit CTA), falling back to home. Read at submit time to avoid the
+    // useSearchParams() Suspense requirement.
+    const from = new URLSearchParams(window.location.search).get('from');
+    router.push(resolvePostLoginRedirect(from));
+  }
+
   async function onSubmit(values: FormValues) {
     setIsLoading(true);
     try {
-      const credential = await signInWithEmailAndPassword(
-        firebaseAuth,
-        values.email,
-        values.password
+      const credential = await withTimeout(
+        signInWithEmailAndPassword(firebaseAuth, values.email.trim(), values.password),
+        undefined,
+        'Signing in'
       );
-
-      const idToken = await credential.user.getIdToken();
-
-      const syncRes = await fetch(`${API_BASE_URL}/auth/sync`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!syncRes.ok) throw new Error('Auth sync failed');
-
-      const { user, isNewUser } = await syncRes.json();
-
-      if (isNewUser || !user) {
-        sessionStorage.setItem('pendingGoogleIdToken', idToken);
-        router.push('/signup');
-        return;
-      }
-
-      dispatch(setCredentials({ accessToken: idToken, user }));
-
-      // Return the user to wherever a guard sent them from (e.g. the contest
-      // submit CTA), falling back to home. Read at submit time to avoid the
-      // useSearchParams() Suspense requirement.
-      const from = new URLSearchParams(window.location.search).get('from');
-      router.push(resolvePostLoginRedirect(from));
-    } catch (err: any) {
-      const message =
-        err?.code === 'auth/invalid-credential' || err?.code === 'auth/wrong-password'
-          ? 'Invalid email or password.'
-          : err?.code === 'auth/user-not-found'
-          ? 'No account found with this email.'
-          : err?.code === 'auth/too-many-requests'
-          ? 'Too many attempts. Please try again later.'
-          : 'Something went wrong. Please try again.';
-
-      form.setError('root', { type: 'manual', message });
+      const idToken = await withTimeout(credential.user.getIdToken());
+      await finishSignIn(idToken);
+    } catch (err) {
+      form.setError('root', { type: 'manual', message: authErrorMessage(err) });
     } finally {
       setIsLoading(false);
     }
@@ -111,33 +100,16 @@ function LoginPageInner() {
     setIsGoogleLoading(true);
     try {
       const provider = new GoogleAuthProvider();
+      // No deadline on the popup itself: the person may take their time choosing an account.
       const credential = await signInWithPopup(firebaseAuth, provider);
-      const idToken = await credential.user.getIdToken();
-
-      const syncRes = await fetch(`${API_BASE_URL}/auth/sync`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!syncRes.ok) throw new Error('Auth sync failed');
-
-      const { user, isNewUser } = await syncRes.json();
-
-      if (isNewUser) {
-        sessionStorage.setItem('pendingGoogleIdToken', idToken);
-        router.push('/signup');
-        return;
-      }
-
-      dispatch(setCredentials({ accessToken: idToken, user }));
-      const from = new URLSearchParams(window.location.search).get('from');
-      router.push(resolvePostLoginRedirect(from));
+      const idToken = await withTimeout(credential.user.getIdToken());
+      await finishSignIn(idToken);
     } catch (err: any) {
-      if (err?.code !== 'auth/popup-closed-by-user') {
-        form.setError('root', { type: 'manual', message: 'Google sign-in failed. Please try again.' });
+      if (err?.code !== 'auth/popup-closed-by-user' && err?.code !== 'auth/cancelled-popup-request') {
+        form.setError('root', {
+          type: 'manual',
+          message: `Google sign-in failed. ${authErrorMessage(err)}`,
+        });
       }
     } finally {
       setIsGoogleLoading(false);

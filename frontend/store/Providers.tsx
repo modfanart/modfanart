@@ -6,7 +6,8 @@ import { store } from '@/store';
 import { onIdTokenChanged } from 'firebase/auth';
 import { firebaseAuth } from '@/lib/firebase';
 import { setCredentials, logout, setInitialized } from '@/services/api/features/authSlice';
-import { API_BASE_URL } from '@/services';
+import { userApi } from '@/services/api/userApi';
+import { syncSession } from '@/lib/auth/session';
 
 function FirebaseAuthSync() {
   const dispatch = useDispatch();
@@ -20,19 +21,19 @@ function FirebaseAuthSync() {
         }
 
         const token = await firebaseUser.getIdToken();
+        const { user } = await syncSession(token);
 
-        const syncRes = await fetch(`${API_BASE_URL}/auth/sync`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
+        // No local account yet: Firebase just created the user and the signup page is
+        // about to create the account with the chosen role. Publishing this token now made
+        // AuthProvider fetch /users/me, get a 403, and cache it — and the signup page's own
+        // setCredentials with the same token never refetched, so a new account landed on the
+        // home page looking logged out (AUTH-13). Let the signup page publish the session.
+        if (!user) return;
 
-        if (syncRes.ok) {
-          const { user } = await syncRes.json();
-          dispatch(setCredentials({ accessToken: token, user }));
-        }
+        dispatch(setCredentials({ accessToken: token, user }));
+        // A new token can carry new facts (e.g. email_verified after the link was clicked);
+        // make AuthProvider re-read the profile instead of serving a stale cached copy.
+        dispatch(userApi.util.invalidateTags(['CurrentUser']));
         // A failed sync here (e.g. transient server hiccup) doesn't mean
         // Firebase signed the user out — leave existing credentials alone
         // rather than clobbering a session another caller (login/signup
