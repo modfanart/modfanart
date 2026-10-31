@@ -87,8 +87,10 @@ export const brandApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: `${API_BASE_URL}/brands`,
     credentials: 'include',
-    prepareHeaders: (headers) => {
-      const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+    prepareHeaders: (headers, { getState }) => {
+      // The session token lives in the auth slice (set after Firebase sign-in). Nothing ever
+      // wrote localStorage 'accessToken', so authenticated brand calls went out without it.
+      const token = (getState() as any)?.auth?.accessToken;
       if (token) headers.set('Authorization', `Bearer ${token}`);
       return headers;
     },
