@@ -17,6 +17,7 @@ DropdownMenuTrigger,
 
 import { useAuth } from '@/store/AuthContext';
 import { useJudgeAreaHref } from '@/hooks/use-judge-area-href';
+import { roleLabel } from '@/lib/auth/roles';
 
 export function UserNav() {
 const router = useRouter();
@@ -50,9 +51,13 @@ break;
 
 
 case 'brand_manager':
-case 'brand_owner': {
+case 'brand_owner':
+case 'brand_editor':
+case 'brand_member': {
   const brand = user?.brands?.[0];
 
+  // No brand yet means verification is pending or not requested; /brand-manager shows
+  // that status (and the request form) instead of a 404.
   if (brand?.slug) {
     dashboardPath = `/brand-manager/${brand.slug}`;
   } else {
@@ -82,6 +87,8 @@ const isEligibleForDashboard = [
 'artist',
 'brand_manager',
 'brand_owner',
+'brand_editor',
+'brand_member',
 'judge',
 'admin',
 'superadmin',
@@ -108,7 +115,7 @@ return (
         {displayName}
       </p>
       <p className="text-xs text-gray-500">
-        {user.role?.name || 'Member'}
+        {roleLabel(user.role?.name)}
       </p>
     </div>
 

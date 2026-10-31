@@ -25,7 +25,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 
-import { useGetCurrentUserQuery, useGetUserByUsernameQuery } from '@/services/api/userApi';
+import { useGetUserByUsernameQuery } from '@/services/api/userApi';
+import { useAuth } from '@/store/AuthContext';
 
 import { useGetMyArtworksQuery, useGetArtworksByCreatorQuery } from '@/services/api/artworkApi';
 
@@ -34,17 +35,22 @@ interface ProfileViewProps {
 }
 
 export function ProfileView({ targetUsername }: ProfileViewProps) {
-  const { data: currentData, isLoading: currentLoading } = useGetCurrentUserQuery();
+  // The signed-in user comes from AuthContext, which waits for Firebase to restore the
+  // session. Querying /users/me directly fired before the token existed on a hard refresh,
+  // failed, and was never retried.
+  const { user: currentUser, loading: authLoading } = useAuth();
 
+  // Public endpoint: no token needed, so it can load straight away for anyone (AUTH-08).
   const {
     data: profileUser,
     isLoading: profileLoading,
     error: profileError,
+    refetch: refetchProfile,
+    isFetching: profileFetching,
   } = useGetUserByUsernameQuery(targetUsername, {
     skip: !targetUsername,
+    refetchOnMountOrArgChange: true,
   });
-
-  const currentUser = currentData?.user;
 
   const isOwnProfile = useMemo(() => {
     return currentUser?.username?.toLowerCase() === targetUsername?.toLowerCase();
@@ -73,7 +79,7 @@ export function ProfileView({ targetUsername }: ProfileViewProps) {
 
   const artworksLoading = isOwnProfile ? myArtworksLoading : creatorArtworksLoading;
 
-  const isLoading = currentLoading || profileLoading;
+  const isLoading = authLoading || profileLoading;
 
   // ────────────────────────────────────────────────
   // STATES
@@ -83,14 +89,35 @@ export function ProfileView({ targetUsername }: ProfileViewProps) {
     return <Skeleton className="h-[400px] w-full rounded-xl" />;
   }
 
-  if (profileError || !profileUser) {
+  // Only a 404 means the profile does not exist; a rate limit, a network blip or a server
+  // error used to be reported as "not found" too.
+  const notFound = (profileError as { status?: number } | undefined)?.status === 404;
+
+  if (profileError && !notFound) {
+    return (
+      <div className="text-center py-20 space-y-4">
+        <h2 className="text-2xl font-semibold text-muted-foreground">
+          We couldn&apos;t load @{targetUsername}&apos;s profile
+        </h2>
+        <p className="text-muted-foreground">Please check your connection and try again.</p>
+        <Button onClick={() => refetchProfile()} variant="outline" disabled={profileFetching}>
+          {profileFetching ? 'Retrying…' : 'Try again'}
+        </Button>
+      </div>
+    );
+  }
+
+  if (notFound || !profileUser) {
     return (
       <div className="text-center py-20 space-y-4">
         <h2 className="text-2xl font-semibold text-muted-foreground">
           @{targetUsername} not found
         </h2>
-        <Button onClick={() => window.location.reload()} variant="outline">
-          Refresh Page
+        <p className="text-muted-foreground">
+          This profile doesn&apos;t exist or isn&apos;t available.
+        </p>
+        <Button asChild variant="outline">
+          <Link href="/">Go home</Link>
         </Button>
       </div>
     );
@@ -176,7 +203,7 @@ export function ProfileView({ targetUsername }: ProfileViewProps) {
           {isOwnProfile ? (
             <>
               <Button asChild className="flex-1">
-                <Link href="/profile/edit">
+                <Link href="/settings">
                   <Edit className="mr-2 h-4 w-4" />
                   Edit
                 </Link>

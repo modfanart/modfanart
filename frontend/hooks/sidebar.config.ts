@@ -52,11 +52,13 @@ export const sidebarConfig: Record<Role, (base: string) => NavItem[]> = {
     { name: 'My Artworks', href: `${base}/my-artworks`, icon: Palette },
     { name: 'Opportunities', href: `${base}/opportunities`, icon: Briefcase },
     { name: 'Licensing & Earnings', href: `${base}/licensing-earnings`, icon: Wallet },
-    { name: 'Portfolio', href: `#`, icon: Image },
+    // An artist's portfolio is their public profile; base is /artist/<username>.
+    { name: 'Portfolio', href: `/u/${base.split('/').pop()}`, icon: Image },
     { name: 'Products', href: `${base}/seller/products`, icon: ShoppingBag },
     { name: 'Orders', href: `${base}/seller/orders`, icon: ClipboardList },
     { name: 'Payouts', href: `${base}/seller/payouts`, icon: Wallet },
-    { name: 'Analytics', href: `#`, icon: BarChart3 },
+    // No Analytics entry: artist/[artistId]/analytics only renders hard-coded sample charts,
+    // so linking it would show artists made-up numbers as theirs.
   ],
 
   brand_manager: brandNavItems,

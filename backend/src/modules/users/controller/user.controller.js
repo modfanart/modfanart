@@ -52,7 +52,9 @@ class UserController {
           "roles.name as role_name",
           "roles.hierarchy_level as role_hierarchy_level",
         ])
-        .where("users.username", "ilike", cleanUsername)
+        // Case-insensitive exact match. ILIKE treated "_" (allowed in usernames) as a
+        // wildcard, so "a_b" could resolve to "axb".
+        .where(sql`lower(users.username)`, "=", cleanUsername)
         .where("users.status", "=", "active")
         .where("users.deleted_at", "is", null)
         .executeTakeFirst();
@@ -90,7 +92,6 @@ class UserController {
         // 🔥 ADD STATS HERE
         stats,
       };
-      console.log(publicUser);
       return res.status(200).json({
         success: true,
         user: publicUser,

@@ -32,9 +32,13 @@ const keepAlive = setInterval(() => {}, 60 * 60 * 1000); // 1 hour
 
 const TEMP_DIR = process.env.TEMP_UPLOAD_DIR || '/tmp/cdn_uploads';
 // ====================== RATE LIMITER ======================
+// A blanket per-IP cap. At 100 a brand reviewer working through the review queue was locked out
+// within two minutes: every dashboard page load fans out into several API calls. Expensive or
+// abusable endpoints carry their own tighter limits (artwork submission, user reports), so this
+// one only needs to stop floods. Tunable with API_RATE_LIMIT.
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: Number(process.env.API_RATE_LIMIT ?? 1000),
   message: {
     status: 429,
     message: 'Too many requests, please try again later.',

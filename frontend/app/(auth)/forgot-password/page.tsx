@@ -7,6 +7,8 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { firebaseAuth } from '@/lib/firebase';
+import { authErrorMessage } from '@/lib/auth/session';
+import { AUTH_TIMEOUT_CODE, withTimeout } from '@/lib/auth/timeout';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -36,11 +38,16 @@ export default function ForgotPasswordPage() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      await sendPasswordResetEmail(firebaseAuth, values.email);
+      await withTimeout(sendPasswordResetEmail(firebaseAuth, values.email.trim()));
       setUserEmail(values.email);
       setIsSubmitted(true);
     } catch (err: any) {
-      // Don't reveal whether email exists — always show success
+      // A request that never reached Firebase sent nothing, so don't claim it did (AUTH-11).
+      if (err?.code === AUTH_TIMEOUT_CODE || err?.code === 'auth/network-request-failed') {
+        form.setError('email', { type: 'manual', message: authErrorMessage(err) });
+        return;
+      }
+      // Otherwise don't reveal whether the email exists — always show success
       setUserEmail(values.email);
       setIsSubmitted(true);
     } finally {

@@ -23,6 +23,9 @@ export interface AuthUser {
   email: string;
   username: string | null;
   avatar_url: string | null;
+  // False only for email/password accounts that have not clicked the verification link;
+  // they can browse but not submit (backend: requireVerifiedEmail).
+  email_verified: boolean;
   role?: RoleRow;
   brands?: Brand[];
 }
@@ -68,6 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email: data.user.email ?? '',
         username: data.user.username ?? null,
         avatar_url: data.user.avatar_url ?? null,
+        email_verified: data.user.email_verified !== false,
         ...(data.user.role && {
           role: {
             id: data.user.role.id,

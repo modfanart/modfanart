@@ -11,6 +11,7 @@ const ContestWinnerController = require('./controller/contestWinner.controller')
 
 const {
   authenticateToken,
+  requireVerifiedEmail,
 } = require('../../common/middleware/auth.middleware');
 // const { hasPermission } = require('../middleware/permission.middleware'); // Commented if not used
 
@@ -104,7 +105,11 @@ router.delete(
 router.get('/:contestId/categories', ContestCategoryController.getCategories);
 
 // ====================== ENTRIES ======================
-router.post('/:contestId/entries', ContestEntryController.submitEntry);
+router.post(
+  '/:contestId/entries',
+  requireVerifiedEmail,
+  ContestEntryController.submitEntry
+);
 router.get('/:contestId/entries', ContestEntryController.getEntries);
 router.get('/:contestId/entries/:entryId', ContestEntryController.getEntry);
 router.patch(

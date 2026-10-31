@@ -225,14 +225,6 @@ export default function DashboardContent() {
                 </div>
               </div>
 
-              <div className="pt-2">
-                <Button variant="outline" size="sm" className="w-full" asChild>
-                  <Link href="/analytics">
-                    View Detailed Analytics
-                    <ArrowUpRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-              </div>
             </div>
           </CardContent>
         </Card> */}

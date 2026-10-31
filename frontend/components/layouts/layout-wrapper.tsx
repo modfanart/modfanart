@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import MainNav from './main-nav-new';
 import { SiteFooter } from './site-footer';
+import { EmailVerificationBanner } from '@/components/auth/email-verification-banner';
 
 import type React from 'react';
 
@@ -23,10 +24,17 @@ export function LayoutWrapper({ children }: LayoutWrapperProps) {
     pathname?.startsWith('/verify-account') ||
     pathname?.startsWith('/brand-manager');
 
+  const isAuthPath =
+    pathname?.startsWith('/login') ||
+    pathname?.startsWith('/signup') ||
+    pathname?.startsWith('/forgot-password') ||
+    pathname?.startsWith('/verify-account');
+
   return (
     <div className="flex flex-col flex-1">
       {' '}
       {/* ✅ FIXED */}
+      {!isAuthPath && <EmailVerificationBanner />}
       {!isDashboardPath && <MainNav />} {/* ✅ SAFE */}
       {children}
       {!isDashboardPath && <SiteFooter />}

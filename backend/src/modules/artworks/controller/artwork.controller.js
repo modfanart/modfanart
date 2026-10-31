@@ -57,40 +57,23 @@ class ArtworkController {
         });
       }
 
-const cdnService = new CDNFileService(cdnFileModel);
+      const cdnService = new CDNFileService(cdnFileModel);
 
-let pdfThumbnailUrl = null;
-if (ext === ".pdf") {
-  const thumbBuffer = await renderPdfThumbnail(req.file.path);
-  if (thumbBuffer) {
-    const thumbFilename = `${path.parse(req.file.filename).name}-thumb.png`;
-    pdfThumbnailUrl = await cdnService.uploadBufferToCDN(
-      thumbBuffer,
-      thumbFilename,
-      "image/png"
-    );
-  }
-}
+      // PDFs get a rendered first-page PNG as their thumbnail so galleries can preview them.
+      let pdfThumbnailUrl = null;
+      if (ext === ".pdf") {
+        const thumbBuffer = await renderPdfThumbnail(req.file.path);
+        if (thumbBuffer) {
+          const thumbFilename = `${path.parse(req.file.filename).name}-thumb.png`;
+          pdfThumbnailUrl = await cdnService.uploadBufferToCDN(
+            thumbBuffer,
+            thumbFilename,
+            "image/png"
+          );
+        }
+      }
 
-const cdnFile = await cdnService.createFileRecord(req.file, userId);
-
-// Create artwork
-const artwork = await Artwork.create(userId, {
-  title: title.trim(),
-  description: description?.trim() || null,
-
-  file_url: cdnFile.url,
-  thumbnail_url: pdfThumbnailUrl || cdnFile.url,
-  source_file_url: cdnFile.url,
-
-  status: "draft",
-  moderation_status: "pending",
-});
-
-const cdnFile = await cdnService.createFileRecord(
-  req.file,
-  userId
-);
+      const cdnFile = await cdnService.createFileRecord(req.file, userId);
 
       // Create artwork
       const artwork = await Artwork.create(userId, {
@@ -98,7 +81,7 @@ const cdnFile = await cdnService.createFileRecord(
         description: description?.trim() || null,
 
         file_url: cdnFile.url,
-        thumbnail_url: cdnFile.url,
+        thumbnail_url: pdfThumbnailUrl || cdnFile.url,
         source_file_url: cdnFile.url,
 
         status: "draft",

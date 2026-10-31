@@ -32,7 +32,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
 
     if (role === 'brand_manager' && pathname.startsWith('/artist')) {
-      router.replace('/brand');
+      // /brand has no index page; /brand-manager resolves to the brand's dashboard.
+      router.replace('/brand-manager');
     }
   }, [user, loading, pathname, router]);
 

@@ -10,6 +10,9 @@ const ACCOUNT_TYPE_ROLE_NAMES = {
   brand: 'BRAND_MANAGER',
 };
 
+// Matches the signup form: 3-30 characters, letters, numbers and underscores.
+const USERNAME_PATTERN = /^[a-z0-9_]{3,30}$/;
+
 async function findSignupRole(accountType) {
   const roleName =
     ACCOUNT_TYPE_ROLE_NAMES[accountType] || ACCOUNT_TYPE_ROLE_NAMES.fan;
@@ -102,6 +105,16 @@ class AuthController {
         }
       }
 
+      // A user who has since clicked the verification link carries email_verified=true in
+      // their token. Record it; never downgrade (grandfathered accounts stay verified).
+      if (user && firebaseEmailVerified === true && !user.email_verified) {
+        await db
+          .updateTable('users')
+          .set({ email_verified: true })
+          .where('id', '=', user.id)
+          .execute();
+      }
+
       // --------------------------------------------------
       // 5. New Firebase user
       //
@@ -135,6 +148,16 @@ class AuthController {
           });
         }
 
+        // Accounts are only created with explicit acceptance of the Terms of Service and
+        // Privacy Policy; the signup form sends this from its required checkbox.
+        if (req.body?.acceptedTerms !== true) {
+          return res.status(400).json({
+            success: false,
+            error: 'You must accept the Terms of Service and Privacy Policy',
+            code: 'TERMS_NOT_ACCEPTED',
+          });
+        }
+
         // --------------------------------------------------
         // 6. Resolve role
         // --------------------------------------------------
@@ -152,6 +175,16 @@ class AuthController {
         // --------------------------------------------------
 
         let username = req.body?.username?.trim().toLowerCase();
+        const usernameWasChosen = Boolean(username);
+
+        if (usernameWasChosen && !USERNAME_PATTERN.test(username)) {
+          return res.status(400).json({
+            success: false,
+            error:
+              'Usernames are 3-30 characters: letters, numbers and underscores only',
+            code: 'INVALID_USERNAME',
+          });
+        }
 
         if (!username) {
           const base =
@@ -170,6 +203,17 @@ class AuthController {
         const originalUsername = username;
 
         let usernameExists = await User.findByUsername(username);
+
+        // A username the person typed must not be silently changed to a suffixed variant;
+        // tell them it is taken so they can pick another. Generated ones (Google signups)
+        // still get a random suffix below.
+        if (usernameExists && usernameWasChosen) {
+          return res.status(409).json({
+            success: false,
+            error: 'That username is already taken',
+            code: 'USERNAME_TAKEN',
+          });
+        }
 
         while (usernameExists) {
           username = `${originalUsername}_${Math.random()
@@ -190,7 +234,10 @@ class AuthController {
           avatar_url: picture || null,
           role_id: signupRole.id,
           status: 'active',
-          email_verified: firebaseEmailVerified ?? true,
+          // Only Firebase can vouch for the address: Google accounts arrive verified,
+          // email/password accounts are unverified until the link is clicked.
+          email_verified: firebaseEmailVerified === true,
+          terms_accepted_at: sql`NOW()`,
         });
       }
 
