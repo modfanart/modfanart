@@ -10,8 +10,14 @@ const {
 
 const {
   authenticateToken,
+  optionalAuth,
   authorize,
 } = require("../../common/middleware/auth.middleware");
+
+// Reviewing brand applications exposes every applicant's contact details and creates
+// brands, so it is platform staff only. BRAND_MANAGER was on this list, which let any
+// brand account read and approve every other application.
+const BRAND_REVIEWER_ROLES = ["ADMIN", "SUPERADMIN", "SUPER_ADMIN", "DEVELOPER"];
 
 // ───────────────────────────────────────────────
 // PUBLIC / STATIC ROUTES (MUST COME FIRST)
@@ -23,24 +29,32 @@ router.get("/my", authenticateToken, brandController.getMyBrands);
 
 router.get("/slug/:slug", brandController.getBrandBySlug);
 
-// verification requests (brand-side)
+// verification requests (brand-side). Public so the contact-sales form can file a lead;
+// a signed-in brand account's request is linked to it (see the controller).
 router.post(
   "/verification-requests",
+  optionalAuth,
   brandController.submitBrandVerificationRequest
+);
+
+router.get(
+  "/verification-requests/mine",
+  authenticateToken,
+  brandController.getMyBrandVerificationRequest
 );
 
 // admin / internal verification routes
 router.get(
   "/verification-requests",
   authenticateToken,
-  authorize(['BRAND_MANAGER', "ADMIN", "SUPER_ADMIN", "DEVELOPER" ]),
+  authorize(BRAND_REVIEWER_ROLES),
   brandController.getBrandVerificationRequests
 );
 
 router.patch(
   "/verification-requests/:requestId/approve",
   authenticateToken,
-  authorize(['BRAND_MANAGER', "ADMIN", "SUPER_ADMIN", "DEVELOPER" ]),
+  authorize(BRAND_REVIEWER_ROLES),
   brandController.approveBrandVerificationRequest
 );
 

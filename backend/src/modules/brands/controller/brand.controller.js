@@ -1,5 +1,6 @@
 // src/controllers/brand.controller.js
-const { db, sql } = require('../../../config');
+const { db } = require('../../../config');
+const { sql } = require('kysely');
 const Brand = require('../models/brand.model');
 const BrandPost = require('../models/brandPost.model');
 const BrandPostComment = require('../models/brandPostComment.model');
@@ -166,6 +167,7 @@ async function submitBrandVerificationRequest(req, res) {
       team_size,
       how_heard,
       documents = [],
+      accepted_terms,
     } = req.body;
 
     if (!company_name?.trim()) {
@@ -175,8 +177,41 @@ async function submitBrandVerificationRequest(req, res) {
       return res.status(400).json({ error: 'Contact email is required' });
     }
 
+    // Two callers: the public contact-sales form (anonymous lead, no account yet) and a
+    // signed-in brand account asking to be verified. Only the latter is tied to a user, and
+    // it is what approval later attaches the brand to.
+    if (req.user) {
+      if (!req.user.email_verified) {
+        return res.status(403).json({
+          error: 'Please verify your email address before requesting brand verification.',
+          code: 'EMAIL_NOT_VERIFIED',
+        });
+      }
+
+      if (accepted_terms !== true) {
+        return res.status(400).json({
+          error: 'You must confirm you represent this brand and accept the Terms of Service',
+          code: 'TERMS_NOT_ACCEPTED',
+        });
+      }
+
+      const open = await db
+        .selectFrom('brand_verification_requests')
+        .select(['id'])
+        .where('user_id', '=', req.user.id)
+        .where('status', 'in', ['pending', 'interview_scheduled'])
+        .executeTakeFirst();
+
+      if (open) {
+        return res.status(409).json({
+          error: 'You already have a brand verification request under review.',
+          code: 'REQUEST_ALREADY_OPEN',
+        });
+      }
+    }
+
     const requestData = {
-      user_id: req.user?.id || null, // Will be null during signup flow
+      user_id: req.user?.id || null,
       company_name: company_name.trim(),
       website: website ? website.trim() : null,
       contact_email: contact_email.trim(),
@@ -204,6 +239,35 @@ async function submitBrandVerificationRequest(req, res) {
   }
 }
 
+/**
+ * GET /brands/verification-requests/mine
+ * The signed-in user's most recent brand verification request, or null. Drives the
+ * /brand-manager landing page for brand accounts that have no brand attached yet.
+ */
+async function getMyBrandVerificationRequest(req, res) {
+  try {
+    const request = await db
+      .selectFrom('brand_verification_requests')
+      .select([
+        'id',
+        'company_name',
+        'website',
+        'contact_email',
+        'status',
+        'reviewed_at',
+        'created_at',
+      ])
+      .where('user_id', '=', req.user.id)
+      .orderBy('created_at', 'desc')
+      .executeTakeFirst();
+
+    return res.json({ request: request || null });
+  } catch (err) {
+    console.error('getMyBrandVerificationRequest error:', err);
+    return res.status(500).json({ error: 'Failed to fetch verification request' });
+  }
+}
+
 async function getBrandVerificationRequests(req, res) {
   try {
     const { status, limit = 20, offset = 0 } = req.query;
@@ -228,72 +292,161 @@ async function getBrandVerificationRequests(req, res) {
   }
 }
 
+function slugify(name) {
+  return (
+    String(name)
+      .toLowerCase()
+      .normalize('NFKD')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 60) || 'brand'
+  );
+}
+
+async function uniqueBrandSlug(trx, name) {
+  const base = slugify(name);
+  let slug = base;
+
+  for (let attempt = 2; ; attempt += 1) {
+    const taken = await trx
+      .selectFrom('brands')
+      .select(['id'])
+      .where('slug', '=', slug)
+      .executeTakeFirst();
+    if (!taken) return slug;
+    slug = `${base}-${attempt}`;
+  }
+}
+
+/**
+ * PATCH /brands/verification-requests/:requestId/approve
+ *
+ * Creates the brand and makes the applicant its owner, so their "Dashboard" link resolves
+ * to /brand-manager/<slug>. The applicant is the signed-in account that filed the request;
+ * for older or anonymous (contact-sales) requests, the account registered with the
+ * request's contact email. If neither exists there is nobody to hand the brand to, so the
+ * request stays pending and the reviewer is told to have the applicant sign up first.
+ */
 async function approveBrandVerificationRequest(req, res) {
   try {
     const { requestId } = req.params;
-    const { manager_username, manager_email, temp_password, notes } = req.body;
+    const { notes } = req.body || {};
 
     const request = await BrandVerificationRequest.findById(requestId);
     if (!request) return res.status(404).json({ error: 'Request not found' });
-    if (request.status !== 'pending') {
+    if (!['pending', 'interview_scheduled'].includes(request.status)) {
       return res
         .status(400)
         .json({ error: `Request is already ${request.status}` });
     }
 
-    const manager = await User.create({
-      username:
-        manager_username || generateBrandManagerUsername(request.company_name),
-      email: manager_email || request.contact_email,
-      password_hash: await hashPassword(
-        temp_password || generateTempPassword()
-      ),
-      role_id: await getRoleIdByName('brand_manager'),
-      profile: { company_name: request.company_name },
-      status: 'pending_verification',
-    });
+    let applicant = request.user_id
+      ? await db
+          .selectFrom('users')
+          .select(['id', 'email', 'role_id'])
+          .where('id', '=', request.user_id)
+          .where('deleted_at', 'is', null)
+          .executeTakeFirst()
+      : null;
 
-    const brand = await Brand.create({
-      user_id: manager.id,
-      name: request.company_name,
-      slug: await generateUniqueSlug(request.company_name),
-      description: request.description,
-      website: request.website,
-      status: 'active',
-      verification_request_id: request.id,
-    });
+    if (!applicant && request.contact_email) {
+      applicant = await db
+        .selectFrom('users')
+        .select(['id', 'email', 'role_id'])
+        .where(sql`lower(email)`, '=', request.contact_email.trim().toLowerCase())
+        .where('deleted_at', 'is', null)
+        .executeTakeFirst();
+    }
 
-    await BrandManager.create({
-      brand_id: brand.id,
-      user_id: manager.id,
-      role: 'owner',
-    });
+    if (!applicant) {
+      return res.status(422).json({
+        error: `No account is linked to this request. Ask the applicant to sign up as a brand with ${request.contact_email}, then approve again.`,
+        code: 'APPLICANT_HAS_NO_ACCOUNT',
+      });
+    }
 
-    await BrandVerificationRequest.update(requestId, {
-      status: 'approved',
-      reviewed_by: req.user.id,
-      reviewed_at: new Date().toISOString(),
-      notes: notes ? `${request.notes || ''}\n${notes}` : request.notes,
-    });
+    const brandManagerRole = await db
+      .selectFrom('roles')
+      .select(['id'])
+      .where('name', '=', 'BRAND_MANAGER')
+      .executeTakeFirst();
 
-    sendBrandOnboardingEmail({
-      to: request.contact_email,
-      brandName: brand.name,
-      managerEmail: manager.email,
-      resetLink: generatePasswordResetLink(manager.id),
-    }).catch(console.error);
+    const brand = await db.transaction().execute(async (trx) => {
+      const created = await trx
+        .insertInto('brands')
+        .values({
+          user_id: applicant.id,
+          name: request.company_name,
+          slug: await uniqueBrandSlug(trx, request.company_name),
+          description: request.description || null,
+          website: request.website || null,
+          status: 'active',
+          verification_request_id: request.id,
+          followers_count: 0,
+          created_at: sql`NOW()`,
+          updated_at: sql`NOW()`,
+        })
+        .returningAll()
+        .executeTakeFirstOrThrow();
+
+      await trx
+        .insertInto('brand_managers')
+        .values({
+          brand_id: created.id,
+          user_id: applicant.id,
+          role: 'owner',
+          created_at: sql`NOW()`,
+        })
+        .execute();
+
+      // A lead who signed up as a fan or artist becomes a brand manager on approval;
+      // admins keep their role.
+      const currentRole = await trx
+        .selectFrom('roles')
+        .select(['name'])
+        .where('id', '=', applicant.role_id)
+        .executeTakeFirst();
+      const isAdmin = ['ADMIN', 'SUPERADMIN', 'SUPER_ADMIN', 'DEVELOPER'].includes(
+        currentRole?.name
+      );
+
+      if (brandManagerRole && !isAdmin) {
+        await trx
+          .updateTable('users')
+          .set({ role_id: brandManagerRole.id, updated_at: sql`NOW()` })
+          .where('id', '=', applicant.id)
+          .execute();
+      }
+
+      await trx
+        .updateTable('brand_verification_requests')
+        .set({
+          status: 'approved',
+          user_id: applicant.id,
+          reviewed_by: req.user.id,
+          reviewed_at: sql`NOW()`,
+          notes: notes ? `${request.notes || ''}\n${notes}`.trim() : request.notes,
+          updated_at: sql`NOW()`,
+        })
+        .where('id', '=', request.id)
+        .execute();
+
+      return created;
+    });
 
     return res.json({
       success: true,
       brandId: brand.id,
-      managerUserId: manager.id,
-      message: 'Brand and manager account created successfully',
+      brandSlug: brand.slug,
+      managerUserId: applicant.id,
+      message: 'Brand approved and attached to the applicant\'s account',
     });
   } catch (err) {
     console.error('approveBrandVerificationRequest error:', err);
     return res.status(400).json({ error: err.message || 'Approval failed' });
   }
 }
+
 // ───────────────────────────────────────────────
 // 3. Brand Management
 // ───────────────────────────────────────────────
@@ -830,6 +983,7 @@ module.exports = {
   getBrandBySlug,
 
   submitBrandVerificationRequest,
+  getMyBrandVerificationRequest,
   getBrandVerificationRequests,
   approveBrandVerificationRequest,
 
