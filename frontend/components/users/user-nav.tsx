@@ -50,9 +50,13 @@ break;
 
 
 case 'brand_manager':
-case 'brand_owner': {
+case 'brand_owner':
+case 'brand_editor':
+case 'brand_member': {
   const brand = user?.brands?.[0];
 
+  // No brand yet means verification is pending or not requested; /brand-manager shows
+  // that status (and the request form) instead of a 404.
   if (brand?.slug) {
     dashboardPath = `/brand-manager/${brand.slug}`;
   } else {
@@ -82,6 +86,8 @@ const isEligibleForDashboard = [
 'artist',
 'brand_manager',
 'brand_owner',
+'brand_editor',
+'brand_member',
 'judge',
 'admin',
 'superadmin',

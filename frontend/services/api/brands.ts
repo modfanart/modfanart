@@ -385,6 +385,15 @@ export const brandApi = createApi({
       invalidatesTags: ['VerificationRequestList'],
     }),
 
+    // The signed-in user's latest request (null if none) — drives /brand-manager.
+    getMyVerificationRequest: builder.query<
+      { request: Pick<BrandVerificationRequest, 'id' | 'company_name' | 'website' | 'contact_email' | 'status' | 'created_at'> & { reviewed_at: string | null } | null },
+      void
+    >({
+      query: () => '/verification-requests/mine',
+      providesTags: ['VerificationRequestList'],
+    }),
+
     getVerificationRequests: builder.query<BrandVerificationRequest[], void>({
       query: () => '/verification-requests',
       providesTags: ['VerificationRequestList'],
@@ -453,6 +462,7 @@ export const {
   useLikeBrandPostCommentMutation,
 
   useSubmitBrandVerificationRequestMutation,
+  useGetMyVerificationRequestQuery,
   useGetVerificationRequestsQuery,
   useApproveVerificationRequestMutation,
 
