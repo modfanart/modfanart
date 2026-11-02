@@ -15,12 +15,17 @@ async function findById(id, trx = db) {
     .executeTakeFirst();
 }
 
+// Carries order_id/order_number so the seller dashboard can group a payout
+// history by order; a bare order_item_id means nothing to a seller.
 async function findBySeller(sellerId, trx = db) {
   return trx
     .selectFrom('payouts')
-    .selectAll()
-    .where('seller_id', '=', sellerId)
-    .orderBy('created_at', 'desc')
+    .leftJoin('order_items', 'order_items.id', 'payouts.order_item_id')
+    .leftJoin('orders', 'orders.id', 'order_items.order_id')
+    .selectAll('payouts')
+    .select(['order_items.order_id', 'orders.order_number'])
+    .where('payouts.seller_id', '=', sellerId)
+    .orderBy('payouts.created_at', 'desc')
     .execute();
 }
 
