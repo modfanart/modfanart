@@ -40,7 +40,7 @@ const brandNavItems: NavBuilder = (base) => [
   { name: 'Licensing', href: `${base}/licensing`, icon: FileText },
   { name: 'Store', href: `${base}/store`, icon: ShoppingBag },
   { name: 'Content', href: `${base}/content`, icon: Newspaper },
-  { name: 'Settings', href: `${base}/settings`, icon: Settings },
+  //{ name: 'Settings', href: `${base}/settings`, icon: Settings },
 ];
 
 export const sidebarConfig: Record<Role, NavBuilder> = {
