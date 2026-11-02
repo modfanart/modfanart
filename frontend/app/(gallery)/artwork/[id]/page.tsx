@@ -14,6 +14,7 @@ import { useGetArtworkQuery } from '@/services/api/artworkApi';
 import { useGetArtworkTagsQuery } from '@/services/api/artworkTagsApi';
 import { useGetArtworkCategoriesQuery } from '@/services/api/artworkApi';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ProductReviews } from '@/components/marketplace/product-reviews';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 // ────────────────────────────────────────────────
@@ -315,6 +316,12 @@ export default function ArtworkDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Same component the merch product page uses; a license buyer leaves
+          the review from their order (ReviewDialog), so nothing is posted
+          from here. */}
+      <Separator className="mb-10" />
+      <ProductReviews targetType="artwork" targetId={artwork.id} />
     </div>
   );
 }
