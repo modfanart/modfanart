@@ -2,6 +2,7 @@ const { stripe } = require('../../../config/stripe');
 const { db } = require('../../../config');
 const { sql } = require('kysely');
 const { randomUUID } = require('crypto');
+const { resolvePlatformFeeCents } = require('../../payout/payout.service');
 
 class LicensePurchaseController {
   static async createCheckoutSession(req, res) {
@@ -56,8 +57,9 @@ class LicensePurchaseController {
           .json({ error: "You can't purchase your own artwork" });
       }
 
-      const platformFeePercent = 0.1; // 10%
-      const platformFeeCents = Math.floor(amountCents * platformFeePercent);
+      // Same rule the payouts ledger applies (digital-license default), so
+      // the destination charge's application fee and the payout row agree.
+      const platformFeeCents = await resolvePlatformFeeCents(null, null, amountCents);
       const taxCents = 0; // tax handling is out of scope
       const totalCents = amountCents + taxCents;
 
