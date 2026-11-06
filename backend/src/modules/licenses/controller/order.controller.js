@@ -1,4 +1,5 @@
 // src/controllers/order.controller.js
+const crypto = require('crypto');
 const Order = require('../models/order.model');
 const OrderItem = require('../models/orderItem.model');
 const License = require('../models/license.model');
@@ -28,7 +29,7 @@ class OrderController {
       if (!tier)
         return res.status(404).json({ error: 'Pricing tier not found' });
 
-      const amountCents = tier.price_inr_cents; // or USD logic
+      const amountCents = tier.price_usd_cents;
 
       const order = await Order.create({
         order_number: `ORD-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`,
@@ -37,7 +38,7 @@ class OrderController {
         source_type: 'license_purchase',
         source_id: artworkId,
         status: 'pending',
-        currency: 'INR',
+        currency: 'USD',
         subtotal_cents: amountCents,
         platform_fee_cents: Math.round(amountCents * 0.1), // 10% example
         total_cents: amountCents + Math.round(amountCents * 0.1),
@@ -54,7 +55,7 @@ class OrderController {
       // Create Stripe PaymentIntent
       const paymentIntent = await stripe.paymentIntents.create({
         amount: order.total_cents,
-        currency: 'inr',
+        currency: 'usd',
         metadata: { order_id: order.id },
         payment_method_types: ['card'],
       });
@@ -112,7 +113,7 @@ class OrderController {
         if (seller.stripe_connect_id) {
           await stripe.transfers.create({
             amount: Math.round(order.subtotal_cents * 0.9), // after 10% fee
-            currency: 'inr',
+            currency: 'usd',
             destination: seller.stripe_connect_id,
             description: `Payout for order ${order.order_number}`,
             metadata: { order_id: order.id },

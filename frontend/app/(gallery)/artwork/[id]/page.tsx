@@ -14,6 +14,7 @@ import { useGetArtworkQuery } from '@/services/api/artworkApi';
 import { useGetArtworkTagsQuery } from '@/services/api/artworkTagsApi';
 import { useGetArtworkCategoriesQuery } from '@/services/api/artworkApi';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ProductReviews } from '@/components/marketplace/product-reviews';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 // ────────────────────────────────────────────────
@@ -44,7 +45,6 @@ export interface ArtworkPricingTierRow {
   id: string;
   artwork_id: string;
   license_type: 'personal' | 'commercial' | 'exclusive';
-  price_inr_cents: number;
   price_usd_cents: number;
   is_active: boolean;
   created_at: string;
@@ -128,12 +128,12 @@ export default function ArtworkDetailPage() {
 
   const isPublished = artwork.status === 'published';
 
-  const formatPrice = (cents: number, currency: 'USD' | 'INR' = 'USD') => {
+  const formatPrice = (cents: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency,
+      currency: 'USD',
       minimumFractionDigits: 0,
-      maximumFractionDigits: currency === 'INR' ? 0 : 2,
+      maximumFractionDigits: 2,
     }).format(cents / 100);
   };
 
@@ -257,8 +257,7 @@ export default function ArtworkDetailPage() {
                         <div>
                           <p className="font-medium capitalize text-lg">{tier.license_type}</p>
                           <p className="text-sm text-muted-foreground mt-0.5">
-                            {formatPrice(tier.price_usd_cents, 'USD')} •{' '}
-                            {formatPrice(tier.price_inr_cents, 'INR')}
+                            {formatPrice(tier.price_usd_cents)}
                           </p>
                         </div>
                         <Button variant="outline" size="sm" className="w-full sm:w-auto" asChild>
@@ -317,6 +316,12 @@ export default function ArtworkDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Same component the merch product page uses; a license buyer leaves
+          the review from their order (ReviewDialog), so nothing is posted
+          from here. */}
+      <Separator className="mb-10" />
+      <ProductReviews targetType="artwork" targetId={artwork.id} />
     </div>
   );
 }

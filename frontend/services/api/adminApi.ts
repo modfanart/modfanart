@@ -51,7 +51,7 @@ interface BrandVerificationPending {
   created_at: string;
 }
 
-interface ModerationQueueItem {
+export interface ModerationQueueItem {
   id: string;
   entity_type: string;
   entity_id: string;
@@ -198,6 +198,8 @@ export const adminApi = createApi({
           page: params.page ?? 1,
         },
       }),
+      // admin.controller wraps the rows: { success, data }.
+      transformResponse: (res: { data: ModerationQueueItem[] }) => res.data ?? [],
       providesTags: ['ModerationQueue'],
     }),
 

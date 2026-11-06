@@ -45,7 +45,7 @@ const ARTWORK = {
   views_count: 12,
   favorites_count: 3,
   pricing_tiers: [
-    { id: 'tier-1', license_type: 'standard', is_active: true, price_usd_cents: 5000, price_inr_cents: 400000 },
+    { id: 'tier-1', license_type: 'standard', is_active: true, price_usd_cents: 5000 },
   ],
 };
 
@@ -134,6 +134,12 @@ before(() => {
     if (request === '@/services/api/artworkTagsApi') {
       return { useGetArtworkTagsQuery: () => ({ data: [], isLoading: false }) };
     }
+    if (request === '@/components/marketplace/product-reviews') {
+      return {
+        ProductReviews: ({ targetType, targetId }) =>
+          React.createElement('section', { 'data-reviews-target': `${targetType}:${targetId}` }, 'Customer reviews'),
+      };
+    }
     if (request === 'date-fns') return { format: () => 'August 1, 2026' };
     if (request === 'lucide-react') return iconProxy;
     if (typeof request === 'string' && request.startsWith('@/')) return uiProxy;
@@ -182,6 +188,14 @@ describe('artwork page - the navigation a shared-results visitor lands on', () =
       !(container.textContent || '').includes('Proceed to License'),
       'the dead button is back'
     );
+  });
+
+  it('renders the shared reviews section for this artwork (TSK-029)', async () => {
+    const container = await render();
+    const reviews = container.querySelector('[data-reviews-target]');
+    assert.ok(reviews, 'ProductReviews not rendered on the artwork page');
+    assert.equal(reviews.getAttribute('data-reviews-target'), `artwork:${ARTWORK.id}`);
+    assert.ok(container.textContent.includes('Customer reviews'));
   });
 
   it('page content clears the fixed nav so Back to Gallery is clickable', async () => {

@@ -74,6 +74,12 @@ app.use(
 app.use(limiter);
 
 // ====================== MIDDLEWARE ======================
+// Stripe signature verification needs the *raw* request body. The webhook
+// router used to apply express.raw itself, but by then the global
+// express.json() below had already consumed and parsed the body, so
+// constructEvent always failed. Register the raw parser for that one path
+// first; express.json() skips requests whose body has already been read.
+app.use('/api/payout/stripe', express.raw({ type: 'application/json' }));
 app.use(express.json());
 app.use(requestLogger);
 app.use(attachDb);
@@ -131,6 +137,36 @@ const routes = [
   { path: '/api/projects', module: './src/modules/tasks/project.routes.js' },
   { path: '/api/media', module: './src/modules/cdn/cdn.routes.js' },
   { path: '/api/admin', module: './src/modules/admin/admin.routes.js' },
+  { path: '/api/cart', module: './src/modules/cart/cart.routes.js' },
+
+  {
+    path: '/api/merch',
+    module: './src/modules/merch/merch.routes.js',
+  },
+  {
+    path: '/api/payout',
+    module: './src/modules/payout/payout.routes.js',
+  },
+  {
+    path: '/api/review',
+    module: './src/modules/review/review.route.js',
+  },
+  // ── Merch marketplace ──────────────────────────────────────────────
+  // Cart-checkout orders: list/detail/pay/confirm/cancel, plus the
+  // /:orderId/fulfillments sub-router (shipping + tracking).
+  { path: '/api/orders', module: './src/modules/orders/order.routes.js' },
+  // Seller onboarding + admin approval.
+  {
+    path: '/api/seller-profiles',
+    module: './src/modules/merch/sellerProfile.routes.js',
+  },
+  // Marketplace admin: products, sellers, fee rules, print providers, reviews.
+  {
+    path: '/api/marketplace-admin',
+    module: './src/modules/marketplace-admin/marketplaceAdmin.routes.js',
+  },
+  // Buyer shipping address book.
+  { path: '/api/addresses', module: './src/modules/address/address.routes.js' },
 ];
 
 routes.forEach(({ path, module: mod }) => {
@@ -153,6 +189,19 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Backend running on port ${PORT}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
+
+// Release stock held by cart orders that were never paid (every 10 minutes).
+const { expireStalePendingOrders } = require('./src/modules/orders/order.service');
+
+const staleOrderTimer = setInterval(async () => {
+  try {
+    const n = await expireStalePendingOrders(60);
+    if (n) console.log(`🧹 Expired ${n} unpaid order(s)`);
+  } catch (err) {
+    console.error('Stale order sweep failed:', err.message);
+  }
+}, 10 * 60 * 1000);
+staleOrderTimer.unref();
 
 // Graceful shutdown
 process.on('SIGTERM', () => {

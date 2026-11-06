@@ -67,10 +67,10 @@ const STATUS_STYLES: Record<ArtworkStatus, { label: string; className: string }>
   rejected: { label: 'Rejected', className: 'bg-red-100 text-red-800' },
 };
 
-const formatCents = (cents: number, currency: 'INR' | 'USD') =>
-  new Intl.NumberFormat(currency === 'INR' ? 'en-IN' : 'en-US', {
+const formatCents = (cents: number) =>
+  new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency,
+    currency: 'USD',
   }).format(cents / 100);
 
 interface Props {
@@ -435,10 +435,7 @@ function SubmissionDetailPageContent({ id, slug }: Props) {
                       >
                         <p className="font-medium capitalize">{tier.license_type}</p>
                         <div className="text-right text-sm">
-                          <p className="font-medium">{formatCents(tier.price_usd_cents, 'USD')}</p>
-                          <p className="text-muted-foreground">
-                            {formatCents(tier.price_inr_cents, 'INR')}
-                          </p>
+                          <p className="font-medium">{formatCents(tier.price_usd_cents)}</p>
                         </div>
                       </div>
                     ))}

@@ -1,0 +1,66 @@
+const router = require('express').Router();
+
+const controller = require('./merch.controller');
+const {
+  authenticateToken,
+} = require('../../common/middleware/auth.middleware');
+const { hasPermission } = require('../../common/middleware/permission.middleware');
+
+router.get('/', controller.getPublishedProducts);
+router.get('/mine', authenticateToken, controller.getMyProducts);
+router.get('/mine/summary', authenticateToken, controller.getMySummary);
+router.get(
+  '/eligible-artworks',
+  authenticateToken,
+  controller.getEligibleArtworks
+);
+router.get('/print-providers', authenticateToken, controller.getPrintProviders);
+
+// Admin/moderation-only queue of listings awaiting a decision. Must be
+// registered before '/:id' or "pending" would be treated as a product id.
+router.get(
+  '/pending',
+  authenticateToken,
+  hasPermission('merch.moderate'),
+  controller.getPendingProducts
+);
+
+router.get('/:id', controller.getProduct);
+
+router.post('/', authenticateToken, controller.createProduct);
+
+router.patch('/:id', authenticateToken, controller.updateProduct);
+
+router.put('/:id/artwork', authenticateToken, controller.setArtwork);
+
+router.post(
+  '/:id/submit-for-review',
+  authenticateToken,
+  controller.submitForReview
+);
+
+// Admin/moderation-only — approves or rejects a product that's pending_review.
+router.post(
+  '/:id/moderate',
+  authenticateToken,
+  hasPermission('merch.moderate'),
+  controller.moderateProduct
+);
+
+router.delete('/:id', authenticateToken, controller.deleteProduct);
+
+router.post('/:productId/variants', authenticateToken, controller.addVariant);
+
+router.patch(
+  '/variants/:variantId',
+  authenticateToken,
+  controller.updateVariant
+);
+
+router.delete(
+  '/variants/:variantId',
+  authenticateToken,
+  controller.deleteVariant
+);
+
+module.exports = router;

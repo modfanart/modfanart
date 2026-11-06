@@ -2,6 +2,22 @@
 const User = require("../../modules/users/models/user.model");
 const Role = require("../../modules/rbac/models/role.model");
 
+// authenticateToken already loads the role's permissions onto req.user (and
+// strips role_id from it), so prefer that and only fall back to a role lookup
+// when it isn't present. Previously this always did Role.findById(req.user.role_id),
+// which was undefined after authenticateToken -> every permission-gated route
+// failed with "Role not found".
+async function resolvePermissions(user) {
+  if (user.permissions && Object.keys(user.permissions).length) {
+    return user.permissions;
+  }
+
+  if (!user.role_id) return user.permissions || {};
+
+  const role = await Role.findById(user.role_id);
+  return role?.permissions || {};
+}
+
 /**
  * Middleware factory: checks if current user has specific permission
  */
@@ -12,10 +28,8 @@ function hasPermission(permission) {
     }
 
     try {
-      const role = await Role.findById(req.user.role_id);
-      if (!role) {
-        return res.status(403).json({ error: "Role not found" });
-      }
+      const permissions = await resolvePermissions(req.user);
+      const role = { permissions };
 
       // permission format: "resource.action" e.g. "contests.create"
       const hasPerm = role.permissions?.[permission] === true;
@@ -45,8 +59,7 @@ function hasAnyPermission(...permissions) {
   return async (req, res, next) => {
     if (!req.user) return res.status(401).json({ error: "Unauthorized" });
 
-    const role = await Role.findById(req.user.role_id);
-    if (!role) return res.status(403).json({ error: "Role not found" });
+    const role = { permissions: await resolvePermissions(req.user) };
 
     const hasAtLeastOne = permissions.some(
       (p) => role.permissions?.[p] === true

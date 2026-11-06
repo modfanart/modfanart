@@ -502,7 +502,7 @@ export function ManageOpportunityContent({
               <p className="text-sm text-muted-foreground">Submission Deadline</p>
               <p className="font-medium mt-1">
                 {opportunity.submission_end_date
-                  ? new Date(opportunity.submission_end_date).toLocaleDateString('en-IN')
+                  ? new Date(opportunity.submission_end_date).toLocaleDateString('en-US')
                   : '—'}
               </p>
             </div>
