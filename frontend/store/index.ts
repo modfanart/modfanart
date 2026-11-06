@@ -22,7 +22,6 @@ import { collectionsApi } from '@/services/api/collectionApi';
 import { searchApi } from '@/services/api/searchApi';
 import notifyApi from '@/services/api/notifyApi';
 import { contactApi } from '@/services/api/contactApi';
-import merchApi from '@/services/api/merchApi';
 // ────────────────────────────────────────────────
 // Reducers (slices)
 // ────────────────────────────────────────────────
@@ -89,8 +88,7 @@ export const store = configureStore({
       brandApi.middleware,
       collectionsApi.middleware,
       searchApi.middleware,
-      notifyApi.middleware,
-      merchApi.middleware
+      notifyApi.middleware
       // add more .middleware when you create new api slices
     ),
 
