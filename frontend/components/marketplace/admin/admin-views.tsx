@@ -51,6 +51,7 @@ import {
   type SellerProfile,
   type SellerStatus,
 } from '@/services/api/marketplaceApi';
+import { useGetModerationQueueQuery } from '@/services/api/adminApi';
 import {
   FULFILLMENT_LABEL,
   ORDER_STATUS,
@@ -123,6 +124,51 @@ export function AdminOverview({ root }: { root: string }) {
 
 // ───────────────────────── moderation ─────────────────────────
 
+// Merch listings are one entity_type in the shared moderation_queue; every
+// other pending report (artwork, comment, user, ...) is listed beneath them
+// so the queue reads as one place. Those types have no decide endpoint on
+// the API yet, so they are shown, not actioned, from here.
+function OtherModerationReports() {
+  const { data: reports, isLoading, isError } = useGetModerationQueueQuery({ limit: 50 });
+  const others = (reports ?? []).filter((r) => r.entity_type !== 'merch_product');
+
+  if (isLoading || isError) return null;
+
+  return (
+    <section className="space-y-2" aria-label="Other moderation reports">
+      <h3 className="font-semibold">Other pending reports</h3>
+      {!others.length ? (
+        <p className="text-sm text-muted-foreground">No other entity types are waiting for review.</p>
+      ) : (
+        <div className="overflow-x-auto rounded-lg border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Type</TableHead>
+                <TableHead>Entity</TableHead>
+                <TableHead>Priority</TableHead>
+                <TableHead>Reported</TableHead>
+                <TableHead>Notes</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {others.map((r) => (
+                <TableRow key={r.id}>
+                  <TableCell>{titleCase(r.entity_type)}</TableCell>
+                  <TableCell className="font-mono text-xs">{r.entity_id}</TableCell>
+                  <TableCell>{r.priority}</TableCell>
+                  <TableCell>{formatDate(r.created_at)}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{r.notes || '—'}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export function ModerationQueue() {
   const { toast } = useToast();
   const { data: products, isLoading } = useGetPendingMerchProductsQuery();
@@ -146,10 +192,11 @@ export function ModerationQueue() {
   if (isLoading) return <p className="text-muted-foreground">Loading queue…</p>;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      <h3 className="font-semibold">Merch listings</h3>
       {!products?.length ? (
         <p className="rounded-lg border border-dashed p-10 text-center text-muted-foreground">
-          The queue is empty — nothing to review.
+          No listings are waiting for review.
         </p>
       ) : (
         products.map((p) => (
@@ -185,6 +232,8 @@ export function ModerationQueue() {
           </Card>
         ))
       )}
+
+      <OtherModerationReports />
 
       <Dialog open={!!target} onOpenChange={(o) => !o && setTarget(null)}>
         <DialogContent>
