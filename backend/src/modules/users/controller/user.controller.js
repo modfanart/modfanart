@@ -1,18 +1,18 @@
 // src/controllers/user.controller.js
-const User = require("../models/user.model");
-const Role = require("../../rbac/models/role.model");
+const User = require('../models/user.model');
+const Role = require('../../rbac/models/role.model');
 const {
   hashPassword,
   comparePassword,
-} = require("../../../common/utils/password.util");
-const { db } = require("../../../config");
-const { sql } = require("kysely"); // ← Critical fix for sql`NOW()`
-const UserStatsService = require("../services/userStats.service");
-const CDNFileService = require("../../cdn/services/cdn-file.service");
-const CDNFile = require("../../cdn/models/cdn-file.model");
+} = require('../../../common/utils/password.util');
+const { db } = require('../../../config');
+const { sql } = require('kysely'); // ← Critical fix for sql`NOW()`
+const UserStatsService = require('../services/userStats.service');
+const CDNFileService = require('../../cdn/services/cdn-file.service');
+const CDNFile = require('../../cdn/models/cdn-file.model');
 
 const cdnService = new CDNFileService(CDNFile);
-const AVATAR_KEY_PREFIX = process.env.S3_AVATAR_KEY_PREFIX || "avatars";
+const AVATAR_KEY_PREFIX = process.env.S3_AVATAR_KEY_PREFIX || 'avatars';
 
 class UserController {
   /**
@@ -22,39 +22,39 @@ class UserController {
     try {
       const { username } = req.params;
 
-      if (!username || typeof username !== "string" || username.trim() === "") {
+      if (!username || typeof username !== 'string' || username.trim() === '') {
         return res.status(400).json({
           success: false,
-          message: "Valid username is required",
+          message: 'Valid username is required',
         });
       }
 
       const cleanUsername = username.trim().toLowerCase();
 
       const user = await req.db
-        .selectFrom("users")
-        .leftJoin("roles", "users.role_id", "roles.id")
+        .selectFrom('users')
+        .leftJoin('roles', 'users.role_id', 'roles.id')
         .select([
-          "users.id",
-          "users.username",
-          "users.status",
-          "users.profile",
-          "users.avatar_url",
-          "users.banner_url",
-          "users.bio",
-          "users.location",
-          "users.website",
-          "users.last_login_at",
-          "users.created_at",
-          "users.updated_at",
+          'users.id',
+          'users.username',
+          'users.status',
+          'users.profile',
+          'users.avatar_url',
+          'users.banner_url',
+          'users.bio',
+          'users.location',
+          'users.website',
+          'users.last_login_at',
+          'users.created_at',
+          'users.updated_at',
 
-          "roles.id as role_id",
-          "roles.name as role_name",
-          "roles.hierarchy_level as role_hierarchy_level",
+          'roles.id as role_id',
+          'roles.name as role_name',
+          'roles.hierarchy_level as role_hierarchy_level',
         ])
-        .where("users.username", "ilike", cleanUsername)
-        .where("users.status", "=", "active")
-        .where("users.deleted_at", "is", null)
+        .where('users.username', 'ilike', cleanUsername)
+        .where('users.status', '=', 'active')
+        .where('users.deleted_at', 'is', null)
         .executeTakeFirst();
 
       if (!user) {
@@ -75,7 +75,7 @@ class UserController {
         status: user.status,
         role: {
           id: user.role_id,
-          name: user.role_name || "Artist",
+          name: user.role_name || 'Artist',
           hierarchy_level: user.role_hierarchy_level ?? 0,
         },
         profile: user.profile || {},
@@ -96,7 +96,7 @@ class UserController {
         user: publicUser,
       });
     } catch (error) {
-      console.error("[getUserByUsername] Error:", {
+      console.error('[getUserByUsername] Error:', {
         message: error.message,
         username: req.params.username,
         stack: error.stack,
@@ -104,9 +104,9 @@ class UserController {
 
       return res.status(500).json({
         success: false,
-        message: "Failed to fetch user profile",
+        message: 'Failed to fetch user profile',
         error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+          process.env.NODE_ENV === 'development' ? error.message : undefined,
       });
     }
   }
@@ -118,60 +118,60 @@ class UserController {
       if (!userId) {
         return res.status(401).json({
           success: false,
-          message: "Authentication required - no user context found",
+          message: 'Authentication required - no user context found',
         });
       }
 
       // 2. Safety check: database must be attached
       if (!req.db) {
         console.error(
-          "[getCurrentUser] Database instance not attached to request"
+          '[getCurrentUser] Database instance not attached to request'
         );
         return res.status(500).json({
           success: false,
-          message: "Server configuration error - database unavailable",
+          message: 'Server configuration error - database unavailable',
         });
       }
 
       // 3. Fetch user + role in a single efficient query
       const user = await req.db
-        .selectFrom("users")
-        .leftJoin("roles", "users.role_id", "roles.id")
+        .selectFrom('users')
+        .leftJoin('roles', 'users.role_id', 'roles.id')
         .select([
-          "users.id",
-          "users.username",
-          "users.email",
-          "users.email_verified",
-          "users.status",
-          "users.profile", // JSONB
-          "users.avatar_url",
-          "users.banner_url",
-          "users.bio",
-          "users.location",
-          "users.website",
-          "users.payout_method", // if you have this column
-          "users.stripe_connect_id",
-          "users.last_login_at",
-          "users.created_at",
-          "users.updated_at",
-          "users.deleted_at", // if using soft deletes
+          'users.id',
+          'users.username',
+          'users.email',
+          'users.email_verified',
+          'users.status',
+          'users.profile', // JSONB
+          'users.avatar_url',
+          'users.banner_url',
+          'users.bio',
+          'users.location',
+          'users.website',
+          'users.payout_method', // if you have this column
+          'users.stripe_connect_id',
+          'users.last_login_at',
+          'users.created_at',
+          'users.updated_at',
+          'users.deleted_at', // if using soft deletes
 
           // Role fields
-          "roles.id as role_id",
-          "roles.name as role_name",
-          "roles.hierarchy_level as role_hierarchy_level",
+          'roles.id as role_id',
+          'roles.name as role_name',
+          'roles.hierarchy_level as role_hierarchy_level',
           // add more role fields if needed: permissions, description, etc.
         ])
-        .where("users.id", "=", userId)
+        .where('users.id', '=', userId)
         // Optional: exclude soft-deleted users
-        .where("users.deleted_at", "is", null)
+        .where('users.deleted_at', 'is', null)
         .executeTakeFirst();
 
       // 4. Not found case
       if (!user) {
         return res.status(404).json({
           success: false,
-          message: "User profile not found",
+          message: 'User profile not found',
         });
       }
 
@@ -198,7 +198,7 @@ class UserController {
           role_id: user.role_id,
           role: {
             id: user.role_id,
-            name: user.role_name || "unknown",
+            name: user.role_name || 'unknown',
             hierarchy_level: user.role_hierarchy_level ?? 0,
           },
           profile: user.profile || {},
@@ -218,7 +218,7 @@ class UserController {
 
       return res.status(200).json(response);
     } catch (error) {
-      console.error("[getCurrentUser] Error:", {
+      console.error('[getCurrentUser] Error:', {
         message: error.message,
         stack: error.stack,
         userId: req.user?.id,
@@ -226,9 +226,9 @@ class UserController {
 
       return res.status(500).json({
         success: false,
-        message: "Failed to fetch user profile",
+        message: 'Failed to fetch user profile',
         error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+          process.env.NODE_ENV === 'development' ? error.message : undefined,
       });
     }
   }
@@ -247,13 +247,13 @@ class UserController {
       if (location !== undefined) updateData.location = location;
       if (website !== undefined) updateData.website = website;
 
-      if (profile && typeof profile === "object") {
+      if (profile && typeof profile === 'object') {
         const currentUser = await User.findById(userId);
         updateData.profile = { ...currentUser.profile, ...profile };
       }
 
       if (Object.keys(updateData).length === 0) {
-        return res.status(400).json({ error: "No valid fields to update" });
+        return res.status(400).json({ error: 'No valid fields to update' });
       }
 
       const updated =
@@ -262,14 +262,14 @@ class UserController {
           updated_at: sql`NOW()`,
         })) ||
         (await db
-          .updateTable("users")
+          .updateTable('users')
           .set({ ...updateData, updated_at: sql`NOW()` })
-          .where("id", "=", userId)
-          .returning(["bio", "location", "website", "profile"])
+          .where('id', '=', userId)
+          .returning(['bio', 'location', 'website', 'profile'])
           .executeTakeFirst());
 
       res.json({
-        message: "Profile updated successfully",
+        message: 'Profile updated successfully',
         user: {
           bio: updated.bio,
           location: updated.location,
@@ -278,8 +278,8 @@ class UserController {
         },
       });
     } catch (error) {
-      console.error("Update profile error:", error);
-      res.status(500).json({ error: "Failed to update profile" });
+      console.error('Update profile error:', error);
+      res.status(500).json({ error: 'Failed to update profile' });
     }
   }
 
@@ -293,20 +293,20 @@ class UserController {
       if (!currentPassword || !newPassword) {
         return res
           .status(400)
-          .json({ error: "Current and new password required" });
+          .json({ error: 'Current and new password required' });
       }
 
       if (newPassword.length < 8) {
         return res
           .status(400)
-          .json({ error: "New password must be at least 8 characters" });
+          .json({ error: 'New password must be at least 8 characters' });
       }
 
       const user = await User.findById(req.user.id);
       if (!user?.password_hash) {
         return res
           .status(400)
-          .json({ error: "No password set (social login?)" });
+          .json({ error: 'No password set (social login?)' });
       }
 
       const isMatch = await comparePassword(
@@ -314,24 +314,24 @@ class UserController {
         user.password_hash
       );
       if (!isMatch) {
-        return res.status(401).json({ error: "Current password incorrect" });
+        return res.status(401).json({ error: 'Current password incorrect' });
       }
 
       const newHash = await hashPassword(newPassword);
 
       await db
-        .updateTable("users")
+        .updateTable('users')
         .set({
           password_hash: newHash,
           updated_at: sql`NOW()`,
         })
-        .where("id", "=", req.user.id)
+        .where('id', '=', req.user.id)
         .execute();
 
-      res.json({ message: "Password changed successfully" });
+      res.json({ message: 'Password changed successfully' });
     } catch (error) {
-      console.error("Change password error:", error);
-      res.status(500).json({ error: "Failed to change password" });
+      console.error('Change password error:', error);
+      res.status(500).json({ error: 'Failed to change password' });
     }
   }
 
@@ -341,7 +341,7 @@ class UserController {
   static async uploadAvatar(req, res) {
     try {
       if (!req.file) {
-        return res.status(400).json({ error: "No file uploaded" });
+        return res.status(400).json({ error: 'No file uploaded' });
       }
 
       const userId = req.user.id;
@@ -356,20 +356,20 @@ class UserController {
       );
 
       await db
-        .updateTable("users")
+        .updateTable('users')
         .set({
           avatar_url: cdnFile.url,
           updated_at: sql`NOW()`,
         })
-        .where("id", "=", userId)
+        .where('id', '=', userId)
         .execute();
 
       await UserController.deleteAvatarFile(previous?.avatar_url);
 
-      res.json({ message: "Avatar updated", avatar_url: cdnFile.url });
+      res.json({ message: 'Avatar updated', avatar_url: cdnFile.url });
     } catch (error) {
-      console.error("Avatar upload error:", error);
-      res.status(500).json({ error: "Failed to upload avatar" });
+      console.error('Avatar upload error:', error);
+      res.status(500).json({ error: 'Failed to upload avatar' });
     }
   }
 
@@ -381,11 +381,11 @@ class UserController {
     if (!avatarUrl) return;
 
     try {
-      const storedName = avatarUrl.split("/").pop();
+      const storedName = avatarUrl.split('/').pop();
       const record = await CDNFile.findByStoredName(storedName);
       if (record) await cdnService.deleteFile(record.id);
     } catch (error) {
-      console.warn("Failed to delete avatar file:", error.message);
+      console.warn('Failed to delete avatar file:', error.message);
     }
   }
 
@@ -396,24 +396,24 @@ class UserController {
     try {
       const user = await User.findById(req.user.id);
       if (!user?.avatar_url) {
-        return res.status(400).json({ error: "No avatar to remove" });
+        return res.status(400).json({ error: 'No avatar to remove' });
       }
 
       await db
-        .updateTable("users")
+        .updateTable('users')
         .set({
           avatar_url: null,
           updated_at: sql`NOW()`,
         })
-        .where("id", "=", req.user.id)
+        .where('id', '=', req.user.id)
         .execute();
 
       await UserController.deleteAvatarFile(user.avatar_url);
 
-      res.json({ message: "Avatar removed" });
+      res.json({ message: 'Avatar removed' });
     } catch (error) {
-      console.error("Remove avatar error:", error);
-      res.status(500).json({ error: "Failed to remove avatar" });
+      console.error('Remove avatar error:', error);
+      res.status(500).json({ error: 'Failed to remove avatar' });
     }
   }
 
@@ -435,79 +435,81 @@ class UserController {
       const rawSearch = req.query.search?.trim();
       // Escape LIKE metacharacters, otherwise a lone "%" or "_" matches every
       // user in the table. Backslash is ILIKE's default escape character.
-      const search = rawSearch ? rawSearch.replace(/[\\%_]/g, "\\$&") : rawSearch;
+      const search = rawSearch
+        ? rawSearch.replace(/[\\%_]/g, '\\$&')
+        : rawSearch;
       const statusFilter = req.query.status;
-      const sort = req.query.sort || "created_at";
-      const order = req.query.order?.toUpperCase() === "ASC" ? "asc" : "desc";
+      const sort = req.query.sort || 'created_at';
+      const order = req.query.order?.toUpperCase() === 'ASC' ? 'asc' : 'desc';
 
       const allowedSortFields = [
-        "created_at",
-        "username",
-        "email",
-        "last_login_at",
-        "status",
+        'created_at',
+        'username',
+        'email',
+        'last_login_at',
+        'status',
       ];
-      const sortField = allowedSortFields.includes(sort) ? sort : "created_at";
+      const sortField = allowedSortFields.includes(sort) ? sort : 'created_at';
 
       // Base query
       let query = db
-        .selectFrom("users as u")
-        .leftJoin("roles as r", "u.role_id", "r.id")
+        .selectFrom('users as u')
+        .leftJoin('roles as r', 'u.role_id', 'r.id')
         .select([
-          "u.id",
-          "u.username",
-          "u.email",
-          "u.email_verified",
-          "u.status",
-          "u.bio",
-          "u.location",
-          "u.website",
-          "u.avatar_url",
-          "u.banner_url",
-          "u.last_login_at",
-          "u.created_at",
-          "u.updated_at",
-          "r.name as role_name",
-          "r.hierarchy_level as role_hierarchy_level",
-          "u.profile",
+          'u.id',
+          'u.username',
+          'u.email',
+          'u.email_verified',
+          'u.status',
+          'u.bio',
+          'u.location',
+          'u.website',
+          'u.avatar_url',
+          'u.banner_url',
+          'u.last_login_at',
+          'u.created_at',
+          'u.updated_at',
+          'r.name as role_name',
+          'r.hierarchy_level as role_hierarchy_level',
+          'u.profile',
         ]);
 
       // The count query below already excludes soft-deleted users. Without the
       // same filter here the list returned deleted accounts and disagreed with
       // its own pagination total, and they showed up as assignable judges.
-      query = query.where("u.deleted_at", "is", null);
+      query = query.where('u.deleted_at', 'is', null);
 
       if (search) {
         query = query.where((eb) =>
           eb.or([
-            eb("u.username", "ilike", `%${search}%`),
-            eb("u.email", "ilike", `%${search}%`),
-            eb("u.bio", "ilike", `%${search}%`),
+            eb('u.username', 'ilike', `%${search}%`),
+            eb('u.email', 'ilike', `%${search}%`),
+            eb('u.bio', 'ilike', `%${search}%`),
           ])
         );
       }
 
       if (statusFilter) {
-        query = query.where("u.status", "=", statusFilter);
+        query = query.where('u.status', '=', statusFilter);
       }
 
       // Accurate count (no join duplication)
-      let countQuery = db.selectFrom("users").where("deleted_at", "is", null);
+      let countQuery = db.selectFrom('users').where('deleted_at', 'is', null);
       if (search) {
         countQuery = countQuery.where((eb) =>
           eb.or([
-            eb("username", "ilike", `%${search}%`),
-            eb("email", "ilike", `%${search}%`),
-            eb("bio", "ilike", `%${search}%`),
+            eb('username', 'ilike', `%${search}%`),
+            eb('email', 'ilike', `%${search}%`),
+            eb('bio', 'ilike', `%${search}%`),
           ])
         );
       }
       if (statusFilter) {
-        countQuery = countQuery.where("status", "=", statusFilter);
+        countQuery = countQuery.where('status', '=', statusFilter);
       }
 
       const { total } = await countQuery
-        .select(db.fn.count("id").as("total"))
+        .select(db.fn.count('id').as('total'))
         .executeTakeFirst();
       const totalUsers = parseInt(total || 0);
       const totalPages = Math.ceil(totalUsers / limit);
@@ -534,7 +536,7 @@ class UserController {
         created_at: user.created_at,
         updated_at: user.updated_at,
         role: {
-          name: user.role_name || "unknown",
+          name: user.role_name || 'unknown',
           hierarchy_level: user.role_hierarchy_level ?? 0,
         },
         profile: user.profile || {},
@@ -552,8 +554,8 @@ class UserController {
         },
       });
     } catch (error) {
-      console.error("Get all users error:", error);
-      res.status(500).json({ error: "Failed to fetch users" });
+      console.error('Get all users error:', error);
+      res.status(500).json({ error: 'Failed to fetch users' });
     }
   }
 
@@ -565,7 +567,7 @@ class UserController {
     try {
       const user = await User.findById(req.params.id);
       if (!user) {
-        return res.status(404).json({ error: "User not found" });
+        return res.status(404).json({ error: 'User not found' });
       }
 
       const role = await Role.findById(user.role_id);
@@ -578,7 +580,7 @@ class UserController {
         status: user.status,
         role: {
           id: user.role_id,
-          name: role?.name || "unknown",
+          name: role?.name || 'unknown',
           hierarchy_level: role?.hierarchy_level || 0,
         },
         profile: user.profile || {},
@@ -592,8 +594,8 @@ class UserController {
         updated_at: user.updated_at,
       });
     } catch (error) {
-      console.error("Get user by ID error:", error);
-      res.status(500).json({ error: "Failed to fetch user" });
+      console.error('Get user by ID error:', error);
+      res.status(500).json({ error: 'Failed to fetch user' });
     }
   }
 
@@ -603,41 +605,41 @@ class UserController {
    */
   static async updateUserStatus(req, res) {
     try {
-      console.log("REQ.USER:", req.user);
+      console.log('REQ.USER:', req.user);
 
       const currentRole = await Role.findById(req.user.role_id);
-      console.log("CURRENT ROLE:", currentRole);
+      console.log('CURRENT ROLE:', currentRole);
       if (!currentRole || currentRole.hierarchy_level < 90) {
-        return res.status(403).json({ error: "Access denied" });
+        return res.status(403).json({ error: 'Access denied' });
       }
       const { status } = req.body;
       const allowedStatuses = [
-        "active",
-        "suspended",
-        "deactivated",
-        "pending_verification",
+        'active',
+        'suspended',
+        'deactivated',
+        'pending_verification',
       ];
       if (!allowedStatuses.includes(status)) {
-        return res.status(400).json({ error: "Invalid status" });
+        return res.status(400).json({ error: 'Invalid status' });
       }
 
       const updated = await db
-        .updateTable("users")
+        .updateTable('users')
         .set({
           status,
           updated_at: sql`NOW()`,
         })
-        .where("id", "=", req.params.id)
-        .where("deleted_at", "is", null)
-        .returning(["id", "username", "status"])
+        .where('id', '=', req.params.id)
+        .where('deleted_at', 'is', null)
+        .returning(['id', 'username', 'status'])
         .executeTakeFirst();
 
       if (!updated) {
-        return res.status(404).json({ error: "User not found" });
+        return res.status(404).json({ error: 'User not found' });
       }
 
       res.json({
-        message: "User status updated",
+        message: 'User status updated',
         user: {
           id: updated.id,
           username: updated.username,
@@ -645,8 +647,8 @@ class UserController {
         },
       });
     } catch (error) {
-      console.error("Update user status error:", error);
-      res.status(500).json({ error: "Failed to update user status" });
+      console.error('Update user status error:', error);
+      res.status(500).json({ error: 'Failed to update user status' });
     }
   }
 
@@ -658,10 +660,10 @@ class UserController {
   static async getAllUsersByRoleSlug(req, res) {
     try {
       let { roleSlug } = req.params; // We still call it roleSlug in URL for consistency
-      if (!roleSlug || typeof roleSlug !== "string") {
+      if (!roleSlug || typeof roleSlug !== 'string') {
         return res.status(400).json({
           success: false,
-          message: "Role name is required",
+          message: 'Role name is required',
         });
       }
 
@@ -673,71 +675,73 @@ class UserController {
       const rawSearch = req.query.search?.trim();
       // Escape LIKE metacharacters, otherwise a lone "%" or "_" matches every
       // user in the table. Backslash is ILIKE's default escape character.
-      const search = rawSearch ? rawSearch.replace(/[\\%_]/g, "\\$&") : rawSearch;
+      const search = rawSearch
+        ? rawSearch.replace(/[\\%_]/g, '\\$&')
+        : rawSearch;
       const statusFilter = req.query.status;
 
       // Base query with role join
       let query = req.db
-        .selectFrom("users as u")
-        .innerJoin("roles as r", "u.role_id", "r.id")
+        .selectFrom('users as u')
+        .innerJoin('roles as r', 'u.role_id', 'r.id')
         .select([
-          "u.id",
-          "u.username",
-          "u.email",
-          "u.email_verified",
-          "u.status",
-          "u.avatar_url",
-          "u.banner_url",
-          "u.bio",
-          "u.location",
-          "u.website",
-          "u.created_at",
-          "u.updated_at",
-          "r.id as role_id",
-          "r.name as role_name",
-          "r.hierarchy_level",
+          'u.id',
+          'u.username',
+          'u.email',
+          'u.email_verified',
+          'u.status',
+          'u.avatar_url',
+          'u.banner_url',
+          'u.bio',
+          'u.location',
+          'u.website',
+          'u.created_at',
+          'u.updated_at',
+          'r.id as role_id',
+          'r.name as role_name',
+          'r.hierarchy_level',
         ])
-        .where("r.name", "=", cleanRoleName) // ← Changed to role.name
-        .where("u.deleted_at", "is", null);
+        .where('r.name', '=', cleanRoleName) // ← Changed to role.name
+        .where('u.deleted_at', 'is', null);
 
       // Optional search
       if (search) {
         query = query.where((eb) =>
           eb.or([
-            eb("u.username", "ilike", `%${search}%`),
-            eb("u.email", "ilike", `%${search}%`),
-            eb("u.bio", "ilike", `%${search}%`),
+            eb('u.username', 'ilike', `%${search}%`),
+            eb('u.email', 'ilike', `%${search}%`),
+            eb('u.bio', 'ilike', `%${search}%`),
           ])
         );
       }
 
       // Optional status filter
       if (statusFilter) {
-        query = query.where("u.status", "=", statusFilter);
+        query = query.where('u.status', '=', statusFilter);
       }
 
       // Count query for pagination
       let countQuery = req.db
-        .selectFrom("users as u")
-        .innerJoin("roles as r", "u.role_id", "r.id")
-        .select(req.db.fn.count("u.id").as("total"))
-        .where("r.name", "=", cleanRoleName) // ← Changed to role.name
-        .where("u.deleted_at", "is", null);
+        .selectFrom('users as u')
+        .innerJoin('roles as r', 'u.role_id', 'r.id')
+        .select(req.db.fn.count('u.id').as('total'))
+        .where('r.name', '=', cleanRoleName) // ← Changed to role.name
+        .where('u.deleted_at', 'is', null);
 
       if (search) {
         // Must match the list query's predicate exactly, bio included, or the
         // total disagrees with the rows actually returned.
         countQuery = countQuery.where((eb) =>
           eb.or([
-            eb("u.username", "ilike", `%${search}%`),
-            eb("u.email", "ilike", `%${search}%`),
-            eb("u.bio", "ilike", `%${search}%`),
+            eb('u.username', 'ilike', `%${search}%`),
+            eb('u.email', 'ilike', `%${search}%`),
+            eb('u.bio', 'ilike', `%${search}%`),
           ])
         );
       }
 
       if (statusFilter) {
-        countQuery = countQuery.where("u.status", "=", statusFilter);
+        countQuery = countQuery.where('u.status', '=', statusFilter);
       }
 
       const [{ total }] = await countQuery.execute();
@@ -746,7 +750,7 @@ class UserController {
 
       // Execute main query
       const usersResult = await query
-        .orderBy("u.created_at", "desc")
+        .orderBy('u.created_at', 'desc')
         .limit(limit)
         .offset(offset)
         .execute();
@@ -784,12 +788,12 @@ class UserController {
         },
       });
     } catch (error) {
-      console.error("[getAllUsersByRoleSlug] Error:", error);
+      console.error('[getAllUsersByRoleSlug] Error:', error);
       return res.status(500).json({
         success: false,
-        message: "Failed to fetch users by role",
+        message: 'Failed to fetch users by role',
         error:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
+          process.env.NODE_ENV === 'development' ? error.message : undefined,
       });
     }
   }
@@ -804,22 +808,22 @@ class UserController {
       if (!userId) {
         return res.status(401).json({
           success: false,
-          message: "Authentication required",
+          message: 'Authentication required',
         });
       }
 
       // Check if user is assigned as a brand manager, or directly owns a brand
       const managerRows = await req.db
-        .selectFrom("brand_managers")
-        .select(["brand_id", "role"])
-        .where("user_id", "=", userId)
+        .selectFrom('brand_managers')
+        .select(['brand_id', 'role'])
+        .where('user_id', '=', userId)
         .execute();
 
       const ownedRows = await req.db
-        .selectFrom("brands")
-        .select(["id as brand_id"])
-        .where("user_id", "=", userId)
-        .where("deleted_at", "is", null)
+        .selectFrom('brands')
+        .select(['id as brand_id'])
+        .where('user_id', '=', userId)
+        .where('deleted_at', 'is', null)
         .execute();
 
       const brandIds = [
@@ -832,26 +836,26 @@ class UserController {
       if (brandIds.length === 0) {
         return res.status(403).json({
           success: false,
-          message: "You are not managing any brands",
+          message: 'You are not managing any brands',
         });
       }
 
       // Fetch the brands this user manages
       const brands = await req.db
-        .selectFrom("brands")
+        .selectFrom('brands')
         .select([
-          "id",
-          "name",
-          "slug",
-          "description",
-          "logo_url",
-          "banner_url",
-          "created_at",
-          "updated_at",
-          "status",
+          'id',
+          'name',
+          'slug',
+          'description',
+          'logo_url',
+          'banner_url',
+          'created_at',
+          'updated_at',
+          'status',
         ])
-        .where("id", "in", brandIds)
-        .where("deleted_at", "is", null)
+        .where('id', 'in', brandIds)
+        .where('deleted_at', 'is', null)
         .execute();
 
       return res.status(200).json({
@@ -859,10 +863,10 @@ class UserController {
         brands,
       });
     } catch (err) {
-      console.error("[getMyBrands] Error:", err);
+      console.error('[getMyBrands] Error:', err);
       return res.status(500).json({
         success: false,
-        message: "Failed to fetch brands for this manager",
+        message: 'Failed to fetch brands for this manager',
       });
     }
   }
@@ -882,19 +886,19 @@ class UserController {
       } = req.body;
 
       if (!username || !email || !password) {
-        return res.status(400).json({ error: "Missing required fields" });
+        return res.status(400).json({ error: 'Missing required fields' });
       }
 
       // users.role_id is NOT NULL, so omitting the role produced a 23502 and a
       // bare 500 rather than telling the caller what was missing.
       if (!role) {
-        return res.status(400).json({ error: "role is required" });
+        return res.status(400).json({ error: 'role is required' });
       }
 
       const roleRow = await db
-        .selectFrom("roles")
-        .select(["id"])
-        .where("name", "=", role)
+        .selectFrom('roles')
+        .select(['id'])
+        .where('name', '=', role)
         .executeTakeFirst();
 
       if (!roleRow) {
@@ -905,7 +909,7 @@ class UserController {
       const password_hash = await hashPassword(password);
 
       const newUser = await db
-        .insertInto("users")
+        .insertInto('users')
         .values({
           username,
           email,
@@ -917,11 +921,11 @@ class UserController {
           avatar_url: avatar_url || null,
           banner_url: banner_url || null,
           profile: profile || {},
-          status: "active",
+          status: 'active',
           created_at: sql`NOW()`,
           updated_at: sql`NOW()`,
         })
-        .returning(["id", "username", "email"])
+        .returning(['id', 'username', 'email'])
         .executeTakeFirst();
 
       return res.status(201).json({
@@ -932,39 +936,40 @@ class UserController {
       // 23505 = unique violation. The caller is almost always trying to create
       // someone who already has an account, so return the existing user rather
       // than a bare failure: the judge flow uses this to assign them instead.
-      if (error?.code === "23505") {
+      if (error?.code === '23505') {
         // req.body rather than the destructured names: those are scoped to the
         // try block above and are not visible here.
-        const field = error.constraint === "users_username_key" ? "username" : "email";
+        const field =
+          error.constraint === 'users_username_key' ? 'username' : 'email';
 
         // Only an email collision identifies the same person. A username
         // collision is a name clash with an unrelated account, so returning
         // that account would invite the caller to act on a stranger. Ask for a
         // different username instead, and disclose nothing about them.
-        if (field === "username") {
+        if (field === 'username') {
           return res.status(409).json({
-            error: "That username is already taken. Choose a different one.",
+            error: 'That username is already taken. Choose a different one.',
             field,
             existing_user: null,
           });
         }
 
         const existing = await db
-          .selectFrom("users")
-          .select(["id", "username", "email"])
-          .where("email", "=", req.body?.email)
-          .where("deleted_at", "is", null)
+          .selectFrom('users')
+          .select(['id', 'username', 'email'])
+          .where('email', '=', req.body?.email)
+          .where('deleted_at', 'is', null)
           .executeTakeFirst();
 
         return res.status(409).json({
-          error: "A user with this email already exists",
+          error: 'A user with this email already exists',
           field,
           existing_user: existing || null,
         });
       }
 
-      console.error("[createUser] Error:", error);
-      return res.status(500).json({ error: "Failed to create user" });
+      console.error('[createUser] Error:', error);
+      return res.status(500).json({ error: 'Failed to create user' });
     }
   }
   /**
@@ -996,14 +1001,14 @@ class UserController {
 
       // Validate user exists
       const existingUser = await db
-        .selectFrom("users")
-        .select(["id", "profile"])
-        .where("id", "=", id)
-        .where("deleted_at", "is", null)
+        .selectFrom('users')
+        .select(['id', 'profile'])
+        .where('id', '=', id)
+        .where('deleted_at', 'is', null)
         .executeTakeFirst();
 
       if (!existingUser) {
-        return res.status(404).json({ error: "User not found" });
+        return res.status(404).json({ error: 'User not found' });
       }
 
       // Build update payload safely
@@ -1020,7 +1025,7 @@ class UserController {
       if (banner_url !== undefined) updateData.banner_url = banner_url;
 
       // Merge profile JSON safely
-      if (profile && typeof profile === "object") {
+      if (profile && typeof profile === 'object') {
         updateData.profile = {
           ...(existingUser.profile || {}),
           ...profile,
@@ -1028,42 +1033,42 @@ class UserController {
       }
 
       if (Object.keys(updateData).length === 0) {
-        return res.status(400).json({ error: "No valid fields to update" });
+        return res.status(400).json({ error: 'No valid fields to update' });
       }
 
       updateData.updated_at = sql`NOW()`;
 
       const updated = await db
-        .updateTable("users")
+        .updateTable('users')
         .set(updateData)
-        .where("id", "=", id)
-        .where("deleted_at", "is", null)
+        .where('id', '=', id)
+        .where('deleted_at', 'is', null)
         .returning([
-          "id",
-          "username",
-          "email",
-          "status",
-          "role_id",
-          "bio",
-          "location",
-          "website",
-          "avatar_url",
-          "banner_url",
-          "profile",
-          "updated_at",
+          'id',
+          'username',
+          'email',
+          'status',
+          'role_id',
+          'bio',
+          'location',
+          'website',
+          'avatar_url',
+          'banner_url',
+          'profile',
+          'updated_at',
         ])
         .executeTakeFirst();
 
       return res.json({
         success: true,
-        message: "User updated successfully",
+        message: 'User updated successfully',
         user: updated,
       });
     } catch (error) {
-      console.error("[updateUser] Error:", error);
+      console.error('[updateUser] Error:', error);
       return res.status(500).json({
         success: false,
-        error: "Failed to update user",
+        error: 'Failed to update user',
       });
     }
   }
@@ -1072,26 +1077,26 @@ class UserController {
       const { id } = req.params;
 
       const deleted = await db
-        .updateTable("users")
+        .updateTable('users')
         .set({
           deleted_at: sql`NOW()`, // soft delete
         })
-        .where("id", "=", id)
-        .where("deleted_at", "is", null)
-        .returning(["id", "username"])
+        .where('id', '=', id)
+        .where('deleted_at', 'is', null)
+        .returning(['id', 'username'])
         .executeTakeFirst();
 
       if (!deleted) {
-        return res.status(404).json({ error: "User not found" });
+        return res.status(404).json({ error: 'User not found' });
       }
 
       return res.json({
-        message: "User deleted successfully",
+        message: 'User deleted successfully',
         user: deleted,
       });
     } catch (error) {
-      console.error("[deleteUser] Error:", error);
-      return res.status(500).json({ error: "Failed to delete user" });
+      console.error('[deleteUser] Error:', error);
+      return res.status(500).json({ error: 'Failed to delete user' });
     }
   }
 }

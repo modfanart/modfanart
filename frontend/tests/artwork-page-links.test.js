@@ -45,7 +45,7 @@ const ARTWORK = {
   views_count: 12,
   favorites_count: 3,
   pricing_tiers: [
-    { id: 'tier-1', license_type: 'standard', is_active: true, price_usd_cents: 5000, price_inr_cents: 400000 },
+    { id: 'tier-1', license_type: 'standard', is_active: true, price_usd_cents: 5000 },
   ],
 };
 

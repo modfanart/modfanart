@@ -38,9 +38,11 @@ class WebhookController {
 
         case "payment_intent.payment_failed": {
           const paymentIntent = event.data.object;
-          const orderId = paymentIntent.metadata?.order_id;
+          const raw =
+            paymentIntent.metadata?.order_ids ||
+            paymentIntent.metadata?.order_id;
 
-          if (orderId) {
+          for (const orderId of (raw || "").split(",").filter(Boolean)) {
             await OrderFulfillmentService.markOrderAsFailed(orderId);
           }
 

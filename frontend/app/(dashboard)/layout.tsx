@@ -34,6 +34,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (role === 'brand_manager' && pathname.startsWith('/artist')) {
       router.replace('/brand');
     }
+    
   }, [user, loading, pathname, router]);
 
   /* =========================================================

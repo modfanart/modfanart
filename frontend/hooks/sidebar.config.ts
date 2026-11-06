@@ -24,8 +24,7 @@ import {
 
 import { LucideIcon } from 'lucide-react';
 
-type Role = 'artist' | 'brand_manager' | 'brand_owner' | 'judge' | 'admin';
-
+type Role = 'artist' | 'brand_manager' | 'brand_owner' | 'judge' | 'admin' | 'seller';
 type NavItem = {
   name: string;
   href: string;
@@ -39,7 +38,7 @@ const brandNavItems = (base: string): NavItem[] => [
   { name: 'Submissions', href: '#', icon: ClipboardList },
   { name: 'Licensing', href: `${base}/licensing-requests`, icon: FileText },
   { name: 'Asset Hub', href: '#', icon: Layers },
-  { name: 'Storefront', href: `#`, icon: ShoppingBag },
+  { name: 'Store', href: `${base}/store`, icon: ShoppingBag },
   { name: 'Content', href: `#`, icon: Newspaper },
   { name: 'Analytics', href: '#', icon: BarChart3 },
   { name: 'Automation', href: '#', icon: Bot },
@@ -53,12 +52,16 @@ export const sidebarConfig: Record<Role, (base: string) => NavItem[]> = {
     { name: 'Opportunities', href: `${base}/opportunities`, icon: Briefcase },
     { name: 'Licensing & Earnings', href: `${base}/licensing-earnings`, icon: Wallet },
     { name: 'Portfolio', href: `#`, icon: Image },
-    { name: 'Products', href: `${base}/seller/products`, icon: ShoppingBag },
-    { name: 'Orders', href: `${base}/seller/orders`, icon: ClipboardList },
-    { name: 'Payouts', href: `${base}/seller/payouts`, icon: Wallet },
+    { name: 'Store', href: `${base}/store`, icon: ShoppingBag },
     { name: 'Analytics', href: `#`, icon: BarChart3 },
   ],
-
+  seller: (base: string): NavItem[] => [
+    { name: 'Overview', href: `${base}`, icon: LayoutDashboard },
+    { name: 'Store', href: `${base}/store`, icon: Store },
+    { name: 'Products', href: `${base}/products`, icon: ShoppingBag },
+    { name: 'Orders', href: `${base}/orders`, icon: ClipboardList },
+    { name: 'Profile', href: `${base}/profile`, icon: Users },
+  ],
   brand_manager: brandNavItems,
   brand_owner: brandNavItems,
 
@@ -75,7 +78,7 @@ export const sidebarConfig: Record<Role, (base: string) => NavItem[]> = {
     { name: 'Submissions', href: `${base}/submissions`, icon: ClipboardList },
     { name: 'Judging', href: `${base}/judging`, icon: FileCheck },
     { name: 'Licensing', href: `${base}/licensing`, icon: FileText },
-    { name: 'Storefront', href: `#`, icon: ShoppingBag },
+    { name: 'Marketplace', href: `${base}/marketplace`, icon: ShoppingBag },
     { name: 'Content', href: `#`, icon: Newspaper },
     { name: 'Review Automation', href: `#`, icon: Bot },
     { name: 'Team & Permissions', href: `${base}/team-permissions`, icon: UserCog },
