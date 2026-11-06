@@ -15,6 +15,7 @@ import {
   useCreateConnectAccountMutation,
   useGetConnectStatusQuery,
   useGetMyPayoutsQuery,
+  type ConnectStatus,
   type Payout,
 } from '@/services/api/marketplaceApi';
 import { PAYOUT_STATUS, formatDate, formatMoney } from '@/lib/marketplace/format';
@@ -29,6 +30,16 @@ interface OrderGroup {
 }
 
 const UNGROUPED_KEY = '__no_order__';
+
+// The status line is always shown, including when everything is fine, so a
+// seller can confirm Stripe will actually pay them without an alert firing.
+function describeConnect(connect: ConnectStatus | undefined): { label: string; className: string } {
+  if (!connect) return { label: 'Checking…', className: 'text-muted-foreground' };
+  if (!connect.connected) return { label: 'Not connected', className: 'text-destructive' };
+  if (connect.payouts_enabled) return { label: 'Payouts enabled', className: 'text-emerald-700' };
+  if (connect.details_submitted) return { label: 'Under review by Stripe', className: 'text-amber-700' };
+  return { label: 'Onboarding incomplete', className: 'text-amber-700' };
+}
 
 // One group per order, in the order the API returned them (newest payout
 // first). Rows from a server that does not send order info collapse into a
@@ -100,9 +111,14 @@ export function SellerPayouts() {
     (payouts ?? []).filter((p) => p.status === status).reduce((s, p) => s + p[key], 0);
 
   const groups = groupByOrder(payouts ?? []);
+  const connectCopy = describeConnect(connect);
 
   return (
     <div className="space-y-6">
+      <p className="text-sm" data-testid="connect-status">
+        Stripe Connect: <span className={`font-medium ${connectCopy.className}`}>{connectCopy.label}</span>
+      </p>
+
       {connect && !connect.payouts_enabled && (
         <Alert>
           <AlertTitle>Payout account not ready</AlertTitle>

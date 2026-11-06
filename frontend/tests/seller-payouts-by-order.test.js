@@ -171,6 +171,22 @@ describe('SellerPayouts grouped by order', () => {
     assert.ok(container.textContent.includes('2 items'));
   });
 
+  it('always shows the Stripe Connect payout status, including when healthy', async () => {
+    let container = await render();
+    assert.ok(container.textContent.includes('Stripe Connect: Payouts enabled'));
+    assert.ok(!container.textContent.includes('Payout account not ready'));
+
+    connectResponse = { connected: false };
+    container = await render();
+    assert.ok(container.textContent.includes('Stripe Connect: Not connected'));
+    assert.ok(container.textContent.includes('Connect Stripe'));
+
+    connectResponse = { connected: true, payouts_enabled: false, details_submitted: true };
+    container = await render();
+    assert.ok(container.textContent.includes('Under review by Stripe'));
+    assert.ok(container.textContent.includes('Continue onboarding'));
+  });
+
   it('still totals the stat tiles across every order', async () => {
     payoutsResponse = [
       payout({ id: 'p1', order_id: 'o1', order_number: 'A', status: 'paid', net_cents: 100 }),
