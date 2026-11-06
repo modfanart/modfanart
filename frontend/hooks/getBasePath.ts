@@ -17,11 +17,11 @@ export function getBasePath(user: any) {
     return username ? `/judge/${username}` : null;
   }
 
-  if (
-    role === 'admin' ||
-    role === 'super_admin' ||
-    role === 'developer'
-  ) {
+  if (role === 'seller') {
+    const username = user?.username?.trim().toLowerCase();
+    return username ? `/seller/${username}` : null;
+  }
+  if (role === 'admin' || role === 'super_admin' || role === 'developer') {
     return `/admin/${roleRaw}`;
   }
 
