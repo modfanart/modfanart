@@ -12,7 +12,7 @@ export function CurrencyToggle({ className }: { className?: string }) {
       role="group"
       aria-label="Currency"
     >
-      {(['INR', 'USD'] as const).map((c) => (
+      {(['USD'] as const).map((c) => (
         <button
           key={c}
           type="button"
@@ -25,7 +25,7 @@ export function CurrencyToggle({ className }: { className?: string }) {
               : 'text-muted-foreground hover:text-foreground'
           )}
         >
-          {c === 'INR' ? '₹ INR' : '$ USD'}
+          $ USD
         </button>
       ))}
     </div>

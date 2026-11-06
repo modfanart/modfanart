@@ -238,7 +238,8 @@ export interface ApplySellerPayload {
 
 export interface DecideSellerPayload {
   status: 'approved' | 'rejected' | 'suspended';
-  notes?: string;
+  // tsconfig has exactOptionalPropertyTypes: callers pass `notes || undefined`.
+  notes?: string | undefined;
 }
 
 export interface CheckoutPayload {

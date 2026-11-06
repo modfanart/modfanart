@@ -483,10 +483,10 @@ export const marketplaceApi = createApi({
     }),
 
     getEligibleArtworks: builder.query<EligibleArtwork[], { brandId?: string | null | undefined } | void>({
-      query: (arg) => ({
-        url: '/merch/eligible-artworks',
-        params: arg && arg.brandId ? { brand_id: arg.brandId } : undefined,
-      }),
+      query: (arg) =>
+        arg && arg.brandId
+          ? { url: '/merch/eligible-artworks', params: { brand_id: arg.brandId } }
+          : '/merch/eligible-artworks',
       transformResponse: (res: { artworks: EligibleArtwork[] }) => res.artworks,
     }),
 
