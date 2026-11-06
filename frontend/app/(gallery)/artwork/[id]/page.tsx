@@ -8,7 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowLeft, Download, Share2, Heart } from 'lucide-react';
+import { ArrowLeft, Download, Share2, Heart, FileText } from 'lucide-react';
+import { isPdfUrl } from '@/lib/utils/file-type';
 import { useGetArtworkQuery } from '@/services/api/artworkApi';
 import { useGetArtworkTagsQuery } from '@/services/api/artworkTagsApi';
 import { useGetArtworkCategoriesQuery } from '@/services/api/artworkApi';
@@ -153,14 +154,37 @@ export default function ArtworkDetailPage() {
         {/* Image Section */}
         <div className="bg-muted/40 rounded-2xl overflow-hidden border shadow-sm">
           <div className="aspect-square relative">
-            <Image
-              src={artwork.file_url || artwork.thumbnail_url || '/placeholder-artwork.svg'}
-              alt={artwork.title}
-              fill
-              className="object-contain p-6 sm:p-10 md:p-12"
-              priority
-              sizes="(max-width: 1024px) 100vw, 50vw"
-            />
+            {isPdfUrl(artwork.file_url || artwork.thumbnail_url) ? (
+              <>
+                {/* Most browsers render PDFs natively inside an iframe, so the
+                    submission shows inline rather than requiring a click-through.
+                    #toolbar=0 trims the built-in PDF viewer chrome so it sits
+                    flush in the card instead of showing a second set of controls. */}
+                <iframe
+                  src={`${artwork.file_url}#toolbar=0`}
+                  title={artwork.title}
+                  className="h-full w-full border-0"
+                />
+                <a
+                  href={artwork.file_url ?? undefined}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="absolute top-3 right-3 inline-flex items-center gap-1.5 rounded-md bg-background/90 backdrop-blur px-2.5 py-1.5 text-xs font-medium text-muted-foreground border shadow-sm hover:text-foreground transition-colors"
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                  Open full size
+                </a>
+              </>
+            ) : (
+              <Image
+                src={artwork.file_url || artwork.thumbnail_url || '/placeholder-artwork.svg'}
+                alt={artwork.title}
+                fill
+                className="object-contain p-6 sm:p-10 md:p-12"
+                priority
+                sizes="(max-width: 1024px) 100vw, 50vw"
+              />
+            )}
           </div>
         </div>
 
