@@ -22,9 +22,7 @@ import { collectionsApi } from '@/services/api/collectionApi';
 import { searchApi } from '@/services/api/searchApi';
 import notifyApi from '@/services/api/notifyApi';
 import { contactApi } from '@/services/api/contactApi';
-import sellerApi from '@/services/api/sellerApi';
 import merchApi from '@/services/api/merchApi';
-import payoutApi from '@/services/api/payoutApi';
 // ────────────────────────────────────────────────
 // Reducers (slices)
 // ────────────────────────────────────────────────
@@ -64,9 +62,7 @@ export const store = configureStore({
     [collectionsApi.reducerPath]: collectionsApi.reducer,
     [searchApi.reducerPath]: searchApi.reducer,
     [notifyApi.reducerPath]: notifyApi.reducer,
-    [sellerApi.reducerPath]: sellerApi.reducer,
     [merchApi.reducerPath]: merchApi.reducer,
-    [payoutApi.reducerPath]: payoutApi.reducer,
   },
 
   middleware: (getDefaultMiddleware) =>
@@ -94,9 +90,7 @@ export const store = configureStore({
       collectionsApi.middleware,
       searchApi.middleware,
       notifyApi.middleware,
-      sellerApi.middleware,
-      merchApi.middleware,
-      payoutApi.middleware
+      merchApi.middleware
       // add more .middleware when you create new api slices
     ),
 
