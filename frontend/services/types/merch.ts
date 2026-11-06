@@ -227,7 +227,8 @@ export interface UpdateVariantPayload {
 
 export interface ModerateProductPayload {
   decision: 'approve' | 'reject';
-  notes?: string;
+  // tsconfig has exactOptionalPropertyTypes: callers pass `notes || undefined`.
+  notes?: string | undefined;
 }
 
 export interface ApplySellerPayload {
