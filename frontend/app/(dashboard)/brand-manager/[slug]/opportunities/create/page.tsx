@@ -66,10 +66,32 @@ export interface CreateContestRequest {
 
 /* ───────────────── HELPERS ───────────────── */
 
-const toISODate = (date: Date | string | null | undefined): string | null => {
+const toISODate = (
+  date: Date | string | null | undefined
+): string | null => {
   if (!date) return null;
-  if (typeof date === 'string') return date.split('T')[0]!;
-  return date.toISOString().split('T')[0]!;
+
+  if (typeof date === 'string') {
+    return date.split('T')[0]!;
+  }
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+};
+
+const fromISODate = (
+  value: string | null | undefined
+): Date | undefined => {
+  if (!value) return undefined;
+
+  const [year, month, day] = value.split('T')[0]!.split('-').map(Number);
+
+  if (!year || !month || !day) return undefined;
+
+  return new Date(year, month - 1, day);
 };
 
 const generateSlug = (title: string): string =>
@@ -289,35 +311,50 @@ export default function CreateOpportunityPage() {
 
             {/* Dates */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Start Date */}
               <div>
                 <Label>Start Date *</Label>
                 <SingleDatePicker
-                  date={form.start_date ? new Date(form.start_date) : undefined}
-                  onDateChange={(d) => updateField('start_date', d ? toISODate(d)! : '')}
+                  date={fromISODate(form.start_date)}
+                  onDateChange={(d) =>
+                    updateField('start_date', d ? toISODate(d)! : '')
+                  }
                 />
               </div>
+
+              {/* Submission End Date */}
               <div>
                 <Label>Submission End Date *</Label>
                 <SingleDatePicker
-                  date={form.submission_end_date ? new Date(form.submission_end_date) : undefined}
-                  onDateChange={(d) => updateField('submission_end_date', d ? toISODate(d)! : '')}
+                  date={fromISODate(form.submission_end_date)}
+                  onDateChange={(d) =>
+                    updateField('submission_end_date', d ? toISODate(d)! : '')
+                  }
                 />
               </div>
+
+              {/* Voting End Date */}
               <div>
                 <Label>Voting End Date (Optional)</Label>
                 <SingleDatePicker
-                  date={form.voting_end_date ? new Date(form.voting_end_date) : undefined}
-                  onDateChange={(d) => updateField('voting_end_date', d ? toISODate(d) : null)}
+                  date={fromISODate(form.voting_end_date)}
+                  onDateChange={(d) =>
+                    updateField('voting_end_date', d ? toISODate(d) : null)
+                  }
                 />
               </div>
-              <div>
-                <Label>Judging End Date (Optional)</Label>
-                <SingleDatePicker
-                  date={form.judging_end_date ? new Date(form.judging_end_date) : undefined}
-                  onDateChange={(d) => updateField('judging_end_date', d ? toISODate(d) : null)}
-                />
-              </div>
-            </div>
+
+                {/* Judging End Date */}
+                <div>
+                  <Label>Judging End Date (Optional)</Label>
+                  <SingleDatePicker
+                    date={fromISODate(form.judging_end_date)}
+                    onDateChange={(d) =>
+                      updateField('judging_end_date', d ? toISODate(d) : null)
+                    }
+                  />
+                </div>
+                </div>
 
             {/* Rules & Requirements */}
             <div className="grid grid-cols-1 gap-6">
