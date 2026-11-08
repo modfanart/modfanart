@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { CalendarIcon, Users, Trophy, Eye, Award, Clock } from 'lucide-react';
@@ -41,6 +42,8 @@ export default function ArtistOpportunitiesPage() {
   const judgingContests = contests.filter((c: any) => c.status === 'judging');
   const closedContests = contests.filter((c: any) => ['completed', 'archived'].includes(c.status));
 
+  const [activeTab, setActiveTab] = useState('all');
+
   if (isLoading) {
     return (
       <div className="container mx-auto py-10 px-4">
@@ -80,7 +83,7 @@ export default function ArtistOpportunitiesPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="all" className="space-y-8">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
         <TabsList className="inline-flex h-12 items-center justify-center rounded-xl bg-muted p-1 text-muted-foreground">
           <TabsTrigger value="all" className="rounded-lg px-6">
             All
@@ -103,17 +106,25 @@ export default function ArtistOpportunitiesPage() {
 
         {/* ACTIVE */}
         <TabsContent value="active">
-          <OpportunityGrid items={activeContests} />
+          <OpportunityGrid items={activeContests} onBrowseAll={() => setActiveTab('all')} />
         </TabsContent>
 
         {/* JUDGING */}
         <TabsContent value="judging">
-          <OpportunityGrid items={judgingContests} showJudgingStatus />
+          <OpportunityGrid
+            items={judgingContests}
+            showJudgingStatus
+            onBrowseAll={() => setActiveTab('all')}
+          />
         </TabsContent>
 
         {/* CLOSED */}
         <TabsContent value="closed">
-          <OpportunityGrid items={closedContests} isClosed />
+          <OpportunityGrid
+            items={closedContests}
+            isClosed
+            onBrowseAll={() => setActiveTab('all')}
+          />
         </TabsContent>
       </Tabs>
     </div>
@@ -125,13 +136,15 @@ function OpportunityGrid({
   items,
   isClosed = false,
   showJudgingStatus = false,
+   onBrowseAll = undefined,
 }: {
   items: any[];
   isClosed?: boolean;
   showJudgingStatus?: boolean;
+   onBrowseAll?: () => void | undefined;
 }) {
   if (items.length === 0) {
-    return <EmptyState isClosed={isClosed} />;
+    return <EmptyState isClosed={isClosed} {...(onBrowseAll && { onBrowseAll })} />;
   }
 
   return (
@@ -207,7 +220,13 @@ function OpportunityGrid({
 }
 
 // Empty State
-function EmptyState({ isClosed = false }: { isClosed?: boolean }) {
+function EmptyState({
+  isClosed = false,
+  onBrowseAll,
+}: {
+  isClosed?: boolean;
+  onBrowseAll?: () => void | undefined;
+}) {
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center border border-dashed rounded-2xl">
       <Trophy className="h-16 w-16 text-muted-foreground mb-4" />
@@ -217,9 +236,12 @@ function EmptyState({ isClosed = false }: { isClosed?: boolean }) {
           ? "You haven't participated in any closed opportunities yet."
           : "You haven't submitted to any opportunities yet."}
       </p>
-      <Button asChild className="mt-6">
-        <Link href="/opportunities">Browse Opportunities</Link>
-      </Button>
+      {onBrowseAll ? (
+        <Button className="mt-6" onClick={onBrowseAll}>
+          Browse Opportunities
+        </Button>
+      ) : null}
     </div>
   );
 }
+

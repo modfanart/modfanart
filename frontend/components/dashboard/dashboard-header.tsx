@@ -76,6 +76,18 @@ export default function DashboardHeader({ onMenuClick }: { onMenuClick?: () => v
                   Return to Web
                 </Link>
               </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href={`/u/${user?.id}`} className="flex items-center gap-2">
+                  <Globe className="h-4 w-4" />
+                  Profile
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/settings" className="flex items-center gap-2">
+                  <Globe className="h-4 w-4" />
+                  Settings
+                </Link>
+              </DropdownMenuItem>
 
               <DropdownMenuItem onClick={handleLogout} className="text-red-500">
                 <LogOut className="h-4 w-4 mr-2" />

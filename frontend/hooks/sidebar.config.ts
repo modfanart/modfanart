@@ -43,7 +43,7 @@ const brandNavItems = (base: string): NavItem[] => [
   { name: 'Content', href: `#`, icon: Newspaper },
   { name: 'Analytics', href: '#', icon: BarChart3 },
   { name: 'Automation', href: '#', icon: Bot },
-  { name: 'Settings', href: `${base}/settings`, icon: Settings },
+  //{ name: 'Settings', href: `/settings`, icon: Settings },
 ];
 
 export const sidebarConfig: Record<Role, (base: string) => NavItem[]> = {

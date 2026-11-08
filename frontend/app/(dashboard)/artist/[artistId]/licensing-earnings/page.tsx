@@ -206,7 +206,7 @@ export default function LicenseRequestsPage() {
               <p className="mt-2 text-sm text-muted-foreground">
                 When buyers purchase licenses for your work, they will appear here.
               </p>
-              <Link href="/dashboard/artist/my-artworks">
+              <Link href={`/artist/${encodeURIComponent(user.username ?? '')}/my-artworks`}>
                 <Button variant="outline" className="mt-6">
                   View Your Artworks
                 </Button>

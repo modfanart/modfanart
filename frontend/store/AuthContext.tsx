@@ -44,8 +44,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const accessToken = useSelector((state: RootState) => state.auth.accessToken);
   const initialized = useSelector((state: RootState) => state.auth.initialized);
 
-  const { data, isLoading } = useGetCurrentUserQuery(undefined, {
-    skip: !accessToken,
+  const { data, isLoading, isUninitialized } =
+  useGetCurrentUserQuery(undefined, {
+    skip: !initialized || !accessToken,
   });
 
   const hasBrandRole = ['BRAND_MANAGER', 'BRAND_OWNER', 'BRAND_EDITOR', 'BRAND_MEMBER'].includes(
@@ -91,7 +92,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // don't treat the pre-rehydration window as logged out. After that,
         // only loading while the current-user query is in flight.
         user,
-        loading: !initialized || (isLoading && !!accessToken),
+        loading:
+          !initialized ||
+          (!!accessToken && (isLoading || isUninitialized)),
         logout: handleLogout,
       }}
     >

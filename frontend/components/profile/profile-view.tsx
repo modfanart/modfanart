@@ -1,19 +1,14 @@
 'use client';
 
-import { useMemo } from 'react';
 import {
   Instagram,
   Twitter,
   Heart,
   Trophy,
-  FolderHeart,
   UserPlus,
-  MessageSquare,
   Edit,
-  Settings,
   Sparkles,
   Eye,
-  Users,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -24,8 +19,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuth } from '@/store/AuthContext';
 
-import { useGetCurrentUserQuery, useGetUserByUsernameQuery } from '@/services/api/userApi';
+import { useGetUserByUsernameQuery } from '@/services/api/userApi';
 
 import { useGetMyArtworksQuery, useGetArtworksByCreatorQuery } from '@/services/api/artworkApi';
 
@@ -33,68 +29,135 @@ interface ProfileViewProps {
   targetUsername: string;
 }
 
-export function ProfileView({ targetUsername }: ProfileViewProps) {
-  const { data: currentData, isLoading: currentLoading } = useGetCurrentUserQuery();
 
+export function ProfileView({ targetUsername }: ProfileViewProps) {
+  const { user: currentUser, loading: authLoading } = useAuth();
+
+  const normalizedUsername = targetUsername?.trim() ?? '';
+
+  // Wait for authentication initialization before fetching profile.
   const {
     data: profileUser,
     isLoading: profileLoading,
+    isFetching: profileFetching,
+    isUninitialized: profileUninitialized,
     error: profileError,
-  } = useGetUserByUsernameQuery(targetUsername, {
-    skip: !targetUsername,
+    refetch: refetchProfile,
+  } = useGetUserByUsernameQuery(normalizedUsername, {
+    skip: authLoading || !normalizedUsername,
+    refetchOnMountOrArgChange: true,
   });
 
-  const currentUser = currentData?.user;
+  const isOwnProfile =
+    !!currentUser?.username &&
+    currentUser.username.toLowerCase() ===
+      normalizedUsername.toLowerCase();
 
-  const isOwnProfile = useMemo(() => {
-    return currentUser?.username?.toLowerCase() === targetUsername?.toLowerCase();
-  }, [currentUser?.username, targetUsername]);
-
-  // ────────────────────────────────────────────────
   // ARTWORKS FETCH
-  // ────────────────────────────────────────────────
 
-  const { data: myArtworksData, isLoading: myArtworksLoading } = useGetMyArtworksQuery(undefined, {
-    skip: !isOwnProfile,
+  const {
+    data: myArtworksData,
+    isLoading: myArtworksLoading,
+    isFetching: myArtworksFetching,
+    error: myArtworksError,
+  } = useGetMyArtworksQuery(undefined, {
+    skip: authLoading || !isOwnProfile,
   });
 
-  const { data: creatorArtworksData, isLoading: creatorArtworksLoading } =
-    useGetArtworksByCreatorQuery(
-      {
-        creatorId: profileUser?.id ?? '',
-        limit: 12,
-      },
-      {
-        skip: isOwnProfile || !profileUser?.id,
-      }
-    );
+  const {
+    data: creatorArtworksData,
+    isLoading: creatorArtworksLoading,
+    isFetching: creatorArtworksFetching,
+    error: creatorArtworksError,
+  } = useGetArtworksByCreatorQuery(
+    {
+      creatorId: profileUser?.id ?? '',
+      limit: 12,
+    },
+    {
+      skip:
+        authLoading ||
+        isOwnProfile ||
+        !profileUser?.id,
+    }
+  );
 
-  const artworks = (isOwnProfile ? myArtworksData?.artworks : creatorArtworksData?.artworks) ?? [];
+  const artworks =
+    (isOwnProfile
+      ? myArtworksData?.artworks
+      : creatorArtworksData?.artworks) ?? [];
 
-  const artworksLoading = isOwnProfile ? myArtworksLoading : creatorArtworksLoading;
+  const artworksLoading = isOwnProfile
+    ? myArtworksLoading || myArtworksFetching
+    : creatorArtworksLoading || creatorArtworksFetching;
 
-  const isLoading = currentLoading || profileLoading;
+  const artworksError = isOwnProfile
+    ? myArtworksError
+    : creatorArtworksError;
+
+  const isLoading =
+    authLoading ||
+    profileLoading ||
+    profileFetching ||
+    (!!normalizedUsername && profileUninitialized && !profileError);
+
 
   // ────────────────────────────────────────────────
   // STATES
   // ────────────────────────────────────────────────
 
+
+  // STATES
+
   if (isLoading) {
     return <Skeleton className="h-[400px] w-full rounded-xl" />;
   }
 
-  if (profileError || !profileUser) {
+  if (profileError) {
+    console.error('[ProfileView] Profile API error:', profileError);
+
+    const status =
+      'status' in profileError
+        ? profileError.status
+        : undefined;
+
+    const isNotFound = status === 404;
+
     return (
       <div className="text-center py-20 space-y-4">
-        <h2 className="text-2xl font-semibold text-muted-foreground">
-          @{targetUsername} not found
+        <h2 className="text-2xl font-semibold">
+          {isNotFound
+            ? `@${normalizedUsername} not found`
+            : 'Unable to load profile'}
         </h2>
-        <Button onClick={() => window.location.reload()} variant="outline">
-          Refresh Page
+
+        {!isNotFound && (
+          <p className="text-muted-foreground">
+            The profile request failed
+            {status ? ` (status: ${status})` : ''}.
+          </p>
+        )}
+
+        <Button
+          variant="outline"
+          onClick={() => refetchProfile()}
+        >
+          Try Again
         </Button>
       </div>
     );
   }
+
+  if (!profileUser) {
+    return (
+      <div className="text-center py-20">
+        <h2 className="text-2xl font-semibold">
+          @{normalizedUsername} not found
+        </h2>
+      </div>
+    );
+  }
+
 
   const profile = profileUser.profile ?? {};
   const initials = profileUser.username?.slice(0, 2).toUpperCase() || 'U';
@@ -213,7 +276,13 @@ export function ProfileView({ targetUsername }: ProfileViewProps) {
 
           {/* ARTWORKS */}
           <TabsContent value="artworks">
-            {artworksLoading ? (
+            {artworksError ? (
+              <Card>
+                <CardContent className="p-6 text-center text-muted-foreground">
+                  Unable to load artworks. Please try again.
+                </CardContent>
+              </Card>
+            ) : artworksLoading ? (
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {Array.from({ length: 6 }).map((_, i) => (
                   <Skeleton key={i} className="h-64 w-full rounded-xl" />

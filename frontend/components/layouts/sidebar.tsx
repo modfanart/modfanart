@@ -19,6 +19,19 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
   const { user } = useAuth();
 
+  const permissions = user?.role?.permissions ?? {};
+
+  const hasPermission = (permission?: string) => {
+    if (!permission) return true;
+
+    // Admin / wildcard permissions
+    if (permissions['*'] === true || permissions['all'] === true) {
+      return true;
+    }
+
+    return permissions[permission] === true;
+  };
+
   // Judging is granted per contest through contest_judges, not through a role,
   // so it cannot come from sidebarConfig (which is keyed on user.role.name).
   // The decision rules (and why pending invitations count) live in
@@ -60,7 +73,13 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
       <ScrollArea className="flex-1 px-3 py-4">
         <div className="space-y-1">
           {navigation.map((item) => {
-            const isActive = item.href !== '#' && pathname.startsWith(item.href);
+            const isOverview = item.href === basePath;
+
+            const isActive =
+              item.href !== '#' &&
+              (isOverview
+                ? pathname === item.href
+                : pathname === item.href || pathname.startsWith(`${item.href}/`));
 
             return (
               <Link
@@ -89,7 +108,9 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
 
       <div className="p-4">
         <Button variant="outline" className="w-full justify-start gap-2">
-          Settings
+          <Link href="/settings">
+            <span className="text-sm font-medium">Settings</span>
+          </Link>
         </Button>
       </div>
     </aside>
