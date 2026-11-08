@@ -153,12 +153,12 @@ export default function BrandStorefrontPage() {
               </div>
 
               {/* ACTION */}
-              <Button variant="outline" asChild className="gap-2">
+              {/* <Button variant="outline" asChild className="gap-2">
                 <Link href={`/dashboard/brand/${slug}`}>
                   <Settings className="h-4 w-4" />
                   Manage Brand
                 </Link>
-              </Button>
+              </Button> */}
             </div>
           </CardContent>
         </Card>
