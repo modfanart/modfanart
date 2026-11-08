@@ -248,19 +248,26 @@ export const userApi = createApi({
       invalidatesTags: ['CurrentUser'],
     }),
 
+    
     getUserByUsername: builder.query<UserProfile, string>({
-      query: (username) => `/by-username/${username}`,
+      query: (username) =>
+        `/by-username/${encodeURIComponent(username.trim())}`,
+
       providesTags: (result, error, username) => [
-        { type: 'PublicProfile', id: username.toLowerCase() },
+        {
+          type: 'PublicProfile',
+          id: username.trim().toLowerCase(),
+        },
       ],
-      transformResponse: (response: { success: boolean; user: UserProfile }): UserProfile => {
+
+      transformResponse: (
+        response: { success: boolean; user: UserProfile }
+      ): UserProfile => {
         if (!response?.success || !response?.user) {
           throw new Error('Invalid profile response from server');
         }
+
         return response.user;
-      },
-      extraOptions: {
-        refetchOnMountOrArgChange: true,
       },
     }),
 
