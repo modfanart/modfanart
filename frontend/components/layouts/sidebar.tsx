@@ -73,7 +73,13 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
       <ScrollArea className="flex-1 px-3 py-4">
         <div className="space-y-1">
           {navigation.map((item) => {
-            const isActive = item.href !== '#' && pathname.startsWith(item.href);
+            const isOverview = item.href === basePath;
+
+            const isActive =
+              item.href !== '#' &&
+              (isOverview
+                ? pathname === item.href
+                : pathname === item.href || pathname.startsWith(`${item.href}/`));
 
             return (
               <Link
