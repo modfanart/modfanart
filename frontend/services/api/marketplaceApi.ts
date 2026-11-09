@@ -385,11 +385,13 @@ export interface Payout {
   status: PayoutStatus;
   stripe_transfer_id: string | null;
   created_at: string;
+  // GET /payout/mine and the admin list join the order the line came from
+  order_id?: string | null | undefined;
+  order_number?: string | null | undefined;
   // admin list only
   seller_username?: string | null | undefined;
   seller_email?: string | null | undefined;
   seller_stripe_connect_id?: string | null | undefined;
-  order_number?: string | null | undefined;
   currency?: Currency | null | undefined;
   item_description?: string | null | undefined;
 }

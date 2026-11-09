@@ -15,10 +15,92 @@ import {
   useCreateConnectAccountMutation,
   useGetConnectStatusQuery,
   useGetMyPayoutsQuery,
+  type ConnectStatus,
+  type Payout,
 } from '@/services/api/marketplaceApi';
 import { PAYOUT_STATUS, formatDate, formatMoney } from '@/lib/marketplace/format';
 import { StatTile } from './seller-overview';
 import { CircleDollarSign, Clock, Landmark } from 'lucide-react';
+
+interface OrderGroup {
+  key: string;
+  label: string;
+  payouts: Payout[];
+  net: number;
+}
+
+const UNGROUPED_KEY = '__no_order__';
+
+// The status line is always shown, including when everything is fine, so a
+// seller can confirm Stripe will actually pay them without an alert firing.
+function describeConnect(connect: ConnectStatus | undefined): { label: string; className: string } {
+  if (!connect) return { label: 'Checking…', className: 'text-muted-foreground' };
+  if (!connect.connected) return { label: 'Not connected', className: 'text-destructive' };
+  if (connect.payouts_enabled) return { label: 'Payouts enabled', className: 'text-emerald-700' };
+  if (connect.details_submitted) return { label: 'Under review by Stripe', className: 'text-amber-700' };
+  return { label: 'Onboarding incomplete', className: 'text-amber-700' };
+}
+
+// One group per order, in the order the API returned them (newest payout
+// first). Rows from a server that does not send order info collapse into a
+// single trailing "Other sales" group rather than one section per row.
+function groupByOrder(payouts: Payout[]): OrderGroup[] {
+  const groups = new Map<string, OrderGroup>();
+
+  for (const payout of payouts) {
+    const key = payout.order_id ?? payout.order_number ?? UNGROUPED_KEY;
+    const label = payout.order_number ? `Order #${payout.order_number}` : 'Other sales';
+    const group = groups.get(key) ?? { key, label, payouts: [], net: 0 };
+
+    group.payouts.push(payout);
+    group.net += payout.net_cents;
+    groups.set(key, group);
+  }
+
+  const ordered = [...groups.values()].filter((g) => g.key !== UNGROUPED_KEY);
+  const ungrouped = groups.get(UNGROUPED_KEY);
+  return ungrouped ? [...ordered, ungrouped] : ordered;
+}
+
+function OrderGroupTable({ group }: { group: OrderGroup }) {
+  const count = group.payouts.length;
+
+  return (
+    <section className="overflow-x-auto rounded-lg border" aria-label={group.label}>
+      <div className="flex flex-wrap items-baseline justify-between gap-2 border-b bg-muted/40 px-4 py-2">
+        <h3 className="font-medium">{group.label}</h3>
+        <p className="text-sm text-muted-foreground">
+          {count} {count === 1 ? 'item' : 'items'} · net{' '}
+          <span className="font-medium text-foreground">{formatMoney(group.net)}</span>
+        </p>
+      </div>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Date</TableHead>
+            <TableHead>Gross</TableHead>
+            <TableHead>Platform fee</TableHead>
+            <TableHead>Net</TableHead>
+            <TableHead>Status</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {group.payouts.map((p) => (
+            <TableRow key={p.id}>
+              <TableCell>{formatDate(p.created_at)}</TableCell>
+              <TableCell>{formatMoney(p.gross_cents)}</TableCell>
+              <TableCell>−{formatMoney(p.platform_fee_cents)}</TableCell>
+              <TableCell className="font-medium">{formatMoney(p.net_cents)}</TableCell>
+              <TableCell>
+                <StatusBadge map={PAYOUT_STATUS} status={p.status} />
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </section>
+  );
+}
 
 export function SellerPayouts() {
   const { data: payouts, isLoading } = useGetMyPayoutsQuery();
@@ -28,8 +110,15 @@ export function SellerPayouts() {
   const sum = (status: string, key: 'net_cents' | 'platform_fee_cents') =>
     (payouts ?? []).filter((p) => p.status === status).reduce((s, p) => s + p[key], 0);
 
+  const groups = groupByOrder(payouts ?? []);
+  const connectCopy = describeConnect(connect);
+
   return (
     <div className="space-y-6">
+      <p className="text-sm" data-testid="connect-status">
+        Stripe Connect: <span className={`font-medium ${connectCopy.className}`}>{connectCopy.label}</span>
+      </p>
+
       {connect && !connect.payouts_enabled && (
         <Alert>
           <AlertTitle>Payout account not ready</AlertTitle>
@@ -74,31 +163,10 @@ export function SellerPayouts() {
           Payouts appear here once an order is completed.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Gross</TableHead>
-                <TableHead>Platform fee</TableHead>
-                <TableHead>Net</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {payouts.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell>{formatDate(p.created_at)}</TableCell>
-                  <TableCell>{formatMoney(p.gross_cents)}</TableCell>
-                  <TableCell>−{formatMoney(p.platform_fee_cents)}</TableCell>
-                  <TableCell className="font-medium">{formatMoney(p.net_cents)}</TableCell>
-                  <TableCell>
-                    <StatusBadge map={PAYOUT_STATUS} status={p.status} />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <div className="space-y-4">
+          {groups.map((group) => (
+            <OrderGroupTable key={group.key} group={group} />
+          ))}
         </div>
       )}
     </div>
