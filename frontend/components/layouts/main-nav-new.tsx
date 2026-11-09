@@ -12,16 +12,19 @@ import { SearchModal } from './search-modal';
 import { UserNav } from '../users/user-nav';
 import { MobileMenu } from './mobile-menu';
 import { MobileBottomNav } from './mobile-bottom-nav';
+import { CartButton } from '../marketplace/cart-button';
 
 const authLinks = [
   { label: 'Explore', href: '/explore' },
   { label: 'Contests', href: '/explore/contests' },
   { label: 'Gallery', href: '/gallery' },
+  { label: 'Marketplace', href: '/marketplace' },
 ];
 
 const publicLinks = [
   { label: 'Home', href: '/' },
   { label: 'For Artists', href: '/for-artists' },
+  { label: 'Marketplace', href: '/marketplace' },
   { label: 'For Brands', href: '/for-brands' },
   { label: 'About Us', href: '/about' },
   { label: 'Book Demo', href: '/contact/sales' },
@@ -77,6 +80,7 @@ export default function MainNav() {
         {/* Right Side */}
         <div className="flex items-center gap-3">
           <SearchModal />
+          <CartButton />
 
           {loading ? (
             <div className="h-9 w-9 rounded-full bg-gray-200 animate-pulse" />

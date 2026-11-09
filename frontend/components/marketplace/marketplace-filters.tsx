@@ -1,151 +1,117 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { Search, X } from 'lucide-react';
 
-import { Checkbox } from '@/components/ui/checkbox';
-import { Separator } from '@/components/ui/separator';
-import { Slider } from '@/components/ui/slider';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import type { FulfillmentType, MerchFilters } from '@/services/api/marketplaceApi';
+import { FULFILLMENT_LABEL, PRODUCT_TYPES, titleCase } from '@/lib/marketplace/format';
 
-type Filters = {
-  priceRange: number[];
-  categories: string[];
-  brands: string[];
-};
+const ALL = 'all';
 
-interface MarketplaceFiltersProps {
-  onFilterChange: (filters: Filters) => void;
-}
-
-export function MarketplaceFilters({ onFilterChange }: MarketplaceFiltersProps) {
-  const [priceRange, setPriceRange] = useState<number[]>([0, 100]);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
-  const isInitialMount = useRef(true);
-
-  // Available categories
-  const categories = [
-    { id: 'apparel', label: 'Apparel' },
-    { id: 'posters', label: 'Posters & Prints' },
-    { id: 'accessories', label: 'Accessories' },
-    { id: 'stickers', label: 'Stickers' },
-    { id: 'collectibles', label: 'Collectibles' },
-    { id: 'digital', label: 'Digital Items' },
-  ];
-
-  // Popular brands/IPs
-  const brands = [
-    { id: 'marvel', label: 'Marvel' },
-    { id: 'nintendo', label: 'Nintendo' },
-    { id: 'fantasy', label: 'Fantasy Realms' },
-    { id: 'anime', label: 'Anime Studio' },
-    { id: 'scifi', label: 'Sci-Fi Universe' },
-    { id: 'gaming', label: 'Classic Gaming' },
-  ];
-
-  useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
-
-    onFilterChange({
-      priceRange,
-      categories: selectedCategories,
-      brands: selectedBrands,
-    });
-  }, [priceRange, selectedCategories, selectedBrands, onFilterChange]);
-
-  const handleCategoryChange = (categoryId: string, checked: boolean) => {
-    setSelectedCategories((prev) =>
-      checked ? [...prev, categoryId] : prev.filter((id) => id !== categoryId)
-    );
-  };
-
-  const handleBrandChange = (brandId: string, checked: boolean) => {
-    setSelectedBrands((prev) =>
-      checked ? [...prev, brandId] : prev.filter((id) => id !== brandId)
-    );
-  };
-
-  const handlePriceChange = (value: number[]) => {
-    setPriceRange(value);
-  };
-
-  const resetFilters = () => {
-    setPriceRange([0, 100]);
-    setSelectedCategories([]);
-    setSelectedBrands([]);
-  };
+export function MarketplaceFilters({
+  value,
+  onChange,
+}: {
+  value: MerchFilters;
+  onChange: (next: MerchFilters) => void;
+}) {
+  const set = (patch: Partial<MerchFilters>) => onChange({ ...value, ...patch });
+  const dirty = Boolean(value.search || value.type || value.fulfillment_type);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h3 className="mb-4 text-lg font-medium">Filters</h3>
-        <button onClick={resetFilters} className="text-sm text-primary hover:underline">
-          Reset all filters
-        </button>
-      </div>
-
-      <div>
-        <h4 className="mb-2 text-sm font-medium">Price Range</h4>
-        <Slider
-          defaultValue={[0, 100]}
-          max={100}
-          step={1}
-          value={priceRange}
-          onValueChange={handlePriceChange}
-          className="my-6"
+    <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
+      <div className="relative flex-1">
+        <Label htmlFor="mp-search" className="sr-only">
+          Search products
+        </Label>
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          id="mp-search"
+          placeholder="Search merch — tees, mugs, posters…"
+          className="h-11 pl-10"
+          value={value.search ?? ''}
+          onChange={(e) => set({ search: e.target.value })}
         />
-        <div className="flex items-center justify-between">
-          <span className="text-sm">${priceRange[0]}</span>
-          <span className="text-sm">${priceRange[1]}+</span>
-        </div>
       </div>
 
-      <Separator />
-
-      <div>
-        <h4 className="mb-2 text-sm font-medium">Categories</h4>
-        <div className="space-y-2">
-          {categories.map((category) => (
-            <div key={category.id} className="flex items-center space-x-2">
-              <Checkbox
-                id={`category-${category.id}`}
-                checked={selectedCategories.includes(category.id)}
-                onCheckedChange={(checked) => handleCategoryChange(category.id, checked === true)}
-              />
-              <label
-                htmlFor={`category-${category.id}`}
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                {category.label}
-              </label>
-            </div>
-          ))}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:flex">
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Type</Label>
+          <Select
+            value={value.type ?? ALL}
+            onValueChange={(v) => set({ type: v === ALL ? undefined : v })}
+          >
+            <SelectTrigger className="h-11 w-full lg:w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL}>All types</SelectItem>
+              {PRODUCT_TYPES.map((t) => (
+                <SelectItem key={t} value={t}>
+                  {titleCase(t)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-      </div>
 
-      <Separator />
-
-      <div>
-        <h4 className="mb-2 text-sm font-medium">Brands</h4>
-        <div className="space-y-2">
-          {brands.map((brand) => (
-            <div key={brand.id} className="flex items-center space-x-2">
-              <Checkbox
-                id={`brand-${brand.id}`}
-                checked={selectedBrands.includes(brand.id)}
-                onCheckedChange={(checked) => handleBrandChange(brand.id, checked === true)}
-              />
-              <label
-                htmlFor={`brand-${brand.id}`}
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                {brand.label}
-              </label>
-            </div>
-          ))}
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Fulfilment</Label>
+          <Select
+            value={value.fulfillment_type ?? ALL}
+            onValueChange={(v) =>
+              set({ fulfillment_type: v === ALL ? undefined : (v as FulfillmentType) })
+            }
+          >
+            <SelectTrigger className="h-11 w-full lg:w-44">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL}>Any</SelectItem>
+              {(Object.keys(FULFILLMENT_LABEL) as FulfillmentType[]).map((t) => (
+                <SelectItem key={t} value={t}>
+                  {FULFILLMENT_LABEL[t]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
+
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Sort</Label>
+          <Select
+            value={value.sort ?? 'newest'}
+            onValueChange={(v) => set({ sort: v as MerchFilters['sort'] })}
+          >
+            <SelectTrigger className="h-11 w-full lg:w-36">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="newest">Newest</SelectItem>
+              <SelectItem value="oldest">Oldest</SelectItem>
+              <SelectItem value="title">Title A–Z</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {dirty && (
+          <Button
+            variant="ghost"
+            className="h-11 self-end"
+            onClick={() => onChange({ sort: value.sort })}
+          >
+            <X className="mr-1 h-4 w-4" /> Clear
+          </Button>
+        )}
       </div>
     </div>
   );

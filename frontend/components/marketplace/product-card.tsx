@@ -1,83 +1,77 @@
-import Image from 'next/image';
+'use client';
+
 import Link from 'next/link';
+import { Star } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
+import type { MerchProduct } from '@/services/api/marketplaceApi';
+import { FULFILLMENT_LABEL, formatProductPrice, titleCase } from '@/lib/marketplace/format';
+import { ProductImage } from './product-image';
 
-interface ProductCardProps {
-  id: string | number;
-  title: string;
-  price: number;
-  imageUrl?: string;
-  artist?: string;
-  brand?: string;
-  isNew?: boolean;
-  isBestseller?: boolean;
-  slug?: string;
-  category?: string;
-}
+const NEW_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
 
-export function ProductCard({
-  id,
-  title,
-  price,
-  imageUrl,
-  artist,
-  brand,
-  isNew = false,
-  isBestseller = false,
-  slug,
-  category,
-}: ProductCardProps) {
-  const href = `/marketplace/product/${slug || id}`;
+export function ProductCard({ product }: { product: MerchProduct }) {
+  const isNew = Date.now() - new Date(product.created_at).getTime() < NEW_WINDOW_MS;
 
   return (
-    <Link href={href} className="block">
+    <Link href={`/marketplace/product/${product.id}`} className="group block">
       <Card className="overflow-hidden transition-all hover:shadow-md hover:ring-2 hover:ring-primary/20">
         <div className="relative aspect-square overflow-hidden bg-muted">
-          <Image
-            src={imageUrl || '/placeholder.svg?height=300&width=300'}
-            alt={title}
-            fill
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            className="object-cover transition-transform duration-300 hover:scale-105"
-            priority={false}
+          <ProductImage
+            src={product.image_url}
+            alt={product.title}
+            className="transition-transform duration-300 group-hover:scale-105"
           />
-          {(isNew || isBestseller) && (
-            <div className="absolute left-2 top-2 flex flex-col gap-1">
-              {isNew && (
-                <Badge variant="secondary" className="bg-blue-500 text-white">
-                  New
-                </Badge>
-              )}
-              {isBestseller && (
-                <Badge variant="secondary" className="bg-amber-500 text-white">
-                  Bestseller
-                </Badge>
-              )}
-            </div>
-          )}
-        </div>
-
-        <CardContent className="p-4">
-          <h3 className="font-medium line-clamp-2 text-base">{title}</h3>
-          <div className="mt-2 flex items-center justify-between text-sm text-muted-foreground">
-            {artist ? <span>{artist}</span> : <span className="text-transparent">—</span>}
-            {brand ? <span>{brand}</span> : <span className="text-transparent">—</span>}
-          </div>
-        </CardContent>
-
-        <CardFooter className="border-t bg-muted/30 p-4">
-          <div className="flex w-full items-center justify-between">
-            <span className="font-bold text-lg">${price.toFixed(2)}</span>
-            {category && (
-              <Badge variant="outline" className="text-xs capitalize">
-                {category}
-              </Badge>
+          <div className="absolute left-2 top-2 flex flex-col gap-1">
+            {isNew && <Badge className="bg-blue-500 text-white hover:bg-blue-500">New</Badge>}
+            {product.fulfillment_type === 'print_on_demand' && (
+              <Badge variant="secondary">Made to order</Badge>
             )}
           </div>
-        </CardFooter>
+        </div>
+
+        <div className="space-y-1 p-4">
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+            {titleCase(product.base_product_type)}
+          </p>
+          <h3 className="line-clamp-2 font-medium leading-tight group-hover:text-primary">
+            {product.title}
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            by {product.brand_name || product.seller_name || 'MOD creator'}
+          </p>
+
+          <div className="flex items-center justify-between pt-1">
+            <span className="font-semibold">{formatProductPrice(product)}</span>
+            {product.rating_count > 0 && (
+              <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                {product.rating_avg.toFixed(1)}
+                <span className="text-xs">({product.rating_count})</span>
+              </span>
+            )}
+          </div>
+          <p className="sr-only">{FULFILLMENT_LABEL[product.fulfillment_type]}</p>
+        </div>
       </Card>
     </Link>
+  );
+}
+
+export function ProductGridSkeleton({ count = 8 }: { count?: number }) {
+  return (
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="overflow-hidden rounded-xl border">
+          <div className="aspect-square animate-pulse bg-muted" />
+          <div className="space-y-2 p-4">
+            <div className="h-3 w-1/3 animate-pulse rounded bg-muted" />
+            <div className="h-4 w-3/4 animate-pulse rounded bg-muted" />
+            <div className="h-4 w-1/2 animate-pulse rounded bg-muted" />
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }

@@ -27,7 +27,6 @@ class Artwork {
         .select([
           'id',
           'license_type',
-          'price_inr_cents',
           'price_usd_cents',
           'is_active',
         ])
@@ -113,7 +112,6 @@ class Artwork {
         'artworks.*',
         'artwork_pricing_tiers.id as pricing_id',
         'artwork_pricing_tiers.license_type',
-        'artwork_pricing_tiers.price_inr_cents',
         'artwork_pricing_tiers.price_usd_cents',
         'artwork_pricing_tiers.is_active as pricing_active',
       ])

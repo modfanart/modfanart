@@ -65,6 +65,9 @@ case 'brand_owner': {
 case 'judge':
   dashboardPath = `/judge/${user.username}`;
   break;
+case 'seller':
+  dashboardPath = `/seller/${user.username}`;
+  break;
 
 case 'admin':
 case 'superadmin':
@@ -85,7 +88,7 @@ const isEligibleForDashboard = [
 'judge',
 'admin',
 'superadmin',
-'developer',
+'developer', 'seller'
 ].includes(roleName);
 
 const handleLogout = async () => {
@@ -160,6 +163,10 @@ return (
             Judging
           </DropdownMenuItem>
         )}
+
+        <DropdownMenuItem onClick={() => router.push('/marketplace/orders')}>
+          My orders
+        </DropdownMenuItem>
 
         <DropdownMenuItem
           onClick={() =>
