@@ -44,6 +44,7 @@ import {
   useGetSellerProfilesQuery,
   useMarkPayoutFailedMutation,
   useMarkPayoutPaidMutation,
+  useSettlePayoutMutation,
   useModerateMerchProductMutation,
   type MerchProduct,
   type OrderStatus,
@@ -490,6 +491,7 @@ export function AdminPayouts() {
   const { data: payouts, isLoading } = useGetAllPayoutsQuery(status === ALL ? undefined : { status });
   const [markPaid, { isLoading: paying }] = useMarkPayoutPaidMutation();
   const [markFailed] = useMarkPayoutFailedMutation();
+  const [settle, { isLoading: settling }] = useSettlePayoutMutation();
 
   const fail = (err: unknown) =>
     toast({ title: 'Action failed', description: getApiErrorMessage(err), variant: 'destructive' });
@@ -553,10 +555,31 @@ export function AdminPayouts() {
                       <StatusBadge map={PAYOUT_STATUS} status={p.status} />
                     </TableCell>
                     <TableCell>
-                      {p.status === 'pending' && (
+                      {p.status !== 'paid' && (
                         <div className="flex justify-end gap-1">
                           <Button
                             size="sm"
+                            disabled={settling || !p.seller_stripe_connect_id}
+                            title={p.seller_stripe_connect_id ? undefined : 'Seller has no Stripe account yet'}
+                            onClick={() =>
+                              settle(p.id)
+                                .unwrap()
+                                .then((payout) =>
+                                  toast({
+                                    title:
+                                      payout.status === 'paid'
+                                        ? 'Transferred on Stripe'
+                                        : `Settlement ${payout.status}`,
+                                  })
+                                )
+                                .catch(fail)
+                            }
+                          >
+                            Retry settlement
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
                             disabled={paying}
                             onClick={() => {
                               const ref = window.prompt('Stripe transfer ID (e.g. tr_…):');
@@ -569,13 +592,15 @@ export function AdminPayouts() {
                           >
                             Mark paid
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => markFailed(p.id).unwrap().catch(fail)}
-                          >
-                            Failed
-                          </Button>
+                          {p.status === 'pending' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => markFailed(p.id).unwrap().catch(fail)}
+                            >
+                              Failed
+                            </Button>
+                          )}
                         </div>
                       )}
                     </TableCell>

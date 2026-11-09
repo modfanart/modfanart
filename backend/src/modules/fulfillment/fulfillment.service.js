@@ -4,6 +4,7 @@ const Order = require('../licenses/models/order.model');
 const OrderItem = require('../licenses/models/orderItem.model');
 const addressModel = require('../address/models/address.model');
 const payoutService = require('../payout/payout.service');
+const payoutSettlement = require('../payout/payout-settlement.service');
 
 // Who may read an order's shipments: buyer, a seller with a line item on it,
 // or an admin/finance user. (Previously any logged-in user could read any
@@ -220,6 +221,7 @@ async function completeOrderIfDelivered(orderId) {
 
   try {
     await payoutService.generatePayoutsForOrder(orderId);
+    await payoutSettlement.settlePayoutsForOrderById(orderId);
   } catch (err) {
     console.error(`Payout generation failed for order ${orderId}:`, err);
   }

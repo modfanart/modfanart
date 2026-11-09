@@ -9,6 +9,21 @@ function applyFeeBps(grossCents, feeBps) {
   return Math.floor((grossCents * feeBps) / 10000);
 }
 
+// Used when no rule row matches at all (a database whose seed never ran).
+const DEFAULT_FEE_BPS = 1500;
+
+/**
+ * Platform fee in cents for one line, from platform_fee_rules. Both the
+ * ledger and the Stripe application fee on a destination charge go through
+ * this, so what Stripe moves and what the payout row records always agree.
+ * Null/null resolves the digital-license default.
+ */
+async function resolvePlatformFeeCents(fulfillmentType, baseProductType, grossCents, trx = db) {
+  const rule = await feeRuleModel.findRule(fulfillmentType, baseProductType, trx);
+  const feeBps = rule ? rule.fee_bps : DEFAULT_FEE_BPS;
+  return applyFeeBps(grossCents, feeBps);
+}
+
 function calculatePayout(grossCents, platformFeeCents) {
   if (grossCents < 0) {
     throw new Error('Gross amount cannot be negative');
@@ -68,9 +83,7 @@ async function createPayoutForOrderItem(orderItemId, trx = db) {
     baseProductType = productInfo?.base_product_type || null;
   }
 
-  const rule = await feeRuleModel.findRule(fulfillmentType, baseProductType, trx);
-  const feeBps = rule ? rule.fee_bps : 1500; // 15% fallback if no rule seeded
-  const platformFeeCents = applyFeeBps(grossCents, feeBps);
+  const platformFeeCents = await resolvePlatformFeeCents(fulfillmentType, baseProductType, grossCents, trx);
   const amounts = calculatePayout(grossCents, platformFeeCents);
 
   return model.createPayout(
@@ -144,6 +157,7 @@ async function markFailed(id) {
 }
 
 module.exports = {
+  resolvePlatformFeeCents,
   createPayout,
   generatePayoutsForOrder,
   getSellerPayouts,

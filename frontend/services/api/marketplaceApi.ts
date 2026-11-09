@@ -950,6 +950,13 @@ export const marketplaceApi = createApi({
       invalidatesTags: ['AllPayouts', 'MyPayouts'],
     }),
 
+    // Re-run automatic Stripe Connect settlement for one payout.
+    settlePayout: builder.mutation<Payout, string>({
+      query: (id) => ({ url: `/payout/${id}/settle`, method: 'POST' }),
+      transformResponse: (res: { payout: Payout }) => res.payout,
+      invalidatesTags: ['AllPayouts', 'MyPayouts'],
+    }),
+
     markPayoutFailed: builder.mutation<Payout, string>({
       query: (id) => ({ url: `/payout/${id}/failed`, method: 'PATCH' }),
       transformResponse: (res: { payout: Payout }) => res.payout,
@@ -1057,6 +1064,7 @@ export const {
   useGenerateOrderPayoutsMutation,
   useMarkPayoutPaidMutation,
   useMarkPayoutFailedMutation,
+  useSettlePayoutMutation,
   useGetConnectStatusQuery,
   useCreateConnectAccountMutation,
   // marketplace admin
