@@ -8,19 +8,16 @@ import {
   Gear,
   SignOut,
 } from '@phosphor-icons/react';
-import { useOutletContext } from "react-router-dom";
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/button';
 import SearchModal from '../search/SearchModal';
+import { AppLauncher, AppSectionNav } from './AppLauncher';
 
 export const Header = ({ title, subtitle }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [searchOpen, setSearchOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-
-  const outlet = useOutletContext();
-  const onMenuToggle = outlet?.onMenuToggle;
 
   // Ctrl/Cmd + K for search
   React.useEffect(() => {
@@ -53,14 +50,7 @@ export const Header = ({ title, subtitle }) => {
         <div className="flex h-16 items-center justify-between px-4 sm:px-6">
           {/* Left Side */}
           <div className="flex min-w-0 items-center gap-3">
-            {onMenuToggle && (
-              <button
-                onClick={onMenuToggle}
-                className="rounded-md p-2 -ml-2 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white lg:hidden"
-              >
-                <List weight="bold" className="h-5 w-5" />
-              </button>
-            )}
+            <AppLauncher />
 
             <div className="min-w-0">
               <h1 className="truncate text-lg font-semibold tracking-tight text-white sm:text-xl">
@@ -177,6 +167,7 @@ export const Header = ({ title, subtitle }) => {
             </div>
           </div>
         </div>
+        <AppSectionNav />
       </header>
 
       <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />

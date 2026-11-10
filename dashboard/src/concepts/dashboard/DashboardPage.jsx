@@ -547,7 +547,7 @@ const AdminDashboardPage = () => {
               description="Items requiring attention"
               icon={Warning}
               iconClassName="text-red-400"
-              onClick={() => navigate("/admin/moderation")}
+              onClick={() => navigate("/pipeline")}
             />
 
           </div>
@@ -601,7 +601,7 @@ const AdminDashboardPage = () => {
               title="Moderation Queue"
               description="Items requiring review"
               onAction={() =>
-                navigate("/admin/moderation")
+                navigate("/pipeline")
               }
             />
 
@@ -737,7 +737,7 @@ const AdminDashboardPage = () => {
             <Button
               variant="outline"
               onClick={() =>
-                navigate("/admin/moderation")
+                navigate("/pipeline")
               }
               className="h-auto justify-between border-zinc-800 bg-zinc-950 px-4 py-4 text-left hover:bg-zinc-900"
             >

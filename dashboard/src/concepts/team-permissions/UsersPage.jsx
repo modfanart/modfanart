@@ -619,39 +619,12 @@ export const UsersPage = () => {
     <div className="min-h-screen">
 
       <Header
-        title="Users & Roles"
-        subtitle="Manage users and role-based access control"
+        title="Users"
+        subtitle="Manage platform users and assignments"
       />
 
       <div className="p-4 sm:p-6">
 
-        <Tabs
-          value={activeTab}
-          onValueChange={setActiveTab}
-          className="space-y-6"
-        >
-
-          {/* ==================================================
-              TABS
-          ================================================== */}
-
-          <TabsList className="bg-zinc-900 border border-zinc-800">
-
-            <TabsTrigger value="users">
-              Users ({pagination.total})
-            </TabsTrigger>
-
-            <TabsTrigger value="roles">
-              Roles ({roles.length})
-            </TabsTrigger>
-
-          </TabsList>
-
-          {/* ==================================================
-              USERS TAB
-          ================================================== */}
-
-          <TabsContent value="users">
 
             {/* HEADER */}
 
@@ -1099,82 +1072,6 @@ export const UsersPage = () => {
 
             </div>
 
-          </TabsContent>
-
-          {/* ==================================================
-              ROLES TAB
-          ================================================== */}
-
-          <TabsContent value="roles">
-
-            {canManageRoles && (
-              <div className="flex justify-end mb-4">
-
-                <Button
-                  onClick={() =>
-                    setCreateRoleModal(true)
-                  }
-                >
-                  <Plus className="mr-2 w-4 h-4" />
-                  New Role
-                </Button>
-
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-
-              {roles.map((role) => (
-
-                <div
-                  key={role.id}
-                  className="bg-zinc-900 border border-zinc-800 p-5 rounded-xl cursor-pointer hover:border-zinc-700 transition-colors"
-                  onClick={() =>
-                    setRoleModal({
-                      open: true,
-                      role,
-                    })
-                  }
-                >
-
-                  <div className="flex justify-between">
-
-                    <h3 className="text-lg font-semibold text-white">
-                      {role.display_name ||
-                        role.name}
-                    </h3>
-
-                    <ShieldCheck className="w-6 h-6 text-zinc-500" />
-
-                  </div>
-
-                  <p className="text-sm text-zinc-400 mt-2 line-clamp-2">
-                    {role.description}
-                  </p>
-
-                  <div className="mt-4 text-xs text-zinc-500 flex justify-between">
-
-                    <span>
-                      Level {role.hierarchy_level}
-                    </span>
-
-                    <span>
-                      {role.permissions?.length ||
-                        0}{' '}
-                      perms
-                    </span>
-
-                  </div>
-
-                </div>
-
-              ))}
-
-            </div>
-
-          </TabsContent>
-
-        </Tabs>
 
       </div>
 

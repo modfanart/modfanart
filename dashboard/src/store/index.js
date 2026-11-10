@@ -24,6 +24,7 @@ import mediaApi from '../services/api/mediaApi';
 import { searchApi } from '../services/api/searchApi';
 import notifyApi from '../services/api/notifyApi';
 import { contactApi } from '../services/api/contactApi';
+import merchApi from '../services/api/merchApi';
 // ────────────────────────────────────────────────
 // Reducers (slices)
 // ────────────────────────────────────────────────
@@ -75,7 +76,9 @@ export const store = configureStore({
     [collectionsApi.reducerPath]: collectionsApi.reducer,
     [searchApi.reducerPath]: searchApi.reducer,
     [notifyApi.reducerPath]: notifyApi.reducer,
-    [projectTaskApi.reducerPath]: projectTaskApi.reducer, [mediaApi.reducerPath]: mediaApi.reducer,
+    [projectTaskApi.reducerPath]: projectTaskApi.reducer,
+    [mediaApi.reducerPath]: mediaApi.reducer,
+    [merchApi.reducerPath]: merchApi.reducer,
   },
 
   middleware: (getDefaultMiddleware) =>
@@ -102,7 +105,9 @@ export const store = configureStore({
       brandApi.middleware,
       collectionsApi.middleware,
       searchApi.middleware,
-      notifyApi.middleware, projectTaskApi.middleware, mediaApi.middleware,
+      notifyApi.middleware, projectTaskApi.middleware,
+      mediaApi.middleware,
+      merchApi.middleware,
       // add more .middleware when you create new api slices
     ),
 

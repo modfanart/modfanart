@@ -8,7 +8,7 @@ class ContestController {
     try {
       const {
         status,
-        visibility = "public",
+        visibility,
         brandId,
         limit = 20,
         offset = 0,
@@ -18,10 +18,17 @@ class ContestController {
         .selectFrom("contests")
         .selectAll() // Includes hero_image and gallery
         .where("deleted_at", "is", null)
-        .where("visibility", "=", visibility)
         .orderBy("created_at", "desc")
         .limit(Number(limit))
         .offset(Number(offset));
+
+      // Public catalogue defaults to public visibility. Brand console passes
+      // brandId and may omit visibility to see draft/unlisted contests too.
+      if (visibility) {
+        query = query.where("visibility", "=", visibility);
+      } else if (!brandId) {
+        query = query.where("visibility", "=", "public");
+      }
 
       if (status) query = query.where("status", "=", status);
       if (brandId) query = query.where("brand_id", "=", brandId);
