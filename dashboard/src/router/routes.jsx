@@ -9,6 +9,7 @@ import { projectTasksRoutes } from "./routes/projectTaskRoutes";
 import { userRoutes } from "./routes/userRoutes";
 import { merchRoutes } from "./routes/merchRoutes";
 import { brandRoutes } from "./routes/brandRoutes";
+import { brandConsoleRoutes } from "./routes/brandConsoleRoutes";
 const masterRoutes = [
   ...authRoutes,
   ...sidebarRoutes,
@@ -18,7 +19,8 @@ const masterRoutes = [
   ...projectTasksRoutes,
   ...userRoutes,
   ...merchRoutes,
-  ...brandRoutes
+  ...brandRoutes,
+  ...brandConsoleRoutes,
 ];
 
 export default masterRoutes;

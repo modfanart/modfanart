@@ -136,10 +136,12 @@ export const {
   useUpdateProjectMutation,
   useGetProjectMembersQuery,
   useAddProjectMemberMutation,
-  useGetProjectTasksQuery, // 👈 add this
+  useGetProjectTasksQuery,
+  useLazyGetProjectTasksQuery,
   useGetMyTasksQuery,
   useDeleteProjectMutation,
   useGetTasksByProjectQuery,
+  useLazyGetTasksByProjectQuery,
   useGetTaskByIdQuery,
   useCreateTaskMutation,
   useUpdateTaskMutation,
