@@ -65,6 +65,8 @@ async function listProducts({ status, search, sellerId, limit, offset } = {}) {
     .limit(clampLimit(limit))
     .offset(clampOffset(offset));
 
+  // Deleted listings were counted and listed alongside live ones.
+  q = q.where('mp.deleted_at', 'is', null);
   if (status) q = q.where('mp.status', '=', status);
   if (sellerId) q = q.where('mp.seller_id', '=', sellerId);
 
@@ -84,6 +86,7 @@ async function listProducts({ status, search, sellerId, limit, offset } = {}) {
     db
       .selectFrom('merch_products')
       .select(['status', sql`count(*)::int`.as('count')])
+      .where('deleted_at', 'is', null)
       .groupBy('status')
       .execute(),
   ]);
@@ -481,7 +484,129 @@ async function removeReview(id) {
   return row;
 }
 
+// ── Contest prizes (GA-25) ─────────────────────────────────────────────
+// Prizes are obligations a brand must fund. Lifecycle:
+//   awaiting_funding -> funded -> paid
+//   awaiting_funding | funded -> cancelled
+
+const PRIZE_TRANSITIONS = {
+  awaiting_funding: ['funded', 'cancelled'],
+  funded: ['paid', 'cancelled'],
+  paid: [],
+  cancelled: [],
+};
+
+async function listPrizes({ status, contestId, brandId, search, limit, offset } = {}) {
+  let q = db
+    .selectFrom('contest_prizes as p')
+    .innerJoin('contests as c', 'c.id', 'p.contest_id')
+    .leftJoin('brands as b', 'b.id', 'p.brand_id')
+    .leftJoin('users as u', 'u.id', 'p.winner_id');
+  if (status) q = q.where('p.status', '=', status);
+  if (contestId) q = q.where('p.contest_id', '=', contestId);
+  if (brandId) q = q.where('p.brand_id', '=', brandId);
+  if (search) {
+    const like = `%${String(search).replace(/[%_]/g, '\\$&')}%`;
+    q = q.where((eb) => eb.or([eb('c.title', 'ilike', like), eb('u.username', 'ilike', like), eb('b.name', 'ilike', like)]));
+  }
+
+  const prizes = await q
+    .select([
+      'p.id', 'p.rank', 'p.prize_type', 'p.description', 'p.amount_cents', 'p.currency', 'p.status',
+      'p.funded_at', 'p.paid_at', 'p.payment_reference', 'p.created_at',
+      'c.id as contest_id', 'c.title as contest_title', 'c.slug as contest_slug',
+      'b.id as brand_id', 'b.name as brand_name',
+      'u.id as winner_id', 'u.username as winner_username', 'u.email as winner_email',
+    ])
+    .orderBy('p.created_at', 'desc')
+    .limit(clampLimit(limit))
+    .offset(clampOffset(offset))
+    .execute();
+
+  const totals = await db
+    .selectFrom('contest_prizes')
+    .select(['status', sql`count(*)::int`.as('count'), sql`coalesce(sum(amount_cents),0)::bigint`.as('amount_cents')])
+    .groupBy('status')
+    .execute();
+
+  return { prizes, totals };
+}
+
+async function setPrizeStatus(id, { status, payment_reference } = {}) {
+  const prize = await db.selectFrom('contest_prizes').selectAll().where('id', '=', id).executeTakeFirst();
+  if (!prize) throw new Error('Prize not found');
+  const allowed = PRIZE_TRANSITIONS[prize.status] || [];
+  if (!allowed.includes(status)) {
+    throw new Error(`A ${prize.status.replace('_', ' ')} prize can't be marked ${status}`);
+  }
+  if (status === 'paid' && !String(payment_reference || '').trim()) {
+    throw new Error('A payment reference is required to mark a prize paid');
+  }
+  return db
+    .updateTable('contest_prizes')
+    .set({
+      status,
+      ...(status === 'funded' ? { funded_at: sql`now()` } : {}),
+      ...(status === 'paid' ? { paid_at: sql`now()`, payment_reference: String(payment_reference).trim() } : {}),
+      updated_at: sql`now()`,
+    })
+    .where('id', '=', id)
+    .returningAll()
+    .executeTakeFirst();
+}
+
+// ── Disputes (GA-18) ────────────────────────────────────────────────────
+
+async function listDisputes({ status, limit, offset } = {}) {
+  let q = db.selectFrom('payment_disputes as d');
+  if (status === 'open') q = q.where('d.outcome', 'is', null);
+  else if (status) q = q.where('d.outcome', '=', status);
+  const disputes = await q
+    .select([
+      'd.id', 'd.stripe_dispute_id', 'd.stripe_charge_id', 'd.amount_cents', 'd.reason',
+      'd.status', 'd.outcome', 'd.created_at', 'd.updated_at',
+      sql`(select json_agg(json_build_object('id', o.id, 'order_number', o.order_number, 'status', o.status, 'total_cents', o.total_cents))
+             from orders o where o.stripe_charge_id = d.stripe_charge_id)`.as('orders'),
+    ])
+    .orderBy('d.created_at', 'desc')
+    .limit(clampLimit(limit))
+    .offset(clampOffset(offset))
+    .execute();
+  return disputes;
+}
+
+// ── Overview tiles for the workspace ──────────────────────────────────
+
+async function overview() {
+  const one = (q) => q.executeTakeFirst().catch(() => null);
+  const since = sql`now() - interval '30 days'`;
+  const [products, sellers, orders, payouts, disputes, prizes] = await Promise.all([
+    one(db.selectFrom('merch_products').select(sql`count(*) filter (where status = 'pending_review')::int`.as('pending_review')).where('deleted_at', 'is', null)),
+    one(db.selectFrom('seller_profiles').select(sql`count(*) filter (where status = 'pending')::int`.as('pending'))),
+    one(db.selectFrom('orders').select([
+      sql`count(*) filter (where created_at >= ${since})::int`.as('last_30d'),
+      sql`coalesce(sum(total_cents) filter (where status in ('paid','fulfilled') and created_at >= ${since}),0)::bigint`.as('gmv_30d_cents'),
+      sql`count(*) filter (where status = 'paid')::int`.as('awaiting_fulfilment'),
+    ])),
+    one(db.selectFrom('payouts').select([
+      sql`count(*) filter (where status = 'pending')::int`.as('pending'),
+      sql`coalesce(sum(net_cents) filter (where status = 'pending'),0)::bigint`.as('pending_cents'),
+      sql`count(*) filter (where status = 'on_hold')::int`.as('on_hold'),
+    ])),
+    one(db.selectFrom('payment_disputes').select(sql`count(*) filter (where outcome is null)::int`.as('open'))),
+    one(db.selectFrom('contest_prizes').select([
+      sql`count(*) filter (where status = 'awaiting_funding')::int`.as('awaiting_funding'),
+      sql`coalesce(sum(amount_cents) filter (where status in ('awaiting_funding','funded')),0)::bigint`.as('outstanding_cents'),
+    ])),
+  ]);
+  return { products, sellers, orders, payouts, disputes, prizes };
+}
+
 module.exports = {
+  listPrizes,
+  setPrizeStatus,
+  listDisputes,
+  overview,
   listProducts,
   setProductStatus,
   listSellers,

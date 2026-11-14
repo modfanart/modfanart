@@ -1,6 +1,7 @@
 // src/middleware/permission.middleware.js
 const User = require("../../modules/users/models/user.model");
 const Role = require("../../modules/rbac/models/role.model");
+const { isAdminUser } = require("./require-admin");
 
 // authenticateToken already loads the role's permissions onto req.user (and
 // strips role_id from it), so prefer that and only fall back to a role lookup
@@ -31,8 +32,11 @@ function hasPermission(permission) {
       const permissions = await resolvePermissions(req.user);
       const role = { permissions };
 
-      // permission format: "resource.action" e.g. "contests.create"
-      const hasPerm = role.permissions?.[permission] === true;
+      // permission format: "resource.action" e.g. "contests.create".
+      // Admin-tier roles hold every permission implicitly (they previously
+      // needed each key set by hand, so a fresh SUPER_ADMIN was locked out of
+      // marketplace moderation, payouts, etc.).
+      const hasPerm = isAdminUser(req.user) || role.permissions?.[permission] === true;
 
       if (!hasPerm) {
         // Don't echo the caller's full permission set back (GA-11).
@@ -59,9 +63,8 @@ function hasAnyPermission(...permissions) {
 
     const role = { permissions: await resolvePermissions(req.user) };
 
-    const hasAtLeastOne = permissions.some(
-      (p) => role.permissions?.[p] === true
-    );
+    const hasAtLeastOne =
+      isAdminUser(req.user) || permissions.some((p) => role.permissions?.[p] === true);
 
     if (!hasAtLeastOne) {
       return res

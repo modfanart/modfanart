@@ -30,6 +30,7 @@ import merchApi from '../services/api/merchApi';
 // ────────────────────────────────────────────────
 import authReducer from '../services/api/features/authSlice';
 import { adminApi } from '../services/api/adminApi';
+import { opsApi } from '../services/api/opsApi';
 // import otherSliceReducer from '@/features/other/otherSlice';  // add more as needed
 
 // ────────────────────────────────────────────────
@@ -57,6 +58,7 @@ export const store = configureStore({
     // Add other non-RTK reducers here when you create them
     // example: theme: themeReducer,
     [adminApi.reducerPath]: adminApi.reducer,
+    [opsApi.reducerPath]: opsApi.reducer,
     // RTK Query auto-generated reducers
     [authApi.reducerPath]: authApi.reducer,
     [userApi.reducerPath]: userApi.reducer,
@@ -108,6 +110,7 @@ export const store = configureStore({
       notifyApi.middleware, projectTaskApi.middleware,
       mediaApi.middleware,
       merchApi.middleware,
+      opsApi.middleware,
       // add more .middleware when you create new api slices
     ),
 
@@ -115,6 +118,6 @@ export const store = configureStore({
   preloadedState,
 
   // Enable Redux DevTools in development only
-  devTools: process.env.NODE_ENV !== 'production',
+  devTools: import.meta.env?.DEV === true,
 });
 

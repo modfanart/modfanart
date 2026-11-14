@@ -143,6 +143,7 @@ const routes = [
   { path: '/api/contact', module: './src/modules/queries/contact.routes.js' },
   { path: '/api/auth', module: './src/modules/auth/auth.routes.js' },
   { path: '/api/roles', module: './src/modules/rbac/role.routes.js' },
+  { path: '/api/audit', module: './src/modules/audit/audit.routes.js' },
   { path: '/api/artwork', module: './src/modules/artworks/artwork.routes.js' },
   { path: '/api/licenses', module: './src/modules/licenses/license.routes.js' },
   { path: '/api/users', module: './src/modules/users/user.routes.js' },

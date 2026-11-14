@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { DotsNine } from "@phosphor-icons/react";
-import { apps, resolveApp, isPrefix } from "../../router/apps";
+import { resolveApp, isPrefix, useVisibleApps } from "../../router/apps";
 import { cn } from "../../lib/utils";
 
 // Google-style 9-dot button that opens a grid of apps.
 export const AppLauncher = () => {
+  const apps = useVisibleApps();
   const [open, setOpen] = useState(false);
   const { pathname } = useLocation();
   const { app: current } = resolveApp(pathname);
@@ -90,7 +91,9 @@ export const AppLauncher = () => {
 // Section tabs for whichever app the current URL belongs to.
 export const AppSectionNav = () => {
   const { pathname } = useLocation();
-  const { app, section } = resolveApp(pathname);
+  const apps = useVisibleApps();
+  // Only show tabs for sections this user may open.
+  const { app, section } = resolveApp(pathname, apps);
 
   if (!app || app.sections.length < 2) return null;
 

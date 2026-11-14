@@ -5,7 +5,6 @@
 // sidebar any more: "isSidebarActive" now only means "render inside MainLayout".
 import { Navigate } from "react-router-dom";
 import Launcher from "../../concepts/launcher/LauncherPage";
-import ComingSoon from "../../concepts/launcher/ComingSoonPage";
 import Dashboard from "../../concepts/dashboard/DashboardPage";
 import WorkbookPage from "../../concepts/tasks/WorkbookPage";
 import ProjectsPage from "../../concepts/tasks/ProjectsPage";
@@ -24,6 +23,16 @@ import LicensesList from "../../concepts/licensing/LicensingList";
 import MediaList from "../../concepts/media/MediaList";
 import ShopPage from "../../concepts/merch-on-demand/ShopPage";
 import ProductDetailPage from "../../concepts/merch-on-demand/ProductDetailPage";
+import PrizesPage from "../../concepts/campaigns/PrizesPage";
+import MarketplaceOverviewPage from "../../concepts/marketplace/MarketplaceOverviewPage";
+import ProductsPage from "../../concepts/marketplace/ProductsPage";
+import SellerApplicationsPage from "../../concepts/marketplace/SellerApplicationsPage";
+import OrdersPage from "../../concepts/marketplace/OrdersPage";
+import ReviewsPage from "../../concepts/marketplace/ReviewsPage";
+import PrintProvidersPage from "../../concepts/marketplace/PrintProvidersPage";
+import PayoutsPage from "../../concepts/ledger/PayoutsPage";
+import FeeRulesPage from "../../concepts/ledger/FeeRulesPage";
+import DisputesPage from "../../concepts/ledger/DisputesPage";
 
 export const sidebarRoutes = [
   // Launcher
@@ -47,6 +56,13 @@ export const sidebarRoutes = [
   { path: "/sellers", name: "Sellers", isSidebarActive: true, element: <SellersList /> },
 
   // Storefront
+  // Marketplace operations (static paths rank above /storefront/:brandId)
+  { path: "/storefront/overview", name: "Marketplace", isSidebarActive: true, element: <MarketplaceOverviewPage /> },
+  { path: "/storefront/products", name: "Products", isSidebarActive: true, element: <ProductsPage /> },
+  { path: "/storefront/sellers", name: "Seller applications", isSidebarActive: true, element: <SellerApplicationsPage /> },
+  { path: "/storefront/orders", name: "Orders", isSidebarActive: true, element: <OrdersPage /> },
+  { path: "/storefront/reviews", name: "Reviews", isSidebarActive: true, element: <ReviewsPage /> },
+  { path: "/storefront/providers", name: "Print providers", isSidebarActive: true, element: <PrintProvidersPage /> },
   { path: "/storefront", name: "Storefront", isSidebarActive: true, element: <ShopPage /> },
   { path: "/storefront/product/:productId", name: "Product", isSidebarActive: true, element: <ProductDetailPage /> },
   { path: "/storefront/:brandId", name: "Brand store", isSidebarActive: true, element: <ShopPage /> },
@@ -55,22 +71,14 @@ export const sidebarRoutes = [
   // Campaigns
   { path: "/opportunities", name: "Contests", isSidebarActive: true, element: <OpportunitiesPage /> },
   { path: "/submissions", name: "Participants", isSidebarActive: true, element: <SubmissionsPage /> },
+  { path: "/campaigns/prizes", name: "Prizes", isSidebarActive: true, element: <PrizesPage /> },
   { path: "/media-library", name: "Materials", isSidebarActive: true, element: <MediaList /> },
 
   // Ledger
   { path: "/ledger", name: "Ledger", isSidebarActive: true, element: <Navigate to="/ledger/payouts" replace /> },
-  {
-    path: "/ledger/payouts",
-    name: "Payouts",
-    isSidebarActive: true,
-    element: <ComingSoon title="Payouts" description="Every payout across sellers" />,
-  },
-  {
-    path: "/ledger/pricing",
-    name: "Pricing",
-    isSidebarActive: true,
-    element: <ComingSoon title="Pricing" description="Platform fees and all price data" />,
-  },
+  { path: "/ledger/payouts", name: "Payouts", isSidebarActive: true, element: <PayoutsPage /> },
+  { path: "/ledger/pricing", name: "Fee rules", isSidebarActive: true, element: <FeeRulesPage /> },
+  { path: "/ledger/disputes", name: "Disputes", isSidebarActive: true, element: <DisputesPage /> },
 
   // Pipeline (existing moderation dashboard, unchanged)
   { path: "/pipeline", name: "Pipeline", isSidebarActive: true, element: <Dashboard /> },

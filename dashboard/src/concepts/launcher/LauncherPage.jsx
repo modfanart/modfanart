@@ -2,11 +2,12 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Header } from "../../components/layout/Header";
 import { useAuth } from "../../contexts/AuthContext";
-import { apps } from "../../router/apps";
+import { useVisibleApps } from "../../router/apps";
 import { cn } from "../../lib/utils";
 
 const LauncherPage = () => {
   const { user } = useAuth();
+  const apps = useVisibleApps();
   const name = user?.username || user?.email?.split("@")[0];
 
   return (

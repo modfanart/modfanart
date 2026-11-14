@@ -35,6 +35,7 @@ async function findAllWithContext({ status, sellerId, limit = 100, offset = 0 } 
       'u.username as seller_username',
       'u.email as seller_email',
       'u.stripe_connect_id as seller_stripe_connect_id',
+      'o.id as order_id',
       'o.order_number',
       'o.currency',
       'oi.description as item_description',

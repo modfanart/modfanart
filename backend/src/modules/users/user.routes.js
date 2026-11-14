@@ -5,7 +5,7 @@ const {
 } = require("../../common/middleware/auth.middleware");
 const { singleAvatarUpload } = require("../../common/middleware/upload");
 
-const { requireAdmin } = require("../../common/middleware/require-admin");
+const { requirePermission, requireAnyPermission } = require("../../common/middleware/require-admin");
 const { optionalAuth } = require("../../common/middleware/optional-auth");
 
 const router = express.Router();
@@ -28,7 +28,8 @@ const BRAND_ROLES = ["BRAND_OWNER", "BRAND_MANAGER", "BRAND_EDITOR", "BRAND_MEMB
 const requireAdminOrBrand = (req, res, next) =>
   BRAND_ROLES.includes(String(req.user?.role || "").toUpperCase())
     ? next()
-    : requireAdmin(req, res, next);
+    : // contest staff search users to assign judges
+      requireAnyPermission("users.view", "contests.manage")(req, res, next);
 
 // ────────────────────────────────────────────────
 // ✅ CURRENT USER ("me") ROUTES
@@ -51,15 +52,21 @@ router.get("/me/brands", UserController.getMyBrands);
 // ✅ ADMIN / COLLECTION ROUTES
 // ────────────────────────────────────────────────
 router.get("/all", requireAdminOrBrand, UserController.getAllUsers);
-router.post("/create", requireAdmin, UserController.createUser);
+router.post("/create", requirePermission("users.manage"), UserController.createUser);
 
 // ────────────────────────────────────────────────
 // ⚠️ DYNAMIC ROUTES (ALWAYS LAST)
 // ────────────────────────────────────────────────
 router.get("/:id", UserController.getUserById);
-router.patch("/:id/status", requireAdmin, UserController.updateUserStatus);
-router.patch("/:id", requireAdmin, UserController.updateUser);
-router.delete("/:id", requireAdmin, UserController.deleteUser);
+router.patch("/:id/status", requirePermission("users.manage"), UserController.updateUserStatus);
+router.patch(
+  "/:id",
+  requirePermission("users.manage"),
+  // Changing someone's role is an RBAC action, not a profile edit.
+  (req, res, next) =>
+    req.body && "role_id" in req.body ? requirePermission("roles.manage")(req, res, next) : next(),
+  UserController.updateUser);
+router.delete("/:id", requirePermission("users.manage"), UserController.deleteUser);
 
 // ────────────────────────────────────────────────
 

@@ -499,7 +499,7 @@ const AdminDashboardPage = () => {
 
           <Button
             variant="outline"
-            onClick={() => navigate("/admin/users")}
+            onClick={() => navigate("/team-permissions")}
             className="border-zinc-800 bg-zinc-950 text-zinc-300 hover:bg-zinc-900 hover:text-white"
           >
             <Users size={16} className="mr-2" />
@@ -520,7 +520,7 @@ const AdminDashboardPage = () => {
               description="Registered platform users"
               icon={Users}
               iconClassName="text-zinc-300"
-              onClick={() => navigate("/admin/users")}
+              onClick={() => navigate("/team-permissions")}
             />
 
             <StatCard
@@ -529,7 +529,7 @@ const AdminDashboardPage = () => {
               description="Currently active brands"
               icon={TrendUp}
               iconClassName="text-zinc-300"
-              onClick={() => navigate("/admin/brands")}
+              onClick={() => navigate("/brands")}
             />
 
             <StatCard
@@ -538,7 +538,7 @@ const AdminDashboardPage = () => {
               description="Requests awaiting review"
               icon={ShieldCheck}
               iconClassName="text-yellow-400"
-              onClick={() => navigate("/admin/brands")}
+              onClick={() => navigate("/brands")}
             />
 
             <StatCard
@@ -568,7 +568,7 @@ const AdminDashboardPage = () => {
               icon={Buildings}
               title="Brand Verifications"
               description="Pending requests"
-              onAction={() => navigate("/admin/brands")}
+              onAction={() => navigate("/brands")}
             />
 
             <Separator className="bg-zinc-800" />
@@ -634,7 +634,7 @@ const AdminDashboardPage = () => {
               icon={UserCircle}
               title="Recent Users"
               description="Latest registrations"
-              onAction={() => navigate("/admin/users")}
+              onAction={() => navigate("/team-permissions")}
             />
 
             <Separator className="bg-zinc-800" />
@@ -678,7 +678,7 @@ const AdminDashboardPage = () => {
 
             <Button
               variant="outline"
-              onClick={() => navigate("/admin/users")}
+              onClick={() => navigate("/team-permissions")}
               className="h-auto justify-between border-zinc-800 bg-zinc-950 px-4 py-4 text-left hover:bg-zinc-900"
             >
               <span className="flex items-center gap-3">
@@ -707,7 +707,7 @@ const AdminDashboardPage = () => {
 
             <Button
               variant="outline"
-              onClick={() => navigate("/admin/brands")}
+              onClick={() => navigate("/brands")}
               className="h-auto justify-between border-zinc-800 bg-zinc-950 px-4 py-4 text-left hover:bg-zinc-900"
             >
               <span className="flex items-center gap-3">
@@ -767,7 +767,7 @@ const AdminDashboardPage = () => {
 
             <Button
               variant="outline"
-              onClick={() => navigate("/admin/verifications")}
+              onClick={() => navigate("/brands/requests")}
               className="h-auto justify-between border-zinc-800 bg-zinc-950 px-4 py-4 text-left hover:bg-zinc-900"
             >
               <span className="flex items-center gap-3">

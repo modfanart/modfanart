@@ -1,21 +1,12 @@
 // src/services/api/merchApi.js
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { createApi } from '@reduxjs/toolkit/query/react';
+import { createBaseQuery } from '../baseQuery';
 import { API_BASE_URL } from '..';
 
 export const merchApi = createApi({
   reducerPath: 'merchApi',
 
-  baseQuery: fetchBaseQuery({
-    baseUrl: `${API_BASE_URL}/merch`,
-    credentials: 'include',
-    prepareHeaders: (headers) => {
-      const token = localStorage.getItem('accessToken');
-      if (token) {
-        headers.set('Authorization', `Bearer ${token}`);
-      }
-      return headers;
-    },
-  }),
+  baseQuery: createBaseQuery('/merch', { credentials: 'include' }),
 
   tagTypes: ['MerchProduct', 'MerchProductList', 'MyMerch', 'PrintProviders'],
 

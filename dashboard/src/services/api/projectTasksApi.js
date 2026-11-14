@@ -1,20 +1,10 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { createApi } from '@reduxjs/toolkit/query/react';
+import { createBaseQuery } from '../baseQuery';
 import { API_BASE_URL } from '..';
 
 export const projectTaskApi = createApi({
   reducerPath: 'projectTaskApi',
-  baseQuery: fetchBaseQuery({
-    baseUrl: `${API_BASE_URL}`,
-    prepareHeaders: headers => {
-      const token = localStorage.getItem('accessToken');
-
-      if (token) {
-        headers.set('Authorization', `Bearer ${token}`);
-      }
-
-      return headers;
-    },
-  }),
+  baseQuery: createBaseQuery(''),
   tagTypes: ['Project', 'Task', 'ProjectMembers'],
   endpoints: builder => ({
     // ==================== PROJECTS ====================

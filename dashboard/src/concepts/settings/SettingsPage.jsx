@@ -3,29 +3,14 @@ import { User, Shield, Database, Info, Key, PencilSimple, ClockCounterClockwise 
 
 import { Header } from '../../components/layout/Header';
 import { useAuth } from '../../contexts/AuthContext';
-import { seedData } from '../../lib/api';
 import { Button } from '../../components/ui/button';
-import { toast } from 'sonner';
+import { Link } from 'react-router-dom';
 
 // Sidebar Layout (adjust import if you already have one)
 import { SidebarLayout } from '../../components/layout/SidebarLayout';
 
 export const SettingsPage = () => {
-  const { user, hasRole } = useAuth();
-  const [seeding, setSeeding] = React.useState(false);
-
-  const handleSeedData = async () => {
-    setSeeding(true);
-    try {
-      const { data } = await seedData();
-      toast.success(data.message || 'Data seeded successfully');
-    } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to seed data');
-    } finally {
-      setSeeding(false);
-    }
-  };
-
+  const { user, isAdmin } = useAuth();
   const roleName = user?.role?.name || user?.role || 'user';
 
   return (
@@ -107,29 +92,28 @@ export const SettingsPage = () => {
             </div>
           </section>
 
-          {/* ================= ADMIN ================= */}
-          {hasRole(['super_admin', 'admin']) && (
+          {/* The "Seed data" button posted to /api/seed-data, which this API
+              doesn't have (the file it used targeted a different backend at
+              localhost:5000). Removed: seeding doesn't belong in a live console. */}
+          {isAdmin && (
             <section className="space-y-4">
               <div className="flex items-center gap-2 text-zinc-400">
                 <Shield size={18} />
                 <h2 className="text-sm uppercase tracking-wider">Administration</h2>
               </div>
-
               <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 flex items-center justify-between">
                 <div>
-                  <p className="font-medium">Database Utilities</p>
-                  <p className="text-sm text-zinc-500">
-                    Seed sample data for development
-                  </p>
+                  <p className="font-medium">Roles & activity</p>
+                  <p className="text-sm text-zinc-500">Permissions are managed in the RBAC matrix; every change is in the activity log.</p>
                 </div>
-
-                <Button
-                  onClick={handleSeedData}
-                  disabled={seeding}
-                  className="bg-white text-black hover:bg-zinc-200"
-                >
-                  {seeding ? 'Seeding...' : 'Seed Data'}
-                </Button>
+                <div className="flex gap-2">
+                  <Button asChild variant="outline" className="border-zinc-700 text-zinc-200">
+                    <Link to="/team-permissions/roles">Roles</Link>
+                  </Button>
+                  <Button asChild className="bg-white text-black hover:bg-zinc-200">
+                    <Link to="/admin/activity-logs">Activity logs</Link>
+                  </Button>
+                </div>
               </div>
             </section>
           )}

@@ -1,7 +1,8 @@
 const admin = require('../../config/firebase');
 const { db } = require('../../config');
 const jwt = require('jsonwebtoken');
-const { isAdminUser } = require('./require-admin');
+const { isStaffUser, isAdminUser } = require('./require-admin');
+const { ALL_PERMISSION_KEYS } = require('../permissions.catalog');
 
 async function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
@@ -57,7 +58,7 @@ async function authenticateToken(req, res, next) {
         .json({ error: 'User not found. Call /api/auth/sync first.' });
     }
 
-    if (workspaceUserId && !isAdminUser(user)) {
+    if (workspaceUserId && !isStaffUser({ ...user, permissions: user.role_permissions || {} })) {
       return res.status(403).json({ error: 'Staff accounts only' });
     }
 
@@ -101,7 +102,13 @@ async function authenticateToken(req, res, next) {
     // refreshed on /auth/sync). Google sign-ins arrive verified.
     user.email_verified = decoded.email_verified === true || user.email_verified === true;
 
-    user.permissions = user.role_permissions || {};
+    user.permissions = { ...(user.role_permissions || {}) };
+    // Admin-tier roles hold every permission. Expanding here means the many
+    // controllers that check req.user.permissions['x'] directly agree with
+    // requirePermission()/userCan() instead of locking admins out.
+    if (isAdminUser({ ...user, permissions: user.permissions })) {
+      for (const key of ALL_PERMISSION_KEYS) user.permissions[key] = true;
+    }
     user.brands = brands || [];
 
     delete user.role_permissions;
@@ -111,7 +118,8 @@ async function authenticateToken(req, res, next) {
     next();
   } catch (err) {
     console.error('Auth error:', err.message);
-    return res.status(403).json({ error: 'Invalid or expired token' });
+    // 401 (not 403) so clients know to refresh the token and retry.
+    return res.status(401).json({ error: 'Invalid or expired token', code: 'token_invalid' });
   }
 }
 

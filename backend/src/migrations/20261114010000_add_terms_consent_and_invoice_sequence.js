@@ -16,6 +16,43 @@ async function up(db) {
       ADD COLUMN IF NOT EXISTS age_confirmed_at timestamptz
   `.execute(db);
 
+  // Columns the payment / fulfilment / refund / dispute code writes to on
+  // orders. Some environments were created without them, which made this
+  // migration fail with "column invoice_number does not exist". Mirrors
+  // newmigrations.sql.
+  await sql`
+    ALTER TABLE orders
+      ADD COLUMN IF NOT EXISTS invoice_number           text,
+      ADD COLUMN IF NOT EXISTS invoice_pdf_url          text,
+      ADD COLUMN IF NOT EXISTS stripe_payment_intent_id text,
+      ADD COLUMN IF NOT EXISTS stripe_charge_id         text,
+      ADD COLUMN IF NOT EXISTS paid_at                  timestamptz,
+      ADD COLUMN IF NOT EXISTS fulfilled_at             timestamptz,
+      ADD COLUMN IF NOT EXISTS created_at               timestamptz NOT NULL DEFAULT now(),
+      ADD COLUMN IF NOT EXISTS updated_at               timestamptz NOT NULL DEFAULT now()
+  `.execute(db);
+  await sql`CREATE INDEX IF NOT EXISTS orders_stripe_charge_idx ON orders (stripe_charge_id)`.execute(db);
+
+  await sql`
+    DO $$
+    DECLARE c record;
+    BEGIN
+      FOR c IN
+        SELECT conname, pg_get_constraintdef(oid) AS def
+          FROM pg_constraint
+         WHERE conrelid = 'orders'::regclass AND contype = 'c'
+           AND pg_get_constraintdef(oid) ILIKE '%status%'
+      LOOP
+        IF c.def NOT ILIKE '%disputed%' OR c.def NOT ILIKE '%refunded%' THEN
+          EXECUTE format('ALTER TABLE orders DROP CONSTRAINT %I', c.conname);
+          ALTER TABLE orders ADD CONSTRAINT orders_status_check
+            CHECK (status IN ('pending', 'paid', 'fulfilled', 'refunded', 'disputed', 'failed'))
+            NOT VALID;
+        END IF;
+      END LOOP;
+    END $$
+  `.execute(db);
+
   await sql`CREATE SEQUENCE IF NOT EXISTS invoice_number_seq START 100001`.execute(db);
 
   // Existing timestamp-based numbers may already collide; keep the first and

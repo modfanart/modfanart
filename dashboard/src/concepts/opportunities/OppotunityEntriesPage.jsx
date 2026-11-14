@@ -212,15 +212,15 @@ export const OpportunityEntriesPage = () => {
 
                         {/* Actions */}
                         <td className="flex items-center gap-2">
+                          {/* There is no entry detail route; open the full-size work instead
+                              (was a link to /opportunities/:id/entries/:entryId, a blank page). */}
                           <Button
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 text-zinc-400 hover:text-white"
-                            onClick={() =>
-                              navigate(
-                                `/opportunities/${contestId}/entries/${entry.id}`
-                              )
-                            }
+                            disabled={!(artwork.file_url || thumbUrl)}
+                            aria-label={`View ${title}`}
+                            onClick={() => window.open(artwork.file_url || thumbUrl, '_blank', 'noopener')}
                           >
                             <Eye className="w-4 h-4" />
                           </Button>

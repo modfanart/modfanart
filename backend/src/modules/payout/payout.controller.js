@@ -71,7 +71,7 @@ async function markPaid(req, res) {
   try {
     const payout = await service.markPaid(
       req.params.id,
-      req.body.stripe_transfer_id
+      req.body.stripe_transfer_id ?? req.body.stripeTransferId
     );
 
     return res.json({

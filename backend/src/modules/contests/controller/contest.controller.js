@@ -1,7 +1,10 @@
 // src/controllers/contest.controller.js
 const { db } = require("../../../config");
-const { isAdminUser } = require("../../../common/middleware/require-admin");
+const { isAdminUser, userCan } = require("../../../common/middleware/require-admin");
 const { uniqueSlug } = require("../../../common/utils/slug.util");
+// Contest lifecycle. Anything else written to status breaks the public
+// catalogue, judging and prize distribution, which switch on these values.
+const CONTEST_STATUSES = ["draft", "live", "judging", "completed", "archived"];
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const { sql } = require("kysely");
 
@@ -9,40 +12,56 @@ class ContestController {
   // GET /contests (public + filtered)
   static async getContests(req, res) {
     try {
-      const {
-        status,
-        visibility,
-        brandId,
-        limit = 20,
-        offset = 0,
-      } = req.query;
+      const { status, visibility, brandId, search, limit = 20, offset = 0 } = req.query;
 
-      let query = db
-        .selectFrom("contests")
-        .selectAll() // Includes hero_image and gallery
-        .where("deleted_at", "is", null)
-        .orderBy("created_at", "desc")
-        .limit(Math.min(Math.max(Number(limit) || 20, 1), 100))
-        .offset(Math.max(Number(offset) || 0, 0));
-
-      // Public catalogue defaults to public visibility. Brand console passes
-      // brandId and may omit visibility to see draft/unlisted contests too —
-      // but only for a brand the caller manages (this read is public now).
+      // Public catalogue defaults to public, non-draft contests. A brand's
+      // managers (brandId) and workspace staff (?scope=all + contests.manage)
+      // also see drafts and private contests.
       const managesBrand =
         !!brandId &&
         ((req.user?.brands || []).some((b) => b.id === brandId) || isAdminUser(req.user));
-      if (!managesBrand) {
-        query = query.where("visibility", "=", "public").where("status", "!=", "draft");
-      } else if (visibility) {
-        query = query.where("visibility", "=", visibility);
-      }
+      const staffScope = req.query.scope === "all" && userCan(req.user, "contests.manage");
 
-      if (status) query = query.where("status", "=", status);
-      if (brandId) query = query.where("brand_id", "=", brandId);
+      const filtered = (q) => {
+        q = q.where("c.deleted_at", "is", null);
+        if (staffScope || managesBrand) {
+          if (visibility) q = q.where("c.visibility", "=", visibility);
+        } else {
+          q = q.where("c.visibility", "=", "public").where("c.status", "!=", "draft");
+        }
+        if (status) q = q.where("c.status", "=", status);
+        if (brandId) q = q.where("c.brand_id", "=", brandId);
+        if (search) {
+          const like = `%${String(search).replace(/[%_]/g, "\\$&")}%`;
+          q = q.where((eb) => eb.or([eb("c.title", "ilike", like), eb("c.slug", "ilike", like)]));
+        }
+        return q;
+      };
 
-      const contests = await query.execute();
+      const contests = await filtered(
+        db.selectFrom("contests as c").leftJoin("brands as b", "b.id", "c.brand_id")
+      )
+        .selectAll("c") // includes hero_image and gallery
+        .select([
+          "b.name as brand_name",
+          "b.slug as brand_slug",
+          (eb) =>
+            eb
+              .selectFrom("contest_entries as ce")
+              .select(sql`count(*)::int`.as("n"))
+              .whereRef("ce.contest_id", "=", "c.id")
+              .as("entry_count"),
+        ])
+        .orderBy("c.created_at", "desc")
+        .limit(Math.min(Math.max(Number(limit) || 20, 1), 100))
+        .offset(Math.max(Number(offset) || 0, 0))
+        .execute();
 
-      res.json({ contests });
+      const { total } = await filtered(db.selectFrom("contests as c"))
+        .select(sql`count(*)::int`.as("total"))
+        .executeTakeFirst();
+
+      res.json({ contests, total });
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: "Failed to fetch contests" });
@@ -120,6 +139,8 @@ class ContestController {
         prizes,
         start_date,
         submission_end_date,
+        voting_end_date,
+        judging_end_date,
         visibility = "public",
         status = "draft",
         max_entries_per_user = 3,
@@ -175,7 +196,7 @@ class ContestController {
 
       const isAuthorized =
         (req.user.brands || []).some((b) => b.id === brand_id) ||
-        req.user.permissions?.["contests.manage"];
+        userCan(req.user, "contests.manage");
 
       if (!isAuthorized) {
         return res.status(403).json({ error: "Not authorized to create contests for this brand" });
@@ -188,6 +209,9 @@ class ContestController {
       });
 
       // Additional validations
+      if (!CONTEST_STATUSES.includes(status)) {
+        return res.status(400).json({ error: `status must be one of ${CONTEST_STATUSES.join(", ")}` });
+      }
       if (prizes && !Array.isArray(prizes)) {
         return res.status(400).json({ error: "prizes must be an array" });
       }
@@ -223,6 +247,9 @@ class ContestController {
 
             start_date: startDate,
             submission_end_date: endDate,
+            // Were accepted by the form but silently dropped on create.
+            voting_end_date: voting_end_date ? new Date(voting_end_date) : null,
+            judging_end_date: judging_end_date ? new Date(judging_end_date) : null,
 
             visibility,
             status,
@@ -376,6 +403,22 @@ class ContestController {
         updateData.gallery = JSON.stringify(updateData.gallery);
       }
 
+      if (updateData.status !== undefined && !CONTEST_STATUSES.includes(updateData.status)) {
+        return res.status(400).json({ error: `status must be one of ${CONTEST_STATUSES.join(", ")}` });
+      }
+
+      // JSON columns: createContest stores these JSON.stringify'd. Passing the
+      // raw array/object here made node-pg send a Postgres array literal, so
+      // editing prizes or criteria from any screen failed with a 500.
+      for (const column of ["prizes", "entry_requirements", "judging_criteria"]) {
+        if (updateData[column] !== undefined && updateData[column] !== null) {
+          if (column === "prizes" && !Array.isArray(updateData[column])) {
+            return res.status(400).json({ error: "prizes must be an array" });
+          }
+          if (typeof updateData[column] !== "string") updateData[column] = JSON.stringify(updateData[column]);
+        }
+      }
+
       if (updateData.max_entries_per_user !== undefined) {
         const maxEntries = Number(updateData.max_entries_per_user);
         if (!Number.isInteger(maxEntries) || maxEntries < 1) {
@@ -414,9 +457,9 @@ class ContestController {
 
       if (!contest) return res.status(404).json({ error: "Contest not found" });
 
-      const isAdmin =
-        req.user?.role === "Admin" ||
-        req.user?.permissions?.["contests.manage"] === true;
+      // Was role === "Admin" (no such role name; roles are upper-case), so
+      // only an explicit contests.manage grant could delete.
+      const isAdmin = userCan(req.user, "contests.manage");
       let isBrandOwner = false;
 
       if (!isAdmin) {

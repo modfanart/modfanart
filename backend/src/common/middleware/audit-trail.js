@@ -1,78 +1,95 @@
 // src/common/middleware/audit-trail.js
 //
-// Staff accountability. The audited_events table and model existed but
-// nothing ever wrote to it, so there was no record of who banned a user,
-// verified a brand, changed a role, revoked a license or marked a payout
-// paid. This middleware records every successful state-changing request on
-// sensitive routes, and every state-changing request made by an admin-tier
-// account anywhere.
-//
-// Registered once in index.js, before the routers. It reads req.user at
-// response time (set by authenticateToken inside each router) and never
-// blocks or fails the request.
+// Request-level activity log. Records:
+//   - every successful state change on a sensitive route,
+//   - every state change made by staff (admin tier or workspace.access),
+//   - denied (401/403) attempts on sensitive routes (security signal).
+// Domain code adds richer entries (before/after) through audit.service.record.
+// Registered once in index.js before the routers; reads req.user at response
+// time and never blocks the request.
 
-const { isAdminUser } = require('./require-admin');
+const { isStaffUser } = require('./require-admin');
 
+// [pattern, entity type]
 const SENSITIVE = [
-  /^\/api\/admin\b/,
-  /^\/api\/roles\b/,
-  /^\/api\/users\/(?!me\b)[^/]+/, // admin edits of other users
-  /^\/api\/users\/create\b/,
-  /^\/api\/brands\/verification-requests\b/,
-  /^\/api\/brands\/?$/, // brand creation
-  /^\/api\/licenses\/[^/]+\/revoke\b/,
-  /^\/api\/payout\b/,
-  /^\/api\/marketplace-admin\b/,
-  /^\/api\/seller-profiles\b/,
-  /^\/api\/merch\/[^/]+\/(moderate|status)\b/,
-  /^\/api\/contest\/[^/]+\/(winners|announce-winners|distribute-prizes)\b/,
-  /^\/api\/orders\/[^/]+\/cancel\b/,
-  /^\/api\/contact\/[^/]+/,
+  [/^\/api\/admin\/users\b/, 'user'],
+  [/^\/api\/admin\/brands\b/, 'brand'],
+  [/^\/api\/admin\b/, 'admin'],
+  [/^\/api\/roles\b/, 'role'],
+  [/^\/api\/users\/create\b/, 'user'],
+  [/^\/api\/users\/(?!me\b)[^/]+/, 'user'],
+  [/^\/api\/brands\/verification-requests\b/, 'brand_verification'],
+  [/^\/api\/brands\/?$/, 'brand'],
+  [/^\/api\/licenses\/[^/]+\/revoke\b/, 'license'],
+  [/^\/api\/payout\b/, 'payout'],
+  [/^\/api\/marketplace-admin\/products\b/, 'merch_product'],
+  [/^\/api\/marketplace-admin\/sellers\b/, 'seller'],
+  [/^\/api\/marketplace-admin\/fee-rules\b/, 'fee_rule'],
+  [/^\/api\/marketplace-admin\/print-providers\b/, 'print_provider'],
+  [/^\/api\/marketplace-admin\/orders\b/, 'order'],
+  [/^\/api\/marketplace-admin\/reviews\b/, 'review'],
+  [/^\/api\/marketplace-admin\/prizes\b/, 'contest_prize'],
+  [/^\/api\/marketplace-admin\b/, 'marketplace'],
+  [/^\/api\/seller-profiles\b/, 'seller'],
+  [/^\/api\/merch\/[^/]+\/(moderate|status)\b/, 'merch_product'],
+  [/^\/api\/contest\/[^/]+\/(winners|announce-winners|distribute-prizes|prizes)\b/, 'contest'],
+  [/^\/api\/contest\/prizes\b/, 'contest_prize'],
+  [/^\/api\/orders\/[^/]+\/cancel\b/, 'order'],
+  [/^\/api\/contact\/[^/]+/, 'contact_message'],
 ];
 
-const REDACT = /pass(word)?|token|secret|card|cvc|iban|account_number/i;
+// Entity type guess for staff actions on non-sensitive routes.
+const PREFIX_ENTITY = {
+  contest: 'contest', artwork: 'artwork', brands: 'brand', users: 'user', merch: 'merch_product',
+  orders: 'order', order: 'order', licenses: 'license', collections: 'collection', category: 'category',
+  tags: 'tag', projects: 'project', tasks: 'task', media: 'media', notifications: 'notification',
+};
 
-function redact(body) {
-  if (!body || typeof body !== 'object' || Buffer.isBuffer(body)) return null;
-  const out = {};
-  for (const [k, v] of Object.entries(body)) {
-    out[k] = REDACT.test(k) ? '[redacted]' : v;
-  }
-  const json = JSON.stringify(out);
-  return json.length > 4000 ? { truncated: true } : out;
-}
+const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+const VERB = { POST: 'created', PUT: 'replaced', PATCH: 'updated', DELETE: 'deleted' };
 
 function auditTrail(req, res, next) {
-  if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
-    return next();
-  }
+  if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') return next();
+
   const path = req.originalUrl.split('?')[0];
-  const body = redact(req.body);
+  // Webhooks are logged by their own handlers; auth is too noisy (and has passwords).
+  if (/^\/api\/(auth|payout\/stripe|webhooks?)\b/.test(path)) return next();
+
+  const body = req.body;
 
   res.on('finish', () => {
-    if (res.statusCode >= 400) return;
-    const user = req.user;
-    const sensitive = SENSITIVE.some((re) => re.test(path));
-    if (!sensitive && !isAdminUser(user)) return;
+    const match = SENSITIVE.find(([re]) => re.test(path));
+    const status = res.statusCode;
+    const ok = status < 400;
+    const staff = isStaffUser(req.user);
 
-    // Lazy require: keeps this module loadable without a DB in unit tests.
-    let AuditedEvent;
+    if (ok && !match && !staff) return;
+    if (!ok && !(match && (status === 401 || status === 403))) return;
+
+    const segs = path.split('/').filter(Boolean); // ['api', entity, id, ...]
+    const entityType = match?.[1] ?? PREFIX_ENTITY[segs[1]] ?? segs[1] ?? null;
+    const entityId = path.match(UUID_RE)?.[0] ?? null;
+    const verb = ok ? VERB[req.method] || req.method.toLowerCase() : 'denied';
+    // Sub-action = path after the id: /products/<id>/status -> "status".
+    const idIdx = segs.findIndex((s) => UUID_RE.test(s));
+    const tail = idIdx >= 0 ? segs.slice(idIdx + 1).filter((s) => !UUID_RE.test(s)).join('.') : '';
+
+    // Lazy require keeps this loadable without a DB in unit tests.
+    let record;
     try {
-      AuditedEvent = require('../../modules/audit/models/auditedEvent.model');
+      ({ record } = require('../../modules/audit/audit.service'));
     } catch {
       return;
     }
-    const segs = path.split('/').filter(Boolean); // api, <entity>, <id>, ...
-    AuditedEvent.log(
-      user?.id ?? null,
-      `${req.method} ${path}`,
-      segs[1] ?? null,
-      segs[2] ?? null,
-      null,
-      body ? JSON.stringify(body) : null,
-      req.ip,
-      req.headers['user-agent'] ?? null
-    ).catch((err) => console.error('[audit] failed to record event:', err.message));
+    record({
+      req,
+      action: `${entityType || 'request'}.${tail ? `${tail}.` : ''}${verb}`.replace(/-/g, '_'),
+      entityType,
+      entityId,
+      after: body && typeof body === 'object' && !Buffer.isBuffer(body) ? body : null,
+      summary: `${req.method} ${path}${ok ? '' : ` (HTTP ${status})`}`,
+      statusCode: status,
+    });
   });
 
   next();

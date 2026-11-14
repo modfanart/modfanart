@@ -1,27 +1,26 @@
-// src/routes/role.routes.js
+// src/modules/rbac/role.routes.js  ->  /api/roles
 const express = require('express');
 const RoleController = require('./controller/role.controller');
-const {
-  authenticateToken,
-} = require('../../common/middleware/auth.middleware');
-const {
-  hasPermission,
-  hasAnyPermission,
-} = require('../../common/middleware/permission.middleware');
-
-const { requireAdmin } = require('../../common/middleware/require-admin');
+const { authenticateToken } = require('../../common/middleware/auth.middleware');
+const { requirePermission } = require('../../common/middleware/require-admin');
 
 const router = express.Router();
 
-// SECURITY: every role endpoint was unauthenticated -> anyone could create a
-// role with all permissions and assign it to themselves. Admin-only now.
-router.use(authenticateToken, requireAdmin);
+// Was fully unauthenticated, then admin-only. Now permission based so a
+// staff role can be given read-only or full access to RBAC.
+router.use(authenticateToken);
 
-router.get('/', RoleController.getAllRoles);
-router.post('/', RoleController.createRole);
-router.patch('/:id', RoleController.updateRole);
-router.delete('/:id', RoleController.deleteRole);
+const view = requirePermission('roles.view');
+const manage = requirePermission('roles.manage');
 
-router.post('/users/:userId/roles', RoleController.assignRoleToUser);
+router.get('/permissions', view, RoleController.getPermissionCatalog);
+router.get('/matrix', view, RoleController.getMatrix);
+router.get('/', view, RoleController.getAllRoles);
+router.get('/:id/members', view, RoleController.getMembers);
+
+router.post('/', manage, RoleController.createRole);
+router.patch('/:id', manage, RoleController.updateRole);
+router.delete('/:id', manage, RoleController.deleteRole);
+router.post('/users/:userId/roles', manage, RoleController.assignRoleToUser);
 
 module.exports = router;

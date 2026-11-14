@@ -1,5 +1,6 @@
 // src/controllers/contestJudge.controller.js
 const Contest = require("../models/contest.model");
+const { userCan } = require("../../../common/middleware/require-admin");
 const ContestJudge = require("../models/contestJudge.model");
 const JudgeInviteToken = require("../models/judgeInviteToken.model");
 const User = require("../../users/models/user.model");
@@ -63,7 +64,9 @@ class ContestJudgeController {
   static canManageContest(user, contest) {
     if (!user || !contest) return false;
 
-    const isPlatformAdmin = ["ADMIN", "SUPERADMIN"].includes(user.role);
+    // Was ["ADMIN", "SUPERADMIN"] only: SUPER_ADMIN, DEVELOPER and staff
+    // roles granted contests.manage couldn't assign or remove judges.
+    const isPlatformAdmin = userCan(user, "contests.manage");
     const brandMatch = (user.brands || []).some(
       (b) => String(b.id) === String(contest.brand_id)
     );

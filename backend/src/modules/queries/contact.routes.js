@@ -4,8 +4,8 @@ const router = express.Router();
 
 const controller = require('./controller/contactMessage.controller');
 const { authenticateToken } = require('../../common/middleware/auth.middleware');
-const { requireAdmin } = require('../../common/middleware/require-admin');
-const adminOnly = [authenticateToken, requireAdmin];
+const { requirePermission } = require('../../common/middleware/require-admin');
+const adminOnly = [authenticateToken, requirePermission('queries.manage')];
 
 router.post('/', controller.createMessage);
 router.get('/', ...adminOnly, controller.getMessages);

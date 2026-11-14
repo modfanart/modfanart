@@ -1,4 +1,5 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { createApi } from '@reduxjs/toolkit/query/react';
+import { createBaseQuery } from '../baseQuery';
 import { API_BASE_URL } from "..";
 
 /* =========================================================
@@ -8,19 +9,7 @@ import { API_BASE_URL } from "..";
 export const brandApi = createApi({
   reducerPath: "brandApi",
 
-  baseQuery: fetchBaseQuery({
-    baseUrl: `${API_BASE_URL}/brands`,
-    credentials: "include",
-    prepareHeaders: (headers) => {
-      const token = localStorage.getItem("accessToken");
-
-      if (token) {
-        headers.set("Authorization", `Bearer ${token}`);
-      }
-
-      return headers;
-    },
-  }),
+  baseQuery: createBaseQuery('/brands', { credentials: 'include' }),
 
   tagTypes: [
     "Brand",

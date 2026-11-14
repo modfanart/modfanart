@@ -155,7 +155,7 @@ const VALID_STATUSES = [
   'returned',
 ];
 
-async function updateStatus(sellerId, id, status) {
+async function updateStatus(sellerId, id, status, orderId) {
   if (!VALID_STATUSES.includes(status)) {
     throw new Error('Invalid fulfillment status');
   }
@@ -166,7 +166,13 @@ async function updateStatus(sellerId, id, status) {
     throw new Error('Fulfillment not found');
   }
 
-  if (sellerId && fulfillment.seller_id && fulfillment.seller_id !== sellerId) {
+  // Was skipped whenever seller_id was null, so any signed-in user could mark
+  // an unowned fulfilment delivered (completing the order and generating
+  // payouts). sellerId === null means a staff override (orders.confirm).
+  if (orderId && fulfillment.order_id !== orderId) {
+    throw new Error('Fulfillment not found');
+  }
+  if (sellerId !== null && fulfillment.seller_id !== sellerId) {
     throw new Error('You do not own this fulfillment');
   }
 
@@ -225,14 +231,20 @@ async function completeOrderIfDelivered(orderId) {
   }
 }
 
-async function updateTracking(sellerId, id, data) {
+async function updateTracking(sellerId, id, data, orderId) {
   const fulfillment = await model.findById(id);
 
   if (!fulfillment) {
     throw new Error('Fulfillment not found');
   }
 
-  if (sellerId && fulfillment.seller_id && fulfillment.seller_id !== sellerId) {
+  // Was skipped whenever seller_id was null, so any signed-in user could mark
+  // an unowned fulfilment delivered (completing the order and generating
+  // payouts). sellerId === null means a staff override (orders.confirm).
+  if (orderId && fulfillment.order_id !== orderId) {
+    throw new Error('Fulfillment not found');
+  }
+  if (sellerId !== null && fulfillment.seller_id !== sellerId) {
     throw new Error('You do not own this fulfillment');
   }
 

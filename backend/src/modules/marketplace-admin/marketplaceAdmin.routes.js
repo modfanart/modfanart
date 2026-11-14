@@ -7,7 +7,7 @@ const router = require('express').Router();
 
 const controller = require('./marketplaceAdmin.controller');
 const { authenticateToken } = require('../../common/middleware/auth.middleware');
-const { hasPermission } = require('../../common/middleware/permission.middleware');
+const { hasPermission, hasAnyPermission } = require('../../common/middleware/permission.middleware');
 
 router.use(authenticateToken);
 
@@ -31,5 +31,19 @@ router.post('/orders/:id/cancel', manage, controller.cancelOrder);
 
 router.get('/reviews', manage, controller.listReviews);
 router.delete('/reviews/:id', manage, controller.removeReview);
+
+// Workspace overview tiles (any marketplace/finance staff).
+router.get(
+  '/overview',
+  hasAnyPermission('merch.moderate', 'sellers.manage', 'marketplace.manage', 'orders.view_all', 'payouts.view', 'payouts.manage'),
+  controller.overview
+);
+
+// Contest prizes ledger (GA-25)
+router.get('/prizes', hasAnyPermission('prizes.manage', 'payouts.view', 'contests.manage'), controller.listPrizes);
+router.patch('/prizes/:id/status', hasPermission('prizes.manage'), controller.setPrizeStatus);
+
+// Chargebacks (GA-18)
+router.get('/disputes', hasAnyPermission('disputes.view', 'payouts.manage'), controller.listDisputes);
 
 module.exports = router;

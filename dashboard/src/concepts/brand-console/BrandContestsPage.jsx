@@ -205,11 +205,10 @@ export default function BrandContestsPage() {
                       key={s}
                       type="button"
                       onClick={() => handleStatusChange(c.id, s)}
-                      className={`text-xs px-2.5 py-1 rounded-full capitalize border ${
-                        c.status === s
+                      className={`text-xs px-2.5 py-1 rounded-full capitalize border ${c.status === s
                           ? 'border-fuchsia-500/50 bg-fuchsia-500/15 text-fuchsia-300'
                           : 'border-zinc-700 text-zinc-400 hover:border-zinc-500'
-                      }`}
+                        }`}
                     >
                       {s}
                     </button>

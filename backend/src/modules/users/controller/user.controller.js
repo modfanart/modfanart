@@ -7,7 +7,8 @@ const {
 } = require('../../../common/utils/password.util');
 const { db } = require('../../../config');
 const { sql } = require('kysely'); // ← Critical fix for sql`NOW()`
-const { isAdminUser } = require('../../../common/middleware/require-admin');
+const { isAdminUser, isStaffUser } = require('../../../common/middleware/require-admin');
+const { ALL_PERMISSION_KEYS } = require('../../../common/permissions.catalog');
 const { CURRENT_TERMS_VERSION, standingProblem } = require('../../../common/policy');
 const UserStatsService = require('../services/userStats.service');
 const CDNFileService = require('../../cdn/services/cdn-file.service');
@@ -244,6 +245,13 @@ class UserController {
             name: user.role_name || 'unknown',
             hierarchy_level: user.role_hierarchy_level ?? 0,
           },
+          // Effective permissions (admin tier = every catalog key), so the
+          // workspace can show/hide apps and actions per role.
+          permissions: isAdminUser(req.user)
+            ? Object.fromEntries(ALL_PERMISSION_KEYS.map((k) => [k, true]))
+            : req.user?.permissions || {},
+          is_admin: isAdminUser(req.user),
+          is_staff: isStaffUser(req.user),
           profile: user.profile || {},
           avatar_url: user.avatar_url,
           banner_url: user.banner_url,

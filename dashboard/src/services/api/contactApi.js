@@ -1,23 +1,13 @@
 // src/services/api/contactApi.js
 
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { createApi } from '@reduxjs/toolkit/query/react';
+import { createBaseQuery } from '../baseQuery';
 import { API_BASE_URL } from "..";
 
 export const contactApi = createApi({
   reducerPath: "contactApi",
 
-  baseQuery: fetchBaseQuery({
-    baseUrl: API_BASE_URL,
-    prepareHeaders: (headers) => {
-      const token = localStorage.getItem("accessToken");
-
-      if (token) {
-        headers.set("Authorization", `Bearer ${token}`);
-      }
-
-      return headers;
-    },
-  }),
+  baseQuery: createBaseQuery(''),
 
   tagTypes: ["Contact"],
 

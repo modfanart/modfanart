@@ -5,6 +5,7 @@ const BrandPost = require('../models/brandPost.model');
 const BrandPostComment = require('../models/brandPostComment.model');
 const BrandVerificationRequest = require('../models/brandVerificationRequest.model');
 const BrandManager = require('../models/brandManager.model');
+const { uniqueSlug } = require('../../../common/utils/slug.util');
 
 // Assume these helpers exist
 const {
@@ -239,70 +240,134 @@ async function getBrandVerificationRequests(req, res) {
   }
 }
 
+// Approve a brand application.
+//
+// Rewritten: the old handler called User.create, getRoleIdByName,
+// hashPassword, generateTempPassword, generateBrandManagerUsername,
+// generateUniqueSlug, sendBrandOnboardingEmail and generatePasswordResetLink,
+// none of which exist in this module, so EVERY approval threw a
+// ReferenceError ("Approval failed") and no brand could ever be verified. It
+// also called Brand.create with the wrong signature and wasn't transactional.
+//
+// Accounts are Firebase users, so the API can't mint a password account.
+// The brand is attached to the applicant's existing MOD account: the one that
+// submitted the request, else the account with the contact email.
+const BRAND_OWNER_ROLE = 'BRAND_MANAGER';
 async function approveBrandVerificationRequest(req, res) {
   try {
     const { requestId } = req.params;
-    const { manager_username, manager_email, temp_password, notes } = req.body;
+    const { notes, user_id: overrideUserId } = req.body || {};
 
     const request = await BrandVerificationRequest.findById(requestId);
     if (!request) return res.status(404).json({ error: 'Request not found' });
-    if (request.status !== 'pending') {
-      return res
-        .status(400)
-        .json({ error: `Request is already ${request.status}` });
+    if (request.status !== 'pending' && request.status !== 'interview_scheduled') {
+      return res.status(400).json({ error: `Request is already ${request.status}` });
     }
 
-    const manager = await User.create({
-      username:
-        manager_username || generateBrandManagerUsername(request.company_name),
-      email: manager_email || request.contact_email,
-      password_hash: await hashPassword(
-        temp_password || generateTempPassword()
-      ),
-      role_id: await getRoleIdByName('brand_manager'),
-      profile: { company_name: request.company_name },
-      status: 'pending_verification',
-    });
+    const ownerId = overrideUserId || request.user_id;
+    const owner = await db
+      .selectFrom('users as u')
+      .leftJoin('roles as r', 'r.id', 'u.role_id')
+      .select(['u.id', 'u.email', 'u.username', 'r.name as role'])
+      .where('u.deleted_at', 'is', null)
+      .where((eb) =>
+        ownerId
+          ? eb('u.id', '=', ownerId)
+          : eb(sql`lower(u.email)`, '=', String(request.contact_email || '').toLowerCase())
+      )
+      .executeTakeFirst();
 
-    const brand = await Brand.create({
-      user_id: manager.id,
-      name: request.company_name,
-      slug: await generateUniqueSlug(request.company_name),
-      description: request.description,
-      website: request.website,
-      status: 'active',
-      verification_request_id: request.id,
-    });
+    if (!owner) {
+      return res.status(409).json({
+        error: `No MOD account found for ${request.contact_email}. Ask the applicant to sign up with that email, then approve again.`,
+        code: 'applicant_account_missing',
+      });
+    }
 
-    await BrandManager.create({
-      brand_id: brand.id,
-      user_id: manager.id,
-      role: 'owner',
-    });
+    const result = await db.transaction().execute(async (trx) => {
+      const slug = await uniqueSlug(trx, 'brands', request.company_name, { fallback: 'brand' });
+      const brand = await trx
+        .insertInto('brands')
+        .values({
+          user_id: owner.id,
+          name: request.company_name,
+          slug,
+          description: request.description ?? null,
+          website: request.website ?? null,
+          status: 'active',
+          verification_request_id: request.id,
+          followers_count: 0,
+          created_at: sql`NOW()`,
+          updated_at: sql`NOW()`,
+        })
+        .returningAll()
+        .executeTakeFirstOrThrow();
 
-    await BrandVerificationRequest.update(requestId, {
-      status: 'approved',
-      reviewed_by: req.user.id,
-      reviewed_at: new Date().toISOString(),
-      notes: notes ? `${request.notes || ''}\n${notes}` : request.notes,
-    });
+      await trx
+        .insertInto('brand_managers')
+        .values({ brand_id: brand.id, user_id: owner.id, role: 'owner', created_at: sql`NOW()` })
+        .execute();
 
-    sendBrandOnboardingEmail({
-      to: request.contact_email,
-      brandName: brand.name,
-      managerEmail: manager.email,
-      resetLink: generatePasswordResetLink(manager.id),
-    }).catch(console.error);
+      // Give plain users the brand role. Never downgrade staff or admins.
+      const current = String(owner.role || '').toUpperCase();
+      if (!current || ['USER', 'ARTIST', 'FAN', 'MEMBER', 'CREATOR'].includes(current)) {
+        const role = await trx
+          .selectFrom('roles')
+          .select('id')
+          .where(sql`upper(name)`, '=', BRAND_OWNER_ROLE)
+          .executeTakeFirst();
+        if (role) {
+          await trx.updateTable('users').set({ role_id: role.id }).where('id', '=', owner.id).execute();
+        }
+      }
+
+      await trx
+        .updateTable('brand_verification_requests')
+        .set({
+          status: 'approved',
+          user_id: owner.id,
+          reviewed_by: req.user.id,
+          reviewed_at: sql`NOW()`,
+          notes: notes ? sql`COALESCE(notes || E'\n' || ${notes}, ${notes})` : sql`notes`,
+          updated_at: sql`NOW()`,
+        })
+        .where('id', '=', request.id)
+        .execute();
+
+      return brand;
+    });
 
     return res.json({
       success: true,
-      brandId: brand.id,
-      managerUserId: manager.id,
-      message: 'Brand and manager account created successfully',
+      brandId: result.id,
+      brandSlug: result.slug,
+      ownerUserId: owner.id,
+      message: `${result.name} is verified and owned by ${owner.username || owner.email}`,
     });
   } catch (err) {
     console.error('approveBrandVerificationRequest error:', err);
     return res.status(400).json({ error: err.message || 'Approval failed' });
+  }
+}
+
+// Reject a brand application (there was no endpoint; the button was inert).
+async function rejectBrandVerificationRequest(req, res) {
+  try {
+    const { requestId } = req.params;
+    const reason = String(req.body?.notes || req.body?.reason || '').trim();
+    if (!reason) return res.status(400).json({ error: 'A reason is required' });
+
+    const request = await BrandVerificationRequest.findById(requestId);
+    if (!request) return res.status(404).json({ error: 'Request not found' });
+    if (request.status === 'approved' || request.status === 'rejected') {
+      return res.status(400).json({ error: `Request is already ${request.status}` });
+    }
+
+    await BrandVerificationRequest.reject(requestId, req.user.id, reason);
+    return res.json({ success: true });
+  } catch (err) {
+    console.error('rejectBrandVerificationRequest error:', err);
+    return res.status(400).json({ error: err.message || 'Rejection failed' });
   }
 }
 // ───────────────────────────────────────────────
@@ -843,6 +908,7 @@ module.exports = {
   submitBrandVerificationRequest,
   getBrandVerificationRequests,
   approveBrandVerificationRequest,
+  rejectBrandVerificationRequest,
 
   getMyBrands,
   updateBrand,

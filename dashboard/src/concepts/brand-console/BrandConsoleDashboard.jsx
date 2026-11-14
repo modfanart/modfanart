@@ -178,9 +178,8 @@ export default function BrandConsoleDashboard() {
                           </p>
                         </div>
                         <span
-                          className={`text-xs px-2 py-0.5 rounded-full capitalize ${
-                            statusTone[c.status] || 'bg-zinc-700 text-zinc-300'
-                          }`}
+                          className={`text-xs px-2 py-0.5 rounded-full capitalize ${statusTone[c.status] || 'bg-zinc-700 text-zinc-300'
+                            }`}
                         >
                           {c.status}
                         </span>

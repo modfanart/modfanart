@@ -14,6 +14,7 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
   signOut,
+  onIdTokenChanged,
 } from 'firebase/auth';
 
 import { firebaseAuth } from '../lib/firebase';
@@ -40,6 +41,9 @@ const AuthContext = createContext({
   logout: async () => { },
 
   hasRole: () => false,
+  can: () => false,
+  isStaff: false,
+  isAdmin: false,
 
   isLoggingIn: false,
   isGoogleLoggingIn: false,
@@ -81,17 +85,28 @@ export function AuthProvider({ children }) {
       username: data.username ?? null,
       avatar_url: data.avatar_url ?? null,
       role: data.role,
+      // Effective permissions from the API (admin tier = every key).
       permissions: data.permissions ?? {},
+      is_staff: data.is_staff === true,
+      is_admin: data.is_admin === true,
       brands: data.brands ?? [],
     }
     : null;
 
-  console.log(
-    '[AuthContext] Current user:',
-    user ? user.username : null,
-    '| Error:',
-    error?.status
-  );
+  // Keep the stored ID token fresh: Firebase rotates it hourly and the old
+  // code kept sending the expired one.
+  useEffect(() => {
+    const unsub = onIdTokenChanged(firebaseAuth, async (fbUser) => {
+      if (fbUser && localStorage.getItem('authType') !== 'workspace') {
+        try {
+          localStorage.setItem('accessToken', await fbUser.getIdToken());
+        } catch {
+          /* handled by the base query on the next request */
+        }
+      }
+    });
+    return unsub;
+  }, []);
 
 
   useEffect(() => {
@@ -362,6 +377,18 @@ export function AuthProvider({ children }) {
   );
 
 
+  // Permission check used to show/hide apps and actions. The API enforces
+  // the same rules; this only keeps the UI honest.
+  const can = useCallback(
+    (permission) => {
+      if (!user) return false;
+      if (user.is_admin) return true;
+      if (Array.isArray(permission)) return permission.some((p) => user.permissions?.[p] === true);
+      return user.permissions?.[permission] === true;
+    },
+    [user]
+  );
+
   const hasToken = !!localStorage.getItem('accessToken');
 
   return (
@@ -370,9 +397,9 @@ export function AuthProvider({ children }) {
         user,
 
 
-        loading:
-          !authError &&
-          (isLoading || (!user && hasToken)),
+        // Was `!user && hasToken`, which spun forever when /users/me failed
+        // with anything other than 401 (e.g. API down).
+        loading: !authError && (isLoading || (!user && hasToken && !error)),
 
         authError,
 
@@ -381,6 +408,9 @@ export function AuthProvider({ children }) {
         logout,
 
         hasRole,
+        can,
+        isStaff: !!user?.is_staff,
+        isAdmin: !!user?.is_admin,
 
         isLoggingIn,
         isGoogleLoggingIn,

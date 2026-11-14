@@ -54,4 +54,6 @@ const db = new Kysely({
   }),
 });
 
-module.exports = { db, pool };
+// sql is re-exported because several modules do `const { db, sql } = require(config)`;
+// it was missing, so their sql`NOW()` calls threw "sql is not defined".
+module.exports = { db, pool, sql: require('kysely').sql };

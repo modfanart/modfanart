@@ -26,6 +26,14 @@ export const contestRoutes = [
     element: <ContestFormPage />,
   },
   {
+    // The list and detail pages link here; the route was missing.
+    path: "/opportunity/:id/edit",
+    name: "Edit Contest",
+    icon: <SignIn {...iconProps} />,
+    isSidebarActive: true,
+    element: <ContestFormPage />,
+  },
+  {
     path: "/opportunity/:id/entries",
     name: "Contest",
     icon: <SignIn {...iconProps} />,

@@ -55,9 +55,6 @@ import {
 // RTK Query
 import {
   useGetAllRolesQuery,
-  useCreateRoleMutation,
-  useUpdateRoleMutation,
-  useDeleteRoleMutation,
   useAssignRoleToUserMutation,
 } from '../../services/api/rolesApi';
 
@@ -74,7 +71,6 @@ import {
 } from '../../services/api/brandApi';
 
 import { UserFormModal } from '../../components/modals/UserFormModal';
-import { RolePermissionsModal } from '../../components/modals/RolePermissionsModal';
 
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -166,22 +162,6 @@ export const UsersPage = () => {
   });
 
   // ==========================================================
-  // ROLE MODALS
-  // ==========================================================
-
-  const [roleModal, setRoleModal] = useState({
-    open: false,
-    role: null,
-  });
-
-  const [createRoleModal, setCreateRoleModal] = useState(false);
-
-  const [deleteRoleConfirm, setDeleteRoleConfirm] = useState({
-    open: false,
-    role: null,
-  });
-
-  // ==========================================================
   // ASSIGN ROLE (two-step: role, then brand if the role is
   // brand-scoped)
   // ==========================================================
@@ -192,12 +172,6 @@ export const UsersPage = () => {
   const [assignRoleId, setAssignRoleId] = useState('');
 
   const [assignBrandId, setAssignBrandId] = useState('');
-
-  const [newRole, setNewRole] = useState({
-    name: '',
-    hierarchy_level: 10,
-    description: '',
-  });
 
   // ==========================================================
   // USERS QUERY
@@ -235,15 +209,6 @@ export const UsersPage = () => {
   // ==========================================================
   // MUTATIONS
   // ==========================================================
-
-  const [createRole, { isLoading: isCreating }] =
-    useCreateRoleMutation();
-
-  const [updateRole] =
-    useUpdateRoleMutation();
-
-  const [deleteRole] =
-    useDeleteRoleMutation();
 
   const [assignRoleToUser, { isLoading: isAssigningRole }] =
     useAssignRoleToUserMutation();
@@ -453,33 +418,6 @@ export const UsersPage = () => {
   // CREATE ROLE
   // ==========================================================
 
-  const handleCreateRole = async () => {
-    if (!newRole.name.trim()) {
-      toast.error('Role name is required');
-      return;
-    }
-
-    try {
-      await createRole(newRole).unwrap();
-
-      toast.success(
-        'Role created successfully'
-      );
-
-      setCreateRoleModal(false);
-
-      setNewRole({
-        name: '',
-        hierarchy_level: 10,
-        description: '',
-      });
-    } catch (err) {
-      toast.error(
-        err?.data?.message ||
-        'Failed to create role'
-      );
-    }
-  };
 
   // ==========================================================
   // DELETE USER
@@ -515,31 +453,6 @@ export const UsersPage = () => {
   // DELETE ROLE
   // ==========================================================
 
-  const handleDeleteRole = async () => {
-    if (!deleteRoleConfirm.role) {
-      return;
-    }
-
-    try {
-      await deleteRole(
-        deleteRoleConfirm.role.id
-      ).unwrap();
-
-      toast.success(
-        'Role deleted successfully'
-      );
-
-      setDeleteRoleConfirm({
-        open: false,
-        role: null,
-      });
-    } catch (err) {
-      toast.error(
-        err?.data?.message ||
-        'Failed to delete role'
-      );
-    }
-  };
 
   // ==========================================================
   // OPEN ASSIGN ROLE DIALOG
@@ -1098,143 +1011,6 @@ export const UsersPage = () => {
       />
 
       {/* ======================================================
-          ROLE PERMISSIONS MODAL
-      ====================================================== */}
-
-      <RolePermissionsModal
-        open={roleModal.open}
-        role={roleModal.role}
-        onClose={() =>
-          setRoleModal({
-            open: false,
-            role: null,
-          })
-        }
-        onDelete={() => {
-          setRoleModal({
-            open: false,
-            role: null,
-          });
-
-          setDeleteRoleConfirm({
-            open: true,
-            role: roleModal.role,
-          });
-        }}
-      />
-
-      {/* ======================================================
-          CREATE ROLE
-      ====================================================== */}
-
-      <Dialog
-        open={createRoleModal}
-        onOpenChange={(open) =>
-          !open &&
-          setCreateRoleModal(false)
-        }
-      >
-
-        <DialogContent className="bg-zinc-900 border-zinc-800">
-
-          <DialogHeader>
-
-            <DialogTitle className="text-white">
-              Create New Role
-            </DialogTitle>
-
-          </DialogHeader>
-
-          <div className="space-y-4">
-
-            <div>
-
-              <Label>Role Name</Label>
-
-              <Input
-                value={newRole.name}
-                onChange={(e) =>
-                  setNewRole((prev) => ({
-                    ...prev,
-                    name: e.target.value,
-                  }))
-                }
-              />
-
-            </div>
-
-            <div>
-
-              <Label>
-                Hierarchy Level
-              </Label>
-
-              <Input
-                type="number"
-                value={
-                  newRole.hierarchy_level
-                }
-                onChange={(e) =>
-                  setNewRole((prev) => ({
-                    ...prev,
-                    hierarchy_level:
-                      Number(e.target.value),
-                  }))
-                }
-              />
-
-            </div>
-
-            <div>
-
-              <Label>Description</Label>
-
-              <Input
-                value={newRole.description}
-                onChange={(e) =>
-                  setNewRole((prev) => ({
-                    ...prev,
-                    description:
-                      e.target.value,
-                  }))
-                }
-              />
-
-            </div>
-
-          </div>
-
-          <DialogFooter>
-
-            <Button
-              variant="outline"
-              onClick={() =>
-                setCreateRoleModal(false)
-              }
-            >
-              Cancel
-            </Button>
-
-            <Button
-              onClick={handleCreateRole}
-              disabled={isCreating}
-            >
-
-              {isCreating && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
-
-              Create Role
-
-            </Button>
-
-          </DialogFooter>
-
-        </DialogContent>
-
-      </Dialog>
-
-      {/* ======================================================
           DELETE USER
       ====================================================== */}
 
@@ -1288,70 +1064,6 @@ export const UsersPage = () => {
             <Button
               variant="destructive"
               onClick={handleDeleteUser}
-            >
-              Delete
-            </Button>
-
-          </DialogFooter>
-
-        </DialogContent>
-
-      </Dialog>
-
-      {/* ======================================================
-          DELETE ROLE
-      ====================================================== */}
-
-      <Dialog
-        open={deleteRoleConfirm.open}
-        onOpenChange={(open) =>
-          !open &&
-          setDeleteRoleConfirm({
-            open: false,
-            role: null,
-          })
-        }
-      >
-
-        <DialogContent className="bg-zinc-900 border-zinc-800">
-
-          <DialogHeader>
-
-            <DialogTitle className="text-white">
-              Delete Role
-            </DialogTitle>
-
-          </DialogHeader>
-
-          <p className="text-zinc-300">
-
-            Delete role{' '}
-
-            <strong className="text-white">
-              {deleteRoleConfirm.role?.name}
-            </strong>
-
-            ?
-
-          </p>
-
-          <DialogFooter>
-
-            <Button
-              variant="outline"
-              onClick={() =>
-                setDeleteRoleConfirm({
-                  open: false,
-                  role: null,
-                })
-              }
-            >
-              Cancel
-            </Button>
-
-            <Button
-              variant="destructive"
-              onClick={handleDeleteRole}
             >
               Delete
             </Button>

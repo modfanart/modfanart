@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash } from '@phosphor-icons/react';
 import { Save } from 'lucide-react';
+import { toast } from 'sonner';
+import { useGetAllBrandsQuery } from '../../services/api/brandApi';
 import { Header } from '../../components/layout/Header';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -27,7 +29,6 @@ import {
 
 const statusOptions = [
   { value: 'draft', label: 'Draft' },
-  { value: 'published', label: 'Published' },
   { value: 'live', label: 'Live' },
   { value: 'judging', label: 'Judging' },
   { value: 'completed', label: 'Completed' },
@@ -42,6 +43,14 @@ const visibilityOptions = [
 
 
 
+const safeParse = (v) => {
+  try {
+    return JSON.parse(v);
+  } catch {
+    return null;
+  }
+};
+
 export const ContestFormPage = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -54,6 +63,18 @@ export const ContestFormPage = () => {
   const { data: contestData, isLoading } = useGetContestQuery(id, {
     skip: !isEditing,
   });
+  // GET /contest/:id returns the contest itself ({ ...contest, categories });
+  // this page read contestData.contest, so the edit form always opened empty.
+  const loaded = contestData?.contest ?? contestData;
+
+  // A contest belongs to a brand; the API rejects creates without brand_id.
+  const [brandSearch, setBrandSearch] = useState('');
+  const [brandId, setBrandId] = useState('');
+  const { data: brandsData } = useGetAllBrandsQuery(
+    { limit: 50, search: brandSearch || undefined, sortBy: 'name', sortOrder: 'asc' },
+    { skip: isEditing }
+  );
+  const brands = brandsData?.brands ?? [];
 
   const [form, setForm] = useState({
     title: '',
@@ -71,7 +92,7 @@ export const ContestFormPage = () => {
   });
 
   const [prizes, setPrizes] = useState([
-    { rank: 1, amount_inr: 0, type: 'cash', description: '' },
+    { rank: 1, amount_usd: 0, type: 'cash', description: '' },
   ]);
 
   const [entryRequirements, setEntryRequirements] = useState('');
@@ -79,8 +100,8 @@ export const ContestFormPage = () => {
 
   // Load existing data when editing
   useEffect(() => {
-    if (isEditing && contestData?.contest) {
-      const c = contestData.contest;
+    if (isEditing && loaded?.id) {
+      const c = loaded;
       setForm({
         title: c.title || '',
         slug: c.slug || '',
@@ -96,18 +117,21 @@ export const ContestFormPage = () => {
         winner_announced: c.winner_announced || false,
       });
 
-      if (c.prizes && Array.isArray(c.prizes)) {
-        setPrizes(c.prizes);
+      const savedPrizes = typeof c.prizes === 'string' ? safeParse(c.prizes) : c.prizes;
+      if (Array.isArray(savedPrizes) && savedPrizes.length) {
+        // Older workspace builds saved amount_inr, which prize distribution
+        // never read (it reads amount_usd), so those winners were recorded at 0.
+        setPrizes(savedPrizes.map((p) => ({ ...p, amount_usd: p.amount_usd ?? p.amount_inr ?? 0 })));
       }
 
       if (c.entry_requirements) {
-        setEntryRequirements(JSON.stringify(c.entry_requirements, null, 2));
+        setEntryRequirements(typeof c.entry_requirements === 'string' ? c.entry_requirements : JSON.stringify(c.entry_requirements, null, 2));
       }
       if (c.judging_criteria) {
-        setJudgingCriteria(JSON.stringify(c.judging_criteria, null, 2));
+        setJudgingCriteria(typeof c.judging_criteria === 'string' ? c.judging_criteria : JSON.stringify(c.judging_criteria, null, 2));
       }
     }
-  }, [contestData, isEditing]);
+  }, [loaded, isEditing]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -124,7 +148,7 @@ export const ContestFormPage = () => {
 
   const addPrize = () => {
     const newRank = Math.max(0, ...prizes.map(p => p.rank)) + 1;
-    setPrizes([...prizes, { rank: newRank, amount_inr: 0, type: 'cash', description: '' }]);
+    setPrizes([...prizes, { rank: newRank, amount_usd: 0, type: 'cash', description: '' }]);
   };
 
   const removePrize = (index) => {
@@ -141,15 +165,34 @@ export const ContestFormPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    let entryReq = null;
+    let criteria = null;
+    try {
+      entryReq = entryRequirements.trim() ? JSON.parse(entryRequirements) : null;
+      criteria = judgingCriteria.trim() ? JSON.parse(judgingCriteria) : null;
+    } catch {
+      toast.error('Entry requirements and judging criteria must be valid JSON');
+      return;
+    }
+    if (!isEditing && !brandId) {
+      toast.error('Choose the brand running this contest');
+      return;
+    }
+    if (form.start_date && form.submission_end_date && form.submission_end_date <= form.start_date) {
+      toast.error('Submissions must close after the start date');
+      return;
+    }
+
     const payload = {
       ...form,
+      ...(isEditing ? {} : { brand_id: brandId }),
       start_date: form.start_date ? `${form.start_date}T00:00:00Z` : null,
       submission_end_date: form.submission_end_date ? `${form.submission_end_date}T23:59:59Z` : null,
       voting_end_date: form.voting_end_date ? `${form.voting_end_date}T23:59:59Z` : null,
       judging_end_date: form.judging_end_date ? `${form.judging_end_date}T23:59:59Z` : null,
-      prizes,
-      entry_requirements: entryRequirements ? JSON.parse(entryRequirements) : null,
-      judging_criteria: judgingCriteria ? JSON.parse(judgingCriteria) : null,
+      prizes: prizes.map(({ amount_inr, ...p }) => ({ ...p, rank: Number(p.rank), amount_usd: Number(p.amount_usd) || 0 })),
+      entry_requirements: entryReq,
+      judging_criteria: criteria,
     };
 
     try {
@@ -158,10 +201,10 @@ export const ContestFormPage = () => {
       } else {
         await createContest(payload).unwrap();
       }
-      navigate('/opportunities');
+      toast.success(isEditing ? 'Contest updated' : 'Contest created');
+      navigate(isEditing ? `/opportunity/${id}` : '/opportunities');
     } catch (err) {
-      console.error('Failed to save contest:', err);
-      alert('Failed to save contest. Please check your inputs.');
+      toast.error(err?.data?.error || err?.data?.message || 'Failed to save contest');
     }
   };
 
@@ -196,6 +239,42 @@ export const ContestFormPage = () => {
               <CardTitle>Basic Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-5">
+              {isEditing ? (
+                loaded?.brand_name && (
+                  <p className="text-sm text-zinc-400">
+                    Brand: <span className="text-white">{loaded.brand_name}</span>
+                  </p>
+                )
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="brand-search">Find brand</Label>
+                    <Input
+                      id="brand-search"
+                      value={brandSearch}
+                      onChange={(e) => setBrandSearch(e.target.value)}
+                      placeholder="Search brands…"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="brand">Brand running this contest</Label>
+                    <select
+                      id="brand"
+                      required
+                      value={brandId}
+                      onChange={(e) => setBrandId(e.target.value)}
+                      className="h-10 w-full rounded-md border border-zinc-800 bg-zinc-950 px-3 text-sm text-white"
+                    >
+                      <option value="">Select a brand…</option>
+                      {brands.map((b) => (
+                        <option key={b.id} value={b.id}>
+                          {b.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="title">Contest Title</Label>
@@ -362,11 +441,13 @@ export const ContestFormPage = () => {
                     </Select>
                   </div>
                   <div className="flex-1">
-                    <Label>Amount (INR)</Label>
+                    <Label>Amount (USD)</Label>
                     <Input
                       type="number"
-                      value={prize.amount_inr || ''}
-                      onChange={(e) => updatePrize(index, 'amount_inr', parseFloat(e.target.value) || undefined)}
+                      min="0"
+                      step="0.01"
+                      value={prize.amount_usd ?? ''}
+                      onChange={(e) => updatePrize(index, 'amount_usd', e.target.value === '' ? 0 : parseFloat(e.target.value))}
                       className="mt-1"
                     />
                   </div>
