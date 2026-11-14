@@ -46,10 +46,10 @@ const accountTypeSchema = z.object({
   accountType: z.enum(['fan', 'artist', 'brand']),
   // AUTH-04 / GA-22: explicit consent, recorded on the account.
   acceptTerms: z.literal(true, {
-    errorMap: () => ({ message: 'You must accept the Terms of Service and Privacy Policy.' }),
+    error: 'You must accept the Terms of Service and Privacy Policy.',
   }),
   ageConfirmed: z.literal(true, {
-    errorMap: () => ({ message: 'You must be 18 or older to use MOD.' }),
+    error: 'You must be 18 or older to use MOD.',
   }),
 });
 

@@ -16,17 +16,12 @@ import { API_BASE_URL } from '..';
 // Types (aligned with the backend rows / joins)
 // ────────────────────────────────────────────────
 
-export type Currency = 'USD';
+export type Currency = 'INR' | 'USD';
 
 export type FulfillmentType = 'print_on_demand' | 'in_house_stock' | 'dropship';
 
 export type MerchStatus =
-  | 'draft'
-  | 'pending_review'
-  | 'published'
-  | 'rejected'
-  | 'suspended'
-  | 'archived';
+  'draft' | 'pending_review' | 'published' | 'rejected' | 'suspended' | 'archived';
 
 export interface MerchVariant {
   id: string;
@@ -226,12 +221,7 @@ export interface OrderItem {
 }
 
 export type FulfillmentStatus =
-  | 'pending'
-  | 'in_production'
-  | 'shipped'
-  | 'delivered'
-  | 'failed'
-  | 'returned';
+  'pending' | 'in_production' | 'shipped' | 'delivered' | 'failed' | 'returned';
 
 export interface Fulfillment {
   id: string;
@@ -427,7 +417,8 @@ export interface RatingSummary {
 
 // Helper so UI code can surface the backend's `{ error }` message.
 export function getApiErrorMessage(err: unknown, fallback = 'Something went wrong'): string {
-  const e = err as { data?: { error?: string | undefined; message?: string }; error?: string } | undefined;
+  const e = err as
+    { data?: { error?: string | undefined; message?: string }; error?: string } | undefined;
   return e?.data?.error || e?.data?.message || e?.error || fallback;
 }
 
@@ -486,10 +477,13 @@ export const marketplaceApi = createApi({
       providesTags: (_r, _e, id) => [{ type: 'Product', id }],
     }),
 
-    getEligibleArtworks: builder.query<EligibleArtwork[], { brandId?: string | null | undefined } | void>({
+    getEligibleArtworks: builder.query<
+      EligibleArtwork[],
+      { brandId?: string | null | undefined } | void
+    >({
       query: (arg) => ({
         url: '/merch/eligible-artworks',
-        params: arg && arg.brandId ? { brand_id: arg.brandId } : undefined,
+        ...(arg && arg.brandId ? { params: { brand_id: arg.brandId } } : {}),
       }),
       transformResponse: (res: { artworks: EligibleArtwork[] }) => res.artworks,
     }),
@@ -593,10 +587,6 @@ export const marketplaceApi = createApi({
       ],
     }),
 
-
-
-
-
     // ═════════════ Cart ═════════════
     getCart: builder.query<Cart, void>({
       query: () => '/cart',
@@ -681,8 +671,6 @@ export const marketplaceApi = createApi({
       transformResponse: (res: { orders: Order[] }) => res.orders,
       providesTags: ['SellerOrders'],
     }),
-
-
 
     createOrderPayment: builder.mutation<PaymentSession, { order_ids: string[] }>({
       query: (body) => ({ url: '/orders/pay', method: 'POST', body }),
@@ -789,49 +777,12 @@ export const marketplaceApi = createApi({
 
     // (marketplace admin endpoints removed — handled by the separate admin app)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     // ═════════════ Payouts ═════════════
     getMyPayouts: builder.query<Payout[], void>({
       query: () => '/payout/mine',
       transformResponse: (res: { payouts: Payout[] }) => res.payouts,
       providesTags: ['MyPayouts'],
     }),
-
-
-
-
-
-
-
-
 
     getConnectStatus: builder.query<ConnectStatus, void>({
       query: () => '/payout/status',

@@ -107,7 +107,7 @@ export default function ContestDetailPage() {
     const url = window.location.href;
     try {
       if (navigator.share) {
-        await navigator.share({ title: contest?.title, url });
+        await navigator.share(contest?.title ? { title: contest.title, url } : { url });
       } else {
         await navigator.clipboard.writeText(url);
         toast({ title: 'Link copied', description: 'Contest link copied to clipboard.' });
