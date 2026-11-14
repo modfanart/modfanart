@@ -51,12 +51,12 @@ const LABELS = Object.fromEntries(LICENSING_OPTIONS.map((o) => [o.value, o.label
 
 /** Same colored-badge treatment as the brand licensing-requests page. */
 const BADGE_CLASSES: Record<LicensingStatus, string> = {
-  not_started: 'bg-gray-50 text-gray-600 border-gray-200',
-  agreement_sent: 'bg-yellow-50 text-yellow-700 border-yellow-200',
-  signed: 'bg-blue-50 text-blue-700 border-blue-200',
-  declined: 'bg-red-50 text-red-700 border-red-200',
-  expired: 'bg-red-50 text-red-700 border-red-200',
-  finalized: 'bg-green-50 text-green-700 border-green-200',
+  not_started: 'bg-muted text-muted-foreground border-border',
+  agreement_sent: 'bg-warning-subtle text-warning-strong border-warning/30',
+  signed: 'bg-info-subtle text-info border-info/30',
+  declined: 'bg-destructive-subtle text-destructive border-destructive/30',
+  expired: 'bg-destructive-subtle text-destructive border-destructive/30',
+  finalized: 'bg-success-subtle text-success border-success/30',
 };
 
 /**

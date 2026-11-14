@@ -187,7 +187,8 @@ function LicenseFormContent() {
 
       if (paymentIntent?.status === 'succeeded') {
         // Success → redirect to confirmation page
-        router.push(`/license/success?order=${response.orderId}&artwork=${artworkId}`);
+        // Was /license/success (no such route): buyers paid and landed on a 404.
+        router.push(`/artwork/${artworkId}/license/success?order=${response.orderId}`);
       } else {
         setSubmitError('Payment requires additional action. Check your bank/app.');
       }
@@ -469,7 +470,7 @@ function LicenseFormContent() {
             <CardContent className="space-y-6">
               <div className="space-y-3">
                 <Label>Card Details</Label>
-                <div className="p-4 border rounded-md bg-white">
+                <div className="p-4 border rounded-md bg-background">
                   <CardElement
                     options={{
                       style: {
@@ -525,12 +526,12 @@ function LicenseFormContent() {
           <div className="text-center space-y-4 text-sm">
             <p className="text-muted-foreground">Secure & encrypted payment • Powered by Stripe</p>
 
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-left">
+            <div className="bg-success-subtle border border-success/30 rounded-lg p-4 text-left">
               <div className="flex items-start gap-3">
-                <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                <CheckCircle2 className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="font-medium text-green-900">Protected Transaction</p>
-                  <p className="text-green-800 text-sm mt-1">
+                  <p className="font-medium text-success">Protected Transaction</p>
+                  <p className="text-success text-sm mt-1">
                     Your payment information is fully encrypted and never touches our servers.
                   </p>
                 </div>
@@ -551,7 +552,7 @@ export default function LicenseArtworkPage() {
       {/* Back Navigation & Title */}
       <div className="mb-8">
         <Link
-          href={`/gallery/artwork/${id}`}
+          href={`/artwork/${id}`}
           className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />

@@ -95,8 +95,18 @@ export function SearchModal() {
   }, [query]);
 
   const handleResultClick = (item: any) => {
-    // TODO: Improve this routing logic later (especially for users)
-    router.push(`/${item.type}/${item.id}`);
+    // Each result type has its own public route; `/${type}/${id}` 404'd for
+    // users, brands (slug routes), categories and tags.
+    const key = encodeURIComponent(item.slug || item.id);
+    const href: Record<string, string> = {
+      artwork: `/artwork/${item.id}`,
+      user: `/u/${encodeURIComponent(item.slug || item.title)}`,
+      brand: `/brand/${key}`,
+      contest: `/contest/${key}`,
+      category: `/category/${key}`,
+      tag: `/gallery?tag=${key}`,
+    };
+    router.push(href[item.type] ?? '/explore');
     setOpen(false);
   };
 
@@ -190,7 +200,7 @@ export function SearchModal() {
                 )}
 
                 {isError && (
-                  <p className="text-center text-red-500 py-10">
+                  <p className="text-center text-destructive py-10">
                     Something went wrong. Please try again.
                   </p>
                 )}

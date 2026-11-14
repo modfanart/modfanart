@@ -35,12 +35,10 @@ function hasPermission(permission) {
       const hasPerm = role.permissions?.[permission] === true;
 
       if (!hasPerm) {
+        // Don't echo the caller's full permission set back (GA-11).
         return res.status(403).json({
           error: "Insufficient permissions",
           required: permission,
-          your_permissions: Object.keys(role.permissions || {}).filter(
-            (k) => role.permissions[k]
-          ),
         });
       }
 

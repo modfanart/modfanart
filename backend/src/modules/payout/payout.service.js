@@ -125,6 +125,16 @@ async function markPaid(id, stripeTransferId) {
     throw new Error('Payout not found');
   }
 
+  // GA-12: only a pending payout can be paid. Payouts on hold (open
+  // chargeback) or failed (refunded/lost dispute) must not be paid, and a
+  // transfer reference is mandatory for reconciliation.
+  if (payout.status !== 'pending') {
+    throw new Error(`Payout is ${payout.status}; only pending payouts can be marked paid`);
+  }
+  if (!stripeTransferId || !/^tr_[A-Za-z0-9]+$/.test(String(stripeTransferId))) {
+    throw new Error('A valid Stripe transfer id (tr_…) is required');
+  }
+
   return model.updateStatus(id, {
     status: 'paid',
     stripe_transfer_id: stripeTransferId,
@@ -136,6 +146,10 @@ async function markFailed(id) {
 
   if (!payout) {
     throw new Error('Payout not found');
+  }
+
+  if (payout.status === 'paid') {
+    throw new Error('A paid payout cannot be marked failed; record a clawback instead');
   }
 
   return model.updateStatus(id, {

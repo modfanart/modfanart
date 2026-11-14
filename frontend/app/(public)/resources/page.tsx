@@ -54,7 +54,7 @@ export default function ResourcesPage() {
               your success.
             </p>
             <Button className="w-full" variant="outline" asChild>
-              <Link href="/resources/tutorials">Watch Tutorials</Link>
+              <Link href="/resources/guidelines">Watch Tutorials</Link>
             </Button>
           </CardContent>
         </Card>
@@ -72,7 +72,7 @@ export default function ResourcesPage() {
               Join discussions, share tips, and get feedback from the MOD Platform community.
             </p>
             <Button className="w-full" variant="outline" asChild>
-              <Link href="/community">Visit Forum</Link>
+              <Link href="/explore">Visit Forum</Link>
             </Button>
           </CardContent>
         </Card>
@@ -90,7 +90,7 @@ export default function ResourcesPage() {
               Comprehensive guides to every feature and process on the MOD Platform.
             </p>
             <Button className="w-full" variant="outline" asChild>
-              <Link href="/resources/docs">Read Docs</Link>
+              <Link href="/resources/guidelines">Read Docs</Link>
             </Button>
           </CardContent>
         </Card>
@@ -108,7 +108,7 @@ export default function ResourcesPage() {
               Download helpful resources including submission templates, legal guides, and more.
             </p>
             <Button className="w-full" variant="outline" asChild>
-              <Link href="/resources/downloads">View Downloads</Link>
+              <Link href="/resources/guidelines">View Downloads</Link>
             </Button>
           </CardContent>
         </Card>
@@ -127,7 +127,7 @@ export default function ResourcesPage() {
               content.
             </p>
             <Button className="w-full" variant="outline" asChild>
-              <Link href="/resources/external">View Links</Link>
+              <Link href="/resources/support">View Links</Link>
             </Button>
           </CardContent>
         </Card>

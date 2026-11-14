@@ -389,12 +389,20 @@ const contestsApi = createApi({
       }
     >({
       query: (params) => ({
-        url: '/contests/by-status',
+        // Was '/contests/by-status' (404): the API router is mounted at /contest.
+        url: '/contest/by-status',
         params: {
           ...params,
           visibility: params.visibility ?? 'public',
           limit: params.limit ?? 20,
         },
+      }),
+      // API responds { data, pagination }; normalise to the declared shape.
+      transformResponse: (res: any): GetContestsResponse => ({
+        contests: res?.contests ?? res?.data ?? [],
+        total: res?.pagination?.total,
+        page: res?.pagination?.page,
+        limit: res?.pagination?.limit,
       }),
       providesTags: ['Contests'],
     }),

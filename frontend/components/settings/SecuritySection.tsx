@@ -101,7 +101,7 @@ export default function SecuritySection() {
             <div>
               <p className="font-medium">
                 Status:{' '}
-                <span className={twoFactorEnabled ? 'text-green-600' : 'text-amber-600'}>
+                <span className={twoFactorEnabled ? 'text-success' : 'text-warning-strong'}>
                   {twoFactorEnabled ? 'Enabled' : 'Disabled'}
                 </span>
               </p>
@@ -280,7 +280,7 @@ export default function SecuritySection() {
                   This device • Last active now • India
                 </p>
               </div>
-              <span className="text-xs bg-green-100 text-green-800 px-2.5 py-1 rounded-full">
+              <span className="text-xs bg-success-subtle text-success px-2.5 py-1 rounded-full">
                 Active now
               </span>
             </div>

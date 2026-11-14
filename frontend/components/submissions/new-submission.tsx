@@ -63,6 +63,8 @@ import {
   useSubmitEntryMutation,
   useGetMyContestEntriesQuery,
 } from '@/services/api/contestsApi';
+import { ContestPicker } from './contest-picker';
+import { useAuth } from '@/store/AuthContext';
 
 const ACTIVE_ENTRY_STATUSES = ['pending', 'approved', 'winner'];
 const VALID_FILE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
@@ -94,6 +96,7 @@ type BatchItem = {
 };
 
 export default function NewContestSubmissionPage() {
+  const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const contestId = searchParams.get('contest');
@@ -130,9 +133,13 @@ export default function NewContestSubmissionPage() {
     skip: !contestId,
   });
 
+  // ART-05: the ?contest= param may be a slug; the API resolves either for
+  // the contest lookup, but entries/submission endpoints need the UUID.
+  const resolvedContestId = contest?.id ?? null;
+
   const { data: myEntriesData } = useGetMyContestEntriesQuery(
-    { contestId: contestId! },
-    { skip: !contestId }
+    { contestId: resolvedContestId! },
+    { skip: !resolvedContestId }
   );
 
   const usedCount = (myEntriesData?.entries ?? []).filter((entry: any) =>
@@ -297,7 +304,7 @@ export default function NewContestSubmissionPage() {
         }
 
         const payload: { contestId: string; artworkId: string; submissionNotes?: string | null } = {
-          contestId: contestId!,
+          contestId: resolvedContestId ?? contestId!,
           artworkId: artwork.id,
         };
         const packedNotes = packSubmissionNotes(values.submissionNotes, values.originalIp);
@@ -352,8 +359,10 @@ export default function NewContestSubmissionPage() {
     const { failedCount } = await runBatch(targets, values);
 
     if (failedCount === 0) {
+      // Land on the artist's own artworks list, where the new entries show.
+      const uname = user?.username?.trim().toLowerCase();
       setTimeout(() => {
-        router.push('/');
+        router.push(uname ? `/dashboard/artworks` : '/');
       }, 1800);
     } else {
       form.setError('root', {
@@ -366,21 +375,7 @@ export default function NewContestSubmissionPage() {
   const capReached = remaining <= 0 && items.length === 0;
 
   if (!contestId) {
-    return (
-      <div className="container py-12 max-w-3xl mx-auto text-center">
-        <Alert variant="destructive">
-          <AlertCircle className="h-5 w-5" />
-          <AlertTitle>Missing Contest</AlertTitle>
-          <AlertDescription>
-            This page must be accessed from a contest. Please go back to a contest page and click
-            "Submit Entry".
-          </AlertDescription>
-        </Alert>
-        <Button className="mt-6" onClick={() => router.back()}>
-          Go Back
-        </Button>
-      </div>
-    );
+    return <ContestPicker />;
   }
 
   if (contestLoading || contestError) {
@@ -432,7 +427,7 @@ export default function NewContestSubmissionPage() {
               {/* ─── Image Upload ─── */}
               <div className="space-y-3">
                 <FormLabel>
-                  Artwork Files <span className="text-red-500">*</span> (max 20MB each)
+                  Artwork Files <span className="text-destructive">*</span> (max 20MB each)
                 </FormLabel>
 
                 {capReached ? (
@@ -468,8 +463,8 @@ export default function NewContestSubmissionPage() {
                                 </div>
                               )}
                               {item.status === 'success' && (
-                                <div className="absolute top-1 right-1 bg-white rounded-full">
-                                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                                <div className="absolute top-1 right-1 bg-background rounded-full">
+                                  <CheckCircle2 className="h-5 w-5 text-success" />
                                 </div>
                               )}
                               {!isBatchSubmitting && item.status !== 'success' && (
@@ -490,7 +485,7 @@ export default function NewContestSubmissionPage() {
                               className="border-0 rounded-none text-xs h-8 focus-visible:ring-0"
                             />
                             {item.status === 'error' && (
-                              <p className="text-[11px] text-red-600 px-2 pb-1">{item.error}</p>
+                              <p className="text-[11px] text-destructive px-2 pb-1">{item.error}</p>
                             )}
                           </div>
                         ))}
@@ -499,7 +494,7 @@ export default function NewContestSubmissionPage() {
 
                     {remaining > 0 && !isBatchSubmitting && (
                       <div
-                        className="border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition border-gray-300 hover:border-primary/70 hover:bg-gray-50/70"
+                        className="border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition border-border hover:border-primary/70 hover:bg-muted/70"
                         onClick={() => fileInputRef.current?.click()}
                       >
                         <input
@@ -523,7 +518,7 @@ export default function NewContestSubmissionPage() {
                     )}
                   </>
                 )}
-                {fileError && <p className="text-sm text-red-600 font-medium">{fileError}</p>}
+                {fileError && <p className="text-sm text-destructive font-medium">{fileError}</p>}
               </div>
 
               <Separator />

@@ -471,10 +471,10 @@ export function AnalyticsDashboard({
                           <span
                             className={`px-2 py-1 rounded text-xs ${
                               ip.approvalRate >= 70
-                                ? 'bg-green-100 text-green-800'
+                                ? 'bg-success-subtle text-success'
                                 : ip.approvalRate >= 40
-                                  ? 'bg-yellow-100 text-yellow-800'
-                                  : 'bg-red-100 text-red-800'
+                                  ? 'bg-warning-subtle text-warning-strong'
+                                  : 'bg-destructive-subtle text-destructive'
                             }`}
                           >
                             {ip.approvalRate}%

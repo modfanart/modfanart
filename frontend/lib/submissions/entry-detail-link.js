@@ -12,7 +12,7 @@
  * @returns {string}
  */
 export function entryDetailPath(brandSlug, contestId, entryId) {
-  return `/brand-manager/${brandSlug}/opportunities/${contestId}/entries/${entryId}`;
+  return `/dashboard/opportunities/${contestId}/entries/${entryId}`;
 }
 
 /**

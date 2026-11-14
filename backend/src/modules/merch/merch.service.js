@@ -1,4 +1,6 @@
 const { db } = require('../../config');
+const { uniqueSlug, normaliseSku, generateSku, UUID_RE } = require('../../common/utils/slug.util');
+const { sql } = require('kysely');
 const model = require('./models/merch.model');
 const BrandManager = require('../brands/models/brandManager.model');
 const Artwork = require('../artworks/models/artwork.model');
@@ -110,6 +112,16 @@ async function assertCanManage(userId, product, message = 'You do not own this p
   throw new Error(message);
 }
 
+/** Boolean form of assertCanManage, for read paths. */
+async function canManage(userId, product) {
+  try {
+    await assertCanManage(userId, product);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function assertValidPrice(cents) {
   if (!Number.isInteger(cents) || cents < 0) {
     throw new Error('A USD price (in cents) of 0 or more is required');
@@ -172,6 +184,10 @@ async function createProduct(userId, payload) {
     const product = await model.createProduct(
       {
         ...payload,
+        // Stable public URL key; never changes when the title is edited.
+        slug: await uniqueSlug(trx, 'merch_products', payload.slug || payload.title, {
+          fallback: 'product',
+        }),
         seller_id: userId,
         license_id: licenseId,
         status: 'draft',
@@ -183,14 +199,16 @@ async function createProduct(userId, payload) {
   });
 }
 
-async function getProduct(id) {
-  const product = await model.findEnrichedById(id);
+async function getProduct(idOrSlug) {
+  const product = UUID_RE.test(String(idOrSlug))
+    ? await model.findEnrichedById(idOrSlug)
+    : await model.findEnrichedBySlug(idOrSlug);
 
   if (!product) {
     throw new Error('Merch product not found');
   }
 
-  const variants = await model.findVariantsByProduct(id);
+  const variants = await model.findVariantsByProduct(product.id);
 
   return {
     ...product,
@@ -271,6 +289,17 @@ async function updateProduct(userId, productId, payload) {
   }
 
   if (payload.description !== undefined) patch.description = payload.description;
+
+  // Slug is editable only while unpublished (it's the public URL).
+  if (payload.slug !== undefined) {
+    if (!['draft', 'rejected', 'archived'].includes(product.status)) {
+      throw new Error('The product URL can only be changed while the product is not live.');
+    }
+    patch.slug = await uniqueSlug(db, 'merch_products', payload.slug, {
+      excludeId: product.id,
+      fallback: 'product',
+    });
+  }
 
   // A suspended listing was pulled by an admin; the seller can't archive or
   // restore it to get around that.
@@ -371,9 +400,24 @@ async function addVariant(userId, productId, payload) {
 
   await assertCanManage(userId, product);
 
-  if (!payload.sku) {
-    throw new Error('SKU is required');
-  }
+  // SKU: normalise what the seller typed, or generate a readable one
+  // (TEE-LIBRARY-TEE-BLK-M). Previously the request failed without one.
+  const sku = payload.sku
+    ? normaliseSku(payload.sku)
+    : await generateSku(db, {
+        baseProductType: product.base_product_type,
+        productSlug: product.slug || product.title,
+        color: payload.color,
+        size: payload.size,
+      });
+  if (!sku) throw new Error('SKU is invalid');
+  const clash = await db
+    .selectFrom('merch_variants')
+    .select('id')
+    .where(sql`upper(sku)`, '=', sku)
+    .executeTakeFirst();
+  if (clash) throw new Error(`SKU ${sku} is already in use`);
+  payload = { ...payload, sku };
 
   assertValidPrice(payload.price_usd_cents);
   assertValidStock(payload.stock_qty);
@@ -419,6 +463,18 @@ async function updateVariant(userId, variantId, payload) {
     'is_active',
   ]) {
     if (payload[key] !== undefined) patch[key] = payload[key];
+  }
+
+  if (patch.sku !== undefined) {
+    patch.sku = normaliseSku(patch.sku);
+    if (!patch.sku) throw new Error('SKU is invalid');
+    const clash = await db
+      .selectFrom('merch_variants')
+      .select('id')
+      .where(sql`upper(sku)`, '=', patch.sku)
+      .where('id', '!=', variantId)
+      .executeTakeFirst();
+    if (clash) throw new Error(`SKU ${patch.sku} is already in use`);
   }
 
   if (!Object.keys(patch).length) {
@@ -576,6 +632,7 @@ async function setArtwork(userId, productId, { artwork_id, license_id } = {}) {
 }
 
 module.exports = {
+  canManage,
   getEligibleArtworks,
   setArtwork,
   createProduct,

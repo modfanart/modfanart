@@ -110,7 +110,7 @@ function ContestPendingEntries({
               className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               aria-label={`View full details for ${entry.artwork.title}`}
             >
-              <div className="aspect-square relative bg-gray-50">
+              <div className="aspect-square relative bg-muted">
                 <Image
                   src={entry.artwork.thumbnail_url || entry.artwork.file_url || '/placeholder.svg'}
                   alt={entry.artwork.title}
@@ -132,7 +132,7 @@ function ContestPendingEntries({
               <div className="flex gap-2">
                 <Button
                   size="sm"
-                  className="flex-1 bg-green-600 hover:bg-green-700"
+                  className="flex-1 bg-success hover:bg-success/90"
                   disabled={isUpdating}
                   onClick={() => handleDecision(entry.id, 'approved')}
                 >

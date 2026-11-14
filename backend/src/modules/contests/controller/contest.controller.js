@@ -1,5 +1,8 @@
 // src/controllers/contest.controller.js
 const { db } = require("../../../config");
+const { isAdminUser } = require("../../../common/middleware/require-admin");
+const { uniqueSlug } = require("../../../common/utils/slug.util");
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const { sql } = require("kysely");
 
 class ContestController {
@@ -19,15 +22,19 @@ class ContestController {
         .selectAll() // Includes hero_image and gallery
         .where("deleted_at", "is", null)
         .orderBy("created_at", "desc")
-        .limit(Number(limit))
-        .offset(Number(offset));
+        .limit(Math.min(Math.max(Number(limit) || 20, 1), 100))
+        .offset(Math.max(Number(offset) || 0, 0));
 
       // Public catalogue defaults to public visibility. Brand console passes
-      // brandId and may omit visibility to see draft/unlisted contests too.
-      if (visibility) {
+      // brandId and may omit visibility to see draft/unlisted contests too —
+      // but only for a brand the caller manages (this read is public now).
+      const managesBrand =
+        !!brandId &&
+        ((req.user?.brands || []).some((b) => b.id === brandId) || isAdminUser(req.user));
+      if (!managesBrand) {
+        query = query.where("visibility", "=", "public").where("status", "!=", "draft");
+      } else if (visibility) {
         query = query.where("visibility", "=", visibility);
-      } else if (!brandId) {
-        query = query.where("visibility", "=", "public");
       }
 
       if (status) query = query.where("status", "=", status);
@@ -47,10 +54,13 @@ class ContestController {
     try {
       const { id } = req.params;
 
+      // ART-05: links use the contest slug (/submissions/new?contest=<slug>)
+      // but this only matched by UUID, so valid contests came back 404 (or
+      // 500 from Postgres on a non-UUID). Accept either.
       const contest = await db
         .selectFrom("contests")
         .selectAll()
-        .where("id", "=", id)
+        .where(UUID_RE.test(id) ? "id" : "slug", "=", id)
         .where("deleted_at", "is", null)
         .executeTakeFirst();
 
@@ -58,11 +68,22 @@ class ContestController {
         return res.status(404).json({ error: "Contest not found" });
       }
 
+      // Now that this read is public, drafts / private contests are only
+      // visible to the owning brand and admins.
+      const isPubliclyVisible =
+        contest.visibility === "public" && contest.status !== "draft";
+      const isOwner =
+        (req.user?.brands || []).some((b) => b.id === contest.brand_id) ||
+        isAdminUser(req.user);
+      if (!isPubliclyVisible && !isOwner) {
+        return res.status(404).json({ error: "Contest not found" });
+      }
+
       // Enrich with categories
       const categoryRows = await db
         .selectFrom("contest_categories")
         .select("category_id")
-        .where("contest_id", "=", id)
+        .where("contest_id", "=", contest.id)
         .execute();
 
       const categoryIds = categoryRows.map((r) => r.category_id);
@@ -107,6 +128,7 @@ class ContestController {
         hero_image,
         gallery = [],
         categoryIds = [],
+        categories: categoryNames = [],
       } = req.body;
 
       // Required fields validation
@@ -159,32 +181,11 @@ class ContestController {
         return res.status(403).json({ error: "Not authorized to create contests for this brand" });
       }
 
-      // Slug generation & uniqueness
-      let slug = providedSlug?.trim();
-      if (!slug) {
-        slug = title
-          .toLowerCase()
-          .trim()
-          .replace(/\s+/g, "-")
-          .replace(/[^a-z0-9-]/g, "")
-          .replace(/-+/g, "-")
-          .replace(/^-|-$/g, "");
-      }
-
-      let finalSlug = slug;
-      let counter = 1;
-      while (true) {
-        const existing = await db
-          .selectFrom("contests")
-          .select("id")
-          .where("slug", "=", finalSlug)
-          .where("deleted_at", "is", null)
-          .executeTakeFirst();
-
-        if (!existing) break;
-        finalSlug = `${slug}-${counter}`;
-        counter++;
-      }
+      // Slug generation & uniqueness (shared util; same rules as migration
+      // 20261114000000 and enforced by a unique index on live contests).
+      const finalSlug = await uniqueSlug(db, "contests", providedSlug || title, {
+        fallback: "contest",
+      });
 
       // Additional validations
       if (prizes && !Array.isArray(prizes)) {
@@ -247,12 +248,25 @@ class ContestController {
           .returningAll()
           .executeTakeFirstOrThrow();
 
-        // Category mapping
-        if (categoryIds.length > 0) {
+        // Category mapping. The brand wizard sends `categories` as names
+        // (free text); previously only `categoryIds` was read, so every
+        // category the brand typed was silently dropped. Accept both.
+        const ids = Array.isArray(categoryIds) ? categoryIds.filter((x) => UUID_RE.test(String(x))) : [];
+        const names = (Array.isArray(categoryNames) ? categoryNames : [])
+          .map((n) => String(n).trim().toLowerCase())
+          .filter(Boolean);
+        if (ids.length > 0 || names.length > 0) {
           const validCategories = await trx
             .selectFrom("categories")
             .select("id")
-            .where("id", "in", categoryIds)
+            .where((eb) =>
+              eb.or([
+                ...(ids.length ? [eb("id", "in", ids)] : []),
+                ...(names.length
+                  ? [eb(sql`lower(name)`, "in", names), eb(sql`lower(slug)`, "in", names)]
+                  : []),
+              ])
+            )
             .execute();
 
           const rows = validCategories.map((cat) => ({
@@ -285,13 +299,24 @@ class ContestController {
 
       const existing = await db
         .selectFrom("contests")
-        .select(["id"])
+        .select(["id", "brand_id"])
         .where("id", "=", id)
         .where("deleted_at", "is", null)
         .executeTakeFirst();
 
       if (!existing)
         return res.status(404).json({ error: "Contest not found" });
+
+      // SECURITY: this endpoint had no authorization -> any signed-in user
+      // could rewrite any contest (prizes, dates, status). Same rule as
+      // announceWinners / distributePrizes.
+      const canEdit =
+        (req.user?.brands || []).some((b) => b.id === existing.brand_id) ||
+        req.user?.permissions?.["contests.manage"] ||
+        isAdminUser(req.user);
+      if (!canEdit) {
+        return res.status(403).json({ error: "Not authorized" });
+      }
 
       // Whitelist, because this used to spread req.body straight into .set().
       // The brand edit page always sends `categories`, which is not a column on
@@ -327,6 +352,13 @@ class ContestController {
       ];
 
       const updateData = { updated_at: sql`NOW()` };
+      if (req.body.slug !== undefined) {
+        // Keep slugs canonical and unique (was written verbatim).
+        req.body.slug = await uniqueSlug(db, "contests", req.body.slug, {
+          excludeId: id,
+          fallback: "contest",
+        });
+      }
       for (const column of UPDATABLE_COLUMNS) {
         if (req.body[column] !== undefined) updateData[column] = req.body[column];
       }
@@ -465,6 +497,63 @@ class ContestController {
   }
 
   // POST /contests/:id/distribute-prizes
+  // GET /contest/me/prizes - prizes the signed-in user has won (GA-25).
+  static async getMyPrizes(req, res) {
+    try {
+      const prizes = await db
+        .selectFrom("contest_prizes as p")
+        .innerJoin("contests as c", "c.id", "p.contest_id")
+        .select([
+          "p.id", "p.rank", "p.prize_type", "p.description", "p.amount_cents",
+          "p.currency", "p.status", "p.funded_at", "p.paid_at", "p.created_at",
+          "c.id as contest_id", "c.title as contest_title", "c.slug as contest_slug",
+        ])
+        .where("p.winner_id", "=", req.user.id)
+        .orderBy("p.created_at", "desc")
+        .execute();
+      res.json({ prizes });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Failed to load prizes" });
+    }
+  }
+
+  // GET /contest/:id/prizes - what the brand owes for this contest.
+  static async getContestPrizes(req, res) {
+    try {
+      const contest = await db
+        .selectFrom("contests")
+        .select(["id", "brand_id"])
+        .where("id", "=", req.params.id)
+        .where("deleted_at", "is", null)
+        .executeTakeFirst();
+      if (!contest) return res.status(404).json({ error: "Contest not found" });
+      const allowed =
+        (req.user.brands || []).some((b) => b.id === contest.brand_id) ||
+        req.user?.permissions?.["contests.manage"] ||
+        isAdminUser(req.user);
+      if (!allowed) return res.status(403).json({ error: "Not authorized" });
+
+      const prizes = await db
+        .selectFrom("contest_prizes as p")
+        .leftJoin("users as u", "u.id", "p.winner_id")
+        .select([
+          "p.id", "p.rank", "p.prize_type", "p.amount_cents", "p.currency",
+          "p.status", "p.funded_at", "p.paid_at", "u.username as winner_username",
+        ])
+        .where("p.contest_id", "=", contest.id)
+        .orderBy("p.rank", "asc")
+        .execute();
+      const outstanding = prizes
+        .filter((p) => p.status === "awaiting_funding")
+        .reduce((sum, p) => sum + Number(p.amount_cents), 0);
+      res.json({ prizes, outstanding_cents: outstanding });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Failed to load prizes" });
+    }
+  }
+
   static async distributePrizes(req, res) {
     try {
       const { id } = req.params;
@@ -503,31 +592,42 @@ class ContestController {
       }
 
       const prizes = contest.prizes || [];
+      let awarded = 0;
       for (const winner of winners) {
         const prize = prizes.find((p) => p.rank === winner.rank);
         if (!prize) continue;
 
-        await db
-          .insertInto("orders")
+        // GA-25: prizes are recorded in contest_prizes (migration
+        // 20261114020000) as an obligation the brand must fund. They used to
+        // be inserted into `orders` as already 'fulfilled', with buyer_id set
+        // to a brand id, and nothing tracked whether money ever moved.
+        // ON CONFLICT (entry_id) keeps this idempotent.
+        const inserted = await db
+          .insertInto("contest_prizes")
           .values({
-            order_number: `PRZ-${id}-${winner.rank}-${Date.now()}`,
-            buyer_id: contest.brand_id,
-            seller_id: winner.creator_id,
-            source_type: "contest_prize",
-            source_id: winner.id,
-            status: "fulfilled",
+            contest_id: contest.id,
+            entry_id: winner.id,
+            winner_id: winner.creator_id,
+            brand_id: contest.brand_id,
+            rank: winner.rank,
+            prize_type: prize.type || "cash",
+            description: prize.description || null,
+            amount_cents: Math.round((Number(prize.amount_usd) || 0) * 100),
             currency: "USD",
-            subtotal_cents: Math.round((Number(prize.amount_usd) || 0) * 100),
-            total_cents: Math.round((Number(prize.amount_usd) || 0) * 100),
-            created_at: sql`NOW()`,
-            updated_at: sql`NOW()`,
+            status: "awaiting_funding",
           })
-          .execute();
+          .onConflict((oc) => oc.column("entry_id").doNothing())
+          .returning("id")
+          .executeTakeFirst();
+        if (inserted) awarded += 1;
       }
 
       res.json({
-        message: "Prizes distributed successfully",
+        message: awarded
+          ? `${awarded} prize(s) recorded; awaiting funding by the brand`
+          : "Prizes were already recorded for these winners",
         winners_count: winners.length,
+        prizes_recorded: awarded,
       });
     } catch (err) {
       console.error(err);
@@ -676,14 +776,22 @@ class ContestController {
   static async getContestsByStatus(req, res) {
     try {
       const {
-        status,
-        visibility = "public",
+        status: requestedStatus,
+        visibility: requestedVisibility = "public",
         brand_id,
         page = 1,
         limit = 20,
         sort = "start_date",
         order = "desc",
       } = req.query;
+
+      // Public route: only a brand's own managers (or admins) may list
+      // non-public or draft contests.
+      const managesBrand =
+        !!brand_id &&
+        ((req.user?.brands || []).some((b) => b.id === brand_id) || isAdminUser(req.user));
+      const visibility = managesBrand ? requestedVisibility : "public";
+      const status = !managesBrand && requestedStatus === "draft" ? "__none__" : requestedStatus;
 
       const validStatuses = [
         "draft",
@@ -693,7 +801,7 @@ class ContestController {
         "completed",
         "archived",
       ];
-      if (status && !validStatuses.includes(status)) {
+      if (status && status !== "__none__" && !validStatuses.includes(status)) {
         return res.status(400).json({
           error: `Invalid status. Allowed: ${validStatuses.join(", ")}`,
         });
@@ -722,13 +830,25 @@ class ContestController {
             .whereRef("contest_entries.contest_id", "=", "c.id")
             .select(db.fn.countAll().as("entry_count"))
             .as("entry_count"),
-        ]);
+        ])
+        // BUG FIX: this builder was never filtered, paginated or executed,
+        // so the endpoint returned a serialised query object instead of rows.
+        .where("c.deleted_at", "is", null)
+        .where("c.visibility", "=", visibility)
+        .$if(!managesBrand, (qb) => qb.where("c.status", "!=", "draft"))
+        .$if(!!status, (qb) => qb.where("c.status", "=", status))
+        .$if(!!brand_id, (qb) => qb.where("c.brand_id", "=", brand_id))
+        .orderBy(`c.${sortField}`, sortDir)
+        .limit(perPage)
+        .offset(offset)
+        .execute();
       // Total count
       let countQuery = db
         .selectFrom("contests")
         .select(db.fn.countAll().as("total"))
         .where("deleted_at", "is", null)
-        .where("visibility", "=", visibility);
+        .where("visibility", "=", visibility)
+        .$if(!managesBrand, (qb) => qb.where("status", "!=", "draft"));
       if (status) countQuery = countQuery.where("status", "=", status);
       if (brand_id) countQuery = countQuery.where("brand_id", "=", brand_id);
 

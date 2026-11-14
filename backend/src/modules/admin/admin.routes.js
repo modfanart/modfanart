@@ -5,7 +5,11 @@ const ctrl = require("./controller/admin.controller");
 const {
   authenticateToken,
 } = require("../../common/middleware/auth.middleware");
-router.use(authenticateToken); // apply globally
+const { requireAdmin } = require("../../common/middleware/require-admin");
+
+// SECURITY: was authenticate-only -> any signed-in user could list/ban/delete
+// users and verify brands.
+router.use(authenticateToken, requireAdmin);
 
 router.get("/stats", ctrl.getPlatformStats);
 router.get("/users", ctrl.getUsers);

@@ -11,8 +11,17 @@ module.exports = (err, req, res, next) => {
     return res.status(400).json({ error: message });
   }
 
-  const status = err?.status || 500;
-  const message = err?.message || 'Internal Server Error';
+  // Invalid UUID / bad input reaching Postgres is a client error, not a 500.
+  if (err?.code === '22P02') {
+    return res.status(400).json({ error: 'Invalid identifier' });
+  }
+
+  const status = err?.status || err?.statusCode || 500;
+  // Don't leak internal error text (SQL, stack details) on 5xx in production.
+  const message =
+    status >= 500 && process.env.NODE_ENV === 'production'
+      ? 'Internal Server Error'
+      : err?.message || 'Internal Server Error';
 
   res.status(status).json({ error: message });
 };

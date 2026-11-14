@@ -55,7 +55,7 @@ function FinalistRow({
             @{entry.creator_username}
           </div>
           {partiallyJudged && (
-            <Badge variant="outline" className="mt-1.5 text-amber-600 border-amber-600">
+            <Badge variant="outline" className="mt-1.5 text-warning-strong border-warning-strong">
               <AlertTriangle className="mr-1 h-3 w-3" />
               Scored by {entry.judge_count} of {judgesScoring} judges
             </Badge>

@@ -18,20 +18,23 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Import your existing queries (adjust paths as needed)
-import { useGetAllUsersQuery } from '@/services/api/userApi';
+import { useGetUsersByRoleSlugQuery } from '@/services/api/userApi';
 import { useGetAllBrandsQuery } from '@/services/api/brands';
 import { useGetContestsQuery } from '@/services/api/contestsApi';
+import { contestHref } from '@/lib/links';
 
 const PREVIEW_LIMIT = 4;
 
 export default function ExplorePage() {
   // Artists preview
-  const { data: artistsData, isLoading: artistsLoading } = useGetAllUsersQuery({
+  // ART-08: was the admin-only /users/all (401 for guests) filtered client
+  // side, so "Featured Artists" was always empty. Use the public directory.
+  const { data: artistsData, isLoading: artistsLoading } = useGetUsersByRoleSlugQuery({
+    roleSlug: 'ARTIST',
     page: 1,
     limit: PREVIEW_LIMIT,
-    search: '',
   });
-  const previewArtists = artistsData?.users?.filter((u) => u.role?.name === 'artist') || [];
+  const previewArtists = artistsData?.users ?? [];
 
   // Brands preview
   const { data: brandsData, isLoading: brandsLoading } = useGetAllBrandsQuery({
@@ -45,7 +48,7 @@ export default function ExplorePage() {
 
   // Contests preview
   const { data: contestsData, isLoading: contestsLoading } = useGetContestsQuery({
-    activeOnly: true,
+    status: 'live',
     limit: PREVIEW_LIMIT,
   });
   const previewContests = contestsData?.contests ?? [];
@@ -63,7 +66,7 @@ export default function ExplorePage() {
         <section className="mb-20">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <Palette className="h-7 w-7 text-purple-600" />
+              <Palette className="h-7 w-7 text-primary" />
               <h2 className="text-2xl md:text-3xl font-bold">Featured Artists</h2>
             </div>
             <Button variant="ghost" asChild>
@@ -120,7 +123,7 @@ export default function ExplorePage() {
         <section className="mb-20">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <Building2 className="h-7 w-7 text-blue-600" />
+              <Building2 className="h-7 w-7 text-info" />
               <h2 className="text-2xl md:text-3xl font-bold">Popular Brands</h2>
             </div>
             <Button variant="ghost" asChild>
@@ -192,7 +195,7 @@ export default function ExplorePage() {
         <section className="mb-12">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <Trophy className="h-7 w-7 text-amber-600" />
+              <Trophy className="h-7 w-7 text-warning-strong" />
               <h2 className="text-2xl md:text-3xl font-bold">Active Opportunities</h2>
             </div>
             <Button variant="ghost" asChild>
@@ -218,9 +221,9 @@ export default function ExplorePage() {
           ) : (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {previewContests.map((contest) => (
-                <Link key={contest.id} href={`/contest/${contest.id}`}>
+                <Link key={contest.id} href={contestHref(contest)}>
                   <Card className="overflow-hidden hover:shadow-md transition-all h-full">
-                    <div className="relative h-40 bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-end p-5">
+                    <div className="relative h-40 bg-gradient-to-br from-warning-strong/20 to-warning-strong/20 flex items-end p-5">
                       <div>
                         <p className="text-2xl font-bold">{formatPrize(contest.prizes)}</p>
                         <p className="text-sm text-muted-foreground">Prize Pool</p>

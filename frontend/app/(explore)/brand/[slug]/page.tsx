@@ -25,6 +25,7 @@ import { ProductCard } from '@/components/marketplace/product-card';
 import { useGetMerchProductsQuery } from '@/services/api/marketplaceApi';
 
 import { useGetBrandBySlugQuery } from '@/services/api/brands';
+import { useAuth } from '@/store/AuthContext';
 
 // ── SAFE IMAGE HELPER ───────────────────────────────────────
 function getImage(src?: string | null) {
@@ -38,6 +39,10 @@ export default function BrandStorefrontPage() {
   const slug = typeof params?.['slug'] === 'string' ? params['slug'] : '';
 
   const { data: brand, isLoading, isError, error } = useGetBrandBySlugQuery(slug, { skip: !slug });
+  const { user } = useAuth();
+  // ART-13 / FAN-02: only people who actually manage this brand see the
+  // management button (it was shown to every visitor and 404'd).
+  const canManageBrand = (user?.brands ?? []).some((b) => b.slug === slug);
 
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -154,12 +159,14 @@ export default function BrandStorefrontPage() {
               </div>
 
               {/* ACTION */}
-              <Button variant="outline" asChild className="gap-2">
-                <Link href={`/dashboard/brand/${slug}`}>
-                  <Settings className="h-4 w-4" />
-                  Manage Brand
-                </Link>
-              </Button>
+              {canManageBrand && (
+                <Button variant="outline" asChild className="gap-2">
+                  <Link href={`/dashboard`}>
+                    <Settings className="h-4 w-4" />
+                    Manage Brand
+                  </Link>
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>

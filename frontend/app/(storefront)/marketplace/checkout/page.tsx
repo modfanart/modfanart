@@ -96,7 +96,7 @@ function CheckoutContent() {
       <div className="grid gap-8 lg:grid-cols-3">
         <div className="space-y-8 lg:col-span-2">
           {snapshot && (
-            <p className="rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+            <p className="rounded-md border border-warning/30 bg-warning-subtle p-4 text-sm text-warning-strong">
               Your order has been created and is waiting for payment. Retry the payment below, or
               finish later from <Link href="/marketplace/orders" className="underline">your orders</Link>.
             </p>

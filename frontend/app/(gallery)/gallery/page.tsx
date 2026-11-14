@@ -85,7 +85,7 @@ export default function FeaturedGalleryPage() {
       <div className="container py-10 lg:py-14">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <aside className="lg:col-span-3">
-            <div className="bg-white/70 backdrop-blur-xl border border-white/40 rounded-2xl shadow-lg p-6 space-y-4">
+            <div className="bg-background/70 backdrop-blur-xl border border-white/40 rounded-2xl shadow-lg p-6 space-y-4">
               {filters.map((_, i) => (
                 <Skeleton key={i} className="h-12 w-full rounded-xl bg-muted" />
               ))}
@@ -108,7 +108,7 @@ export default function FeaturedGalleryPage() {
       <div className="text-center space-y-6 px-6 py-20">
         <h2 className="text-4xl font-bold text-foreground">Failed to load gallery</h2>
         <Button variant="outline" size="lg" asChild>
-          <Link href="/gallery/featured">Try Again</Link>
+          <Link href="/gallery">Try Again</Link>
         </Button>
       </div>
     );
@@ -120,7 +120,7 @@ export default function FeaturedGalleryPage() {
         {/* ---------------- SIDEBAR ---------------- */}
         <aside className="lg:col-span-3">
           <div className="sticky top-24">
-            <div className="bg-white/70 backdrop-blur-xl border border-white/40 rounded-2xl shadow-lg p-5 space-y-2">
+            <div className="bg-background/70 backdrop-blur-xl border border-white/40 rounded-2xl shadow-lg p-5 space-y-2">
               {filters.map((filter) => (
                 <button
                   key={filter.value}
@@ -168,7 +168,7 @@ export default function FeaturedGalleryPage() {
 
                   {/* Stats */}
                   <div className="absolute bottom-0 left-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition">
-                    <div className="bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm rounded-xl px-3 py-2 flex justify-between text-xs">
+                    <div className="bg-background/70 backdrop-blur-xl border border-white/40 shadow-sm rounded-xl px-3 py-2 flex justify-between text-xs">
                       <div className="flex gap-3 text-foreground">
                         <div className="flex items-center gap-1">
                           <Eye className="h-3.5 w-3.5" />
@@ -203,8 +203,9 @@ export default function FeaturedGalleryPage() {
 
       {/* ---------------- CTA ---------------- */}
       <div className="text-center mt-16 pb-8">
-        <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
-          Explore All Available Artwork
+        {/* FAN-06: this button had no action */}
+        <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground" asChild>
+          <Link href="/marketplace">Explore All Available Artwork</Link>
         </Button>
       </div>
     </div>

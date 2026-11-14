@@ -7,9 +7,16 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { ArrowLeft, Eye, EyeOff, Palette, Building2, Heart } from 'lucide-react';
-import { createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import {
+  createUserWithEmailAndPassword,
+  sendEmailVerification,
+  signInWithPopup,
+  GoogleAuthProvider,
+} from 'firebase/auth';
 import { firebaseAuth } from '@/lib/firebase';
 import { API_BASE_URL } from '@/services';
+import { TERMS_VERSION, PASSWORD_RULES, passwordProblems } from '@/lib/policy';
+import { Checkbox } from '@/components/ui/checkbox';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -37,6 +44,13 @@ const personalInfoSchema = z.object({
 
 const accountTypeSchema = z.object({
   accountType: z.enum(['fan', 'artist', 'brand']),
+  // AUTH-04 / GA-22: explicit consent, recorded on the account.
+  acceptTerms: z.literal(true, {
+    errorMap: () => ({ message: 'You must accept the Terms of Service and Privacy Policy.' }),
+  }),
+  ageConfirmed: z.literal(true, {
+    errorMap: () => ({ message: 'You must be 18 or older to use MOD.' }),
+  }),
 });
 
 const accountInfoSchema = z
@@ -45,7 +59,12 @@ const accountInfoSchema = z
       .string()
       .min(3, 'Username must be at least 3 characters.')
       .regex(/^[a-zA-Z0-9_]+$/, 'Only letters, numbers, and underscores allowed.'),
-    password: z.string().min(8, 'Password must be at least 8 characters.'),
+    password: z.string().superRefine((p, ctx) => {
+      const problems = passwordProblems(p);
+      if (problems.length) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Password needs: ${problems.join(', ').toLowerCase()}.` });
+      }
+    }),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -110,7 +129,7 @@ function SignupPageInner() {
 
   const typeForm = useForm<AccountTypeValues>({
     resolver: zodResolver(accountTypeSchema),
-    defaultValues: { accountType: 'fan' },
+    defaultValues: { accountType: 'fan', acceptTerms: false as unknown as true, ageConfirmed: false as unknown as true },
   });
 
   const accountForm = useForm<AccountInfoValues>({
@@ -141,6 +160,16 @@ function SignupPageInner() {
     try {
       const provider = new GoogleAuthProvider();
       const credential = await signInWithPopup(firebaseAuth, provider);
+      // AUTH-03 / GA-05: send the verification email. Contest entry, voting,
+      // selling and checkout stay locked until the address is verified.
+      try {
+        await sendEmailVerification(credential.user, {
+          url: `${window.location.origin}/verify-account`,
+        });
+      } catch {
+        /* the in-app banner offers "Resend" if this fails */
+      }
+
       const idToken = await credential.user.getIdToken();
 
       const syncRes = await fetch(`${API_BASE_URL}/auth/sync`, {
@@ -188,7 +217,11 @@ function SignupPageInner() {
           Authorization: `Bearer ${googleIdToken}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ accountType: values.accountType }),
+        body: JSON.stringify({
+          accountType: values.accountType,
+          acceptedTermsVersion: TERMS_VERSION,
+          ageConfirmed: true,
+        }),
       });
 
       if (!syncRes.ok) throw new Error('Auth sync failed');
@@ -233,6 +266,9 @@ function SignupPageInner() {
         body: JSON.stringify({
           username: values.username.trim().toLowerCase(),
           accountType: selectedAccountType,
+          // Consent was given on the previous step (the form blocks otherwise).
+          acceptedTermsVersion: TERMS_VERSION,
+          ageConfirmed: true,
         }),
       });
 
@@ -247,8 +283,8 @@ function SignupPageInner() {
         setStep(4);
       } else {
         toast({
-          title: 'Account Created!',
-          description: 'Welcome to Modfanart.',
+          title: 'Account created',
+          description: `We sent a verification link to ${personalInfo.email}. Verify it to enter contests or buy.`,
         });
         router.push(redirectTo);
       }
@@ -320,7 +356,7 @@ function SignupPageInner() {
             if (step === 2 && googleIdToken) setGoogleIdToken(null);
             setStep(step - 1);
           }}
-          className="flex items-center text-gray-600 hover:text-black transition-colors"
+          className="flex items-center text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="mr-2 h-4 w-4" /> Back
         </button>
@@ -331,13 +367,13 @@ function SignupPageInner() {
         <>
           <div className="text-center">
             <h1 className="text-3xl font-bold">Sign Up</h1>
-            <p className="text-gray-600 mt-2">Create your account to get started.</p>
+            <p className="text-muted-foreground mt-2">Create your account to get started.</p>
           </div>
 
           <Button
             type="button"
             variant="outline"
-            className="w-full h-12 border-gray-300"
+            className="w-full h-12 border-border"
             onClick={onGoogleSignIn}
             disabled={isGoogleLoading}
           >
@@ -352,10 +388,10 @@ function SignupPageInner() {
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
+              <div className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">or sign up with email</span>
+              <span className="px-2 bg-background text-muted-foreground">or sign up with email</span>
             </div>
           </div>
 
@@ -398,7 +434,7 @@ function SignupPageInner() {
                 )}
               />
 
-              <Button type="submit" className="w-full bg-black hover:bg-gray-900 h-11">
+              <Button type="submit" className="w-full bg-black hover:bg-foreground h-11">
                 Continue
               </Button>
             </form>
@@ -411,7 +447,7 @@ function SignupPageInner() {
         <>
           <div className="text-center">
             <h1 className="text-3xl font-bold">Choose Your Role</h1>
-            <p className="text-gray-600 mt-2">Select the type of account that best fits you.</p>
+            <p className="text-muted-foreground mt-2">Select the type of account that best fits you.</p>
           </div>
 
           <Form {...typeForm}>
@@ -424,49 +460,49 @@ function SignupPageInner() {
                     <FormControl>
                       <RadioGroup onValueChange={field.onChange} value={field.value} className="space-y-4">
                         <Card
-                          className={`cursor-pointer border-2 transition-all ${field.value === 'fan' ? 'border-violet-600' : 'border-gray-200'}`}
+                          className={`cursor-pointer border-2 transition-all ${field.value === 'fan' ? 'border-primary' : 'border-border'}`}
                           onClick={() => field.onChange('fan')}
                         >
                           <CardContent className="p-5 flex items-center gap-4">
                             <RadioGroupItem value="fan" id="fan" />
-                            <div className="bg-pink-100 p-3 rounded-full">
-                              <Heart className="h-6 w-6 text-pink-600" />
+                            <div className="bg-destructive-subtle p-3 rounded-full">
+                              <Heart className="h-6 w-6 text-destructive" />
                             </div>
                             <div>
                               <label htmlFor="fan" className="font-medium text-lg cursor-pointer">Fan</label>
-                              <p className="text-sm text-gray-500">Discover and support fan art</p>
+                              <p className="text-sm text-muted-foreground">Discover and support fan art</p>
                             </div>
                           </CardContent>
                         </Card>
 
                         <Card
-                          className={`cursor-pointer border-2 transition-all ${field.value === 'artist' ? 'border-violet-600' : 'border-gray-200'}`}
+                          className={`cursor-pointer border-2 transition-all ${field.value === 'artist' ? 'border-primary' : 'border-border'}`}
                           onClick={() => field.onChange('artist')}
                         >
                           <CardContent className="p-5 flex items-center gap-4">
                             <RadioGroupItem value="artist" id="artist" />
-                            <div className="bg-purple-100 p-3 rounded-full">
-                              <Palette className="h-6 w-6 text-purple-600" />
+                            <div className="bg-primary-subtle p-3 rounded-full">
+                              <Palette className="h-6 w-6 text-primary" />
                             </div>
                             <div>
                               <label htmlFor="artist" className="font-medium text-lg cursor-pointer">Artist</label>
-                              <p className="text-sm text-gray-500">Create and submit fan art</p>
+                              <p className="text-sm text-muted-foreground">Create and submit fan art</p>
                             </div>
                           </CardContent>
                         </Card>
 
                         <Card
-                          className={`cursor-pointer border-2 transition-all ${field.value === 'brand' ? 'border-violet-600' : 'border-gray-200'}`}
+                          className={`cursor-pointer border-2 transition-all ${field.value === 'brand' ? 'border-primary' : 'border-border'}`}
                           onClick={() => field.onChange('brand')}
                         >
                           <CardContent className="p-5 flex items-center gap-4">
                             <RadioGroupItem value="brand" id="brand" />
-                            <div className="bg-blue-100 p-3 rounded-full">
-                              <Building2 className="h-6 w-6 text-blue-600" />
+                            <div className="bg-info-subtle p-3 rounded-full">
+                              <Building2 className="h-6 w-6 text-info" />
                             </div>
                             <div>
                               <label htmlFor="brand" className="font-medium text-lg cursor-pointer">Brand / IP Holder</label>
-                              <p className="text-sm text-gray-500">License fan creations & protect your IP</p>
+                              <p className="text-sm text-muted-foreground">License fan creations & protect your IP</p>
                             </div>
                           </CardContent>
                         </Card>
@@ -477,7 +513,60 @@ function SignupPageInner() {
                 )}
               />
 
-              <Button type="submit" disabled={isRegistering} className="w-full bg-black hover:bg-gray-900 h-11">
+              <div className="space-y-3 rounded-lg border p-4">
+                <FormField
+                  control={typeForm.control}
+                  name="acceptTerms"
+                  render={({ field }) => (
+                    <FormItem className="flex items-start gap-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          id="acceptTerms"
+                          checked={field.value === true}
+                          onCheckedChange={(v) => field.onChange(v === true)}
+                        />
+                      </FormControl>
+                      <div className="space-y-1">
+                        <label htmlFor="acceptTerms" className="text-sm leading-snug">
+                          I agree to the{' '}
+                          <Link href="/legal/terms-and-service" target="_blank" className="text-primary underline">
+                            Terms of Service
+                          </Link>{' '}
+                          and{' '}
+                          <Link href="/legal/privacy-policy" target="_blank" className="text-primary underline">
+                            Privacy Policy
+                          </Link>
+                          .
+                        </label>
+                        <FormMessage />
+                      </div>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={typeForm.control}
+                  name="ageConfirmed"
+                  render={({ field }) => (
+                    <FormItem className="flex items-start gap-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          id="ageConfirmed"
+                          checked={field.value === true}
+                          onCheckedChange={(v) => field.onChange(v === true)}
+                        />
+                      </FormControl>
+                      <div className="space-y-1">
+                        <label htmlFor="ageConfirmed" className="text-sm leading-snug">
+                          I confirm I am 18 years of age or older.
+                        </label>
+                        <FormMessage />
+                      </div>
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <Button type="submit" disabled={isRegistering} className="w-full h-11">
                 {isRegistering ? 'Creating Account...' : 'Continue'}
               </Button>
             </form>
@@ -490,7 +579,7 @@ function SignupPageInner() {
         <>
           <div className="text-center">
             <h1 className="text-3xl font-bold">{getStep3Title()}</h1>
-            <p className="text-gray-600 mt-2">{getStep3Description()}</p>
+            <p className="text-muted-foreground mt-2">{getStep3Description()}</p>
           </div>
 
           <Form {...accountForm}>
@@ -545,7 +634,18 @@ function SignupPageInner() {
                 )}
               />
 
-              <Button type="submit" disabled={isRegistering} className="w-full bg-black hover:bg-gray-900 h-12">
+              <ul className="grid gap-1 text-xs text-muted-foreground" aria-label="Password requirements">
+                {PASSWORD_RULES.map((r) => {
+                  const ok = r.test(accountForm.watch('password') || '');
+                  return (
+                    <li key={r.label} className={ok ? 'text-success' : undefined}>
+                      {ok ? '✓' : '•'} {r.label}
+                    </li>
+                  );
+                })}
+              </ul>
+
+              <Button type="submit" disabled={isRegistering} className="w-full h-12">
                 {isRegistering ? 'Creating Account...' : 'Create Account'}
               </Button>
             </form>
@@ -558,7 +658,7 @@ function SignupPageInner() {
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-10">
             <h1 className="text-3xl font-bold">Almost There!</h1>
-            <p className="text-gray-600 mt-3 text-lg">
+            <p className="text-muted-foreground mt-3 text-lg">
               Your user account has been created. Now please provide details about your brand for verification.
             </p>
           </div>
@@ -623,7 +723,7 @@ function SignupPageInner() {
                     <FormLabel>Approximate Team Size</FormLabel>
                     <select
                       {...field}
-                      className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      className="w-full p-3 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                     >
                       <option value="1-10">1–10 people</option>
                       <option value="11-50">11–50 people</option>
@@ -681,7 +781,7 @@ function SignupPageInner() {
               <Button
                 type="submit"
                 disabled={isBrandSubmitting}
-                className="w-full bg-violet-600 hover:bg-violet-700 h-12 text-lg font-medium"
+                className="w-full bg-primary hover:bg-primary-hover h-12 text-lg font-medium"
               >
                 {isBrandSubmitting ? 'Submitting Request...' : 'Submit Brand Verification Request'}
               </Button>
@@ -691,9 +791,9 @@ function SignupPageInner() {
       )}
 
       {step !== 4 && (
-        <p className="text-center text-sm text-gray-600 mt-8">
+        <p className="text-center text-sm text-muted-foreground mt-8">
           Already have an account?{' '}
-          <Link href="/login" className="text-violet-600 hover:underline">Sign in</Link>
+          <Link href="/login" className="text-primary hover:underline">Sign in</Link>
         </p>
       )}
     </div>

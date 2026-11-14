@@ -32,9 +32,13 @@ const keepAlive = setInterval(() => {}, 60 * 60 * 1000); // 1 hour
 
 const TEMP_DIR = process.env.TEMP_UPLOAD_DIR || '/tmp/cdn_uploads';
 // ====================== RATE LIMITER ======================
+// 100 req / 15 min per IP was far too low for a SPA that fires several
+// queries per page plus a 30s notification poll; normal browsing hit 429s,
+// which the UI showed as "Failed to load contests" / "@user not found"
+// (ART-02, AUTH-08, FAN-01 intermittency). Auth gets its own tighter limit.
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: Number(process.env.RATE_LIMIT_MAX) || 1500,
   message: {
     status: 429,
     message: 'Too many requests, please try again later.',
@@ -71,7 +75,25 @@ app.use(
   })
 );
 
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { status: 429, message: 'Too many auth attempts, please try again later.' },
+});
+
 app.use(limiter);
+app.use('/api/auth', authLimiter);
+
+// Basic security headers (TECH-02, API side). No extra dependency needed.
+app.disable('x-powered-by');
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
 
 // ====================== MIDDLEWARE ======================
 // Stripe signature verification needs the *raw* request body. The webhook
@@ -83,6 +105,8 @@ app.use('/api/payout/stripe', express.raw({ type: 'application/json' }));
 app.use(express.json());
 app.use(requestLogger);
 app.use(attachDb);
+// Staff/admin accountability: record sensitive state changes (see middleware).
+app.use(require('./src/common/middleware/audit-trail').auditTrail);
 
 // ====================== STATIC ======================
 app.use(express.static(path.join(__dirname, 'public')));

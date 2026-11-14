@@ -24,7 +24,7 @@ export function AuthDebug() {
             <h3 className="font-medium">Status: {status}</h3>
             {session ? (
               <div className="mt-2">
-                <pre className="bg-slate-100 p-4 rounded-md overflow-auto text-xs">
+                <pre className="bg-muted p-4 rounded-md overflow-auto text-xs">
                   {JSON.stringify(session, null, 2)}
                 </pre>
               </div>

@@ -7,6 +7,8 @@ const CDNFile = require("../../cdn/models/cdn-file.model");
 const CDNFileService = require("../../cdn/services/cdn-file.service");
 const cdnFileModel = require("../../cdn/models/cdn-file.model");
 const { applyPublicArtworkFilter } = require("../artwork.visibility");
+const { isAdminUser } = require("../../../common/middleware/require-admin");
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const { db } = require("../../../config");
 const path = require("path");
@@ -143,10 +145,28 @@ const cdnFile = await cdnService.createFileRecord(
   static async getArtwork(req, res) {
     try {
       const { id } = req.params;
+
+      // COM-08: a non-UUID id (/product/1) reached Postgres and came back as
+      // a 500. It is simply "not found".
+      if (!UUID_RE.test(String(id))) {
+        return res.status(404).json({ error: "Artwork not found" });
+      }
+
       const artwork = await Artwork.findById(id);
 
       if (!artwork || artwork.deleted_at) {
         return res.status(404).json({ error: "Artwork not found or deleted" });
+      }
+
+      // SECURITY: this public endpoint returned ANY artwork (drafts, rejected,
+      // unlicensed contest entries) including the original source file URL.
+      // Only the creator / admins see unpublished work or the source file.
+      const isPrivileged =
+        !!req.user && (req.user.id === artwork.creator_id || isAdminUser(req.user));
+      const isPublic =
+        artwork.status === "published" && artwork.moderation_status === "approved";
+      if (!isPrivileged && !isPublic) {
+        return res.status(404).json({ error: "Artwork not found" });
       }
 
       await Artwork.incrementView(id);
@@ -160,7 +180,7 @@ const cdnFile = await cdnService.createFileRecord(
         description: artwork.description,
         file_url: artwork.file_url,
         thumbnail_url: artwork.thumbnail_url,
-        source_file_url: artwork.source_file_url,
+        source_file_url: isPrivileged ? artwork.source_file_url : undefined,
         status: artwork.status,
         moderation_status: artwork.moderation_status,
         views_count: artwork.views_count + 1,
@@ -458,7 +478,8 @@ const cdnFile = await cdnService.createFileRecord(
           // ✅ IMPORTANT (frontend needs these)
           "file_url",
           "thumbnail_url",
-          "source_file_url",
+          // source_file_url intentionally omitted: public endpoint (original files are private)
+
 
           "status",
           "moderation_status",

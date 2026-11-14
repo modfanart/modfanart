@@ -50,6 +50,13 @@ class ContestJudgeScoreController {
           .json({ error: "Entry not found in this contest" });
       }
 
+      // Conflict of interest: a judge may never score their own entry.
+      if (entry.creator_id === req.user.id) {
+        return res
+          .status(403)
+          .json({ error: "You cannot score your own entry" });
+      }
+
       // Optional: check if contest is in judging phase
       const contest = await Contest.findById(contestId);
       if (contest.status !== "judging") {

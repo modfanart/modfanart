@@ -71,6 +71,7 @@ async function getCartItems(cartId, trx = db) {
       'mv.stock_qty',
       'mv.is_active as variant_is_active',
       'mp.id as merch_product_id',
+      'mp.slug as merch_product_slug',
       'mp.status as product_status',
       'mp.fulfillment_type',
       'mp.seller_id',

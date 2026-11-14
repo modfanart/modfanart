@@ -2,9 +2,9 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { ArrowRight, Share2, BookmarkPlus, Eye, Trophy, Image as ImageIcon } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
+import { ArrowRight, Share2, Eye, Trophy, Image as ImageIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +25,8 @@ import 'swiper/css/navigation';
 import { useAuth } from '@/store/AuthContext';
 import { useGetContestQuery, useGetMyContestEntriesQuery } from '@/services/api/contestsApi';
 import type { Contest } from '@/services/api/contestsApi';
+import { PHASE_META, getContestPhase } from '@/lib/contests/phase';
+import { useToast } from '@/components/ui/use-toast';
 
 const ACTIVE_ENTRY_STATUSES = ['pending', 'approved', 'winner'];
 
@@ -37,7 +39,7 @@ export default function ContestDetailPage() {
   let artistBase = '';
   if (role === 'ARTIST') {
     const username = user?.username?.trim().toLowerCase();
-    if (username) artistBase = `/artist/${username}`;
+    if (username) artistBase = `/dashboard`;
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -49,10 +51,20 @@ export default function ContestDetailPage() {
 
   const contest = data ?? null;
 
+  // Canonical URL: /contest/<uuid> links switch to /contest/<slug>.
+  const router = useRouter();
+  useEffect(() => {
+    if (contest?.slug && contestId !== contest.slug) {
+      router.replace(`/contest/${contest.slug}`, { scroll: false });
+    }
+  }, [contest?.slug, contestId, router]);
+
+  // The route param can be a slug; entry endpoints need the UUID.
   const { data: myEntriesData } = useGetMyContestEntriesQuery(
-    { contestId: contestId! },
-    { skip: !contestId || role !== 'ARTIST' }
+    { contestId: contest?.id ?? '' },
+    { skip: !contest?.id || role !== 'ARTIST' }
   );
+  const { toast } = useToast();
 
   const myEntriesUsed = (myEntriesData?.entries ?? []).filter((entry) =>
     ACTIVE_ENTRY_STATUSES.includes(entry.entry_status)
@@ -62,66 +74,86 @@ export default function ContestDetailPage() {
   const atEntryCap = role === 'ARTIST' && myEntriesUsed >= maxEntries;
 
   // Safe parsing for gallery and prizes
-  const galleryImages: string[] = Array.isArray(contest?.gallery)
-    ? contest.gallery
-    : typeof contest?.gallery === 'string'
-      ? JSON.parse(contest.gallery || '[]')
-      : [];
+  const safeArray = (v: unknown): any[] => {
+    if (Array.isArray(v)) return v;
+    if (typeof v === 'string') {
+      try {
+        const parsed = JSON.parse(v || '[]');
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  };
+  const galleryImages: string[] = safeArray(contest?.gallery);
+  const prizes = safeArray(contest?.prizes);
 
-  const prizes = Array.isArray(contest?.prizes)
-    ? contest.prizes
-    : typeof contest?.prizes === 'string'
-      ? JSON.parse(contest.prizes || '[]')
-      : [];
+  // Stable Date (was re-created every render, restarting the countdown timer).
+  const deadlineMs = contest?.submission_end_date
+    ? new Date(contest.submission_end_date).getTime()
+    : 0;
+  const deadline = useMemo(() => new Date(deadlineMs), [deadlineMs]);
 
-  const deadline = contest?.submission_end_date
-    ? new Date(contest.submission_end_date)
-    : new Date();
+  // Same rule the API enforces: only 'live' contests between start and end
+  // accept entries. 'published' used to count as active here, so users were
+  // shown "Submit" and then got a 403 from the server.
+  const phase = contest ? getContestPhase(contest) : 'closed';
+  const phaseMeta = PHASE_META[phase];
+  const isActive = phase === 'open';
+  const isArtist = role === 'ARTIST';
 
-  const now = new Date();
-
-  // FIXED: Better isActive logic
-  // A contest is active for submissions if status is 'live' or 'published' AND deadline hasn't passed
-  const isActive =
-    contest && (contest.status === 'live' || contest.status === 'published') && deadline > now;
+  const handleShare = async () => {
+    const url = window.location.href;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: contest?.title, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        toast({ title: 'Link copied', description: 'Contest link copied to clipboard.' });
+      }
+    } catch {
+      /* user cancelled share sheet */
+    }
+  };
 
   const [timeLeft, setTimeLeft] = useState({
     days: '00',
     hours: '00',
     minutes: '00',
     seconds: '00',
-    done: !isActive,
+    done: false,
   });
 
-  // Countdown Timer
+  // Countdown timer — ticks immediately (no 1s flash of "closed"/00s).
   useEffect(() => {
-    if (!isActive || !contest) return;
+    if (!isActive) {
+      setTimeLeft((t) => ({ ...t, done: true }));
+      return;
+    }
 
-    const interval = setInterval(() => {
+    let interval: ReturnType<typeof setInterval> | undefined;
+    const tick = () => {
       const diff = deadline.getTime() - Date.now();
-
       if (diff <= 0) {
-        clearInterval(interval);
+        if (interval) clearInterval(interval);
         setTimeLeft({ days: '00', hours: '00', minutes: '00', seconds: '00', done: true });
         return;
       }
-
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-      const minutes = Math.floor((diff / (1000 * 60)) % 60);
-      const seconds = Math.floor((diff / 1000) % 60);
-
+      const pad = (n: number) => String(n).padStart(2, '0');
       setTimeLeft({
-        days: String(days).padStart(2, '0'),
-        hours: String(hours).padStart(2, '0'),
-        minutes: String(minutes).padStart(2, '0'),
-        seconds: String(seconds).padStart(2, '0'),
+        days: pad(Math.floor(diff / 86_400_000)),
+        hours: pad(Math.floor((diff / 3_600_000) % 24)),
+        minutes: pad(Math.floor((diff / 60_000) % 60)),
+        seconds: pad(Math.floor((diff / 1000) % 60)),
         done: false,
       });
-    }, 1000);
+    };
 
+    tick();
+    interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
-  }, [isActive, deadline, contest]);
+  }, [isActive, deadline]);
 
   // Prize formatting (USD only)
   const formatPrizePool = (prizeList: any[] = []) => {
@@ -156,7 +188,7 @@ export default function ContestDetailPage() {
         <p className="mt-4 text-muted-foreground">
           The contest you're looking for doesn't exist, has ended, or was removed.
         </p>
-        <Link href="/opportunities" className="mt-8 inline-block">
+        <Link href="/explore/contests" className="mt-8 inline-block">
           <Button>← Back to Opportunities</Button>
         </Link>
       </div>
@@ -227,8 +259,8 @@ export default function ContestDetailPage() {
                 <span className="font-medium">{contest.brand_name || 'Organizer'}</span>
               </Link>
 
-              <Badge variant={isActive ? 'secondary' : 'destructive'} className="text-sm">
-                {isActive ? 'Active' : 'Closed'}
+              <Badge variant={phaseMeta.badge} className="text-sm">
+                {phaseMeta.label}
               </Badge>
 
               <div className="flex items-center gap-1.5 text-muted-foreground">
@@ -239,13 +271,10 @@ export default function ContestDetailPage() {
           </div>
 
           <div className="flex gap-3">
-            <Button variant="outline" size="sm">
+            {/* Share used to do nothing; "Save" had no backend and was removed. */}
+            <Button variant="outline" size="sm" onClick={handleShare}>
               <Share2 className="mr-2 h-4 w-4" />
               Share
-            </Button>
-            <Button variant="outline" size="sm">
-              <BookmarkPlus className="mr-2 h-4 w-4" />
-              Save
             </Button>
           </div>
         </div>
@@ -356,7 +385,7 @@ export default function ContestDetailPage() {
                       </div>
 
                       {prize.amount_usd && (
-                        <p className="text-3xl font-bold text-green-600">
+                        <p className="text-3xl font-bold text-success">
                           ${Number(prize.amount_usd).toLocaleString('en-US')}
                         </p>
                       )}
@@ -439,6 +468,14 @@ export default function ContestDetailPage() {
                 </div>
               ))}
             </div>
+          ) : phase === 'upcoming' ? (
+            <p className="text-2xl font-semibold text-info">
+              Submissions open{' '}
+              {contest.start_date
+                ? new Date(contest.start_date).toLocaleDateString('en-US', { dateStyle: 'long' })
+                : 'soon'}
+              .
+            </p>
           ) : (
             <p className="text-2xl font-semibold text-destructive">Submissions are now closed.</p>
           )}
@@ -447,28 +484,47 @@ export default function ContestDetailPage() {
         {/* Submit CTA - Now correctly respects isActive */}
         <Card className="mt-16 border-2 border-primary/30 bg-primary/5">
           <CardContent className="p-10 md:p-16 text-center">
-            {isActive && atEntryCap ? (
+            {/* Guests used to be linked to /my-artworks/new (404) and fans to an
+                artist-only flow. Each audience now gets the right action. */}
+            {!isActive ? (
+              <Button disabled size="lg" className="w-full max-w-md h-14 text-lg">
+                {phase === 'upcoming' ? 'Submissions open soon' : 'Submissions closed'}
+              </Button>
+            ) : !user ? (
+              <Button asChild size="lg" className="w-full max-w-md h-14 text-lg">
+                <Link href={`/login?from=${encodeURIComponent(`/contest/${contestId}`)}`}>
+                  Log in to submit
+                  <ArrowRight className="ml-3 h-5 w-5" />
+                </Link>
+              </Button>
+            ) : !isArtist ? (
+              <Button disabled size="lg" className="w-full max-w-md h-14 text-lg">
+                Artist account required
+              </Button>
+            ) : atEntryCap ? (
               <Button disabled size="lg" className="w-full max-w-md h-14 text-lg">
                 You've used all {maxEntries} entries
               </Button>
-            ) : isActive ? (
+            ) : (
               <Button asChild size="lg" className="w-full max-w-md h-14 text-lg">
-                <Link href={`${artistBase}/my-artworks/new?contest=${contest.id}`}>
+                <Link href={`${artistBase}/artworks/new?contest=${contest.id}`}>
                   Submit Your Artwork
                   <ArrowRight className="ml-3 h-5 w-5" />
                 </Link>
               </Button>
-            ) : (
-              <Button disabled size="lg" className="w-full max-w-md h-14 text-lg">
-                Submissions Closed
-              </Button>
             )}
             <p className="mt-4 text-sm text-muted-foreground">
               {!isActive
-                ? 'The submission period has ended.'
-                : atEntryCap
-                  ? `You've reached the maximum of ${maxEntries} entries for this contest.`
-                  : 'You must be logged in as an Artist to submit'}
+                ? phase === 'upcoming'
+                  ? 'This contest has been announced but is not accepting entries yet.'
+                  : 'The submission period has ended.'
+                : !user
+                  ? 'Create a free artist account or log in to enter.'
+                  : !isArtist
+                    ? 'Only artist accounts can submit entries to contests.'
+                    : atEntryCap
+                      ? `You've reached the maximum of ${maxEntries} entries for this contest.`
+                      : `You've used ${myEntriesUsed} of ${maxEntries} entries.`}
             </p>
           </CardContent>
         </Card>

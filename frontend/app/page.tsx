@@ -75,7 +75,7 @@ function SafeImage({ src, alt = '', fill = false, className = '', ...rest }: Saf
     return (
       <div
         aria-label={alt || 'image placeholder'}
-        className={`relative w-full h-full ${className} bg-gray-200 animate-pulse`}
+        className={`relative w-full h-full ${className} bg-muted animate-pulse`}
       />
     );
   }
@@ -107,7 +107,7 @@ export default function HomePage() {
         {/* HEADLINE */}
         <div className="absolute top-24 left-1/2 -translate-x-1/2 text-center text-white max-w-3xl px-4 z-20 mb-10">
           <h1 className="text-5xl font-extrabold leading-tight">
-            TURN <span className="text-purple-400">FAN ART</span> INTO
+            TURN <span className="text-primary">FAN ART</span> INTO
             <br />
             OFFICIAL OPPORTUNITIES
           </h1>
@@ -147,7 +147,7 @@ export default function HomePage() {
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2">
                 <Button
                   onClick={() => router.push(card.href)}
-                  className="rounded-full bg-white text-black text-xs px-5 py-2 transition-all transform group-hover:scale-105"
+                  className="rounded-full bg-background text-foreground text-xs px-5 py-2 transition-all transform group-hover:scale-105"
                 >
                   ✔ {card.label}
                 </Button>
@@ -161,7 +161,7 @@ export default function HomePage() {
           onClick={() =>
             document.getElementById('featured')?.scrollIntoView({ behavior: 'smooth' })
           }
-          className="rounded-full bg-black text-white text-sm px-6 py-2 hover:bg-white hover:text-black transition-colors duration-200"
+          className="rounded-full bg-black text-white text-sm px-6 py-2 hover:bg-background hover:text-foreground transition-colors duration-200"
         >
           <img src={eye1.src} alt="Info" className="w-4 h-4" /> View Active Contests
         </Button>
@@ -171,10 +171,10 @@ export default function HomePage() {
       <section className="bg-gradient-to-b from-[#E9E3F5] to-white py-20 px-6 text-center animate-fade-in-up">
         <div className="max-w-5xl mx-auto">
           <h2 className="text-3xl font-semibold">
-            HOW <span className="text-purple-500">MOD</span> WORKS
+            HOW <span className="text-primary">MOD</span> WORKS
           </h2>
 
-          <p className="mt-3 text-sm text-gray-600 max-w-xl mx-auto">
+          <p className="mt-3 text-sm text-muted-foreground max-w-xl mx-auto">
             Fan art has always been part of culture. What's been missing is a clear, legal way for
             it to become official. MOD creates that path.
           </p>
@@ -204,11 +204,11 @@ export default function HomePage() {
           </div>
 
           <div className="mt-8">
-            <div className="bg-purple-500 text-white text-xs px-6 py-3 rounded-full inline-block">
+            <div className="bg-primary text-primary-foreground text-xs px-6 py-3 rounded-full inline-block">
               ✔ Approved designs move forward as officially licensed merchandise.
             </div>
 
-            <p className="mt-3 text-sm text-gray-600 max-w-xl mx-auto">
+            <p className="mt-3 text-sm text-muted-foreground max-w-xl mx-auto">
               No guessing. No copyright gray areas. <br /> Just a process that respects both
               creativity and IP.
             </p>
@@ -223,23 +223,23 @@ export default function HomePage() {
           <div className="bg-black text-white rounded-3xl grid md:grid-cols-2 items-center overflow-hidden">
             <div className="p-10">
               <div className="flex items-center gap-3 mb-4">
-                <span className="w-10 h-10 rounded-full bg-white flex items-center justify-center mb-4">
+                <span className="w-10 h-10 rounded-full bg-background flex items-center justify-center mb-4">
                   <img src={award1.src} alt="Award 1" className="w-6 h-6" />
                 </span>
 
                 <h3 className="text-2xl font-semibold -translate-y-2">Built for Brands</h3>
               </div>
-              <p className="mt-4 text-gray-400 text-sm">
+              <p className="mt-4 text-muted-foreground text-sm">
                 Fans already create artwork inspired by your IP. That doesn't stop whether you
                 engage or not. MOD gives brands a way to participate without losing control.
               </p>
-              <p className="mt-2 text-gray-400 text-sm">
+              <p className="mt-2 text-muted-foreground text-sm">
                 You set the rules. <br />
                 You review submissions. <br />
                 You decide what becomes official. The result is safer fan engagement, licensed fan
                 merchandise, and campaigns that feel intentional instead of risky.
               </p>
-              <p className="mt-2 text-gray-400 text-sm">
+              <p className="mt-2 text-muted-foreground text-sm">
                 For brands that want fan engagement without putting their IP at risk.
               </p>
             </div>
@@ -265,23 +265,23 @@ export default function HomePage() {
             </div>
             <div className="p-10">
               <div className="flex items-center gap-3 mb-4">
-                <span className="w-10 h-10 rounded-full bg-white flex items-center justify-center mb-4">
+                <span className="w-10 h-10 rounded-full bg-background flex items-center justify-center mb-4">
                   <img src={palette.src} alt="Paint Palette" className="w-6 h-6" />
                 </span>
 
                 <h3 className="text-2xl font-semibold -translate-y-2">Built for Artists</h3>
               </div>
-              <p className="mt-4 text-gray-400 text-sm">
+              <p className="mt-4 text-muted-foreground text-sm">
                 Most fan art lives in a legal gray zone.
                 <br /> That makes it hard to share, harder to monetize, and nearly impossible to
                 build a future around. MOD gives artists a real way in.
               </p>
-              <p className="mt-2 text-gray-400 text-sm">
+              <p className="mt-2 text-muted-foreground text-sm">
                 You submit work tied to official fan art contests.
                 <br /> Your designs are reviewed instead of ignored.
                 <br /> If approved, your work becomes licensed merchandise and earns royalties.
               </p>
-              <p className="mt-2 text-gray-400 text-sm">
+              <p className="mt-2 text-muted-foreground text-sm">
                 When your design is selected, it becomes officially licensed merchandise backed by
                 the brand, with real recognition and royalties attached.
               </p>
@@ -293,34 +293,34 @@ export default function HomePage() {
       {/* ================= FEATURED ================= */}
       <section
         id="featured"
-        className="bg-white py-24 px-6 text-center"
+        className="bg-background py-24 px-6 text-center"
         aria-label="Featured campaigns"
       >
         <div className="max-w-6xl mx-auto">
           <h2 className="text-3xl font-semibold">FEATURED CAMPAIGNS</h2>
-          <p className="mt-3 text-sm text-gray-600">
+          <p className="mt-3 text-sm text-muted-foreground">
             MOD runs official fan art licensing campaigns with brands across entertainment, gaming,
             media, and fandom culture.
           </p>
-          <p className="mt-2 text-sm text-gray-600">Each campaign includes:</p>
+          <p className="mt-2 text-sm text-muted-foreground">Each campaign includes:</p>
           <div className="mt-4 flex flex-col items-center gap-3">
             <div className="flex gap-3">
-              <div className="bg-gray-200 text-black font-semibold text-xs px-6 py-3 rounded-full">
+              <div className="bg-muted text-foreground font-semibold text-xs px-6 py-3 rounded-full">
                 ✔ Clear brand guidelines
               </div>
-              <div className="bg-gray-200 text-black font-semibold text-xs px-6 py-3 rounded-full">
+              <div className="bg-muted text-foreground font-semibold text-xs px-6 py-3 rounded-full">
                 ✔ Defined Submission Windows
               </div>
             </div>
             <div className="flex gap-3">
-              <div className="bg-gray-200 text-black font-semibold text-xs px-6 py-3 rounded-full">
+              <div className="bg-muted text-foreground font-semibold text-xs px-6 py-3 rounded-full">
                 ✔ Brand-led Review and Approval
               </div>
-              <div className="bg-gray-200 text-black font-semibold text-xs px-6 py-3 rounded-full">
+              <div className="bg-muted text-foreground font-semibold text-xs px-6 py-3 rounded-full">
                 ✔ Licensed Merchandise Outcomes
               </div>
             </div>
-            <p className="mt-3 text-sm text-gray-600">
+            <p className="mt-3 text-sm text-muted-foreground">
               These aren’t speculative uploads. <br /> They’re structured opportunities backed by
               real IP holders.
             </p>
@@ -334,7 +334,7 @@ export default function HomePage() {
                     flex-shrink-0
                     w-[280px]
                     md:w-[calc((100%-3rem)/3)]
-                    bg-gray-100
+                    bg-muted
                     rounded-xl
                     overflow-hidden
                     transform
@@ -353,7 +353,7 @@ export default function HomePage() {
                   </div>
 
                   <div className="p-4 text-left">
-                    <p className="text-xs text-gray-500 mb-1">
+                    <p className="text-xs text-muted-foreground mb-1">
                       {contest.brandName}
                     </p>
 
@@ -379,7 +379,7 @@ export default function HomePage() {
         <div className="max-w-5xl mx-auto">
           {/* Title */}
           <h2 className="text-4xl font-black text-center tracking-wide mb-12">
-            WHY <span className="text-purple-500">MOD</span> EXISTS
+            WHY <span className="text-primary">MOD</span> EXISTS
           </h2>
 
           {/* Two-column body */}
@@ -389,22 +389,22 @@ export default function HomePage() {
               {[
                 {
                   icon: <img src={idea.src} alt="icon" className="w-5 h-5 object-contain" />,
-                  color: 'bg-[#EBDCF8]',
+                  color: 'bg-primary-subtle',
                   text: "Fan creativity has always driven fandom forward. Licensing systems just weren't built to include it.",
                 },
                 {
                   icon: <img src={award2.src} alt="icon" className="w-5 h-5 object-contain" />,
-                  color: 'bg-[#EBDCF8]',
+                  color: 'bg-primary-subtle',
                   text: 'We believe fan art deserves structure, not chaos. We believe brands should be able to collaborate without risk.',
                 },
                 {
                   icon: <img src={checklist1.src} alt="icon" className="w-5 h-5 object-contain" />,
-                  color: 'bg-[#EBDCF8]',
+                  color: 'bg-primary-subtle',
                   text: 'And we believe official pathways create better outcomes than gray areas ever could.',
                 },
                 {
                   icon: <img src={question1.src} alt="icon" className="w-5 h-5 object-contain" />,
-                  color: 'bg-[#EBDCF8]',
+                  color: 'bg-primary-subtle',
                   text: 'Artists were left guessing what was allowed. Brands were left choosing between enforcement or silence. MOD exists to change that.',
                 },
               ].map(({ icon, color, text }, i) => (
@@ -414,7 +414,7 @@ export default function HomePage() {
                   >
                     {icon}
                   </div>
-                  <p className="text-gray-700 text-sm leading-relaxed">{text}</p>
+                  <p className="text-foreground text-sm leading-relaxed">{text}</p>
                 </div>
               ))}
             </div>
@@ -451,7 +451,7 @@ export default function HomePage() {
           <div className="mt-12 flex justify-center">
             <Button
               onClick={() => router.push('/about')}
-              className="rounded-full px-8 py-2 bg-gray-900 text-white text-sm flex items-center gap-2 hover:bg-gray-700"
+              className="rounded-full px-8 py-2 bg-foreground text-background text-sm flex items-center gap-2 hover:bg-foreground"
             >
               <img src={info.src} alt="Info" className="w-4 h-4" /> About Us
             </Button>
@@ -471,7 +471,7 @@ export default function HomePage() {
           {/* content */}
           <div className="relative z-10 text-center text-white">
             <h2 className="text-4xl font-bold">
-              READY TO <span className="text-purple-400">GET STARTED?</span>
+              READY TO <span className="text-primary">GET STARTED?</span>
             </h2>
             <p className="mt-4 text-gray-300 text-sm">
               Whether you're a brand looking to activate your fandom safely or an artist looking to
@@ -482,7 +482,7 @@ export default function HomePage() {
               {['Explore campaigns', 'Submit artwork', 'Launch brand activation'].map((t, i) => (
                 <div
                   key={i}
-                  className="bg-white/10 px-4 py-2 rounded-full text-xs hover:bg-white/20 transition-colors"
+                  className="bg-background/10 px-4 py-2 rounded-full text-xs hover:bg-background/20 transition-colors"
                 >
                   ✔ {t}
                 </div>
@@ -496,14 +496,14 @@ export default function HomePage() {
             <div className="mt-6 flex justify-center gap-4">
               <Button
                 onClick={() => router.push('/signup')}
-                className="bg-purple-600 rounded-full px-6"
+                className="bg-primary rounded-full px-6"
               >
                 Sign Up Now
               </Button>
               <Button
                 onClick={() => router.push('/contact/sales')}
                 variant="outline"
-                className="text-black rounded-full px-6"
+                className="text-foreground rounded-full px-6"
               >
                 Contact Sales
               </Button>

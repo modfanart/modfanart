@@ -1,6 +1,6 @@
 // Orders API — aligned with backend /orders (licenses module)
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import type { Order } from '@/types/merch';
+import type { Order } from '@/services/types/merch';
 import { API_BASE_URL } from '..';
 
 export const ordersApi = createApi({

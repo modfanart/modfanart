@@ -1,3 +1,6 @@
+/** Resolve a design token CSS variable, keeping Tailwind opacity modifiers. */
+const tok = (name) => `hsl(var(--${name}) / <alpha-value>)`;
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: ['class'],
@@ -17,40 +20,71 @@ module.exports = {
       },
     },
     extend: {
+      // Design tokens: every colour maps to a CSS variable in styles/globals.css.
+      // `primary` and `destructive` used to be hard-coded hex here, which
+      // bypassed the CSS variables (and dark mode) entirely.
+      fontFamily: {
+        // layout.tsx loads Mona Sans into --font-sans, but Tailwind's font-sans
+        // never pointed at it, so the brand font was not applied anywhere.
+        sans: ['var(--font-sans)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+      },
       colors: {
-        border: 'hsl(var(--border))',
-        input: 'hsl(var(--input))',
-        ring: 'hsl(var(--ring))',
-        background: 'hsl(var(--background))',
-        foreground: 'hsl(var(--foreground))',
+        border: tok('border'),
+        input: tok('input'),
+        ring: tok('ring'),
+        background: tok('background'),
+        foreground: tok('foreground'),
         primary: {
-          DEFAULT: '#9747ff',
-          foreground: '#ffffff',
+          DEFAULT: tok('primary'),
+          foreground: tok('primary-foreground'),
+          hover: tok('primary-hover'),
+          subtle: tok('primary-subtle'),
         },
-        secondary: {
-          DEFAULT: 'hsl(var(--secondary))',
-          foreground: 'hsl(var(--secondary-foreground))',
-        },
+        secondary: { DEFAULT: tok('secondary'), foreground: tok('secondary-foreground') },
         destructive: {
-          DEFAULT: '#df403e',
-          foreground: '#ffffff',
+          DEFAULT: tok('destructive'),
+          foreground: tok('destructive-foreground'),
+          subtle: tok('destructive-subtle'),
         },
-        muted: {
-          DEFAULT: 'hsl(var(--muted))',
-          foreground: 'hsl(var(--muted-foreground))',
+        success: {
+          DEFAULT: tok('success'),
+          foreground: tok('success-foreground'),
+          subtle: tok('success-subtle'),
         },
-        accent: {
-          DEFAULT: 'hsl(var(--accent))',
-          foreground: 'hsl(var(--accent-foreground))',
+        warning: {
+          DEFAULT: tok('warning'),
+          foreground: tok('warning-foreground'),
+          strong: tok('warning-strong'),
+          subtle: tok('warning-subtle'),
         },
-        popover: {
-          DEFAULT: 'hsl(var(--popover))',
-          foreground: 'hsl(var(--popover-foreground))',
+        info: {
+          DEFAULT: tok('info'),
+          foreground: tok('info-foreground'),
+          subtle: tok('info-subtle'),
         },
-        card: {
-          DEFAULT: 'hsl(var(--card))',
-          foreground: 'hsl(var(--card-foreground))',
+        muted: { DEFAULT: tok('muted'), foreground: tok('muted-foreground') },
+        accent: { DEFAULT: tok('accent'), foreground: tok('accent-foreground') },
+        popover: { DEFAULT: tok('popover'), foreground: tok('popover-foreground') },
+        card: { DEFAULT: tok('card'), foreground: tok('card-foreground') },
+        chart: {
+          1: tok('chart-1'),
+          2: tok('chart-2'),
+          3: tok('chart-3'),
+          4: tok('chart-4'),
+          5: tok('chart-5'),
         },
+        sidebar: {
+          DEFAULT: tok('sidebar-background'),
+          foreground: tok('sidebar-foreground'),
+          primary: tok('sidebar-primary'),
+          'primary-foreground': tok('sidebar-primary-foreground'),
+          accent: tok('sidebar-accent'),
+          'accent-foreground': tok('sidebar-accent-foreground'),
+          border: tok('sidebar-border'),
+          ring: tok('sidebar-ring'),
+        },
+        // Raw brand palette, kept for backwards compatibility. Prefer the
+        // semantic tokens above in new code.
         mod: {
           purple: '#9747ff',
           green: '#129900',

@@ -39,7 +39,7 @@ export function OpportunityEntry({ entry, onUpdateStatus, onDelete }: Opportunit
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'approved':
-        return <Badge className="bg-green-500">Approved</Badge>;
+        return <Badge className="bg-success">Approved</Badge>;
       case 'rejected':
         return <Badge variant="destructive">Rejected</Badge>;
       case 'pending':
@@ -77,11 +77,11 @@ export function OpportunityEntry({ entry, onUpdateStatus, onDelete }: Opportunit
                 View
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => onUpdateStatus(entry.id, 'approved')}>
-                <Check className="mr-2 h-4 w-4 text-green-500" />
+                <Check className="mr-2 h-4 w-4 text-success" />
                 Approve
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => onUpdateStatus(entry.id, 'rejected')}>
-                <X className="mr-2 h-4 w-4 text-red-500" />
+                <X className="mr-2 h-4 w-4 text-destructive" />
                 Reject
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => onDelete(entry.id)}>

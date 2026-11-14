@@ -86,10 +86,11 @@ export function ManageOpportunityContent({
   brandSlug,
 }: {
   opportunityId: string;
-  brandSlug: string;
+  /** @deprecated brand comes from the session now */
+  brandSlug?: string;
 }) {
   const router = useRouter();
-  const opportunitiesBase = `/brand-manager/${brandSlug}/opportunities`;
+  const opportunitiesBase = `/dashboard/opportunities`;
 
   // State
   const [searchQuery, setSearchQuery] = useState('');
@@ -392,27 +393,27 @@ export function ManageOpportunityContent({
   const getEntryRowStyles = (status: string) => {
     switch (status) {
       case 'approved':
-        return 'border-l-4 border-l-green-500 bg-green-50/40';
+        return 'border-l-4 border-l-success bg-success-subtle/40';
       case 'rejected':
-        return 'border-l-4 border-l-red-500 bg-red-50/30';
+        return 'border-l-4 border-l-destructive bg-destructive-subtle/30';
       case 'winner':
-        return 'border-l-4 border-l-amber-500 bg-amber-50/50';
+        return 'border-l-4 border-l-warning-strong bg-warning-subtle/50';
       case 'pending':
       default:
-        return 'border-l-4 border-l-gray-300';
+        return 'border-l-4 border-l-border';
     }
   };
 
   const getContestStatusBadgeVariant = (status: string) => {
     const map: Record<string, string> = {
-      live: 'bg-green-100 text-green-800',
-      published: 'bg-green-100 text-green-800',
-      judging: 'bg-purple-100 text-purple-800',
-      completed: 'bg-blue-100 text-blue-800',
-      archived: 'bg-gray-100 text-gray-800',
-      draft: 'bg-amber-100 text-amber-800',
+      live: 'bg-success-subtle text-success',
+      published: 'bg-success-subtle text-success',
+      judging: 'bg-primary-subtle text-primary-hover',
+      completed: 'bg-info-subtle text-info',
+      archived: 'bg-muted text-foreground',
+      draft: 'bg-warning-subtle text-warning-strong',
     };
-    return map[status] || 'bg-gray-100 text-gray-800';
+    return map[status] || 'bg-muted text-foreground';
   };
 
   // Filtering and search are done server-side now, so the accumulated list is
@@ -919,7 +920,7 @@ function EntryRow({
             <Button
               variant="ghost"
               size="icon"
-              className="text-green-600 hover:text-green-700"
+              className="text-success hover:text-success"
               disabled={entry.status === 'approved' || isUpdating}
               onClick={(e) => {
                 e.stopPropagation();
@@ -937,7 +938,7 @@ function EntryRow({
             <Button
               variant="ghost"
               size="icon"
-              className="text-red-600 hover:text-red-700"
+              className="text-destructive hover:text-destructive"
               disabled={entry.status === 'rejected' || isUpdating}
               onClick={(e) => {
                 e.stopPropagation();
@@ -957,12 +958,12 @@ function EntryRow({
 function StatusBadge({ status }: { status: string }) {
   switch (status) {
     case 'approved':
-      return <Badge className="bg-green-600">Approved</Badge>;
+      return <Badge className="bg-success">Approved</Badge>;
     case 'rejected':
       return <Badge variant="destructive">Rejected</Badge>;
     case 'winner':
       return (
-        <Badge className="bg-amber-500 flex items-center gap-1">
+        <Badge className="bg-warning-strong flex items-center gap-1">
           <Trophy className="h-3.5 w-3.5" /> Winner
         </Badge>
       );
@@ -1038,7 +1039,7 @@ function EntryDetailDialog({
                 <Button
                   onClick={() => onStatusChange(entry.id, 'approved')}
                   disabled={isUpdating}
-                  className="flex-1 bg-green-600 hover:bg-green-700"
+                  className="flex-1 bg-success hover:bg-success/90"
                 >
                   <Check className="mr-2 h-4 w-4" />
                   Approve

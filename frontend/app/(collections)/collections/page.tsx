@@ -141,7 +141,7 @@ export default function CollectionsPage() {
             <Button
               onClick={handleCreateCollection}
               disabled={isCreating}
-              className="bg-primary text-white shadow-md gap-2"
+              className="bg-primary text-primary-foreground shadow-md gap-2"
             >
               <Plus className="h-4 w-4" />
               {isCreating ? 'Creating...' : 'New Collection'}
@@ -159,7 +159,7 @@ export default function CollectionsPage() {
               className={cn(
                 'rounded-full px-5 py-2 flex items-center gap-2 text-sm',
                 activeTab === tab.id
-                  ? 'bg-primary text-white shadow'
+                  ? 'bg-primary text-primary-foreground shadow'
                   : 'text-muted-foreground hover:bg-muted'
               )}
             >
@@ -194,7 +194,7 @@ export default function CollectionsPage() {
             <p className="text-muted-foreground mt-2 mb-6">Start building your personal gallery</p>
 
             {activeTab === 'my-collections' && (
-              <Button onClick={handleCreateCollection} className="bg-primary text-white">
+              <Button onClick={handleCreateCollection} className="bg-primary text-primary-foreground">
                 Create your first collection
               </Button>
             )}
@@ -204,7 +204,7 @@ export default function CollectionsPage() {
             {collections.map((collection) => (
               <Link
                 key={collection.id}
-                href={`/collections/${collection.slug || collection.id}`}
+                href={`/collection/${collection.id}`}
                 className="group"
               >
                 <Card className="overflow-hidden rounded-2xl hover:shadow-xl transition-all duration-300">
@@ -225,7 +225,7 @@ export default function CollectionsPage() {
 
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
 
-                    <Badge className="absolute top-3 left-3 bg-primary text-white">
+                    <Badge className="absolute top-3 left-3 bg-primary text-primary-foreground">
                       <Sparkles className="h-3 w-3 mr-1" />
                       Featured
                     </Badge>

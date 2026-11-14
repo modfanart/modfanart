@@ -30,23 +30,24 @@ const CONTEST_ID = '187a7316-1861-45a3-8d2c-c3e8700de210';
 const CONTEST_SLUG = 'the-librarians-2026';
 const TOKEN = 'k1Qw8ZvR';
 
-const judgeBase = `/judge/${USERNAME}`;
+// Judge area moved under the short dashboard prefix (no username in URLs).
+const judgeBase = `/dashboard/judging`;
 
 /** Every link reachable from the judge area, with where it is built. */
 const LINKS: Array<{ where: string; url: string }> = [
   { where: 'JudgeDashboardContent: View My Profile', url: `/u/${USERNAME}` },
-  { where: 'JudgeDashboardContent: Start', url: `${judgeBase}/contest/${CONTEST_ID}` },
+  { where: 'JudgeDashboardContent: Start', url: `${judgeBase}/${CONTEST_ID}` },
   { where: 'JudgeDashboardContent: eye / view contest', url: `/contest/${CONTEST_ID}` },
-  { where: 'judge contest page: Review Queue', url: `${judgeBase}/contest/${CONTEST_ID}/review-queue` },
-  { where: 'opportunities: Start / View', url: `${judgeBase}/contest/${CONTEST_ID}` },
-  { where: 'opportunities: Standings', url: `${judgeBase}/results/${CONTEST_ID}` },
+  { where: 'judge contest page: Review Queue', url: `${judgeBase}/${CONTEST_ID}/review-queue` },
+  { where: 'opportunities: Start / View', url: `${judgeBase}/${CONTEST_ID}` },
+  { where: 'opportunities: Standings', url: `${judgeBase}/${CONTEST_ID}/results` },
   { where: 'sidebar: Judging', url: judgeBase },
   { where: 'sidebar: Overview', url: judgeBase },
   { where: 'sidebar: Opportunities', url: `${judgeBase}/opportunities` },
   { where: 'invite: complete step', url: `/judge/invite/${TOKEN}/complete` },
   { where: 'invite complete: back to invite', url: `/judge/invite/${TOKEN}` },
   { where: 'invite complete: go to dashboard', url: judgeBase },
-  { where: 'redeemInviteLink redirect_to', url: `${judgeBase}/contest/${CONTEST_ID}` },
+  { where: 'redeemInviteLink redirect_to', url: `${judgeBase}/${CONTEST_ID}` },
 ];
 
 /** URLs that must NOT resolve. These are the shapes that shipped broken. */
@@ -54,6 +55,7 @@ const REGRESSIONS: Array<{ why: string; url: string }> = [
   { why: 'Start built from the slug under /contest', url: `/contest/${CONTEST_SLUG}/judge` },
   { why: 'Review Queue when getBasePath returns null', url: `/null/contest/${CONTEST_ID}/review-queue` },
   { why: 'Review Queue for a judge whose role is ARTIST', url: `/artist/${USERNAME}/contest/${CONTEST_ID}/review-queue` },
+  { why: 'old username-scoped judge URL', url: `/judge/${USERNAME}/contest/${CONTEST_ID}` },
 ];
 
 function main() {
@@ -97,9 +99,9 @@ function main() {
   // the shapes are routable but not that the components still build them, so
   // grep the sources for the two constructs that caused the bug.
   const SOURCES = [
-    'app/(dashboard)/judge/[judgeId]/JudgeDashboardContent.tsx',
-    'app/(dashboard)/judge/[judgeId]/contest/[contestId]/page.tsx',
-    'app/(dashboard)/judge/[judgeId]/opportunities/page.tsx',
+    'app/(dashboard)/dashboard/judging/JudgeDashboardContent.tsx',
+    'app/(dashboard)/dashboard/judging/[contestId]/page.tsx',
+    'app/(dashboard)/dashboard/judging/opportunities/page.tsx',
   ];
   const BANNED = [
     { pattern: /href=\{`[^`]*\$\{contest\.slug\}/, why: 'href built from contest.slug; routes and the API both key on id' },

@@ -12,6 +12,7 @@ async function createProduct(data, trx = db) {
       artwork_id: data.artwork_id || null,
       license_id: data.license_id || null,
       title: data.title,
+      slug: data.slug,
       description: data.description || null,
       base_product_type: data.base_product_type,
       fulfillment_type: data.fulfillment_type,
@@ -194,6 +195,7 @@ function enrichedProductQuery(trx = db) {
       'mp.artwork_id',
       'mp.license_id',
       'mp.title',
+      'mp.slug',
       'mp.description',
       'mp.base_product_type',
       'mp.fulfillment_type',
@@ -320,6 +322,11 @@ async function findEnrichedById(id, trx = db) {
   return enrichedProductQuery(trx).where('mp.id', '=', id).executeTakeFirst();
 }
 
+/** Public product URLs use the slug: /marketplace/product/<slug>. */
+async function findEnrichedBySlug(slug, trx = db) {
+  return enrichedProductQuery(trx).where('mp.slug', '=', String(slug).toLowerCase()).executeTakeFirst();
+}
+
 async function listPrintProviders(trx = db) {
   return trx
     .selectFrom('print_providers')
@@ -349,6 +356,7 @@ async function getSellerSalesSummary(sellerId, trx = db) {
 }
 
 module.exports = {
+  findEnrichedBySlug,
   createProduct,
   findProductById,
   findProductsBySeller,

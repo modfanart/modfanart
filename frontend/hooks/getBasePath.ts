@@ -1,29 +1,13 @@
-export function getBasePath(user: any) {
-  const roleRaw = user?.role?.name;
-  const role = roleRaw?.toLowerCase();
+import { DASHBOARD, dashboardRole } from '@/lib/dashboard-routes';
 
-  if (role === 'artist') {
-    const username = user?.username?.trim().toLowerCase();
-    return username ? `/artist/${username}` : null;
-  }
-
-  if (role === 'brand_manager' || role === 'brand_owner') {
-    const brandSlug = user?.brands?.[0]?.slug;
-    return brandSlug ? `/brand-manager/${brandSlug}` : null;
-  }
-
-  if (role === 'judge') {
-    const username = user?.username?.trim().toLowerCase();
-    return username ? `/judge/${username}` : null;
-  }
-
-  if (role === 'seller') {
-    const username = user?.username?.trim().toLowerCase();
-    return username ? `/seller/${username}` : null;
-  }
-  if (role === 'admin' || role === 'super_admin' || role === 'developer') {
-    return `/admin/${roleRaw}`;
-  }
-
+/**
+ * Where a user's dashboard lives, or null if their role has none.
+ * Every role now shares the short /dashboard prefix; the username / brand
+ * slug segments were removed from dashboard URLs.
+ */
+export function getBasePath(user: any): string | null {
+  const role = dashboardRole(user?.role?.name);
+  if (role) return DASHBOARD;
+  if ((user?.role?.name || '').toLowerCase() === 'judge') return `${DASHBOARD}/judging`;
   return null;
 }

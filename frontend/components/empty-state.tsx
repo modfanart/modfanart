@@ -48,7 +48,7 @@ export function EmptyState({
 
       {actionLink && (
         <Link href={actionLink}>
-          <Button className="bg-[#9747ff] hover:bg-[#8035e0]">
+          <Button className="bg-primary hover:bg-primary-hover">
             <PlusCircle className="mr-2 h-4 w-4" />
             {actionLabel}
           </Button>

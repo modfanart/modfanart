@@ -2,3 +2,10 @@ node_modules
 npm-debug.log
 .git
 .env
+# Keep secrets, internal data and dev-only files out of the image
+.env*
+*.pem
+*-firebase-adminsdk-*.json
+output.json
+src/scripts/data
+tests

@@ -7,6 +7,8 @@ const {
 } = require('../../../common/utils/password.util');
 const { db } = require('../../../config');
 const { sql } = require('kysely'); // ← Critical fix for sql`NOW()`
+const { isAdminUser } = require('../../../common/middleware/require-admin');
+const { CURRENT_TERMS_VERSION, standingProblem } = require('../../../common/policy');
 const UserStatsService = require('../services/userStats.service');
 const CDNFileService = require('../../cdn/services/cdn-file.service');
 const CDNFile = require('../../cdn/models/cdn-file.model');
@@ -52,7 +54,9 @@ class UserController {
           'roles.name as role_name',
           'roles.hierarchy_level as role_hierarchy_level',
         ])
-        .where('users.username', 'ilike', cleanUsername)
+        // Exact, case-insensitive match. `ilike` treated '_' and '%' in usernames
+        // as wildcards, so /u/qa_test_artist could resolve to a different user.
+        .where(sql`lower(users.username)`, '=', cleanUsername)
         .where('users.status', '=', 'active')
         .where('users.deleted_at', 'is', null)
         .executeTakeFirst();
@@ -90,7 +94,6 @@ class UserController {
         // 🔥 ADD STATS HERE
         stats,
       };
-      console.log(publicUser);
       return res.status(200).json({
         success: true,
         user: publicUser,
@@ -110,6 +113,36 @@ class UserController {
       });
     }
   }
+  // POST /users/me/consent  { termsVersion, ageConfirmed }   (GA-22)
+  static async recordConsent(req, res) {
+    try {
+      const { termsVersion, ageConfirmed } = req.body || {};
+      if (termsVersion !== CURRENT_TERMS_VERSION) {
+        return res.status(400).json({
+          error: 'Please accept the current version of the terms.',
+          current_terms_version: CURRENT_TERMS_VERSION,
+        });
+      }
+      if (ageConfirmed !== true) {
+        return res.status(400).json({ error: 'You must confirm you are 18 or older.' });
+      }
+      await db
+        .updateTable('users')
+        .set({
+          accepted_terms_version: CURRENT_TERMS_VERSION,
+          accepted_terms_at: sql`NOW()`,
+          age_confirmed_at: sql`coalesce(age_confirmed_at, NOW())`,
+          updated_at: sql`NOW()`,
+        })
+        .where('id', '=', req.user.id)
+        .execute();
+      return res.json({ success: true, accepted_terms_version: CURRENT_TERMS_VERSION });
+    } catch (error) {
+      console.error('[recordConsent]', error);
+      return res.status(500).json({ error: 'Failed to record consent' });
+    }
+  }
+
   static async getCurrentUser(req, res) {
     try {
       // 1. Ensure user is authenticated (from auth middleware)
@@ -142,6 +175,8 @@ class UserController {
           'users.username',
           'users.email',
           'users.email_verified',
+          'users.accepted_terms_version',
+          'users.age_confirmed_at',
           'users.status',
           'users.profile', // JSONB
           'users.avatar_url',
@@ -193,7 +228,15 @@ class UserController {
           id: user.id,
           username: user.username,
           email: user.email,
-          email_verified: user.email_verified,
+          // Prefer the live Firebase claim (set by authenticateToken).
+          email_verified: req.user?.email_verified ?? user.email_verified,
+          accepted_terms_version: user.accepted_terms_version ?? null,
+          age_confirmed: Boolean(user.age_confirmed_at),
+          current_terms_version: CURRENT_TERMS_VERSION,
+          standing: standingProblem({
+            ...user,
+            email_verified: req.user?.email_verified ?? user.email_verified,
+          })?.code ?? 'ok',
           status: user.status,
           role_id: user.role_id,
           role: {
@@ -605,13 +648,9 @@ class UserController {
    */
   static async updateUserStatus(req, res) {
     try {
-      console.log('REQ.USER:', req.user);
-
-      const currentRole = await Role.findById(req.user.role_id);
-      console.log('CURRENT ROLE:', currentRole);
-      if (!currentRole || currentRole.hierarchy_level < 90) {
-        return res.status(403).json({ error: 'Access denied' });
-      }
+      // Admin gate is enforced by requireAdmin on the route. The previous
+      // in-handler check read req.user.role_id, which authenticateToken
+      // deletes, so it rejected every caller (including real admins).
       const { status } = req.body;
       const allowedStatuses = [
         'active',
@@ -678,7 +717,16 @@ class UserController {
       const search = rawSearch
         ? rawSearch.replace(/[\\%_]/g, '\\$&')
         : rawSearch;
-      const statusFilter = req.query.status;
+      let statusFilter = req.query.status;
+
+      // Public callers may only browse active artists, and never see emails.
+      const isAdmin = isAdminUser(req.user);
+      if (!isAdmin) {
+        if (!['ARTIST'].includes(cleanRoleName.toUpperCase())) {
+          return res.status(403).json({ success: false, message: 'Not allowed' });
+        }
+        statusFilter = 'active';
+      }
 
       // Base query with role join
       let query = req.db
@@ -701,7 +749,7 @@ class UserController {
           'r.name as role_name',
           'r.hierarchy_level',
         ])
-        .where('r.name', '=', cleanRoleName) // ← Changed to role.name
+        .where(sql`upper(r.name)`, '=', cleanRoleName.toUpperCase())
         .where('u.deleted_at', 'is', null);
 
       // Optional search
@@ -709,7 +757,7 @@ class UserController {
         query = query.where((eb) =>
           eb.or([
             eb('u.username', 'ilike', `%${search}%`),
-            eb('u.email', 'ilike', `%${search}%`),
+            ...(isAdmin ? [eb('u.email', 'ilike', `%${search}%`)] : []),
             eb('u.bio', 'ilike', `%${search}%`),
           ])
         );
@@ -725,7 +773,7 @@ class UserController {
         .selectFrom('users as u')
         .innerJoin('roles as r', 'u.role_id', 'r.id')
         .select(req.db.fn.count('u.id').as('total'))
-        .where('r.name', '=', cleanRoleName) // ← Changed to role.name
+        .where(sql`upper(r.name)`, '=', cleanRoleName.toUpperCase())
         .where('u.deleted_at', 'is', null);
 
       if (search) {
@@ -734,7 +782,7 @@ class UserController {
         countQuery = countQuery.where((eb) =>
           eb.or([
             eb('u.username', 'ilike', `%${search}%`),
-            eb('u.email', 'ilike', `%${search}%`),
+            ...(isAdmin ? [eb('u.email', 'ilike', `%${search}%`)] : []),
             eb('u.bio', 'ilike', `%${search}%`),
           ])
         );
@@ -758,8 +806,7 @@ class UserController {
       const users = usersResult.map((user) => ({
         id: user.id,
         username: user.username,
-        email: user.email,
-        email_verified: user.email_verified,
+        ...(isAdmin ? { email: user.email, email_verified: user.email_verified } : {}),
         status: user.status,
         avatar_url: user.avatar_url,
         banner_url: user.banner_url,

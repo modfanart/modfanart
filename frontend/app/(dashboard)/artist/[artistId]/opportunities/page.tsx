@@ -218,7 +218,7 @@ function EmptyState({ isClosed = false }: { isClosed?: boolean }) {
           : "You haven't submitted to any opportunities yet."}
       </p>
       <Button asChild className="mt-6">
-        <Link href="/opportunities">Browse Opportunities</Link>
+        <Link href="/explore/contests">Browse Opportunities</Link>
       </Button>
     </div>
   );

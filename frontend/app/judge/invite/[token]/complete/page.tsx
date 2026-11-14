@@ -54,7 +54,7 @@ export default function JudgeInviteCompletePage() {
           <AlertTriangle className="h-10 w-10 text-muted-foreground mx-auto" />
           <p className="text-lg font-semibold">Couldn&apos;t open this invite</p>
           <p className="text-sm text-muted-foreground">{error}</p>
-          <Link href={user?.username ? `/judge/${user.username.toLowerCase()}` : '/login'} className="text-sm underline">
+          <Link href={user ? '/dashboard/judging' : '/login'} className="text-sm underline">
             Go to your judge dashboard
           </Link>
         </div>

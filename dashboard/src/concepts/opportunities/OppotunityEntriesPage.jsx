@@ -24,13 +24,15 @@ import {
   useGetContestQuery
 } from '../../services/api/contestsApi';
 
-const entryStatusFlow = ['submitted', 'under_review', 'approved', 'rejected'];
+const entryStatusFlow = ['pending', 'approved', 'rejected', 'winner'];
 
 const StatusBadge = ({ status }) => {
   const statusClasses = {
+    pending: 'status-pending',
     submitted: 'status-pending',
     under_review: 'status-in_progress',
     approved: 'status-completed',
+    winner: 'status-completed',
     rejected: 'status-rejected',
   };
 
@@ -111,10 +113,10 @@ export const OpportunityEntriesPage = () => {
 
             <SelectContent className="bg-zinc-900 border-zinc-800">
               <SelectItem value="all">All</SelectItem>
-              <SelectItem value="submitted">Submitted</SelectItem>
-              <SelectItem value="under_review">Under Review</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="approved">Approved</SelectItem>
               <SelectItem value="rejected">Rejected</SelectItem>
+              <SelectItem value="winner">Winner</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -138,6 +140,7 @@ export const OpportunityEntriesPage = () => {
               <table className="data-table">
                 <thead>
                   <tr>
+                    <th>Thumbnail</th>
                     <th>Artwork</th>
                     <th>Artist</th>
                     <th>Status</th>
@@ -147,68 +150,106 @@ export const OpportunityEntriesPage = () => {
                 </thead>
 
                 <tbody>
-                  {filteredEntries.map((entry) => (
-                    <tr key={entry.id}>
+                  {filteredEntries.map((entry) => {
+                    const artwork = entry.artwork || {};
+                    const creator = entry.creator || {};
+                    const thumbUrl =
+                      artwork.thumbnail_url ||
+                      artwork.preview_url ||
+                      artwork.file_url ||
+                      null;
+                    const title =
+                      artwork.title ||
+                      entry.artwork_title ||
+                      'Untitled';
+                    const artistName =
+                      creator.username ||
+                      entry.artist_name ||
+                      entry.creator_name ||
+                      'Unknown';
 
-                      {/* Artwork */}
-                      <td className="text-white font-medium">
-                        {entry.artwork_title || 'Untitled'}
-                      </td>
+                    return (
+                      <tr key={entry.id}>
+                        {/* Thumbnail */}
+                        <td className="w-16">
+                          <div className="w-12 h-12 rounded-md overflow-hidden bg-zinc-800 flex-shrink-0">
+                            {thumbUrl ? (
+                              <img
+                                src={thumbUrl}
+                                alt={title}
+                                className="w-full h-full object-cover"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-zinc-600 text-xs">
+                                —
+                              </div>
+                            )}
+                          </div>
+                        </td>
 
-                      {/* Artist */}
-                      <td className="text-zinc-400">
-                        {entry.artist_name}
-                      </td>
+                        {/* Artwork title */}
+                        <td className="text-white font-medium">
+                          {title}
+                        </td>
 
-                      {/* Status */}
-                      <td>
-                        <StatusBadge status={entry.status} />
-                      </td>
+                        {/* Artist */}
+                        <td className="text-zinc-400">
+                          {artistName}
+                        </td>
 
-                      {/* Date */}
-                      <td className="text-zinc-500 text-sm">
-                        {new Date(entry.created_at).toLocaleDateString()}
-                      </td>
+                        {/* Status */}
+                        <td>
+                          <StatusBadge status={entry.status} />
+                        </td>
 
-                      {/* Actions */}
-                      <td className="flex items-center gap-2">
+                        {/* Date */}
+                        <td className="text-zinc-500 text-sm">
+                          {entry.created_at
+                            ? new Date(entry.created_at).toLocaleDateString()
+                            : '—'}
+                        </td>
 
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-zinc-400 hover:text-white"
-                          onClick={() =>
-                            navigate(`/opportunities/${contestId}/entries/${entry.id}`)
-                          }
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-
-                        {/* Moderation */}
-                        {canModerate && (
-                          <Select
-                            value={entry.status}
-                            onValueChange={(val) =>
-                              handleStatusChange(entry.id, val)
+                        {/* Actions */}
+                        <td className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-zinc-400 hover:text-white"
+                            onClick={() =>
+                              navigate(
+                                `/opportunities/${contestId}/entries/${entry.id}`
+                              )
                             }
                           >
-                            <SelectTrigger className="w-36 h-8 bg-zinc-950 border-zinc-800 text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
+                            <Eye className="w-4 h-4" />
+                          </Button>
 
-                            <SelectContent className="bg-zinc-900 border-zinc-800">
-                              {entryStatusFlow.map((s) => (
-                                <SelectItem key={s} value={s}>
-                                  {s.replace('_', ' ')}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
+                          {/* Moderation */}
+                          {canModerate && (
+                            <Select
+                              value={entry.status}
+                              onValueChange={(val) =>
+                                handleStatusChange(entry.id, val)
+                              }
+                            >
+                              <SelectTrigger className="w-36 h-8 bg-zinc-950 border-zinc-800 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
 
-                      </td>
-                    </tr>
-                  ))}
+                              <SelectContent className="bg-zinc-900 border-zinc-800">
+                                {entryStatusFlow.map((s) => (
+                                  <SelectItem key={s} value={s}>
+                                    {s.replace('_', ' ')}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
 
               </table>

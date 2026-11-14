@@ -142,11 +142,11 @@ export function ContactSalesPage() {
       </div>
 
       <div className="mb-10 md:mb-12 text-center">
-        <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-gray-900">
+        <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground">
           Request a Brand Demo
         </h1>
 
-        <p className="mt-4 text-lg md:text-xl text-gray-600 max-w-3xl mx-auto">
+        <p className="mt-4 text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
           Submit your brand details below. Our team will review your request, schedule an onboarding call, 
           and set up a dedicated brand manager account for you or your team.
         </p>
@@ -306,7 +306,7 @@ export function ContactSalesPage() {
 
                     {/* Demo Interest */}
 
-                    <div className="rounded-xl border bg-slate-50 p-6">
+                    <div className="rounded-xl border bg-muted p-6">
                       <h3 className="font-semibold text-lg mb-4">
                         What are you most interested in?
                       </h3>
@@ -451,14 +451,14 @@ export function ContactSalesPage() {
 
                     {/* What Happens Next */}
 
-                    <div className="rounded-xl border p-6 bg-white">
+                    <div className="rounded-xl border p-6 bg-background">
                       <h3 className="font-semibold text-lg mb-5">
                         What Happens Next?
                       </h3>
 
                       <div className="space-y-5">
                         <div className="flex gap-4">
-                          <FileText className="h-5 w-5 text-violet-600 mt-1" />
+                          <FileText className="h-5 w-5 text-primary mt-1" />
                           <div>
                             <h4 className="font-medium">Review</h4>
                             <p className="text-sm text-muted-foreground">
@@ -469,7 +469,7 @@ export function ContactSalesPage() {
                         </div>
 
                         <div className="flex gap-4">
-                          <Mail className="h-5 w-5 text-violet-600 mt-1" />
+                          <Mail className="h-5 w-5 text-primary mt-1" />
                           <div>
                             <h4 className="font-medium">Email Outreach</h4>
                             <p className="text-sm text-muted-foreground">
@@ -479,7 +479,7 @@ export function ContactSalesPage() {
                         </div>
 
                         <div className="flex gap-4">
-                          <Users className="h-5 w-5 text-violet-600 mt-1" />
+                          <Users className="h-5 w-5 text-primary mt-1" />
                           <div>
                             <h4 className="font-medium">Personalized Demo</h4>
                             <p className="text-sm text-muted-foreground">
@@ -490,7 +490,7 @@ export function ContactSalesPage() {
                       </div>
                     </div>
 
-                    <div className="rounded-xl bg-violet-50 border border-violet-200 p-5">
+                    <div className="rounded-xl bg-primary-subtle border border-primary/30 p-5">
                       <p className="font-medium mb-2">
                         Average response time: 1–2 business days
                       </p>
@@ -504,7 +504,7 @@ export function ContactSalesPage() {
                     <Button
                       type="submit"
                       disabled={isSubmitting}
-                      className="w-full h-12 text-lg bg-violet-600 hover:bg-violet-700"
+                      className="w-full h-12 text-lg bg-primary hover:bg-primary-hover"
                     >
                       {isSubmitting
                         ? 'Submitting...'
@@ -518,13 +518,13 @@ export function ContactSalesPage() {
           ) : (
             <Card className="border-none shadow-lg">
               <CardContent className="py-16 text-center">
-                <CheckCircle className="h-20 w-20 text-green-500 mx-auto mb-6" />
+                <CheckCircle className="h-20 w-20 text-success mx-auto mb-6" />
 
                 <h2 className="text-3xl font-bold mb-4">
                   Request Submitted
                 </h2>
 
-                <p className="text-gray-600 max-w-xl mx-auto mb-8">
+                <p className="text-muted-foreground max-w-xl mx-auto mb-8">
                   Thank you for your interest in MOD. Our team will review your
                   information and contact you within 1–2 business days to schedule
                   your personalized demo.

@@ -470,7 +470,8 @@ function VariantsCard({
     try {
       await add({
         productId,
-        sku: form.sku.trim(),
+        // Blank = the API generates a readable SKU (e.g. TEE-LIBRARY-TEE-BLK-M).
+        ...(form.sku.trim() ? { sku: form.sku.trim().toUpperCase() } : {}),
         size: form.size.trim() || null,
         color: form.color.trim() || null,
         material: form.material.trim() || null,
@@ -520,8 +521,14 @@ function VariantsCard({
           <h3 className="text-sm font-medium">Add a variant</h3>
           <div className="grid gap-3 sm:grid-cols-3">
             <div>
-              <Label htmlFor="v-sku">SKU</Label>
-              <Input id="v-sku" required className="mt-1" value={form.sku} onChange={(e) => set('sku', e.target.value)} />
+              <Label htmlFor="v-sku">SKU (optional)</Label>
+              <Input
+                id="v-sku"
+                className="mt-1 font-mono uppercase"
+                placeholder="Auto-generated if left blank"
+                value={form.sku}
+                onChange={(e) => set('sku', e.target.value)}
+              />
             </div>
             <div>
               <Label htmlFor="v-size">Size</Label>
@@ -550,7 +557,7 @@ function VariantsCard({
               <Input id="v-file" type="url" className="mt-1" placeholder="https://…" value={form.print_file_url} onChange={(e) => set('print_file_url', e.target.value)} />
             </div>
           </div>
-          <Button type="submit" disabled={adding || !form.sku.trim() || form.price_usd === '' || Number.isNaN(parseFloat(form.price_usd))}>
+          <Button type="submit" disabled={adding || form.price_usd === '' || Number.isNaN(parseFloat(form.price_usd))}>
             <Plus className="mr-2 h-4 w-4" /> {adding ? 'Adding…' : 'Add variant'}
           </Button>
         </form>

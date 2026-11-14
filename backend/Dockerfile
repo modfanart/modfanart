@@ -1,21 +1,23 @@
-# Use Node LTS
-FROM node:18
+# Node 18 reached end-of-life in April 2025 (no security patches).
+FROM node:22-slim
 
-# Create app directory
 WORKDIR /app
 
-# Install dependencies
+# Production mode: without this NODE_ENV was unset, so the API ran in
+# "development" mode in production - request bodies (including passwords
+# on /auth/workspace/login) were logged and 5xx responses leaked internals.
+ENV NODE_ENV=production
+
+# Reproducible, production-only install.
 COPY package*.json ./
-RUN npm install
+RUN npm ci --omit=dev
 
-# Copy source
-COPY . .
+COPY --chown=node:node . .
 
-# Build (if needed)
-# RUN npm run build
+# Don't run as root.
+USER node
 
-# Expose port
-EXPOSE 3000
+# The server listens on 5000 (index.js); this said 3000.
+EXPOSE 5000
 
-# Start app
-CMD ["npm", "start"]
+CMD ["node", "index.js"]

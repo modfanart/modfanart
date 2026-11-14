@@ -45,13 +45,13 @@ function getStatusText(status: SubscriptionInfoProps['status']) {
 function getStatusColor(status: SubscriptionInfoProps['status']) {
   switch (status) {
     case 'active':
-      return 'bg-green-500';
+      return 'bg-success';
     case 'past_due':
-      return 'bg-yellow-500';
+      return 'bg-warning-strong';
     case 'canceled':
-      return 'bg-red-500';
+      return 'bg-destructive';
     default:
-      return 'bg-gray-500';
+      return 'bg-muted-foreground';
   }
 }
 

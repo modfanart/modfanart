@@ -59,7 +59,7 @@ export default function MainNav() {
         </Link>
 
         {/* Center Nav */}
-        <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur rounded-full px-6 py-2 items-center gap-6 text-sm font-medium border border-gray-200/60">
+        <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 bg-background/90 backdrop-blur rounded-full px-6 py-2 items-center gap-6 text-sm font-medium border border-border/60">
           {links.map(({ label, href }) => {
             const isActive = pathname === href;
 
@@ -67,8 +67,8 @@ export default function MainNav() {
               <Link
                 key={href}
                 href={href}
-                className={`transition-colors hover:text-purple-500 ${
-                  isActive ? 'text-purple-500 font-semibold' : 'text-gray-800'
+                className={`transition-colors hover:text-primary ${
+                  isActive ? 'text-primary font-semibold' : 'text-foreground'
                 }`}
               >
                 {label}
@@ -83,27 +83,40 @@ export default function MainNav() {
           <CartButton />
 
           {loading ? (
-            <div className="h-9 w-9 rounded-full bg-gray-200 animate-pulse" />
+            <>
+              <div
+                className="h-9 w-9 rounded-full bg-muted animate-pulse"
+                role="status"
+                aria-label="Loading account"
+              />
+              {/* TECH-01: keep navigation reachable on mobile while auth resolves */}
+              <div className="md:hidden">
+                <MobileMenu links={publicLinks} />
+              </div>
+            </>
           ) : isAuthenticated ? (
             <UserNav />
           ) : (
             <>
               <div className="hidden md:flex items-center gap-3">
-                <Link href="/login">
-                  <button className="bg-white/90 backdrop-blur rounded-full w-10 h-10 flex items-center justify-center hover:bg-white transition">
-                    <User size={18} className="text-gray-800" />
-                  </button>
+                <Link
+                  href="/login"
+                  aria-label="Log in"
+                  className="bg-background/90 backdrop-blur rounded-full w-10 h-10 flex items-center justify-center hover:bg-background transition"
+                >
+                  <User size={18} className="text-foreground" aria-hidden="true" />
                 </Link>
 
-                <Link href="/signup">
-                  <button className="bg-purple-600 text-white rounded-full px-4 h-10 text-sm font-medium hover:opacity-90 transition">
-                    Sign Up
-                  </button>
+                <Link
+                  href="/signup"
+                  className="bg-primary text-primary-foreground rounded-full px-4 h-10 inline-flex items-center text-sm font-medium hover:opacity-90 transition"
+                >
+                  Sign Up
                 </Link>
               </div>
 
               <div className="md:hidden">
-                <MobileMenu />
+                <MobileMenu links={publicLinks} />
               </div>
             </>
           )}

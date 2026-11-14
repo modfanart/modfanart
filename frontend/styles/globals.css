@@ -1,54 +1,112 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-/**/ /**/ /**/ /**/
-/* ────────────────────────────────────────────────
-   Custom theme extensions & resets
-───────────────────────────────────────────────── */
+
+/* ────────────────────────────────────────────────────────────────────────
+   MOD DESIGN TOKENS — single source of truth
+   ------------------------------------------------------------------------
+   Every colour used in the app resolves to one of these variables (as
+   "H S% L%" so Tailwind opacity modifiers like bg-primary/20 work).
+   Values come from the existing MOD brand palette (tailwind `mod.*`):
+     purple #9747ff · green #129900 · red #df403e · yellow #ffe502
+     blue #1563d7 · darkGray #1e1e1e · mediumGray #9d9d9d · gray #f5f5f5
+   and their light tints. Do not hard-code hex / Tailwind palette colours in
+   components — use bg-primary, text-muted-foreground, bg-success-subtle …
+   (app/globals.css was an unused duplicate of this file and was removed.)
+──────────────────────────────────────────────────────────────────────── */
 @layer base {
   :root {
+    /* Surfaces & text */
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 222 47% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 270 100% 64%; /* your purple */
-    --primary-foreground: 0 0% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 270 100% 64%;
-    --radius: 0.75rem; /* slightly larger radius for premium feel */
+    --popover-foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --accent: 267 100% 96%; /* mod.lightPurple — hover/selected surfaces */
+    --accent-foreground: 266 73% 44%;
+    --border: 240 7% 91%; /* #e7e7ea */
+    --input: 240 7% 91%;
+
+    /* Brand — mod.purple #9747ff */
+    --primary: 266 100% 64%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 266 73% 54%; /* #8035e0 */
+    --primary-subtle: 267 100% 96%; /* mod.lightPurple #f5edff */
+    --ring: 266 100% 64%;
+
+    /* Status — mod.green / mod.red / mod.yellow / mod.blue */
+    --success: 113 100% 30%; /* #129900 */
+    --success-foreground: 0 0% 100%;
+    --success-subtle: 114 72% 94%; /* #e8fbe6 */
+    --destructive: 1 72% 56%; /* #df403e */
+    --destructive-foreground: 0 0% 100%;
+    --destructive-subtle: 0 73% 96%; /* #fcecec */
+    --warning: 54 100% 50%; /* #ffe502 — fills only */
+    --warning-foreground: 0 0% 12%; /* text ON a warning fill */
+    --warning-strong: 40 96% 32%; /* AA text colour on light surfaces */
+    --warning-subtle: 53 100% 95%; /* #fffce6 */
+    --info: 216 82% 46%; /* #1563d7 */
+    --info-foreground: 0 0% 100%;
+    --info-subtle: 218 70% 95%; /* #e8effb */
+
+    /* Charts */
+    --chart-1: 266 100% 64%;
+    --chart-2: 216 82% 46%;
+    --chart-3: 113 100% 30%;
+    --chart-4: 40 96% 45%;
+    --chart-5: 1 72% 56%;
+
+    /* Sidebar */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 266 100% 64%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 267 100% 96%;
+    --sidebar-accent-foreground: 266 73% 44%;
+    --sidebar-border: 240 7% 91%;
+    --sidebar-ring: 266 100% 64%;
+
+    --radius: 0.75rem;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 222 47% 5%;
     --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
+    --card: 222 47% 7%;
     --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
+    --popover: 222 47% 7%;
     --popover-foreground: 210 40% 98%;
-    --primary: 270 100% 64%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 217.2 32.6% 17.5%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    --secondary: 217 33% 17%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 270 100% 64%;
+    --accent: 266 40% 20%;
+    --accent-foreground: 267 100% 92%;
+    --border: 217 33% 20%;
+    --input: 217 33% 20%;
+    --primary: 266 100% 68%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 266 100% 74%;
+    --primary-subtle: 266 40% 18%;
+    --ring: 266 100% 68%;
+    --success: 113 60% 45%;
+    --success-subtle: 113 40% 14%;
+    --destructive: 1 72% 60%;
+    --destructive-subtle: 0 40% 16%;
+    --warning-strong: 48 100% 60%;
+    --warning-subtle: 50 40% 14%;
+    --info: 216 82% 62%;
+    --info-subtle: 218 40% 16%;
+    --sidebar-background: 222 47% 7%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-accent: 266 40% 20%;
+    --sidebar-accent-foreground: 267 100% 92%;
+    --sidebar-border: 217 33% 20%;
   }
 
   * {
@@ -56,7 +114,7 @@
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-background text-foreground font-sans antialiased;
   }
 
   h1,
@@ -67,6 +125,10 @@
   h6 {
     @apply tracking-tight;
   }
+
+  .text-balance {
+    text-wrap: balance;
+  }
 }
 
 /* ────────────────────────────────────────────────
@@ -75,13 +137,13 @@
 @layer utilities {
   .hero-gradient {
     background:
-      radial-gradient(ellipse at top left, rgba(167, 139, 255, 0.18) 0%, transparent 50%),
-      radial-gradient(ellipse at bottom right, rgba(139, 92, 246, 0.15) 0%, transparent 60%),
+      radial-gradient(ellipse at top left, hsl(var(--primary) / 0.18) 0%, transparent 50%),
+      radial-gradient(ellipse at bottom right, hsl(var(--primary) / 0.15) 0%, transparent 60%),
       hsl(var(--background));
   }
 
   .highlight-glow {
-    box-shadow: 0 25px 50px -12px rgba(124, 58, 237, 0.25);
+    box-shadow: 0 25px 50px -12px hsl(var(--primary) / 0.25);
   }
 
   .pill {
@@ -132,5 +194,5 @@
 
 /* Accent text */
 .accent-heading {
-  @apply bg-gradient-to-r from-primary via-purple-500 to-indigo-500 bg-clip-text text-transparent;
+  @apply bg-gradient-to-r from-primary to-info bg-clip-text text-transparent;
 }

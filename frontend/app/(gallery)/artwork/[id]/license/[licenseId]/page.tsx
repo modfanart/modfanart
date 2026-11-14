@@ -209,7 +209,7 @@ export default async function LicenseCheckoutPage({ params }: { params: Promise<
     <div className="container py-10 max-w-7xl">
       <div className="mb-6">
         <Link
-          href={`/gallery/artwork/${id}`}
+          href={`/artwork/${id}`}
           className="flex items-center text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -436,12 +436,12 @@ export default async function LicenseCheckoutPage({ params }: { params: Promise<
                       <Label htmlFor="po-number">Purchase Order Number</Label>
                       <Input id="po-number" placeholder="PO-123456" />
                     </div>
-                    <div className="rounded-lg bg-blue-50 p-4">
+                    <div className="rounded-lg bg-info-subtle p-4">
                       <div className="flex gap-3">
-                        <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                        <Info className="h-5 w-5 text-info flex-shrink-0 mt-0.5" />
                         <div>
-                          <p className="text-sm font-medium text-blue-900">Invoice Payment</p>
-                          <p className="text-sm text-blue-700 mt-1">
+                          <p className="text-sm font-medium text-info">Invoice Payment</p>
+                          <p className="text-sm text-info mt-1">
                             Invoices are sent within 1 business day with Net-30 terms. Your license
                             activates upon payment receipt.
                           </p>
@@ -459,17 +459,17 @@ export default async function LicenseCheckoutPage({ params }: { params: Promise<
 
             <p className="text-center text-sm text-muted-foreground mt-4">
               Need assistance?{' '}
-              <Link href="/support" className="text-primary hover:underline">
+              <Link href="/resources/support" className="text-primary hover:underline">
                 Contact support
               </Link>
             </p>
 
-            <div className="mt-6 rounded-lg bg-green-50 p-4 border border-green-200">
+            <div className="mt-6 rounded-lg bg-success-subtle p-4 border border-success/30">
               <div className="flex gap-3">
-                <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
+                <CheckCircle2 className="h-5 w-5 text-success flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-green-900">Secure & Protected</p>
-                  <p className="text-sm text-green-700 mt-1">
+                  <p className="text-sm font-medium text-success">Secure & Protected</p>
+                  <p className="text-sm text-success mt-1">
                     All transactions are encrypted and processed securely. Your data is protected.
                   </p>
                 </div>

@@ -6,7 +6,6 @@ import {
   Megaphone,
   Newspaper,
   Store,
-  FileCheck,
   Trophy,
   ShoppingBag,
   Image,
@@ -16,72 +15,56 @@ import {
   Palette,
   Wallet,
   ClipboardList,
-  Layers,
   FileText,
-  Bot,
-  UserCog,
 } from 'lucide-react';
 
 import { LucideIcon } from 'lucide-react';
 
-type Role = 'artist' | 'brand_manager' | 'brand_owner' | 'judge' | 'admin' | 'seller';
+type Role = 'artist' | 'brand_manager' | 'brand_owner' | 'judge' | 'seller';
 type NavItem = {
   name: string;
   href: string;
   icon: LucideIcon;
 };
 
-const brandNavItems = (base: string): NavItem[] => [
+// All dashboards live under /dashboard (see lib/dashboard-routes.ts), so
+// `base` is '/dashboard' (or '/dashboard/judging' for judge-only accounts).
+// `username` is only used for links to the public profile.
+type NavBuilder = (base: string, username: string) => NavItem[];
+
+const brandNavItems: NavBuilder = (base) => [
   { name: 'Overview', href: `${base}`, icon: LayoutDashboard },
   { name: 'Brand Profile', href: `${base}/profile`, icon: Store },
   { name: 'Opportunities', href: `${base}/opportunities`, icon: Megaphone },
-  { name: 'Submissions', href: '#', icon: ClipboardList },
-  { name: 'Licensing', href: `${base}/licensing-requests`, icon: FileText },
-  { name: 'Asset Hub', href: '#', icon: Layers },
+  { name: 'Submissions', href: `${base}/submissions`, icon: ClipboardList },
+  { name: 'Licensing', href: `${base}/licensing`, icon: FileText },
   { name: 'Store', href: `${base}/store`, icon: ShoppingBag },
-  { name: 'Content', href: `#`, icon: Newspaper },
-  { name: 'Analytics', href: '#', icon: BarChart3 },
-  { name: 'Automation', href: '#', icon: Bot },
+  { name: 'Content', href: `${base}/content`, icon: Newspaper },
   { name: 'Settings', href: `${base}/settings`, icon: Settings },
 ];
 
-export const sidebarConfig: Record<Role, (base: string) => NavItem[]> = {
-  artist: (base: string) => [
+export const sidebarConfig: Record<Role, NavBuilder> = {
+  artist: (base, username) => [
     { name: 'Overview', href: `${base}`, icon: LayoutDashboard },
-    { name: 'My Artworks', href: `${base}/my-artworks`, icon: Palette },
+    { name: 'My Artworks', href: `${base}/artworks`, icon: Palette },
     { name: 'Opportunities', href: `${base}/opportunities`, icon: Briefcase },
-    { name: 'Licensing & Earnings', href: `${base}/licensing-earnings`, icon: Wallet },
-    { name: 'Portfolio', href: `#`, icon: Image },
+    { name: 'Licensing & Earnings', href: `${base}/licensing`, icon: Wallet },
+    { name: 'Portfolio', href: `/u/${username}`, icon: Image },
     { name: 'Store', href: `${base}/store`, icon: ShoppingBag },
-    { name: 'Analytics', href: `#`, icon: BarChart3 },
+    { name: 'Analytics', href: `${base}/analytics`, icon: BarChart3 },
   ],
-  seller: (base: string): NavItem[] => [
+  seller: (base, username) => [
     { name: 'Overview', href: `${base}`, icon: LayoutDashboard },
     { name: 'Store', href: `${base}/store`, icon: Store },
-    { name: 'Products', href: `${base}/products`, icon: ShoppingBag },
-    { name: 'Orders', href: `${base}/orders`, icon: ClipboardList },
-    { name: 'Profile', href: `${base}/profile`, icon: Users },
+    { name: 'Products', href: `${base}/store/products`, icon: ShoppingBag },
+    { name: 'Orders', href: `${base}/store/orders`, icon: ClipboardList },
+    { name: 'Profile', href: `/u/${username}`, icon: Users },
   ],
   brand_manager: brandNavItems,
   brand_owner: brandNavItems,
 
-  judge: (base: string) => [
+  judge: (base) => [
     { name: 'Overview', href: `${base}`, icon: LayoutDashboard },
     { name: 'Opportunities', href: `${base}/opportunities`, icon: Trophy },
-  ],
-
-  admin: (base: string) => [
-    { name: 'Overview', href: `${base}`, icon: LayoutDashboard },
-    { name: 'Brands', href: `${base}/brands`, icon: Store },
-    { name: 'Artists', href: `${base}/artists`, icon: Users },
-    { name: 'Opportunities', href: `${base}/opportunities`, icon: Trophy },
-    { name: 'Submissions', href: `${base}/submissions`, icon: ClipboardList },
-    { name: 'Judging', href: `${base}/judging`, icon: FileCheck },
-    { name: 'Licensing', href: `${base}/licensing`, icon: FileText },
-    { name: 'Marketplace', href: `${base}/marketplace`, icon: ShoppingBag },
-    { name: 'Content', href: `#`, icon: Newspaper },
-    { name: 'Review Automation', href: `#`, icon: Bot },
-    { name: 'Team & Permissions', href: `${base}/team-permissions`, icon: UserCog },
-    { name: 'Queries', icon: UserCog, href: `${base}/queries` },
   ],
 };

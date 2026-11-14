@@ -4,7 +4,6 @@ import type React from 'react';
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { SiteFooter } from '@/components/layouts/site-footer';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -151,7 +150,6 @@ export default function ContactPageClient() {
           </Card>
         </div>
       </div>
-      <SiteFooter />
       <Toaster />
     </div>
   );

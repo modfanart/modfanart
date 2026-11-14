@@ -53,7 +53,12 @@ const logger = (req, res, next) => {
     if (process.env.NODE_ENV !== "production") {
       console.log("  Query:", logEntry.query);
       if (logEntry.bodySize > 0 && logEntry.bodySize < 2000) {
-        console.log("  Body :", req.body);
+        // Never print credentials, even in development logs.
+        const safe = { ...req.body };
+        for (const k of Object.keys(safe)) {
+          if (/pass(word)?|token|secret|card|cvc/i.test(k)) safe[k] = "[redacted]";
+        }
+        console.log("  Body :", safe);
       }
       console.log("  IP   :", logEntry.ip);
       console.log("  UA   :", logEntry.userAgent);

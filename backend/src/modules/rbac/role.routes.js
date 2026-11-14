@@ -9,7 +9,13 @@ const {
   hasAnyPermission,
 } = require('../../common/middleware/permission.middleware');
 
+const { requireAdmin } = require('../../common/middleware/require-admin');
+
 const router = express.Router();
+
+// SECURITY: every role endpoint was unauthenticated -> anyone could create a
+// role with all permissions and assign it to themselves. Admin-only now.
+router.use(authenticateToken, requireAdmin);
 
 router.get('/', RoleController.getAllRoles);
 router.post('/', RoleController.createRole);

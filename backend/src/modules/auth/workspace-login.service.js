@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 
 const User = require('../users/models/user.model');
+const { isAdminUser } = require('../../common/middleware/require-admin');
 const RefreshToken = require('./models/refreshToken.model');
 
 const { db } = require('../../config');
@@ -137,6 +138,14 @@ class WorkspaceLoginService {
       throw error;
     }
 
+    // GA-10: the workspace (admin app) is for staff only. Any account with a
+    // password could previously obtain a workspace token.
+    if (!isAdminUser(fullUser)) {
+      const error = new Error('Staff accounts only');
+      error.status = 403;
+      throw error;
+    }
+
     // =========================================================
     // 7. Create internal JWT access token
     // =========================================================
@@ -234,6 +243,17 @@ class WorkspaceLoginService {
 
     if (!user || user.status !== 'active') {
       const error = new Error('Account is not available for login');
+      error.status = 403;
+      throw error;
+    }
+
+    // Re-check staff role on every refresh so demoted staff lose access
+    // within one access-token lifetime (15 min).
+    const role = user.role_id
+      ? await db.selectFrom('roles').select('name').where('id', '=', user.role_id).executeTakeFirst()
+      : null;
+    if (!isAdminUser({ role: role?.name })) {
+      const error = new Error('Staff accounts only');
       error.status = 403;
       throw error;
     }

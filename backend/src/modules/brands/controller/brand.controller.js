@@ -51,9 +51,11 @@ async function getAllBrands(req, res) {
         'logo_url',
         'banner_url',
         'followers_count',
+        'views_count',
         'created_at',
         'updated_at',
         'status',
+        'verification_request_id',
       ])
       .where('deleted_at', 'is', null);
 
@@ -66,6 +68,11 @@ async function getAllBrands(req, res) {
 
     if (minFollowers && !isNaN(Number(minFollowers))) {
       query = query.where('followers_count', '>=', Number(minFollowers));
+    }
+
+    // Directory / admin: only verified brands when requested
+    if (req.query.verified === 'true' || req.query.verified === '1') {
+      query = query.where('verification_request_id', 'is not', null);
     }
 
     const validSortFields = ['followers_count', 'created_at', 'name'];
@@ -99,6 +106,10 @@ async function getAllBrands(req, res) {
         '>=',
         Number(minFollowers)
       );
+    }
+
+    if (req.query.verified === 'true' || req.query.verified === '1') {
+      totalQuery = totalQuery.where('verification_request_id', 'is not', null);
     }
 
     const [{ total }] = await totalQuery.execute();

@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import { StatusBadge } from '@/components/marketplace/status-badge';
+import { useActiveBrand } from '@/hooks/use-active-brand';
 import { useAuth } from '@/store/AuthContext';
 import {
   getApiErrorMessage,
@@ -22,7 +23,7 @@ import { isBrandRole } from '@/lib/marketplace/roles';
 import { cn } from '@/lib/utils';
 
 export interface SellerContext {
-  /** Dashboard root, e.g. /artist/jane or /brand-manager/acme */
+  /** Dashboard root - always /dashboard now (role comes from the session) */
   basePath: string;
   /** Set for brand accounts: products are listed under this brand. */
   brandId: string | null;
@@ -31,14 +32,11 @@ export interface SellerContext {
 export function useSellerContext(basePath: string): SellerContext {
   const { user } = useAuth();
 
-  // A brand manager can run several brands, so resolve the one whose slug is
-  // in the dashboard URL (/brand-manager/<slug>) instead of assuming the
-  // first. Falls back to the first brand only when the slug isn't matched.
-  const slug = /^\/brand-manager\/([^/]+)/.exec(basePath)?.[1];
-  const brands = user?.brands ?? [];
-  const brandId = isBrandRole(user?.role?.name)
-    ? ((slug ? brands.find((b) => b.slug === slug) : undefined)?.id ?? brands[0]?.id ?? null)
-    : null;
+  // A brand manager can run several brands: listings go under the brand
+  // picked in the dashboard sidebar (it used to be the /brand-manager/<slug>
+  // URL segment).
+  const { brand } = useActiveBrand();
+  const brandId = isBrandRole(user?.role?.name) ? (brand?.id ?? null) : null;
 
   return { basePath, brandId };
 }
@@ -124,7 +122,7 @@ function ProfileGate({ children }: { children: React.ReactNode }) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            {rejected ? <XCircle className="h-5 w-5 text-destructive" /> : <Clock className="h-5 w-5 text-amber-500" />}
+            {rejected ? <XCircle className="h-5 w-5 text-destructive" /> : <Clock className="h-5 w-5 text-warning-strong" />}
             Seller application
             <StatusBadge map={SELLER_STATUS} status={profile.status} />
           </CardTitle>

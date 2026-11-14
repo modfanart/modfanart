@@ -20,7 +20,7 @@ export function Stars({ value, className }: { value: number; className?: string 
           key={n}
           className={cn(
             'h-4 w-4',
-            n <= Math.round(value) ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/40'
+            n <= Math.round(value) ? 'fill-warning-strong text-warning-strong' : 'text-muted-foreground/40'
           )}
         />
       ))}
@@ -74,10 +74,10 @@ export function ProductReviews({
             {distribution.map(({ stars, count: c }) => (
               <div key={stars} className="flex items-center gap-2 text-sm">
                 <span className="w-3 text-right">{stars}</span>
-                <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                <Star className="h-3.5 w-3.5 fill-warning-strong text-warning-strong" />
                 <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
                   <div
-                    className="h-full bg-amber-400"
+                    className="h-full bg-warning"
                     style={{ width: `${count ? (c / count) * 100 : 0}%` }}
                   />
                 </div>

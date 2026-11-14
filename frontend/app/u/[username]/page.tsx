@@ -23,7 +23,7 @@ export default async function UserProfilePage({
 
   // For now – we pass username to client component → let RTK Query handle the rest
   return (
-    <div className="container mx-auto px-4 py-8 md:px-6 lg:py-12 max-w-7xl bg-white min-h-screen">
+    <div className="container mx-auto px-4 py-8 md:px-6 lg:py-12 max-w-7xl bg-background min-h-screen">
       <ProfileView targetUsername={username} />
     </div>
   );

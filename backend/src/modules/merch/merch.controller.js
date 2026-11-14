@@ -1,4 +1,5 @@
 const service = require('./merch.service');
+const { isAdminUser } = require('../../common/middleware/require-admin');
 
 function handleError(res, error) {
   console.error(error);
@@ -50,7 +51,31 @@ async function setArtwork(req, res) {
 
 async function getProduct(req, res) {
   try {
-    const product = await service.getProduct(req.params.id);
+    // Accepts the product UUID or its public slug.
+    if (!/^[a-z0-9-]{1,120}$/i.test(String(req.params.id))) {
+      return res.status(404).json({ error: 'Merch product not found' });
+    }
+
+    let product;
+    try {
+      product = await service.getProduct(req.params.id);
+    } catch (e) {
+      if (/not found/i.test(e.message)) {
+        return res.status(404).json({ error: 'Merch product not found' });
+      }
+      throw e;
+    }
+
+    // Drafts / pending / rejected listings used to be readable by anyone
+    // with the id. Only published products are public; the seller and the
+    // brand's managers can still open their own listing.
+    if (product.status !== 'published') {
+      const canManage =
+        req.user && (await service.canManage(req.user.id, product).catch(() => false));
+      if (!canManage && !isAdminUser(req.user)) {
+        return res.status(404).json({ error: 'Merch product not found' });
+      }
+    }
 
     return res.json({ product });
   } catch (error) {

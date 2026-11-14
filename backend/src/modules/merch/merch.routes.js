@@ -1,3 +1,4 @@
+const { requireGoodStanding } = require('../../common/policy');
 const router = require('express').Router();
 
 const controller = require('./merch.controller');
@@ -5,6 +6,7 @@ const {
   authenticateToken,
 } = require('../../common/middleware/auth.middleware');
 const { hasPermission } = require('../../common/middleware/permission.middleware');
+const { optionalAuth } = require('../../common/middleware/optional-auth');
 
 router.get('/', controller.getPublishedProducts);
 router.get('/mine', authenticateToken, controller.getMyProducts);
@@ -25,9 +27,10 @@ router.get(
   controller.getPendingProducts
 );
 
-router.get('/:id', controller.getProduct);
+// optionalAuth: owners can preview unpublished listings; the public cannot.
+router.get('/:id', optionalAuth, controller.getProduct);
 
-router.post('/', authenticateToken, controller.createProduct);
+router.post('/', authenticateToken, requireGoodStanding, controller.createProduct);
 
 router.patch('/:id', authenticateToken, controller.updateProduct);
 

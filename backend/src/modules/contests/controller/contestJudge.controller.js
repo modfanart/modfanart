@@ -29,14 +29,12 @@ class ContestJudgeController {
   }
 
   /**
-   * Judge dashboard path. username is selected on every caller, but guard
-   * anyway so a missing one cannot produce "/judge/undefined/contest/...".
+   * Judge dashboard path for a contest.
    */
-  static judgeContestPath(username, contestId) {
-    const slug = username?.toLowerCase();
-    return slug
-      ? `/judge/${slug}/contest/${contestId}`
-      : `/judge/contests/${contestId}`;
+  static judgeContestPath(_username, contestId) {
+    // Dashboard URLs no longer carry the username (frontend
+    // lib/dashboard-routes.ts); the judge is whoever is signed in.
+    return `/dashboard/judging/${contestId}`;
   }
 
   /**

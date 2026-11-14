@@ -1,3 +1,4 @@
+const { requireGoodStanding } = require('../../common/policy');
 const router = require('express').Router();
 
 const controller = require('./sellerProfile.controller');
@@ -9,7 +10,7 @@ const { hasPermission } = require('../../common/middleware/permission.middleware
 router.use(authenticateToken);
 
 router.get('/mine', controller.getMine);
-router.post('/', controller.apply);
+router.post('/', requireGoodStanding, controller.apply);
 
 // Admin/moderation-only.
 router.get('/pending', hasPermission('sellers.manage'), controller.listPending);
