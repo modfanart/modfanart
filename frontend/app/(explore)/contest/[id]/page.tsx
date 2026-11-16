@@ -30,6 +30,39 @@ import { useToast } from '@/components/ui/use-toast';
 
 const ACTIVE_ENTRY_STATUSES = ['pending', 'approved', 'winner'];
 
+const FALLBACK_HERO = 'https://images.unsplash.com/photo-1557683316-973673baf926?w=1200';
+const FALLBACK_LOGO = '/placeholder.svg?height=32&width=32';
+
+// Accepts "https://...", "http://..." or "/path/..." only.
+// next/image throws "Failed to construct 'URL'" for anything else
+// (objects, "", "undefined", "uploads/a.jpg", etc.).
+const isValidImageSrc = (s: unknown): s is string => {
+  if (typeof s !== 'string') return false;
+  const v = s.trim();
+  if (!v) return false;
+  if (v.startsWith('/')) return true;
+  try {
+    const u = new URL(v);
+    return u.protocol === 'https:' || u.protocol === 'http:';
+  } catch {
+    return false;
+  }
+};
+
+// Safe parsing for gallery and prizes
+const safeArray = (v: unknown): any[] => {
+  if (Array.isArray(v)) return v;
+  if (typeof v === 'string') {
+    try {
+      const parsed = JSON.parse(v || '[]');
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+};
+
 export default function ContestDetailPage() {
   const params = useParams<{ id: string }>();
   const contestId = params.id;
@@ -73,21 +106,16 @@ export default function ContestDetailPage() {
   const maxEntries = contest?.max_entries_per_user ?? 1;
   const atEntryCap = role === 'ARTIST' && myEntriesUsed >= maxEntries;
 
-  // Safe parsing for gallery and prizes
-  const safeArray = (v: unknown): any[] => {
-    if (Array.isArray(v)) return v;
-    if (typeof v === 'string') {
-      try {
-        const parsed = JSON.parse(v || '[]');
-        return Array.isArray(parsed) ? parsed : [];
-      } catch {
-        return [];
-      }
-    }
-    return [];
-  };
-  const galleryImages: string[] = safeArray(contest?.gallery);
+  // Normalize gallery: supports string[] and { url: string }[],
+  // and drops anything that isn't a usable image URL.
+  const galleryImages: string[] = safeArray(contest?.gallery)
+    .map((item) => (typeof item === 'string' ? item : item?.url))
+    .filter(isValidImageSrc)
+    .map((s) => s.trim());
   const prizes = safeArray(contest?.prizes);
+
+  const heroSrc = isValidImageSrc(contest?.hero_image) ? contest!.hero_image! : FALLBACK_HERO;
+  const logoSrc = isValidImageSrc(contest?.brand_logo) ? contest!.brand_logo! : FALLBACK_LOGO;
 
   // Stable Date (was re-created every render, restarting the countdown timer).
   const deadlineMs = contest?.submission_end_date
@@ -214,26 +242,22 @@ export default function ContestDetailPage() {
             <img
               loading="lazy"
               alt={contest.title}
-              src={
-                contest.hero_image ||
-                'https://images.unsplash.com/photo-1557683316-973673baf926?w=1200'
-              }
+              src={heroSrc}
               className="w-full h-full object-cover"
             />
           </SwiperSlide>
 
           {/* Gallery Images */}
-          {galleryImages.length > 0 &&
-            galleryImages.map((url: string, index: number) => (
-              <SwiperSlide key={index}>
-                <img
-                  loading="lazy"
-                  alt={`Gallery ${index + 1}`}
-                  src={url}
-                  className="w-full h-full object-cover"
-                />
-              </SwiperSlide>
-            ))}
+          {galleryImages.map((url, index) => (
+            <SwiperSlide key={`${url}-${index}`}>
+              <img
+                loading="lazy"
+                alt={`Gallery ${index + 1}`}
+                src={url}
+                className="w-full h-full object-cover"
+              />
+            </SwiperSlide>
+          ))}
         </Swiper>
       </div>
 
@@ -250,10 +274,12 @@ export default function ContestDetailPage() {
               >
                 <div className="relative h-8 w-8 rounded-full overflow-hidden border bg-muted">
                   <Image
-                    src={contest.brand_logo || '/placeholder.svg?height=32&width=32'}
+                    src={logoSrc}
                     alt={contest.brand_name || 'Organizer'}
                     fill
+                    sizes="32px"
                     className="object-cover"
+                    unoptimized
                   />
                 </div>
                 <span className="font-medium">{contest.brand_name || 'Organizer'}</span>
@@ -323,16 +349,20 @@ export default function ContestDetailPage() {
               Contest Gallery
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {galleryImages.map((url: string, index: number) => (
+              {galleryImages.map((url, index) => (
                 <div
-                  key={index}
+                  key={`${url}-${index}`}
                   className="relative aspect-video rounded-xl overflow-hidden border"
                 >
+                  {/* unoptimized: gallery URLs are user-supplied, so no host allowlist needed.
+                      Remove it if you configure images.remotePatterns in next.config. */}
                   <Image
                     src={url}
                     alt={`Gallery image ${index + 1}`}
                     fill
+                    sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
                     className="object-cover hover:scale-105 transition-transform duration-300"
+                    unoptimized
                   />
                 </div>
               ))}
@@ -345,6 +375,7 @@ export default function ContestDetailPage() {
           {/* Overview */}
           <div className="space-y-8">
             <h3 className="text-2xl font-bold">Contest Overview</h3>
+            {/* NOTE: sanitize (e.g. DOMPurify) if non-admins can write this field. */}
             <div
               className="prose max-w-none dark:prose-invert"
               dangerouslySetInnerHTML={{ __html: contest.description || '' }}
