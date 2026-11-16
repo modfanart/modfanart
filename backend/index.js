@@ -80,7 +80,10 @@ const authLimiter = rateLimit({
   max: 60,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { status: 429, message: 'Too many auth attempts, please try again later.' },
+  message: {
+    status: 429,
+    message: 'Too many auth attempts, please try again later.',
+  },
 });
 
 app.use(limiter);
@@ -203,7 +206,7 @@ routes.forEach(({ path, module: mod }) => {
     console.error(err);
   }
 });
-
+/** */
 // ====================== ERROR HANDLER ======================
 app.use(errorHandler);
 
@@ -216,16 +219,21 @@ const server = app.listen(PORT, '0.0.0.0', () => {
 });
 
 // Release stock held by cart orders that were never paid (every 10 minutes).
-const { expireStalePendingOrders } = require('./src/modules/orders/order.service');
+const {
+  expireStalePendingOrders,
+} = require('./src/modules/orders/order.service');
 
-const staleOrderTimer = setInterval(async () => {
-  try {
-    const n = await expireStalePendingOrders(60);
-    if (n) console.log(`🧹 Expired ${n} unpaid order(s)`);
-  } catch (err) {
-    console.error('Stale order sweep failed:', err.message);
-  }
-}, 10 * 60 * 1000);
+const staleOrderTimer = setInterval(
+  async () => {
+    try {
+      const n = await expireStalePendingOrders(60);
+      if (n) console.log(`🧹 Expired ${n} unpaid order(s)`);
+    } catch (err) {
+      console.error('Stale order sweep failed:', err.message);
+    }
+  },
+  10 * 60 * 1000
+);
 staleOrderTimer.unref();
 
 // Graceful shutdown
