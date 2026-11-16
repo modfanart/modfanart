@@ -1,5 +1,8 @@
 const admin = require('../../config/firebase');
 const { db } = require('../../config');
+const jwt = require('jsonwebtoken');
+const { isStaffUser, isAdminUser } = require('./require-admin');
+const { ALL_PERMISSION_KEYS } = require('../permissions.catalog');
 
 async function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
@@ -10,7 +13,22 @@ async function authenticateToken(req, res, next) {
   }
 
   try {
-    const decoded = await admin.auth().verifyIdToken(token);
+    // GA-10: the admin app may sign in with a workspace JWT (staff only,
+    // 15-minute expiry, issued by /api/auth/workspace/login). Anything else
+    // must be a Firebase ID token.
+    let workspaceUserId = null;
+    const wsSecret = process.env.WORKSPACE_JWT_ACCESS_SECRET;
+    if (wsSecret && token.split('.').length === 3) {
+      try {
+        const payload = jwt.verify(token, wsSecret, { algorithms: ['HS256'] });
+        if (payload?.type === 'workspace' && payload.sub) workspaceUserId = payload.sub;
+      } catch {
+        /* not a workspace token - fall through to Firebase */
+      }
+    }
+    const decoded = workspaceUserId
+      ? { uid: null, email_verified: true }
+      : await admin.auth().verifyIdToken(token);
 
     // Load user + role in one query, matched by Firebase UID
     const user = await db
@@ -23,10 +41,13 @@ async function authenticateToken(req, res, next) {
         'u.avatar_url',
         'u.status',
         'u.role_id',
+        'u.email_verified',
+        'u.accepted_terms_version',
+        'u.age_confirmed_at',
         'r.name as role',
         'r.permissions as role_permissions',
       ])
-      .where('u.firebase_uid', '=', decoded.uid)
+      .where(workspaceUserId ? 'u.id' : 'u.firebase_uid', '=', workspaceUserId ?? decoded.uid)
       .where('u.status', '=', 'active')
       .where('u.deleted_at', 'is', null)
       .executeTakeFirst();
@@ -37,6 +58,10 @@ async function authenticateToken(req, res, next) {
         .json({ error: 'User not found. Call /api/auth/sync first.' });
     }
 
+    if (workspaceUserId && !isStaffUser({ ...user, permissions: user.role_permissions || {} })) {
+      return res.status(403).json({ error: 'Staff accounts only' });
+    }
+
     let brands = [];
 
     const BRAND_ROLES = [
@@ -45,7 +70,8 @@ async function authenticateToken(req, res, next) {
       'BRAND_EDITOR',
       'BRAND_MEMBER',
     ];
-    const ADMIN_ROLES = ['ADMIN', 'SUPERADMIN'];
+    // Role names differ between environments (SUPERADMIN vs SUPER_ADMIN).
+    const ADMIN_ROLES = ['ADMIN', 'SUPERADMIN', 'SUPER_ADMIN', 'DEVELOPER'];
 
     if (BRAND_ROLES.includes(user.role) || ADMIN_ROLES.includes(user.role)) {
       brands = await db
@@ -72,7 +98,17 @@ async function authenticateToken(req, res, next) {
         .execute();
     }
 
-    user.permissions = user.role_permissions || {};
+    // Firebase is the source of truth for verification (the DB copy is only
+    // refreshed on /auth/sync). Google sign-ins arrive verified.
+    user.email_verified = decoded.email_verified === true || user.email_verified === true;
+
+    user.permissions = { ...(user.role_permissions || {}) };
+    // Admin-tier roles hold every permission. Expanding here means the many
+    // controllers that check req.user.permissions['x'] directly agree with
+    // requirePermission()/userCan() instead of locking admins out.
+    if (isAdminUser({ ...user, permissions: user.permissions })) {
+      for (const key of ALL_PERMISSION_KEYS) user.permissions[key] = true;
+    }
     user.brands = brands || [];
 
     delete user.role_permissions;
@@ -82,7 +118,8 @@ async function authenticateToken(req, res, next) {
     next();
   } catch (err) {
     console.error('Auth error:', err.message);
-    return res.status(403).json({ error: 'Invalid or expired token' });
+    // 401 (not 403) so clients know to refresh the token and retry.
+    return res.status(401).json({ error: 'Invalid or expired token', code: 'token_invalid' });
   }
 }
 

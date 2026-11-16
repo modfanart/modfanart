@@ -95,7 +95,7 @@ export default function DashboardContent() {
         <h2 className="mt-4 text-2xl font-semibold">No brand found</h2>
         <p className="mt-2 text-muted-foreground">You are not managing any brand yet.</p>
         <Button className="mt-6" asChild>
-          <Link href="/brand/verify">Start Brand Verification</Link>
+          <Link href="/brand-manager">Check verification status</Link>
         </Button>
       </div>
     );
@@ -162,7 +162,7 @@ export default function DashboardContent() {
                   <CardDescription>Latest updates shared with your fans</CardDescription>
                 </div>
                 <Button variant="outline" size="sm" asChild>
-                  <Link href={`/dashboard/brand/${brandSlug}/${user?.id}/posts`}>
+                  <Link href={`/brand-manager/${brandSlug}/content`}>
                     View All Posts
                   </Link>
                 </Button>
@@ -213,7 +213,7 @@ export default function DashboardContent() {
                   <CardDescription>Featured artworks available for licensing</CardDescription>
                 </div>
                 <Button variant="outline" size="sm" asChild>
-                  <Link href={`/dashboard/brand/${brandSlug}/${user?.id}/artworks`}>
+                  <Link href={`/brand-manager/${brandSlug}/storefront`}>
                     Manage Storefront
                   </Link>
                 </Button>
@@ -258,7 +258,7 @@ export default function DashboardContent() {
                   <CardDescription>Current fan art contests & licensing briefs</CardDescription>
                 </div>
                 <Button variant="outline" size="sm" asChild>
-                  <Link href={`/dashboard/brand/${brandSlug}/${user?.id}/contests`}>
+                  <Link href={`/brand-manager/${brandSlug}/opportunities`}>
                     View All Campaigns
                   </Link>
                 </Button>

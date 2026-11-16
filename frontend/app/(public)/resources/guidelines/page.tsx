@@ -81,99 +81,99 @@ export default function BrandGuidelinesPage() {
         <section>
           <h2 className="text-2xl font-bold mb-6">Quick Reference Guide</h2>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <Card className="bg-green-50 border-green-200">
+            <Card className="bg-success-subtle border-success/30">
               <CardHeader className="pb-2">
                 <div className="flex items-center space-x-2">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                  <CardTitle className="text-green-800">Generally Allowed</CardTitle>
+                  <CheckCircle className="h-5 w-5 text-success" />
+                  <CardTitle className="text-success">Generally Allowed</CardTitle>
                 </div>
               </CardHeader>
               <CardContent>
-                <ul className="space-y-2 text-green-800">
+                <ul className="space-y-2 text-success">
                   <li className="flex items-start">
-                    <CheckCircle className="h-4 w-4 text-green-600 mt-1 mr-2 shrink-0" />
+                    <CheckCircle className="h-4 w-4 text-success mt-1 mr-2 shrink-0" />
                     <span>Original interpretations of characters</span>
                   </li>
                   <li className="flex items-start">
-                    <CheckCircle className="h-4 w-4 text-green-600 mt-1 mr-2 shrink-0" />
+                    <CheckCircle className="h-4 w-4 text-success mt-1 mr-2 shrink-0" />
                     <span>Fan art in your own unique style</span>
                   </li>
                   <li className="flex items-start">
-                    <CheckCircle className="h-4 w-4 text-green-600 mt-1 mr-2 shrink-0" />
+                    <CheckCircle className="h-4 w-4 text-success mt-1 mr-2 shrink-0" />
                     <span>Non-commercial personal projects</span>
                   </li>
                   <li className="flex items-start">
-                    <CheckCircle className="h-4 w-4 text-green-600 mt-1 mr-2 shrink-0" />
+                    <CheckCircle className="h-4 w-4 text-success mt-1 mr-2 shrink-0" />
                     <span>Transformative or parody works</span>
                   </li>
                   <li className="flex items-start">
-                    <CheckCircle className="h-4 w-4 text-green-600 mt-1 mr-2 shrink-0" />
+                    <CheckCircle className="h-4 w-4 text-success mt-1 mr-2 shrink-0" />
                     <span>Clearly labeled fan art</span>
                   </li>
                 </ul>
               </CardContent>
             </Card>
 
-            <Card className="bg-red-50 border-red-200">
+            <Card className="bg-destructive-subtle border-destructive/30">
               <CardHeader className="pb-2">
                 <div className="flex items-center space-x-2">
-                  <XCircle className="h-5 w-5 text-red-600" />
-                  <CardTitle className="text-red-800">Generally Prohibited</CardTitle>
+                  <XCircle className="h-5 w-5 text-destructive" />
+                  <CardTitle className="text-destructive">Generally Prohibited</CardTitle>
                 </div>
               </CardHeader>
               <CardContent>
-                <ul className="space-y-2 text-red-800">
+                <ul className="space-y-2 text-destructive">
                   <li className="flex items-start">
-                    <XCircle className="h-4 w-4 text-red-600 mt-1 mr-2 shrink-0" />
+                    <XCircle className="h-4 w-4 text-destructive mt-1 mr-2 shrink-0" />
                     <span>Direct copies of official artwork</span>
                   </li>
                   <li className="flex items-start">
-                    <XCircle className="h-4 w-4 text-red-600 mt-1 mr-2 shrink-0" />
+                    <XCircle className="h-4 w-4 text-destructive mt-1 mr-2 shrink-0" />
                     <span>Unauthorized use of logos or trademarks</span>
                   </li>
                   <li className="flex items-start">
-                    <XCircle className="h-4 w-4 text-red-600 mt-1 mr-2 shrink-0" />
+                    <XCircle className="h-4 w-4 text-destructive mt-1 mr-2 shrink-0" />
                     <span>Explicit or adult content of IP characters</span>
                   </li>
                   <li className="flex items-start">
-                    <XCircle className="h-4 w-4 text-red-600 mt-1 mr-2 shrink-0" />
+                    <XCircle className="h-4 w-4 text-destructive mt-1 mr-2 shrink-0" />
                     <span>Defamatory or harmful representations</span>
                   </li>
                   <li className="flex items-start">
-                    <XCircle className="h-4 w-4 text-red-600 mt-1 mr-2 shrink-0" />
+                    <XCircle className="h-4 w-4 text-destructive mt-1 mr-2 shrink-0" />
                     <span>Claiming ownership of the original IP</span>
                   </li>
                 </ul>
               </CardContent>
             </Card>
 
-            <Card className="bg-yellow-50 border-yellow-200">
+            <Card className="bg-warning-subtle border-warning/30">
               <CardHeader className="pb-2">
                 <div className="flex items-center space-x-2">
-                  <AlertTriangle className="h-5 w-5 text-yellow-600" />
-                  <CardTitle className="text-yellow-800">Case-by-Case Review</CardTitle>
+                  <AlertTriangle className="h-5 w-5 text-warning-strong" />
+                  <CardTitle className="text-warning-strong">Case-by-Case Review</CardTitle>
                 </div>
               </CardHeader>
               <CardContent>
-                <ul className="space-y-2 text-yellow-800">
+                <ul className="space-y-2 text-warning-strong">
                   <li className="flex items-start">
-                    <AlertTriangle className="h-4 w-4 text-yellow-600 mt-1 mr-2 shrink-0" />
+                    <AlertTriangle className="h-4 w-4 text-warning-strong mt-1 mr-2 shrink-0" />
                     <span>Crossovers between different IPs</span>
                   </li>
                   <li className="flex items-start">
-                    <AlertTriangle className="h-4 w-4 text-yellow-600 mt-1 mr-2 shrink-0" />
+                    <AlertTriangle className="h-4 w-4 text-warning-strong mt-1 mr-2 shrink-0" />
                     <span>Original characters in established universes</span>
                   </li>
                   <li className="flex items-start">
-                    <AlertTriangle className="h-4 w-4 text-yellow-600 mt-1 mr-2 shrink-0" />
+                    <AlertTriangle className="h-4 w-4 text-warning-strong mt-1 mr-2 shrink-0" />
                     <span>Significant alterations to character designs</span>
                   </li>
                   <li className="flex items-start">
-                    <AlertTriangle className="h-4 w-4 text-yellow-600 mt-1 mr-2 shrink-0" />
+                    <AlertTriangle className="h-4 w-4 text-warning-strong mt-1 mr-2 shrink-0" />
                     <span>Use of distinctive phrases or quotes</span>
                   </li>
                   <li className="flex items-start">
-                    <AlertTriangle className="h-4 w-4 text-yellow-600 mt-1 mr-2 shrink-0" />
+                    <AlertTriangle className="h-4 w-4 text-warning-strong mt-1 mr-2 shrink-0" />
                     <span>Commercial use requests</span>
                   </li>
                 </ul>
@@ -203,28 +203,28 @@ export default function BrandGuidelinesPage() {
                   </p>
                   <ul className="space-y-3">
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 mr-2 shrink-0" />
+                      <CheckCircle className="h-5 w-5 text-success mt-0.5 mr-2 shrink-0" />
                       <span>
                         <strong>Maintain core visual elements</strong> that make the character
                         recognizable, while adding your own artistic interpretation.
                       </span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 mr-2 shrink-0" />
+                      <CheckCircle className="h-5 w-5 text-success mt-0.5 mr-2 shrink-0" />
                       <span>
                         <strong>Respect the character's personality</strong> and avoid depicting
                         them in ways that contradict their established traits.
                       </span>
                     </li>
                     <li className="flex items-start">
-                      <XCircle className="h-5 w-5 text-red-600 mt-0.5 mr-2 shrink-0" />
+                      <XCircle className="h-5 w-5 text-destructive mt-0.5 mr-2 shrink-0" />
                       <span>
                         <strong>Avoid explicit content</strong> featuring characters, especially
                         those from family-friendly IPs.
                       </span>
                     </li>
                     <li className="flex items-start">
-                      <XCircle className="h-5 w-5 text-red-600 mt-0.5 mr-2 shrink-0" />
+                      <XCircle className="h-5 w-5 text-destructive mt-0.5 mr-2 shrink-0" />
                       <span>
                         <strong>Don't create offensive or harmful depictions</strong> that could
                         damage the character's reputation or brand.
@@ -244,7 +244,7 @@ export default function BrandGuidelinesPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Badge className="bg-green-100 text-green-800">Acceptable</Badge>
+                      <Badge className="bg-success-subtle text-success">Acceptable</Badge>
                       <ul className="text-sm space-y-1">
                         <li>• Original art style</li>
                         <li>• Recognizable character</li>
@@ -252,7 +252,7 @@ export default function BrandGuidelinesPage() {
                       </ul>
                     </div>
                     <div className="space-y-2">
-                      <Badge className="bg-red-100 text-red-800">Unacceptable</Badge>
+                      <Badge className="bg-destructive-subtle text-destructive">Unacceptable</Badge>
                       <ul className="text-sm space-y-1">
                         <li>• Copied official art</li>
                         <li>• Offensive portrayal</li>
@@ -274,28 +274,28 @@ export default function BrandGuidelinesPage() {
                   </p>
                   <ul className="space-y-3">
                     <li className="flex items-start">
-                      <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5 mr-2 shrink-0" />
+                      <AlertTriangle className="h-5 w-5 text-warning-strong mt-0.5 mr-2 shrink-0" />
                       <span>
                         <strong>Avoid direct use of logos</strong> whenever possible. Consider
                         creating art inspired by the IP without including the actual logo.
                       </span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 mr-2 shrink-0" />
+                      <CheckCircle className="h-5 w-5 text-success mt-0.5 mr-2 shrink-0" />
                       <span>
                         <strong>Stylized or reimagined versions</strong> of logos may be acceptable
                         if they're clearly transformative and not confused with official branding.
                       </span>
                     </li>
                     <li className="flex items-start">
-                      <XCircle className="h-5 w-5 text-red-600 mt-0.5 mr-2 shrink-0" />
+                      <XCircle className="h-5 w-5 text-destructive mt-0.5 mr-2 shrink-0" />
                       <span>
                         <strong>Never use logos or trademarks</strong> in ways that suggest official
                         endorsement or affiliation.
                       </span>
                     </li>
                     <li className="flex items-start">
-                      <XCircle className="h-5 w-5 text-red-600 mt-0.5 mr-2 shrink-0" />
+                      <XCircle className="h-5 w-5 text-destructive mt-0.5 mr-2 shrink-0" />
                       <span>
                         <strong>Avoid modifying logos</strong> in ways that could be seen as
                         disparaging or damaging to the brand.
@@ -315,7 +315,7 @@ export default function BrandGuidelinesPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Badge className="bg-green-100 text-green-800">Acceptable</Badge>
+                      <Badge className="bg-success-subtle text-success">Acceptable</Badge>
                       <ul className="text-sm space-y-1">
                         <li>• Artistic reinterpretation</li>
                         <li>• Clearly labeled as fan art</li>
@@ -323,7 +323,7 @@ export default function BrandGuidelinesPage() {
                       </ul>
                     </div>
                     <div className="space-y-2">
-                      <Badge className="bg-red-100 text-red-800">Unacceptable</Badge>
+                      <Badge className="bg-destructive-subtle text-destructive">Unacceptable</Badge>
                       <ul className="text-sm space-y-1">
                         <li>• Direct logo copying</li>
                         <li>• Misleading branding</li>
@@ -345,28 +345,28 @@ export default function BrandGuidelinesPage() {
                   </p>
                   <ul className="space-y-3">
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 mr-2 shrink-0" />
+                      <CheckCircle className="h-5 w-5 text-success mt-0.5 mr-2 shrink-0" />
                       <span>
                         <strong>Recreating iconic locations</strong> from an IP is generally
                         acceptable when done in your own style.
                       </span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 mr-2 shrink-0" />
+                      <CheckCircle className="h-5 w-5 text-success mt-0.5 mr-2 shrink-0" />
                       <span>
                         <strong>Adding your own elements</strong> to established worlds can create
                         interesting transformative works.
                       </span>
                     </li>
                     <li className="flex items-start">
-                      <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5 mr-2 shrink-0" />
+                      <AlertTriangle className="h-5 w-5 text-warning-strong mt-0.5 mr-2 shrink-0" />
                       <span>
                         <strong>Be careful with distinctive visual elements</strong> that are
                         strongly associated with the IP and may be protected.
                       </span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 mr-2 shrink-0" />
+                      <CheckCircle className="h-5 w-5 text-success mt-0.5 mr-2 shrink-0" />
                       <span>
                         <strong>Creating "what if" scenarios</strong> or alternate versions of
                         established settings is often well-received.
@@ -386,7 +386,7 @@ export default function BrandGuidelinesPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Badge className="bg-green-100 text-green-800">Acceptable</Badge>
+                      <Badge className="bg-success-subtle text-success">Acceptable</Badge>
                       <ul className="text-sm space-y-1">
                         <li>• Original interpretation</li>
                         <li>• Expanded universe concepts</li>
@@ -394,7 +394,7 @@ export default function BrandGuidelinesPage() {
                       </ul>
                     </div>
                     <div className="space-y-2">
-                      <Badge className="bg-red-100 text-red-800">Unacceptable</Badge>
+                      <Badge className="bg-destructive-subtle text-destructive">Unacceptable</Badge>
                       <ul className="text-sm space-y-1">
                         <li>• Direct copying of maps/designs</li>
                         <li>• Claiming ownership of the world</li>
@@ -416,28 +416,28 @@ export default function BrandGuidelinesPage() {
                   </p>
                   <ul className="space-y-3">
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 mr-2 shrink-0" />
+                      <CheckCircle className="h-5 w-5 text-success mt-0.5 mr-2 shrink-0" />
                       <span>
                         <strong>Illustrating key moments</strong> from the original story in your
                         own style is generally acceptable.
                       </span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 mr-2 shrink-0" />
+                      <CheckCircle className="h-5 w-5 text-success mt-0.5 mr-2 shrink-0" />
                       <span>
                         <strong>Creating "what if" scenarios</strong> or alternate storylines is
                         often well-received by IP holders.
                       </span>
                     </li>
                     <li className="flex items-start">
-                      <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5 mr-2 shrink-0" />
+                      <AlertTriangle className="h-5 w-5 text-warning-strong mt-0.5 mr-2 shrink-0" />
                       <span>
                         <strong>Be mindful of unreleased plot points</strong> - creating fan art
                         based on leaks or spoilers may be problematic.
                       </span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 mr-2 shrink-0" />
+                      <CheckCircle className="h-5 w-5 text-success mt-0.5 mr-2 shrink-0" />
                       <span>
                         <strong>Sequential art or comics</strong> that tell original stories with
                         established characters can be acceptable with proper licensing.
@@ -457,7 +457,7 @@ export default function BrandGuidelinesPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Badge className="bg-green-100 text-green-800">Acceptable</Badge>
+                      <Badge className="bg-success-subtle text-success">Acceptable</Badge>
                       <ul className="text-sm space-y-1">
                         <li>• Alternative storylines</li>
                         <li>• Original scenes with characters</li>
@@ -465,7 +465,7 @@ export default function BrandGuidelinesPage() {
                       </ul>
                     </div>
                     <div className="space-y-2">
-                      <Badge className="bg-red-100 text-red-800">Unacceptable</Badge>
+                      <Badge className="bg-destructive-subtle text-destructive">Unacceptable</Badge>
                       <ul className="text-sm space-y-1">
                         <li>• Copying exact dialogue/scenes</li>
                         <li>• Using unreleased/leaked content</li>
@@ -560,7 +560,7 @@ export default function BrandGuidelinesPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="p-4 bg-gray-50 rounded-md border">
+                    <div className="p-4 bg-muted rounded-md border">
                       <h4 className="font-medium mb-2">Sample Disclaimer</h4>
                       <p className="text-sm text-muted-foreground italic">
                         "This is fan art based on [IP Name]. All characters, settings, and related
@@ -572,15 +572,15 @@ export default function BrandGuidelinesPage() {
                       <h4 className="font-medium">Always Include:</h4>
                       <ul className="space-y-1">
                         <li className="flex items-start">
-                          <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 mr-2 shrink-0" />
+                          <CheckCircle className="h-4 w-4 text-success mt-0.5 mr-2 shrink-0" />
                           <span>Clear statement that it's fan art</span>
                         </li>
                         <li className="flex items-start">
-                          <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 mr-2 shrink-0" />
+                          <CheckCircle className="h-4 w-4 text-success mt-0.5 mr-2 shrink-0" />
                           <span>Acknowledgment of the original IP owner</span>
                         </li>
                         <li className="flex items-start">
-                          <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 mr-2 shrink-0" />
+                          <CheckCircle className="h-4 w-4 text-success mt-0.5 mr-2 shrink-0" />
                           <span>Disclaimer of any official affiliation</span>
                         </li>
                       </ul>
@@ -589,10 +589,10 @@ export default function BrandGuidelinesPage() {
                 </CardContent>
               </Card>
 
-              <Alert className="bg-blue-50 border-blue-200">
-                <Info className="h-4 w-4 text-blue-600" />
-                <AlertTitle className="text-blue-800">Legal Protection Through MOD</AlertTitle>
-                <AlertDescription className="text-blue-700">
+              <Alert className="bg-info-subtle border-info/30">
+                <Info className="h-4 w-4 text-info" />
+                <AlertTitle className="text-info">Legal Protection Through MOD</AlertTitle>
+                <AlertDescription className="text-info">
                   By submitting your fan art through the MOD Platform and receiving approval, you
                   gain legal protection and clarity about how your work can be used and monetized.
                 </AlertDescription>
@@ -736,7 +736,7 @@ export default function BrandGuidelinesPage() {
               </p>
               <ol className="space-y-4">
                 <li className="flex">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-white mr-3 shrink-0">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground mr-3 shrink-0">
                     1
                   </div>
                   <div>
@@ -748,7 +748,7 @@ export default function BrandGuidelinesPage() {
                   </div>
                 </li>
                 <li className="flex">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-white mr-3 shrink-0">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground mr-3 shrink-0">
                     2
                   </div>
                   <div>
@@ -760,7 +760,7 @@ export default function BrandGuidelinesPage() {
                   </div>
                 </li>
                 <li className="flex">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-white mr-3 shrink-0">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground mr-3 shrink-0">
                     3
                   </div>
                   <div>
@@ -772,7 +772,7 @@ export default function BrandGuidelinesPage() {
                   </div>
                 </li>
                 <li className="flex">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-white mr-3 shrink-0">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground mr-3 shrink-0">
                     4
                   </div>
                   <div>
@@ -784,7 +784,7 @@ export default function BrandGuidelinesPage() {
                   </div>
                 </li>
                 <li className="flex">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-white mr-3 shrink-0">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground mr-3 shrink-0">
                     5
                   </div>
                   <div>
@@ -798,7 +798,7 @@ export default function BrandGuidelinesPage() {
               </ol>
             </div>
             <div className="space-y-6">
-              <Card className="bg-[#f5edff]">
+              <Card className="bg-primary-subtle">
                 <CardHeader>
                   <CardTitle>Submission Checklist</CardTitle>
                   <CardDescription>
@@ -808,29 +808,29 @@ export default function BrandGuidelinesPage() {
                 <CardContent>
                   <ul className="space-y-2">
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-[#9747ff] mt-0.5 mr-2 shrink-0" />
+                      <CheckCircle className="h-5 w-5 text-primary mt-0.5 mr-2 shrink-0" />
                       <span>
                         High-quality images of your fan art (minimum 1200px on longest side)
                       </span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-[#9747ff] mt-0.5 mr-2 shrink-0" />
+                      <CheckCircle className="h-5 w-5 text-primary mt-0.5 mr-2 shrink-0" />
                       <span>Clear identification of which IP your fan art is based on</span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-[#9747ff] mt-0.5 mr-2 shrink-0" />
+                      <CheckCircle className="h-5 w-5 text-primary mt-0.5 mr-2 shrink-0" />
                       <span>Detailed description of your fan art and its elements</span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-[#9747ff] mt-0.5 mr-2 shrink-0" />
+                      <CheckCircle className="h-5 w-5 text-primary mt-0.5 mr-2 shrink-0" />
                       <span>Selected your preferred licensing options</span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-[#9747ff] mt-0.5 mr-2 shrink-0" />
+                      <CheckCircle className="h-5 w-5 text-primary mt-0.5 mr-2 shrink-0" />
                       <span>Confirmation that this is your original work</span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-[#9747ff] mt-0.5 mr-2 shrink-0" />
+                      <CheckCircle className="h-5 w-5 text-primary mt-0.5 mr-2 shrink-0" />
                       <span>Reviewed the specific guidelines for your chosen IP</span>
                     </li>
                   </ul>
@@ -839,13 +839,13 @@ export default function BrandGuidelinesPage() {
 
               <div className="flex justify-center">
                 <Link href="/submissions/new">
-                  <Button size="lg" className="bg-[#9747ff] hover:bg-[#8035e0]">
+                  <Button size="lg" className="bg-primary hover:bg-primary-hover">
                     Submit Your Fan Art
                   </Button>
                 </Link>
               </div>
 
-              <div className="p-4 bg-gray-50 rounded-lg border">
+              <div className="p-4 bg-muted rounded-lg border">
                 <h4 className="font-medium mb-2">Need Help?</h4>
                 <p className="text-sm text-muted-foreground mb-4">
                   If you have questions about the submission process or guidelines for a specific
@@ -891,7 +891,7 @@ export default function BrandGuidelinesPage() {
                   process.
                 </p>
                 <Button variant="outline" className="w-full" asChild>
-                  <Link href="/resources/tutorials">View Tutorials</Link>
+                  <Link href="/resources/support">View Tutorials</Link>
                 </Button>
               </CardContent>
             </Card> */}
@@ -1001,7 +1001,7 @@ export default function BrandGuidelinesPage() {
           <div className="relative rounded-3xl overflow-hidden bg-black text-white text-center py-16 px-8">
             {/* purple glow */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-72 h-40 bg-purple-600 blur-[80px] opacity-60 rounded-full" />
+              <div className="w-72 h-40 bg-primary blur-[80px] opacity-60 rounded-full" />
             </div>
 
             <div className="relative z-10">
@@ -1020,9 +1020,9 @@ export default function BrandGuidelinesPage() {
                   (t, i) => (
                     <div
                       key={i}
-                      className="flex items-center gap-2 bg-white/10 rounded-full px-5 py-2 text-xs font-medium hover:bg-white/20 transition-colors"
+                      className="flex items-center gap-2 bg-background/10 rounded-full px-5 py-2 text-xs font-medium hover:bg-background/20 transition-colors"
                     >
-                      <CheckCircle size={13} className="text-purple-400" /> {t}
+                      <CheckCircle size={13} className="text-primary" /> {t}
                     </div>
                   ),
                 )}
@@ -1030,12 +1030,12 @@ export default function BrandGuidelinesPage() {
 
               <div className="mt-7 flex flex-col sm:flex-row items-center justify-center gap-3">
                 <Link href="/submissions/new">
-                  <Button className="bg-purple-600 hover:bg-purple-700 rounded-full px-8 flex items-center gap-2">
+                  <Button className="bg-primary hover:bg-primary-hover rounded-full px-8 flex items-center gap-2">
                     <Upload size={15} /> Submit Your Fan Art
                   </Button>
                 </Link>
                 <Link href="/signup">
-                  <Button variant="outline" className="text-black rounded-full px-8">
+                  <Button variant="outline" className="text-foreground rounded-full px-8">
                     Create an Account
                   </Button>
                 </Link>

@@ -1,3 +1,4 @@
+const { requireGoodStanding } = require('../../common/policy');
 const router = require('express').Router();
 
 const controller = require('./cart.controller');
@@ -16,6 +17,6 @@ router.patch('/items/:itemId', controller.updateItem);
 
 router.delete('/items/:itemId', controller.removeItem);
 
-router.post('/checkout', controller.checkout);
+router.post('/checkout', requireGoodStanding, controller.checkout);
 
 module.exports = router;

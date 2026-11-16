@@ -117,14 +117,14 @@ export function AITestForm() {
       </form>
 
       {error && (
-        <div className="p-4 bg-red-50 text-red-800 rounded-md">
+        <div className="p-4 bg-destructive-subtle text-destructive rounded-md">
           <p className="font-medium">Error</p>
           <p className="text-sm">{error}</p>
         </div>
       )}
 
       {result && (
-        <Card className="p-4 bg-slate-50 rounded-md overflow-auto">
+        <Card className="p-4 bg-muted rounded-md overflow-auto">
           <p className="font-medium mb-2">Result</p>
           <pre className="text-xs">{JSON.stringify(result, null, 2)}</pre>
         </Card>

@@ -77,6 +77,9 @@ export const licensesApi = createApi({
     // ── Buyer: My licenses ────────────────────────────────
     getMyLicenses: builder.query<License[], void>({
       query: () => '/me',
+      // The API responds { licenses: [...] }; consumers expect the array.
+      transformResponse: (res: { licenses?: License[] } | License[]) =>
+        Array.isArray(res) ? res : (res?.licenses ?? []),
       providesTags: ['MyLicenses'],
     }),
 

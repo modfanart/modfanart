@@ -4,7 +4,7 @@ const controller = require('./payout.controller');
 const {
   authenticateToken,
 } = require('../../common/middleware/auth.middleware');
-const { hasPermission } = require('../../common/middleware/permission.middleware');
+const { hasPermission, hasAnyPermission } = require('../../common/middleware/permission.middleware');
 
 router.use(authenticateToken);
 
@@ -12,7 +12,7 @@ router.use(authenticateToken);
 router.get('/mine', controller.getMyPayouts);
 
 // Admin/finance overview of every payout across sellers.
-router.get('/', hasPermission('payouts.manage'), controller.listAllPayouts);
+router.get('/', hasAnyPermission('payouts.view', 'payouts.manage'), controller.listAllPayouts);
 
 // Admin/finance-only from here down — a seller must never be able to create
 // or settle their own payout.
@@ -24,9 +24,11 @@ router.post(
   controller.generateForOrder
 );
 
+// GA-12 segregation of duties: preparing payouts (payouts.manage) and
+// approving them as paid (payouts.approve) are separate permissions.
 router.patch(
   '/:id/paid',
-  hasPermission('payouts.manage'),
+  hasPermission('payouts.approve'),
   controller.markPaid
 );
 

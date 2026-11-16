@@ -383,32 +383,12 @@ export const brandApi = createApi({
       invalidatesTags: ['VerificationRequestList'],
     }),
 
-    getVerificationRequests: builder.query<BrandVerificationRequest[], void>({
-      query: () => '/verification-requests',
-      providesTags: ['VerificationRequestList'],
-    }),
 
-    approveVerificationRequest: builder.mutation<Success, { requestId: string; notes?: string }>({
-      query: ({ requestId, ...body }) => ({
-        url: `/verification-requests/${requestId}/approve`,
-        method: 'PATCH',
-        body,
-      }),
-      invalidatesTags: ['VerificationRequestList', 'MyBrands'],
-    }),
 
-    /* =========================
-       ADMIN
-    ========================= */
 
-    adminCreateBrand: builder.mutation<Brand, any>({
-      query: (body) => ({
-        url: '/',
-        method: 'POST',
-        body,
-      }),
-      invalidatesTags: ['Brand', 'MyBrands'],
-    }),
+
+
+
   }),
 });
 
@@ -451,10 +431,6 @@ export const {
   useLikeBrandPostCommentMutation,
 
   useSubmitBrandVerificationRequestMutation,
-  useGetVerificationRequestsQuery,
-  useApproveVerificationRequestMutation,
-
-  useAdminCreateBrandMutation,
 } = brandApi;
 
 export default brandApi;

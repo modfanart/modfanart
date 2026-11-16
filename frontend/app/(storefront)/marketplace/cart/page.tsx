@@ -18,6 +18,7 @@ import {
 } from '@/services/api/marketplaceApi';
 import { cartItemProblem } from '@/lib/marketplace/cart';
 import { formatMoney, priceCents, titleCase } from '@/lib/marketplace/format';
+import { productHref } from '@/lib/links';
 
 function CartContent() {
   const { toast } = useToast();
@@ -78,7 +79,7 @@ function CartContent() {
               const problem = cartItemProblem(item);
               const href =
                 item.item_type === 'merch_variant' && item.merch_product_id
-                  ? `/marketplace/product/${item.merch_product_id}`
+                  ? productHref({ id: item.merch_product_id, slug: item.merch_product_slug })
                   : item.artwork_id
                     ? `/artwork/${item.artwork_id}`
                     : '#';
@@ -136,7 +137,14 @@ function CartContent() {
                             variant="outline"
                             size="icon"
                             className="h-8 w-8 rounded-l-none"
-                            disabled={updating}
+                            // Don't let buyers add more than is in stock (the
+                            // server rejects it at checkout anyway).
+                            disabled={
+                              updating ||
+                              (item.fulfillment_type === 'in_house_stock' &&
+                                item.stock_qty != null &&
+                                item.quantity >= item.stock_qty)
+                            }
                             onClick={() =>
                               updateItem({ itemId: item.id, quantity: item.quantity + 1 })
                                 .unwrap()
@@ -210,15 +218,16 @@ function CartContent() {
             </p>
           )}
 
-          <Button size="lg" className="w-full" asChild disabled={problems.length > 0}>
-            <Link
-              href="/marketplace/checkout"
-              aria-disabled={problems.length > 0}
-              className={problems.length > 0 ? 'pointer-events-none opacity-50' : ''}
-            >
+          {problems.length > 0 ? (
+            // A Link can't be disabled (keyboard Enter still navigated).
+            <Button size="lg" className="w-full" disabled>
               Proceed to checkout
-            </Link>
-          </Button>
+            </Button>
+          ) : (
+            <Button size="lg" className="w-full" asChild>
+              <Link href="/marketplace/checkout">Proceed to checkout</Link>
+            </Button>
+          )}
         </aside>
       </div>
     </div>

@@ -37,7 +37,7 @@ export function Overview() {
       config={{
         total: {
           label: 'Earnings',
-          color: '#9747ff',
+          color: 'hsl(var(--primary))',
         },
       }}
       className="h-[250px]"
@@ -67,7 +67,7 @@ export function Overview() {
             strokeWidth={2}
             activeDot={{
               r: 6,
-              style: { fill: '#9747ff' },
+              style: { fill: 'hsl(var(--primary))' },
             }}
             style={{
               stroke: 'var(--color-total)',

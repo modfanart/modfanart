@@ -86,7 +86,7 @@ export function ReviewDialog({ item }: { item: OrderItem }) {
                   <Star
                     className={cn(
                       'h-8 w-8 transition-colors',
-                      n <= rating ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/40'
+                      n <= rating ? 'fill-warning-strong text-warning-strong' : 'text-muted-foreground/40'
                     )}
                   />
                 </button>

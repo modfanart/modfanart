@@ -421,7 +421,7 @@ export default function SupportPage() {
             </CardContent>
             <CardFooter>
               <Button variant="outline" className="w-full" asChild>
-                <Link href="/resources/tutorials">Watch Tutorials</Link>
+                <Link href="/resources/guidelines">Watch Tutorials</Link>
               </Button>
             </CardFooter>
           </Card>
@@ -439,7 +439,7 @@ export default function SupportPage() {
             </CardContent>
             <CardFooter>
               <Button variant="outline" className="w-full" asChild>
-                <Link href="/resources/knowledge-base">Browse Articles</Link>
+                <Link href="/resources/guidelines">Browse Articles</Link>
               </Button>
             </CardFooter>
           </Card>
@@ -457,7 +457,7 @@ export default function SupportPage() {
             </CardContent>
             <CardFooter>
               <Button variant="outline" className="w-full" asChild>
-                <Link href="/community">Visit Forum</Link>
+                <Link href="/explore">Visit Forum</Link>
               </Button>
             </CardFooter>
           </Card>

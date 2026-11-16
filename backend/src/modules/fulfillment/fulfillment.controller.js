@@ -1,4 +1,9 @@
 const service = require('./fulfillment.service');
+const { userCan } = require('../../common/middleware/require-admin');
+
+// Staff with orders.confirm act on any fulfilment; everyone else only on
+// their own (null sellerId = staff override in the service).
+const actorSellerId = (user) => (userCan(user, 'orders.confirm') ? null : user.id);
 
 function handleError(res, error) {
   console.error(error);
@@ -43,9 +48,10 @@ async function createFulfillment(req, res) {
 async function updateStatus(req, res) {
   try {
     const fulfillment = await service.updateStatus(
-      req.user.id,
+      actorSellerId(req.user),
       req.params.id,
-      req.body.status
+      req.body.status,
+      req.params.orderId
     );
 
     return res.json({
@@ -60,9 +66,10 @@ async function updateStatus(req, res) {
 async function updateTracking(req, res) {
   try {
     const fulfillment = await service.updateTracking(
-      req.user.id,
+      actorSellerId(req.user),
       req.params.id,
-      req.body
+      req.body,
+      req.params.orderId
     );
 
     return res.json({

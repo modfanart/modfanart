@@ -33,13 +33,13 @@ export default function CategoriesPage() {
     <div className="container mx-auto px-4 py-10">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-gray-900">Categories</h1>
-        <p className="text-gray-600 mt-2">Explore different types of artworks and collections</p>
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">Categories</h1>
+        <p className="text-muted-foreground mt-2">Explore different types of artworks and collections</p>
       </div>
 
       {/* 🔍 Search Bar */}
       <div className="mb-6 relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Search categories..."
           value={search}
@@ -63,10 +63,10 @@ export default function CategoriesPage() {
       {/* Error State */}
       {isError && (
         <div className="text-center py-20">
-          <p className="text-red-600 font-medium">Failed to load categories</p>
+          <p className="text-destructive font-medium">Failed to load categories</p>
           <button
             onClick={() => refetch()}
-            className="mt-4 px-4 py-2 border rounded-md hover:bg-gray-100"
+            className="mt-4 px-4 py-2 border rounded-md hover:bg-muted"
           >
             Try Again
           </button>
@@ -76,11 +76,11 @@ export default function CategoriesPage() {
       {/* Empty State */}
       {!isLoading && !isError && filteredCategories.length === 0 && (
         <div className="text-center py-20">
-          <div className="mx-auto w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-            <Grid className="h-8 w-8 text-gray-400" />
+          <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+            <Grid className="h-8 w-8 text-muted-foreground" />
           </div>
-          <h3 className="text-xl font-semibold text-gray-900">No categories found</h3>
-          <p className="text-gray-500 mt-2">
+          <h3 className="text-xl font-semibold text-foreground">No categories found</h3>
+          <p className="text-muted-foreground mt-2">
             {search ? 'Try a different search term' : 'New categories will appear here soon.'}
           </p>
         </div>
@@ -91,10 +91,10 @@ export default function CategoriesPage() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
           {filteredCategories.map((cat) => (
             <Link key={cat.id} href={`/category/${cat.slug}`}>
-              <Card className="group cursor-pointer hover:shadow-lg transition-all duration-300 border border-gray-200 hover:border-gray-300">
+              <Card className="group cursor-pointer hover:shadow-lg transition-all duration-300 border border-border hover:border-border">
                 <CardContent className="p-4 space-y-2">
                   <div className="flex items-center justify-between">
-                    <h2 className="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">
+                    <h2 className="font-semibold text-foreground group-hover:text-primary transition-colors">
                       {cat.name}
                     </h2>
 
@@ -104,7 +104,7 @@ export default function CategoriesPage() {
                   </div>
 
                   {cat.description && (
-                    <p className="text-sm text-gray-500 line-clamp-2">{cat.description}</p>
+                    <p className="text-sm text-muted-foreground line-clamp-2">{cat.description}</p>
                   )}
                 </CardContent>
               </Card>

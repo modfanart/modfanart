@@ -36,7 +36,7 @@ export default function BrandArtworksPage() {
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold">Storefront Artworks</h1>
         <Button asChild>
-          <Link href={`/dashboard/brand/${brandSlug}/${user?.id}/artworks/new`}>
+          <Link href={`/brand-manager/${brandSlug}/store/products/new`}>
             <PlusCircle className="mr-2 h-4 w-4" />
             Add Artwork
           </Link>
@@ -47,7 +47,7 @@ export default function BrandArtworksPage() {
         <div className="text-center py-16 border rounded-lg">
           <p className="text-lg text-muted-foreground">No artworks in storefront yet</p>
           <Button className="mt-4" asChild>
-            <Link href={`/dashboard/brand/${brandSlug}/${user?.id}/artworks/new`}>
+            <Link href={`/brand-manager/${brandSlug}/store/products/new`}>
               Add your first artwork
             </Link>
           </Button>

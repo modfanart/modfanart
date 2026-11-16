@@ -1,24 +1,13 @@
 // src/services/api/notifyApi.js
 
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { createApi } from '@reduxjs/toolkit/query/react';
+import { createBaseQuery } from '../baseQuery';
 import { API_BASE_URL } from '..';
 
 export const notifyApi = createApi({
   reducerPath: 'notifyApi',
 
-  baseQuery: fetchBaseQuery({
-    baseUrl: `${API_BASE_URL}/notifications`,
-
- prepareHeaders: (headers) => {
-    const token = localStorage.getItem('accessToken');
-
-    if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
-    }
-
-    return headers;
-  },
-  }),
+  baseQuery: createBaseQuery('/notifications'),
 
   tagTypes: ['Notifications', 'UnreadCount'],
 

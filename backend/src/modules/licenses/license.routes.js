@@ -1,5 +1,6 @@
 // backend/src/routes/license.routes.js
 const express = require('express');
+const { requireGoodStanding } = require('../../common/policy');
 const router = express.Router();
 
 const LicenseController = require('./controller/license.controller'); // ← plural "controllers"
@@ -7,8 +8,11 @@ const { authenticateToken } = require('../../common/middleware/auth.middleware')
 const { hasPermission } = require('../../common/middleware/permission.middleware');
 const LicensePurchaseController = require('./controller/licensePurchase.controller');
 // All license routes require authentication
-// router.use(authenticateToken);
-router.post('/checkout', LicensePurchaseController.createCheckoutSession);
+// BUG FIX: this line was commented out, so req.user was never set and every
+// license/order endpoint (purchase, my licenses, issued, revoke) failed
+// with 401/500 - the licensing flow could not work at all.
+router.use(authenticateToken);
+router.post('/checkout', requireGoodStanding, LicensePurchaseController.createCheckoutSession);
 // ────────────────────────────────────────────────
 // User (buyer) routes
 // ────────────────────────────────────────────────

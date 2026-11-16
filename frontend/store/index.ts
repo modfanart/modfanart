@@ -9,12 +9,10 @@ import authApi from '@/services/api/authApi';
 import userApi from '@/services/api/userApi';
 import rolesApi from '@/services/api/rolesApi';
 import marketplaceApi from '@/services/api/marketplaceApi';
-import moderationApi from '@/services/api/moderationApi';
 import licensesApi from '@/services/api/licenseApi';
 import favoritesApi from '@/services/api/favoriteApi';
 import contestsApi from '@/services/api/contestsApi';
 import categoriesApi from '@/services/api/categoriesApi';
-import auditApi from '@/services/api/auditApi';
 import artworkApi from '@/services/api/artworkApi';
 import artworkTagsApi from '@/services/api/artworkTagsApi';
 import brandApi from '@/services/api/brands';
@@ -26,8 +24,6 @@ import { contactApi } from '@/services/api/contactApi';
 // Reducers (slices)
 // ────────────────────────────────────────────────
 import authReducer from '@/services/api/features/authSlice';
-import { adminApi } from '@/services/api/adminApi';
-import { merchApi } from '@/services/api/merchApi';
 // import otherSliceReducer from '@/features/other/otherSlice';  // add more as needed
 
 // Auth state is restored via the Firebase onIdTokenChanged listener in Providers.tsx.
@@ -42,18 +38,15 @@ export const store = configureStore({
     auth: authReducer,
     // Add other non-RTK reducers here when you create them
     // example: theme: themeReducer,
-    [adminApi.reducerPath]: adminApi.reducer,
     // RTK Query auto-generated reducers
     [authApi.reducerPath]: authApi.reducer,
     [userApi.reducerPath]: userApi.reducer,
     [rolesApi.reducerPath]: rolesApi.reducer,
     [marketplaceApi.reducerPath]: marketplaceApi.reducer,
-    [moderationApi.reducerPath]: moderationApi.reducer,
     [licensesApi.reducerPath]: licensesApi.reducer,
     [favoritesApi.reducerPath]: favoritesApi.reducer,
     [contestsApi.reducerPath]: contestsApi.reducer,
     [categoriesApi.reducerPath]: categoriesApi.reducer,
-    [auditApi.reducerPath]: auditApi.reducer,
     [artworkApi.reducerPath]: artworkApi.reducer,
     [artworkTagsApi.reducerPath]: artworkTagsApi.reducer,
     [contactApi.reducerPath]: contactApi.reducer,
@@ -61,7 +54,6 @@ export const store = configureStore({
     [collectionsApi.reducerPath]: collectionsApi.reducer,
     [searchApi.reducerPath]: searchApi.reducer,
     [notifyApi.reducerPath]: notifyApi.reducer,
-    [merchApi.reducerPath]: merchApi.reducer,
   },
 
   middleware: (getDefaultMiddleware) =>
@@ -75,14 +67,10 @@ export const store = configureStore({
       rolesApi.middleware,
       marketplaceApi.middleware,
       contactApi.middleware,
-      adminApi.middleware,
-      moderationApi.middleware,
       licensesApi.middleware,
-      merchApi.middleware,
       favoritesApi.middleware,
       contestsApi.middleware,
       categoriesApi.middleware,
-      auditApi.middleware,
       artworkApi.middleware,
       artworkTagsApi.middleware,
       brandApi.middleware,

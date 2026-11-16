@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { CheckCircle, Clock } from 'lucide-react';
@@ -17,20 +17,67 @@ function SuccessContent() {
 
   // Poll briefly: if Stripe reports "processing", the webhook flips the
   // orders to paid a moment later.
-  const { data: orders } = useGetMyOrdersQuery(undefined, { pollingInterval: 4000 });
+  // Polling used to run forever; stop once every order has left 'pending'
+  // (or after ~2 minutes, when the webhook has clearly had its chance).
+  const [stopPolling, setStopPolling] = useState(false);
+  const { data: orders } = useGetMyOrdersQuery(undefined, {
+    pollingInterval: stopPolling ? 0 : 4000,
+  });
   const mine = (orders ?? []).filter((o) => ids.includes(o.id));
 
-  const allPaid = mine.length > 0 && mine.every((o) => o.status !== 'pending');
+  // 'failed' is also "not pending" — it must not render as "Order confirmed!".
+  const allPaid =
+    mine.length > 0 && mine.every((o) => ['paid', 'fulfilled'].includes(o.status));
+  const anyFailed = mine.some((o) => o.status === 'failed');
+  const settled = mine.length > 0 && mine.every((o) => o.status !== 'pending');
+
+  useEffect(() => {
+    if (settled) setStopPolling(true);
+  }, [settled]);
+  useEffect(() => {
+    const t = setTimeout(() => setStopPolling(true), 120_000);
+    return () => clearTimeout(t);
+  }, []);
   const total = mine.reduce((s, o) => s + o.total_cents, 0);
   const hasLicenses = mine.some((o) => o.items.some((i) => i.item_type === 'license'));
   const hasMerch = mine.some((o) => o.items.some((i) => i.item_type === 'merch_variant'));
 
+  // Visiting this URL without a real, owned order must not show a fake
+  // "payment received" confirmation (COM-02).
+  if (orders && mine.length === 0) {
+    return (
+      <div className="mx-auto max-w-lg py-8 text-center">
+        <h1 className="mb-2 text-2xl font-bold">No order to show</h1>
+        <p className="mb-8 text-muted-foreground">
+          We couldn&apos;t find that order on your account.
+        </p>
+        <Button asChild>
+          <Link href="/marketplace/orders">View my orders</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  if (anyFailed) {
+    return (
+      <div className="mx-auto max-w-lg py-8 text-center">
+        <h1 className="mb-2 text-2xl font-bold text-destructive">Payment didn&apos;t go through</h1>
+        <p className="mb-8 text-muted-foreground">
+          Your card wasn&apos;t charged. You can retry from your orders.
+        </p>
+        <Button asChild>
+          <Link href="/marketplace/orders">Go to my orders</Link>
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-lg py-8 text-center">
       {allPaid ? (
-        <CheckCircle className="mx-auto mb-4 h-16 w-16 text-emerald-500" />
+        <CheckCircle className="mx-auto mb-4 h-16 w-16 text-success" />
       ) : (
-        <Clock className="mx-auto mb-4 h-16 w-16 text-amber-500" />
+        <Clock className="mx-auto mb-4 h-16 w-16 text-warning-strong" />
       )}
       <h1 className="mb-2 text-2xl font-bold md:text-3xl">
         {allPaid ? 'Order confirmed!' : 'Payment received — finishing up'}

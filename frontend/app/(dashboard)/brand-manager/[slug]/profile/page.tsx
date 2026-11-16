@@ -77,7 +77,7 @@ export default function BrandOverviewPage() {
             : 'You are not currently managing any brand or lack permission.'}
         </p>
         <Button variant="outline" className="mt-6" asChild>
-          <Link href="/dashboard/brand">Back to My Brands</Link>
+          <Link href="/brand-manager">Back to My Brands</Link>
         </Button>
       </div>
     );
@@ -155,7 +155,7 @@ export default function BrandOverviewPage() {
               </Button>
 
               <Button asChild>
-                <Link href={`/dashboard/brand/${brandSlug}/${currentManagerId}/settings`}>
+                <Link href={`/brand-manager/${brandSlug}/settings`}>
                   <Settings className="mr-2 h-4 w-4" />
                   Settings
                 </Link>

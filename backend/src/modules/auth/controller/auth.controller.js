@@ -1,4 +1,5 @@
 const admin = require('../../../config/firebase');
+const { CURRENT_TERMS_VERSION } = require('../../../common/policy');
 const { db } = require('../../../config');
 const { sql } = require('kysely');
 const User = require('../../users/models/user.model');
@@ -190,7 +191,13 @@ class AuthController {
           avatar_url: picture || null,
           role_id: signupRole.id,
           status: 'active',
-          email_verified: firebaseEmailVerified ?? true,
+          // Was `?? true`: every account counted as verified (GA-05).
+          email_verified: firebaseEmailVerified === true,
+          // GA-22: consent captured on the signup form.
+          ...(req.body?.acceptedTermsVersion === CURRENT_TERMS_VERSION
+            ? { accepted_terms_version: CURRENT_TERMS_VERSION, accepted_terms_at: sql`NOW()` }
+            : {}),
+          ...(req.body?.ageConfirmed === true ? { age_confirmed_at: sql`NOW()` } : {}),
         });
       }
 
@@ -203,6 +210,9 @@ class AuthController {
         .set({
           last_login_at: sql`NOW()`,
           updated_at: sql`NOW()`,
+          // Keep the DB copy in step with Firebase (e.g. after the user
+          // clicks the verification link).
+          ...(firebaseEmailVerified === true ? { email_verified: true } : {}),
         })
         .where('id', '=', user.id)
         .execute();
@@ -221,6 +231,8 @@ class AuthController {
           'u.avatar_url',
           'u.status',
           'u.email_verified',
+          'u.accepted_terms_version',
+          'u.age_confirmed_at',
           'u.last_login_at',
 
           'r.id as role_id',

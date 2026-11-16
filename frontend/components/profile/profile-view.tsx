@@ -25,6 +25,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 
+import { useSelector } from 'react-redux';
+import type { RootState } from '@/store';
 import { useGetCurrentUserQuery, useGetUserByUsernameQuery } from '@/services/api/userApi';
 
 import { useGetMyArtworksQuery, useGetArtworksByCreatorQuery } from '@/services/api/artworkApi';
@@ -34,14 +36,24 @@ interface ProfileViewProps {
 }
 
 export function ProfileView({ targetUsername }: ProfileViewProps) {
-  const { data: currentData, isLoading: currentLoading } = useGetCurrentUserQuery();
+  // AUTH-08 / ART-03 / FAN-01 / BRD-01: these queries used to fire before
+  // Firebase had restored the session, so they went out without a token, got
+  // 401, and the page rendered "@user not found" on most direct loads. Wait
+  // for auth to initialise; the profile endpoint is public on the API now.
+  const authInitialized = useSelector((state: RootState) => state.auth.initialized);
+  const accessToken = useSelector((state: RootState) => state.auth.accessToken);
+
+  const { data: currentData, isLoading: currentLoading } = useGetCurrentUserQuery(undefined, {
+    skip: !authInitialized || !accessToken,
+  });
 
   const {
     data: profileUser,
     isLoading: profileLoading,
     error: profileError,
+    refetch: refetchProfile,
   } = useGetUserByUsernameQuery(targetUsername, {
-    skip: !targetUsername,
+    skip: !targetUsername || !authInitialized,
   });
 
   const currentUser = currentData?.user;
@@ -73,7 +85,7 @@ export function ProfileView({ targetUsername }: ProfileViewProps) {
 
   const artworksLoading = isOwnProfile ? myArtworksLoading : creatorArtworksLoading;
 
-  const isLoading = currentLoading || profileLoading;
+  const isLoading = !authInitialized || currentLoading || profileLoading;
 
   // ────────────────────────────────────────────────
   // STATES
@@ -84,14 +96,18 @@ export function ProfileView({ targetUsername }: ProfileViewProps) {
   }
 
   if (profileError || !profileUser) {
+    const status = (profileError as { status?: number | string } | undefined)?.status;
+    const isNotFound = !profileError || status === 404;
     return (
       <div className="text-center py-20 space-y-4">
         <h2 className="text-2xl font-semibold text-muted-foreground">
-          @{targetUsername} not found
+          {isNotFound ? `@${targetUsername} not found` : "We couldn't load this profile"}
         </h2>
-        <Button onClick={() => window.location.reload()} variant="outline">
-          Refresh Page
-        </Button>
+        {!isNotFound && (
+          <Button onClick={() => refetchProfile()} variant="outline">
+            Try again
+          </Button>
+        )}
       </div>
     );
   }
@@ -124,7 +140,7 @@ export function ProfileView({ targetUsername }: ProfileViewProps) {
         <div className="bg-gradient-to-br from-muted/40 to-muted/10 p-6 rounded-2xl border shadow-sm text-center lg:text-left">
           <Avatar className="h-28 w-28 mx-auto lg:mx-0 mb-4 ring-4 ring-background shadow-xl">
             <AvatarImage src={profileUser.avatar_url ?? undefined} />
-            <AvatarFallback className="text-4xl font-bold bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white">
+            <AvatarFallback className="text-4xl font-bold bg-gradient-to-br from-primary to-primary text-white">
               {initials}
             </AvatarFallback>
           </Avatar>
@@ -176,7 +192,7 @@ export function ProfileView({ targetUsername }: ProfileViewProps) {
           {isOwnProfile ? (
             <>
               <Button asChild className="flex-1">
-                <Link href="/profile/edit">
+                <Link href="/settings">
                   <Edit className="mr-2 h-4 w-4" />
                   Edit
                 </Link>
@@ -256,7 +272,7 @@ export function ProfileView({ targetUsername }: ProfileViewProps) {
 
                         <div className="flex justify-between text-sm text-muted-foreground">
                           <span className="flex items-center gap-1">
-                            <Heart className="h-4 w-4 text-red-500" />
+                            <Heart className="h-4 w-4 text-destructive" />
                             {art.favorites_count}
                           </span>
 

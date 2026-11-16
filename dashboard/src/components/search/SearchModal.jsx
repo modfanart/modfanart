@@ -66,27 +66,24 @@ export const SearchModal = ({ open, onClose }) => {
 
     const { type, id } = item;
 
+    // These pointed at /products, /customers, /contests, /categories and
+    // /tags, none of which exist in the workspace.
     switch (type) {
-      case 'artwork':
-        navigate(`/products/${id}`);
-        break;
       case 'user':
-        navigate(`/customers/${id}`);
+        navigate(`/artist/${id}`);
         break;
       case 'brand':
-        navigate(`/brands/${id}`);
+        navigate(`/brand/${id}`);
         break;
       case 'contest':
-        navigate(`/contests/${id}`);
+        navigate(`/opportunity/${id}`);
         break;
-      case 'category':
-        navigate(`/categories/${id}`);
-        break;
-      case 'tag':
-        navigate(`/tags/${id}`);
+      case 'artwork':
+        navigate(`/media-library?q=${encodeURIComponent(item.title || '')}`);
         break;
       default:
-        navigate(`/${type}s/${id}`);
+        // categories and tags have no workspace page
+        break;
     }
   };
 
@@ -156,10 +153,9 @@ export const SearchModal = ({ open, onClose }) => {
                   whitespace-nowrap
                   shrink-0
                   transition-colors border-b-2
-                  ${
-                    activeTab === tab.id
-                      ? 'text-white border-white'
-                      : 'text-zinc-500 hover:text-zinc-300 border-transparent'
+                  ${activeTab === tab.id
+                    ? 'text-white border-white'
+                    : 'text-zinc-500 hover:text-zinc-300 border-transparent'
                   }
                 `}
               >

@@ -38,7 +38,7 @@ export function MainNav() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 w-full z-50 px-6 py-4 flex items-center justify-between bg-transparent backdrop-blur border-b border-gray-200/60">
+      <header className="fixed top-0 left-0 w-full z-50 px-6 py-4 flex items-center justify-between bg-transparent backdrop-blur border-b border-border/60">
         {/* LOGO */}
         <Link href="/" className="flex items-center gap-2.5">
           <Image
@@ -52,7 +52,7 @@ export function MainNav() {
         </Link>
 
         {/* CENTER NAV (COMPACT) */}
-        <div className="hidden md:flex backdrop-blur border border-gray-200/60 rounded-full px-2 py-1 shadow-sm">
+        <div className="hidden md:flex backdrop-blur border border-border/60 rounded-full px-2 py-1 shadow-sm">
           <NavigationMenu>
             <NavigationMenuList className="gap-1">
               {isAuthenticated ? (
@@ -103,20 +103,20 @@ export function MainNav() {
           <SearchModal />
 
           {loading ? (
-            <div className="h-9 w-9 animate-pulse rounded-full bg-gray-200" />
+            <div className="h-9 w-9 animate-pulse rounded-full bg-muted" />
           ) : isAuthenticated ? (
             <UserNav />
           ) : (
             <>
               <div className="hidden md:flex gap-2">
                 <Link href="/login">
-                  <button className="rounded-full w-9 h-9 flex items-center justify-center border border-gray-200 bg-transparent hover:bg-gray-100 transition">
-                    <User size={16} className="text-gray-800" />
+                  <button className="rounded-full w-9 h-9 flex items-center justify-center border border-border bg-transparent hover:bg-muted transition">
+                    <User size={16} className="text-foreground" />
                   </button>
                 </Link>
 
                 <Link href="/signup">
-                  <button className="rounded-full px-3 h-9 text-sm font-medium bg-purple-600 text-white hover:opacity-90 transition">
+                  <button className="rounded-full px-3 h-9 text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition">
                     Sign Up
                   </button>
                 </Link>
@@ -146,8 +146,8 @@ function NavItem({ href, active, icon: Icon, children }: any) {
           className={cn(
             'relative flex items-center rounded-full transition-all duration-300 px-2 py-1',
             active
-              ? 'bg-purple-100 text-purple-600'
-              : 'text-gray-500 hover:text-purple-600 hover:bg-gray-100'
+              ? 'bg-primary-subtle text-primary'
+              : 'text-muted-foreground hover:text-primary hover:bg-muted'
           )}
         >
           <Icon className="h-4 w-4 shrink-0" />
@@ -178,8 +178,8 @@ function SimpleNavItem({ href, active, children }: any) {
           className={cn(
             'px-2 py-1 rounded-full text-sm transition-all',
             active
-              ? 'bg-purple-100 text-purple-600 font-medium'
-              : 'text-gray-500 hover:text-purple-600 hover:bg-gray-100'
+              ? 'bg-primary-subtle text-primary font-medium'
+              : 'text-muted-foreground hover:text-primary hover:bg-muted'
           )}
         >
           {children}
@@ -194,10 +194,10 @@ function SimpleNavItem({ href, active, children }: any) {
 function NavDropdown({ label, children }: any) {
   return (
     <NavigationMenuItem>
-      <NavigationMenuTrigger className="rounded-full px-2 py-1 text-sm text-gray-500 hover:text-purple-600 data-[state=open]:bg-gray-100">
+      <NavigationMenuTrigger className="rounded-full px-2 py-1 text-sm text-muted-foreground hover:text-primary data-[state=open]:bg-muted">
         {label}
       </NavigationMenuTrigger>
-      <NavigationMenuContent className="bg-white border border-gray-200 rounded-xl shadow-lg">
+      <NavigationMenuContent className="bg-background border border-border rounded-xl shadow-lg">
         <ul className="grid gap-2 p-3 w-[280px] md:w-[360px] md:grid-cols-2">{children}</ul>
       </NavigationMenuContent>
     </NavigationMenuItem>
@@ -208,9 +208,9 @@ function DropdownLink({ href, title, desc }: any) {
   return (
     <li>
       <NavigationMenuLink asChild>
-        <Link href={href} className="block p-2 rounded-md hover:bg-gray-100 transition-colors">
-          <div className="text-sm font-medium text-gray-900">{title}</div>
-          <p className="text-xs text-gray-500">{desc}</p>
+        <Link href={href} className="block p-2 rounded-md hover:bg-muted transition-colors">
+          <div className="text-sm font-medium text-foreground">{title}</div>
+          <p className="text-xs text-muted-foreground">{desc}</p>
         </Link>
       </NavigationMenuLink>
     </li>

@@ -52,7 +52,7 @@ export const ProjectDetailPage = () => {
         title={project?.name || 'Project'}
         subtitle={project?.description || ''}
         backButton
-        onBack={() => navigate('/workspace')}
+        onBack={() => navigate('/tickets/projects')}
       />
 
       <div className="p-4 sm:p-6">

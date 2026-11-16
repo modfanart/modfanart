@@ -54,7 +54,8 @@ async function globalSearch(req, res) {
           u.username AS subtitle,
           a.thumbnail_url AS image,
           NULL::text AS extra,
-          a.created_at
+          a.created_at,
+          NULL::text AS slug
         FROM artworks a
         JOIN users u ON a.creator_id = u.id
         LEFT JOIN artwork_categories ac ON ac.artwork_id = a.id
@@ -85,7 +86,8 @@ async function globalSearch(req, res) {
           COALESCE(u.profile->>'display_name', u.bio, 'No bio') AS subtitle,
           u.avatar_url AS image,
           NULL::text AS extra,
-          u.created_at
+          u.created_at,
+          u.username AS slug
         FROM users u
         WHERE u.status = 'active'
           AND (
@@ -113,7 +115,8 @@ async function globalSearch(req, res) {
           COALESCE(b.description, b.website, 'Brand') AS subtitle,
           b.logo_url AS image,
           NULL::text AS extra,
-          b.created_at
+          b.created_at,
+          b.slug AS slug
         FROM brands b
         WHERE b.status = 'active'
           AND (
@@ -141,10 +144,13 @@ async function globalSearch(req, res) {
           b.name AS subtitle,
           b.logo_url AS image,
           c.prizes::text AS extra,
-          c.created_at
+          c.created_at,
+          c.slug AS slug
         FROM contests c
         JOIN brands b ON c.brand_id = b.id
         WHERE c.status IN ('published', 'live', 'judging')
+          AND c.visibility = 'public'
+          AND c.deleted_at IS NULL
           AND (
             c.title ILIKE $${paramIdx}
             OR c.description ILIKE $${paramIdx}
@@ -169,7 +175,8 @@ async function globalSearch(req, res) {
           COALESCE(c.description, 'Category') AS subtitle,
           c.icon_url AS image,
           NULL::text AS extra,
-          c.created_at
+          c.created_at,
+          c.slug AS slug
         FROM categories c
         WHERE c.is_active
           AND (
@@ -194,7 +201,8 @@ async function globalSearch(req, res) {
           t.slug AS subtitle,
           NULL::text AS image,
           t.usage_count::text AS extra,
-          t.created_at
+          t.created_at,
+          t.slug AS slug
         FROM tags t
         WHERE t.approved
           AND t.name ILIKE $${paramIdx}
@@ -214,7 +222,7 @@ async function globalSearch(req, res) {
         ${unionQuery}
       )
       SELECT 
-        type, id, title, subtitle, image, extra, created_at,
+        type, id, title, subtitle, image, extra, created_at, slug,
         COUNT(*) OVER () AS total_count
       FROM results
       ORDER BY created_at DESC

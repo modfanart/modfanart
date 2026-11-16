@@ -6,6 +6,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/store/AuthContext';
 import Sidebar from '@/components/layouts/sidebar';
 import DashboardHeader from '@/components/dashboard/dashboard-header';
+import { getBasePath } from '@/hooks/getBasePath';
+import { canOpenDashboardPath } from '@/lib/dashboard-routes';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -25,16 +27,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       return;
     }
 
-    const role = user.role?.name?.toLowerCase();
-
-    if (role === 'artist' && pathname.startsWith('/brand')) {
-      router.replace('/');
+    // Section-level role guard (lib/dashboard-routes.ts). Users can only
+    // ever see their own data now (the URL carries no username or brand),
+    // so the guard just keeps each role inside the sections it has.
+    if (!canOpenDashboardPath(pathname, user.role?.name)) {
+      router.replace(getBasePath(user) ?? '/');
     }
-
-    if (role === 'brand_manager' && pathname.startsWith('/artist')) {
-      router.replace('/brand');
-    }
-    
   }, [user, loading, pathname, router]);
 
   /* =========================================================

@@ -7,7 +7,10 @@ const { hasPermission } = require('../../common/middleware/permission.middleware
 
 const router = express.Router();
 
-// router.use(authenticateToken);
+// BUG FIX: this line was commented out, so req.user was never set and every
+// license/order endpoint (purchase, my licenses, issued, revoke) failed
+// with 401/500 - the licensing flow could not work at all.
+router.use(authenticateToken);
 
 // Orders
 router.post(

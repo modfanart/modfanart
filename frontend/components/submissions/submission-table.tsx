@@ -159,17 +159,17 @@ export const columns: ColumnDef<Submission>[] = [
         pending: {
           label: 'Pending',
           variant: 'outline' as const,
-          className: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+          className: 'bg-warning-subtle text-warning-strong border-warning/30',
         },
         approved: {
           label: 'Approved',
           variant: 'secondary' as const,
-          className: 'bg-green-100 text-green-800',
+          className: 'bg-success-subtle text-success',
         },
         licensed: {
           label: 'Licensed',
           variant: 'secondary' as const,
-          className: 'bg-blue-100 text-blue-800',
+          className: 'bg-info-subtle text-info',
         },
         rejected: {
           label: 'Rejected',

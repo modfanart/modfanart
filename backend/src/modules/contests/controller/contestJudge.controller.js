@@ -1,5 +1,6 @@
 // src/controllers/contestJudge.controller.js
 const Contest = require("../models/contest.model");
+const { userCan } = require("../../../common/middleware/require-admin");
 const ContestJudge = require("../models/contestJudge.model");
 const JudgeInviteToken = require("../models/judgeInviteToken.model");
 const User = require("../../users/models/user.model");
@@ -29,14 +30,12 @@ class ContestJudgeController {
   }
 
   /**
-   * Judge dashboard path. username is selected on every caller, but guard
-   * anyway so a missing one cannot produce "/judge/undefined/contest/...".
+   * Judge dashboard path for a contest.
    */
-  static judgeContestPath(username, contestId) {
-    const slug = username?.toLowerCase();
-    return slug
-      ? `/judge/${slug}/contest/${contestId}`
-      : `/judge/contests/${contestId}`;
+  static judgeContestPath(_username, contestId) {
+    // Dashboard URLs no longer carry the username (frontend
+    // lib/dashboard-routes.ts); the judge is whoever is signed in.
+    return `/dashboard/judging/${contestId}`;
   }
 
   /**
@@ -65,7 +64,9 @@ class ContestJudgeController {
   static canManageContest(user, contest) {
     if (!user || !contest) return false;
 
-    const isPlatformAdmin = ["ADMIN", "SUPERADMIN"].includes(user.role);
+    // Was ["ADMIN", "SUPERADMIN"] only: SUPER_ADMIN, DEVELOPER and staff
+    // roles granted contests.manage couldn't assign or remove judges.
+    const isPlatformAdmin = userCan(user, "contests.manage");
     const brandMatch = (user.brands || []).some(
       (b) => String(b.id) === String(contest.brand_id)
     );

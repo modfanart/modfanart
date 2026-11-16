@@ -14,20 +14,38 @@ const {
 } = require('../../common/middleware/auth.middleware');
 // const { hasPermission } = require('../middleware/permission.middleware'); // Commented if not used
 
+const { optionalAuth } = require('../../common/middleware/optional-auth');
+
+const { requireGoodStanding } = require('../../common/policy');
 const router = express.Router();
 
+// ====================== PUBLIC READS ======================
+// ART-08 / ART-02: contest listing and detail are public pages (/explore,
+// /explore/contests, /contest/<id>), but this whole router required a token,
+// so guests always got 401 and logged-in users raced token restoration.
+// Single-segment static paths must be skipped by the '/:id' handler.
+const AUTH_ONLY_SINGLE_SEGMENT = new Set(['my-submitted']);
+router.get('/', optionalAuth, ContestController.getContests);
+router.get('/by-status', optionalAuth, ContestController.getContestsByStatus);
+router.get('/:id', (req, res, next) =>
+  AUTH_ONLY_SINGLE_SEGMENT.has(req.params.id) ? next('route') : optionalAuth(req, res, next),
+  ContestController.getContest
+);
+router.get('/:contestId/leaderboard', optionalAuth, ContestVoteController.getLeaderboard);
+
 // ====================== MIDDLEWARE ======================
-// Apply authentication to ALL routes in this router
+// Everything below requires authentication
 router.use(authenticateToken);
+
+// Prize obligations (GA-25). '/me/prizes' is two segments, so it can't be
+// captured by the public '/:id' route above.
+router.get('/me/prizes', ContestController.getMyPrizes);
+router.get('/:id/prizes', ContestController.getContestPrizes);
 
 // ====================== PUBLIC ROUTES ======================
 // These routes are protected by auth but data is publicly viewable
-router.get('/', ContestController.getContests);
-router.get('/by-status', ContestController.getContestsByStatus); // GET /api/contest/by-status
 router.get('/my-submitted', ContestController.getMySubmittedContests); // GET /api/contest
-router.get('/:id', ContestController.getContest); // GET /api/contest/:id
 
-router.get('/:contestId/leaderboard', ContestVoteController.getLeaderboard);
 
 // ====================== CONTEST MANAGEMENT ======================
 // Only brand owners and admins should access these
@@ -104,7 +122,7 @@ router.delete(
 router.get('/:contestId/categories', ContestCategoryController.getCategories);
 
 // ====================== ENTRIES ======================
-router.post('/:contestId/entries', ContestEntryController.submitEntry);
+router.post('/:contestId/entries', requireGoodStanding, ContestEntryController.submitEntry);
 router.get('/:contestId/entries', ContestEntryController.getEntries);
 router.get('/:contestId/entries/:entryId', ContestEntryController.getEntry);
 router.patch(
@@ -133,6 +151,6 @@ router.get(
 router.get('/:contestId/my-scores', ContestJudgeScoreController.getMyScores);
 
 // ====================== PUBLIC VOTING ======================
-router.post('/:contestId/entries/:entryId/vote', ContestVoteController.vote);
+router.post('/:contestId/entries/:entryId/vote', requireGoodStanding, ContestVoteController.vote);
 
 module.exports = router;

@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card';
 import type { MerchProduct } from '@/services/api/marketplaceApi';
 import { FULFILLMENT_LABEL, formatProductPrice, titleCase } from '@/lib/marketplace/format';
 import { ProductImage } from './product-image';
+import { productHref } from '@/lib/links';
 
 const NEW_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
 
@@ -15,7 +16,7 @@ export function ProductCard({ product }: { product: MerchProduct }) {
   const isNew = Date.now() - new Date(product.created_at).getTime() < NEW_WINDOW_MS;
 
   return (
-    <Link href={`/marketplace/product/${product.id}`} className="group block">
+    <Link href={productHref(product)} className="group block">
       <Card className="overflow-hidden transition-all hover:shadow-md hover:ring-2 hover:ring-primary/20">
         <div className="relative aspect-square overflow-hidden bg-muted">
           <ProductImage
@@ -24,7 +25,7 @@ export function ProductCard({ product }: { product: MerchProduct }) {
             className="transition-transform duration-300 group-hover:scale-105"
           />
           <div className="absolute left-2 top-2 flex flex-col gap-1">
-            {isNew && <Badge className="bg-blue-500 text-white hover:bg-blue-500">New</Badge>}
+            {isNew && <Badge className="bg-info text-info-foreground hover:bg-info">New</Badge>}
             {product.fulfillment_type === 'print_on_demand' && (
               <Badge variant="secondary">Made to order</Badge>
             )}
@@ -46,7 +47,7 @@ export function ProductCard({ product }: { product: MerchProduct }) {
             <span className="font-semibold">{formatProductPrice(product)}</span>
             {product.rating_count > 0 && (
               <span className="flex items-center gap-1 text-sm text-muted-foreground">
-                <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                <Star className="h-3.5 w-3.5 fill-warning-strong text-warning-strong" />
                 {product.rating_avg.toFixed(1)}
                 <span className="text-xs">({product.rating_count})</span>
               </span>

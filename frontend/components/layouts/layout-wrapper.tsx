@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import MainNav from './main-nav-new';
 import { SiteFooter } from './site-footer';
+import { AccountStanding } from './account-standing';
 
 import type React from 'react';
 
@@ -13,15 +14,14 @@ interface LayoutWrapperProps {
 export function LayoutWrapper({ children }: LayoutWrapperProps) {
   const pathname = usePathname();
 
+  // Pages that render their own chrome (dashboard shell, auth screens).
   const isDashboardPath =
-    pathname?.startsWith('/admin') ||
-    pathname?.startsWith('/artist') ||
-    pathname?.startsWith('/judge') ||
+    pathname?.startsWith('/dashboard') ||
+    pathname?.startsWith('/judge/invite') ||
     pathname?.startsWith('/login') ||
-    pathname?.startsWith('/signup') ||     pathname?.startsWith('/seller') ||
+    pathname?.startsWith('/signup') ||
     pathname?.startsWith('/forgot-password') ||
-    pathname?.startsWith('/verify-account') ||
-    pathname?.startsWith('/brand-manager');
+    pathname?.startsWith('/verify-account');
 
   return (
     <div className="flex flex-col flex-1">
@@ -30,6 +30,8 @@ export function LayoutWrapper({ children }: LayoutWrapperProps) {
       {!isDashboardPath && <MainNav />} {/* ✅ SAFE */}
       {children}
       {!isDashboardPath && <SiteFooter />}
+      {/* Email-verification banner / terms prompt for signed-in users */}
+      <AccountStanding />
     </div>
   );
 }

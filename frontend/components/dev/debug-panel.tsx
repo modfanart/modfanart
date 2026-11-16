@@ -49,7 +49,7 @@ export function DebugPanel() {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 max-w-xs">
+    <div className="fixed bottom-4 right-4 z-50 p-4 bg-background dark:bg-foreground rounded-lg shadow-lg border border-border dark:border-gray-700 max-w-xs">
       <div className="flex justify-between items-center mb-2">
         <h3 className="font-medium">Debug Panel</h3>
         <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setIsOpen(false)}>
@@ -59,7 +59,7 @@ export function DebugPanel() {
       <div className="space-y-4">
         <div>
           <h4 className="text-sm font-medium mb-1">Current Route</h4>
-          <div className="text-sm font-mono bg-gray-100 dark:bg-gray-900 p-2 rounded overflow-x-auto">
+          <div className="text-sm font-mono bg-muted dark:bg-foreground p-2 rounded overflow-x-auto">
             {currentPath || '/'}
           </div>
         </div>
@@ -67,7 +67,7 @@ export function DebugPanel() {
           <h4 className="text-sm font-medium mb-1">Auth Status</h4>
           <div className="text-sm">
             Status:{' '}
-            <span className={isAuthenticated ? 'text-green-500' : 'text-red-500'}>
+            <span className={isAuthenticated ? 'text-success' : 'text-destructive'}>
               {isAuthenticated ? 'Authenticated' : 'Not Authenticated'}
             </span>
           </div>

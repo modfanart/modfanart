@@ -40,6 +40,13 @@ export function ProductDetail({ id }: { id: string }) {
 
   const variants = useMemo(() => (product?.variants ?? []).filter((v) => v.is_active), [product]);
 
+  // Canonical URL: old /marketplace/product/<uuid> links switch to the slug.
+  useEffect(() => {
+    if (product?.slug && id !== product.slug) {
+      router.replace(`/marketplace/product/${product.slug}`, { scroll: false });
+    }
+  }, [product?.slug, id, router]);
+
   const [selection, setSelection] = useState<Partial<Record<Attr, string>>>({});
   const [quantity, setQuantity] = useState(1);
 
@@ -221,7 +228,7 @@ export function ProductDetail({ id }: { id: string }) {
           {selected ? (
             <p
               className={`flex items-center gap-1.5 text-sm ${
-                availability?.available ? 'text-emerald-600' : 'text-destructive'
+                availability?.available ? 'text-success' : 'text-destructive'
               }`}
             >
               {availability?.available && <Check className="h-4 w-4" />}

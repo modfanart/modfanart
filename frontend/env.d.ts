@@ -25,6 +25,7 @@ declare namespace NodeJS {
     STRIPE_WEBHOOK_SECRET?: string;
 
     NEXT_PUBLIC_APP_URL?: string;
+    NEXT_PUBLIC_SITE_URL?: string;
     NEXT_PUBLIC_DEBUG?: string;
 
     DEBUG?: string;

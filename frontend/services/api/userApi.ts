@@ -206,9 +206,18 @@ export interface AllViolationsResponse {
   };
 }
 
+/** Why the account can't enter contests / vote / sell / buy yet (GA-05, GA-22). */
+export type AccountStanding = 'ok' | 'email_unverified' | 'terms_required';
+
 export interface CurrentUserResponse {
   success: boolean;
-  user: UserProfile;
+  user: UserProfile & {
+    email_verified?: boolean;
+    accepted_terms_version?: string | null;
+    age_confirmed?: boolean;
+    current_terms_version?: string;
+    standing?: AccountStanding;
+  };
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -265,6 +274,14 @@ export const userApi = createApi({
     }),
 
     // PATCH /users/me/password
+    recordConsent: builder.mutation<
+      { success: boolean; accepted_terms_version: string },
+      { termsVersion: string; ageConfirmed: boolean }
+    >({
+      query: (body) => ({ url: '/me/consent', method: 'POST', body }),
+      invalidatesTags: ['CurrentUser'],
+    }),
+
     changePassword: builder.mutation<{ message: string }, ChangePasswordRequest>({
       query: (body) => ({
         url: '/me/password',
@@ -423,6 +440,7 @@ export const userApi = createApi({
 });
 
 export const {
+  useRecordConsentMutation,
   useGetCurrentUserQuery,
   useLazyGetCurrentUserQuery,
   useUpdateProfileMutation,

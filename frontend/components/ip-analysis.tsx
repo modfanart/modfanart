@@ -26,17 +26,17 @@ export function IpAnalysis({ analysis }: IpAnalysisProps) {
         </div>
         <Progress value={analysis.score} className="mt-2" />
         <Alert
-          className={`mt-4 ${analysis.score >= 70 ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}
+          className={`mt-4 ${analysis.score >= 70 ? 'bg-success-subtle border-success/30' : 'bg-warning-subtle border-warning/30'}`}
         >
           {analysis.score >= 70 ? (
-            <CheckCircle className="h-4 w-4 text-green-600" />
+            <CheckCircle className="h-4 w-4 text-success" />
           ) : (
-            <AlertCircle className="h-4 w-4 text-yellow-600" />
+            <AlertCircle className="h-4 w-4 text-warning-strong" />
           )}
-          <AlertTitle className={analysis.score >= 70 ? 'text-green-800' : 'text-yellow-800'}>
+          <AlertTitle className={analysis.score >= 70 ? 'text-success' : 'text-warning-strong'}>
             {analysis.score >= 70 ? 'Likely Compliant' : 'Requires Review'}
           </AlertTitle>
-          <AlertDescription className={analysis.score >= 70 ? 'text-green-700' : 'text-yellow-700'}>
+          <AlertDescription className={analysis.score >= 70 ? 'text-success' : 'text-warning-strong'}>
             {analysis.score >= 70
               ? 'This submission appears to comply with IP guidelines.'
               : 'This submission requires manual review for IP compliance.'}

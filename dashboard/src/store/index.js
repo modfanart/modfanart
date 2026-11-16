@@ -24,11 +24,13 @@ import mediaApi from '../services/api/mediaApi';
 import { searchApi } from '../services/api/searchApi';
 import notifyApi from '../services/api/notifyApi';
 import { contactApi } from '../services/api/contactApi';
+import merchApi from '../services/api/merchApi';
 // ────────────────────────────────────────────────
 // Reducers (slices)
 // ────────────────────────────────────────────────
 import authReducer from '../services/api/features/authSlice';
 import { adminApi } from '../services/api/adminApi';
+import { opsApi } from '../services/api/opsApi';
 // import otherSliceReducer from '@/features/other/otherSlice';  // add more as needed
 
 // ────────────────────────────────────────────────
@@ -56,6 +58,7 @@ export const store = configureStore({
     // Add other non-RTK reducers here when you create them
     // example: theme: themeReducer,
     [adminApi.reducerPath]: adminApi.reducer,
+    [opsApi.reducerPath]: opsApi.reducer,
     // RTK Query auto-generated reducers
     [authApi.reducerPath]: authApi.reducer,
     [userApi.reducerPath]: userApi.reducer,
@@ -75,7 +78,9 @@ export const store = configureStore({
     [collectionsApi.reducerPath]: collectionsApi.reducer,
     [searchApi.reducerPath]: searchApi.reducer,
     [notifyApi.reducerPath]: notifyApi.reducer,
-    [projectTaskApi.reducerPath]: projectTaskApi.reducer, [mediaApi.reducerPath]: mediaApi.reducer,
+    [projectTaskApi.reducerPath]: projectTaskApi.reducer,
+    [mediaApi.reducerPath]: mediaApi.reducer,
+    [merchApi.reducerPath]: merchApi.reducer,
   },
 
   middleware: (getDefaultMiddleware) =>
@@ -102,7 +107,10 @@ export const store = configureStore({
       brandApi.middleware,
       collectionsApi.middleware,
       searchApi.middleware,
-      notifyApi.middleware, projectTaskApi.middleware, mediaApi.middleware,
+      notifyApi.middleware, projectTaskApi.middleware,
+      mediaApi.middleware,
+      merchApi.middleware,
+      opsApi.middleware,
       // add more .middleware when you create new api slices
     ),
 
@@ -110,6 +118,6 @@ export const store = configureStore({
   preloadedState,
 
   // Enable Redux DevTools in development only
-  devTools: process.env.NODE_ENV !== 'production',
+  devTools: import.meta.env?.DEV === true,
 });
 

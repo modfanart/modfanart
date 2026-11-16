@@ -16,7 +16,7 @@ export const librariansContest: ContestData = {
   },
 
   heroImageUrl:
-    'http://modfanart.com/cdn/shop/files/art_collage_3_ea92c133-a198-4bb0-9b22-3b67e9156b45.png?v=1763669699', // og:image meta
+    'https://modfanart.com/cdn/shop/files/art_collage_3_ea92c133-a198-4bb0-9b22-3b67e9156b45.png?v=1763669699', // og:image meta
   heroVideoUrl:
     'https://files.elfsightcdn.com/10f57fcd-29bb-4da4-9c09-61ea49a5bf6e/f9fd66d7-884a-41d1-8a22-e5b04a52551b/Updated_Motion_Fan-Creators.mp4',
   title: 'The Librarians Official Fan Art Contest',

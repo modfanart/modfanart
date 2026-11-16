@@ -101,6 +101,11 @@ function handleMigrationResults(error, results, action) {
 }
 
 async function resetDatabase(migrator) {
+  // Never allow a full wipe against production by accident.
+  if (process.env.NODE_ENV === "production" && process.env.ALLOW_DB_RESET !== "true") {
+    console.error("❌ Refusing to reset: NODE_ENV=production (set ALLOW_DB_RESET=true to override).");
+    return;
+  }
   console.warn("⚠️ DANGER: You are about to DROP ALL TABLES!");
 
   const answer = await promptConfirm('Type "yes" to confirm reset: ');

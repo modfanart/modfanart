@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import type { Metadata } from 'next';
 import { Mona_Sans as FontSans } from 'next/font/google';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
@@ -13,11 +14,14 @@ const fontSans = FontSans({
   variable: '--font-sans',
 });
 
-export const metadata = {
-  title: 'MOD Platform | Fan Art Submission & Licensing',
+export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://www.modfanofficial.com'),
+  title: {
+    default: 'MOD Platform | Fan Art Submission & Licensing',
+    template: '%s | MOD',
+  },
   description:
     'AI-powered fan art submission and licensing platform for brands, creators, and artists',
-  generator: 'v0.dev',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -25,7 +29,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en" suppressHydrationWarning>
       <body
         className={cn(
-          'min-h-screen flex flex-col bg-white font-sans antialiased',
+          'min-h-screen flex flex-col bg-background font-sans antialiased',
           fontSans.variable
         )}
       >

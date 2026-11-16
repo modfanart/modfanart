@@ -41,7 +41,7 @@ export function JudgeOpportunityContent({
   }
 
   if (isError) {
-    return <div className="p-6 text-red-500">Failed to load entries</div>;
+    return <div className="p-6 text-destructive">Failed to load entries</div>;
   }
 
   if (!contest) {

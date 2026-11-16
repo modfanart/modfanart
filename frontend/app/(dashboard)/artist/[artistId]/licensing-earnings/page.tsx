@@ -2,6 +2,7 @@
 import React from 'react'; // ← add this if not already present
 import { useState } from 'react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -109,6 +110,7 @@ const getLicenseStatusInfo = (
 };
 
 export default function LicenseRequestsPage() {
+  const { artistId } = useParams<{ artistId: string }>();
   const [activeTab, setActiveTab] = useState('all');
   const { user, loading: authLoading } = useAuth();
 
@@ -205,7 +207,7 @@ export default function LicenseRequestsPage() {
               <p className="mt-2 text-sm text-muted-foreground">
                 When buyers purchase licenses for your work, they will appear here.
               </p>
-              <Link href="/dashboard/artist/my-artworks">
+              <Link href={`/artist/${artistId}/my-artworks`}>
                 <Button variant="outline" className="mt-6">
                   View Your Artworks
                 </Button>

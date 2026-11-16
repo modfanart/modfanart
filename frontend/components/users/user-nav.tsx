@@ -17,6 +17,7 @@ DropdownMenuTrigger,
 
 import { useAuth } from '@/store/AuthContext';
 import { useJudgeAreaHref } from '@/hooks/use-judge-area-href';
+import { formatRoleLabel } from '@/lib/role-label';
 
 export function UserNav() {
 const router = useRouter();
@@ -39,57 +40,39 @@ const initials = displayName.slice(0, 2).toUpperCase();
 
 const roleName = user.role?.name?.toLowerCase() ?? 'member';
 
-const ADMIN_ROLES = ['admin', 'superadmin', 'developer'];
-
 let dashboardPath = '/';
 
 switch (roleName) {
-case 'artist':
-dashboardPath = `/artist/${user.username}`;
-break;
+  case 'artist':
+    dashboardPath = `/dashboard`;
+    break;
 
-
-case 'brand_manager':
-case 'brand_owner': {
-  const brand = user?.brands?.[0];
-
-  if (brand?.slug) {
-    dashboardPath = `/brand-manager/${brand.slug}`;
-  } else {
-    dashboardPath = '/brand-manager';
+  case 'brand_manager':
+  case 'brand_owner': {
+    // BRD-02: an unverified brand account has no brand yet. /brand-manager
+    // is now a real landing page that shows verification status, or
+    // forwards to /brand-manager/<slug> once a brand exists.
+    const brand = user?.brands?.[0];
+    dashboardPath = '/dashboard'; // shows verification status when no brand yet
+    break;
   }
 
-  break;
+  case 'judge':
+    dashboardPath = `/dashboard/judging`;
+    break;
+
+  case 'seller':
+    dashboardPath = `/dashboard`;
+    break;
+
+  default:
+    dashboardPath = '/';
 }
 
-case 'judge':
-  dashboardPath = `/judge/${user.username}`;
-  break;
-case 'seller':
-  dashboardPath = `/seller/${user.username}`;
-  break;
-
-case 'admin':
-case 'superadmin':
-case 'developer':
-  dashboardPath = `/admin/${user.username}`;
-  break;
-
-default:
-  dashboardPath = '/';
-
-
-}
-
-const isEligibleForDashboard = [
-'artist',
-'brand_manager',
-'brand_owner',
-'judge',
-'admin',
-'superadmin',
-'developer', 'seller'
-].includes(roleName);
+// Admin tooling lives in a separate app, not in this frontend.
+const isEligibleForDashboard = ['artist', 'brand_manager', 'brand_owner', 'judge', 'seller'].includes(
+  roleName
+);
 
 const handleLogout = async () => {
   setIsLoggingOut(true);
@@ -106,12 +89,12 @@ return (
   <div className="flex items-center gap-3">
     {/* Own backdrop: the nav is transparent and overlays dark hero images on
         several routes, so contrast cannot depend on the page behind it. */}
-    <div className="hidden md:block text-right bg-white/90 backdrop-blur rounded-full px-4 py-1.5 border border-gray-200/60">
-      <p className="text-sm font-medium leading-none text-gray-900">
+    <div className="hidden md:block text-right bg-background/90 backdrop-blur rounded-full px-4 py-1.5 border border-border/60">
+      <p className="text-sm font-medium leading-none text-foreground">
         {displayName}
       </p>
-      <p className="text-xs text-gray-500">
-        {user.role?.name || 'Member'}
+      <p className="text-xs text-muted-foreground">
+        {formatRoleLabel(user.role?.name)}
       </p>
     </div>
 
@@ -121,6 +104,7 @@ return (
       <Button
         variant="ghost"
         className="relative h-9 w-9 rounded-full"
+        aria-label="Account menu"
       >
         <Avatar className="h-9 w-9">
           <AvatarImage src={avatarSrc} alt={displayName} />
@@ -130,16 +114,16 @@ return (
     </DropdownMenuTrigger>
 
     <DropdownMenuContent
-      className="w-56 bg-white backdrop-blur-xl border border-gray-200 rounded-xl shadow-lg"
+      className="w-56 bg-background backdrop-blur-xl border border-border rounded-xl shadow-lg"
       align="end"
       forceMount
     >
       <DropdownMenuLabel className="font-normal">
         <div className="flex flex-col space-y-1">
-          <p className="text-sm font-medium text-gray-900">
+          <p className="text-sm font-medium text-foreground">
             {displayName}
           </p>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted-foreground">
             {user.email}
           </p>
         </div>
@@ -186,7 +170,7 @@ return (
       <DropdownMenuSeparator />
 
       <DropdownMenuItem
-        className="text-red-600 focus:bg-red-50 focus:text-red-600"
+        className="text-destructive focus:bg-destructive-subtle focus:text-destructive"
         onClick={handleLogout}
         disabled={isLoggingOut}
       >

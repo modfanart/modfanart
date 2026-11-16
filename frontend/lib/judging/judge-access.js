@@ -18,9 +18,9 @@
  *   hide the link from exactly the people who have not found that button yet.
  * - The JUDGE role is excluded because its dashboard entry points at the same
  *   place already; a second link would be a duplicate.
- * - No username means no link: the judge area lives at /judge/[username] and
- *   username is nullable on the user record, so there is no valid URL to
- *   offer.
+ * - No username means no link: the judge area (/dashboard/judging) is built for
+ *   accounts with a username; username is nullable on the user record, so
+ *   accounts without one get no link.
  *
  * The contest arrays are optional because they come straight from RTK Query
  * data, which is undefined before the first response.
@@ -47,5 +47,5 @@ export function judgeAreaHref({
   const judgesAnything =
     (acceptedContests?.length ?? 0) > 0 || (pendingInvitations?.length ?? 0) > 0;
 
-  return judgesAnything ? `/judge/${judgeUsername}` : null;
+  return judgesAnything ? `/dashboard/judging` : null;
 }

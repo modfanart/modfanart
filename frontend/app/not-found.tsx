@@ -4,7 +4,6 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Search } from 'lucide-react';
 import pageNotFound from '../assets/images/page_not_found.png';
-import { LayoutWrapper } from '@/components/layouts/layout-wrapper';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -12,7 +11,7 @@ export default function NotFound() {
   const router = useRouter();
 
   return (
-    <LayoutWrapper>
+    <>
       <div className="min-h-screen flex items-center justify-center bg-muted/40 px-6 py-10">
         <Card className="w-full max-w-2xl shadow-xl border rounded-2xl">
           <CardContent className="flex flex-col items-center text-center p-8 md:p-10 space-y-6">
@@ -62,6 +61,6 @@ export default function NotFound() {
           </CardContent>
         </Card>
       </div>
-    </LayoutWrapper>
+    </>
   );
 }

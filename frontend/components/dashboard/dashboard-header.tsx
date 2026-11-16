@@ -38,7 +38,7 @@ export default function DashboardHeader({ onMenuClick }: { onMenuClick?: () => v
 
           {/* LOGO */}
           <Link href="/" className="flex items-center gap-2">
-            <div className="h-8 w-8 bg-primary rounded-md flex items-center justify-center text-white font-bold">
+            <div className="h-8 w-8 bg-primary rounded-md flex items-center justify-center text-primary-foreground font-bold">
               M
             </div>
             <span className="font-semibold text-sm hidden sm:block">MOD Dashboard</span>
@@ -77,7 +77,7 @@ export default function DashboardHeader({ onMenuClick }: { onMenuClick?: () => v
                 </Link>
               </DropdownMenuItem>
 
-              <DropdownMenuItem onClick={handleLogout} className="text-red-500">
+              <DropdownMenuItem onClick={handleLogout} className="text-destructive">
                 <LogOut className="h-4 w-4 mr-2" />
                 Logout
               </DropdownMenuItem>

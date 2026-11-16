@@ -1,22 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
-  ShoppingCart,
   Package,
   MagnifyingGlass,
-  Funnel,
-  Tag
+  Tag,
+  Storefront,
 } from '@phosphor-icons/react';
 import { Header } from '../../components/layout/Header';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
-import { getBrands, getCategories, getProducts } from '../../lib/api';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../components/ui/select';
+import { useGetAllBrandsQuery } from '../../services/api/brandApi';
+import { useGetPublishedProductsQuery } from '../../services/api/merchApi';
 
-import { toast } from 'sonner';
-
-// Brand colors for visual distinction
 const brandColors = [
   'from-blue-500/20 to-blue-600/10 border-blue-500/30',
   'from-purple-500/20 to-purple-600/10 border-purple-500/30',
@@ -25,287 +28,383 @@ const brandColors = [
   'from-pink-500/20 to-pink-600/10 border-pink-500/30',
   'from-cyan-500/20 to-cyan-600/10 border-cyan-500/30',
 ];
-// Mock Data
-const MOCK_BRANDS = [
-  { id: 'b1', name: 'Nike' },
-  { id: 'b2', name: 'Adidas' },
-  { id: 'b3', name: 'Puma' },
+
+const PRODUCT_TYPES = [
+  { value: 'all', label: 'All types' },
+  { value: 'tshirt', label: 'T-Shirt' },
+  { value: 'hoodie', label: 'Hoodie' },
+  { value: 'poster', label: 'Poster' },
+  { value: 'sticker', label: 'Sticker' },
+  { value: 'mug', label: 'Mug' },
+  { value: 'tote', label: 'Tote bag' },
+  { value: 'other', label: 'Other' },
 ];
 
-const MOCK_CATEGORIES = {
-  b1: [
-    { id: 'c1', name: 'Shoes' },
-    { id: 'c2', name: 'Clothing' },
-  ],
-  b2: [
-    { id: 'c3', name: 'Sportswear' },
-    { id: 'c4', name: 'Sneakers' },
-  ],
-};
+function formatPrice(cents) {
+  if (cents == null || Number.isNaN(Number(cents))) return '—';
+  return `$${(Number(cents) / 100).toFixed(2)}`;
+}
 
-const MOCK_PRODUCTS = [
-  {
-    id: 'p1',
-    name: 'Air Max 270',
-    brand_id: 'b1',
-    category_id: 'c1',
-  },
-  {
-    id: 'p2',
-    name: 'Ultraboost',
-    brand_id: 'b2',
-    category_id: 'c4',
-  },
-  {
-    id: 'p3',
-    name: 'Puma Runner',
-    brand_id: 'b3',
-    category_id: 'c1',
-  },
-];
+function ProductCard({ product, onClick }) {
+  const imageUrl = product.image_url;
+  const priceLabel =
+    product.min_price_usd_cents != null &&
+    product.max_price_usd_cents != null &&
+    product.min_price_usd_cents !== product.max_price_usd_cents
+      ? `${formatPrice(product.min_price_usd_cents)} – ${formatPrice(product.max_price_usd_cents)}`
+      : formatPrice(product.min_price_usd_cents ?? product.max_price_usd_cents);
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="text-left bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden hover:border-zinc-600 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-500/50"
+      data-testid={`shop-product-${product.id}`}
+    >
+      <div className="aspect-square bg-zinc-800 flex items-center justify-center overflow-hidden">
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={product.title}
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+        ) : (
+          <Package weight="duotone" className="w-16 h-16 text-zinc-600" />
+        )}
+      </div>
+
+      <div className="p-4 space-y-2">
+        <div>
+          <h3 className="font-medium text-white line-clamp-2">{product.title}</h3>
+          <p className="text-xs text-zinc-500 mt-1 capitalize">
+            {product.base_product_type?.replace(/_/g, ' ') || 'Merch'}
+            {product.brand_name ? ` · ${product.brand_name}` : ''}
+          </p>
+        </div>
+
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-lg font-semibold text-white">{priceLabel}</span>
+          {product.rating_count > 0 && (
+            <span className="text-xs text-amber-400/90">
+              ★ {Number(product.rating_avg || 0).toFixed(1)} ({product.rating_count})
+            </span>
+          )}
+        </div>
+
+        {product.seller_name && (
+          <p className="text-xs text-zinc-500 truncate">by {product.seller_name}</p>
+        )}
+      </div>
+    </button>
+  );
+}
+
 export const ShopPage = () => {
   const navigate = useNavigate();
   const { brandId } = useParams();
 
-  const [brands, setBrands] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [selectedBrand, setSelectedBrand] = useState(null);
-  const [selectedCategory, setSelectedCategory] = useState('all');
   const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [total, setTotal] = useState(0);
+  const [searchInput, setSearchInput] = useState('');
+  const [productType, setProductType] = useState('all');
+  const [selectedBrandId, setSelectedBrandId] = useState(brandId || null);
 
-  // Fetch brands on mount
   useEffect(() => {
-    setBrands(MOCK_BRANDS);
-
-    if (brandId) {
-      const brand = MOCK_BRANDS.find(b => b.id === brandId);
-      if (brand) setSelectedBrand(brand);
-    }
-
-    setLoading(false);
+    setSelectedBrandId(brandId || null);
   }, [brandId]);
-  // Fetch categories and products when brand is selected
-  useEffect(() => {
-    if (!selectedBrand) return;
 
-    setLoading(true);
+  const {
+    data: brandsData,
+    isLoading: brandsLoading,
+    isError: brandsError,
+  } = useGetAllBrandsQuery({ limit: 100, sortBy: 'name', sortOrder: 'asc' });
 
-    try {
-      const categories = MOCK_CATEGORIES[selectedBrand.id] || [];
-      setCategories(categories);
+  const brands = brandsData?.brands || [];
 
-      let filteredProducts = MOCK_PRODUCTS.filter(
-        p => p.brand_id === selectedBrand.id
-      );
+  const selectedBrand = useMemo(
+    () => brands.find((b) => b.id === selectedBrandId) || null,
+    [brands, selectedBrandId]
+  );
 
-      if (selectedCategory && selectedCategory !== 'all') {
-        filteredProducts = filteredProducts.filter(
-          p => p.category_id === selectedCategory
-        );
-      }
+  const productQueryArgs = useMemo(() => {
+    const args = {};
+    if (search.trim()) args.search = search.trim();
+    if (productType && productType !== 'all') args.type = productType;
+    if (selectedBrandId) args.brand_id = selectedBrandId;
+    args.sort = 'newest';
+    return args;
+  }, [search, productType, selectedBrandId]);
 
-      if (search) {
-        filteredProducts = filteredProducts.filter(p =>
-          p.name.toLowerCase().includes(search.toLowerCase())
-        );
-      }
+  const {
+    data: productsData,
+    isLoading: productsLoading,
+    isFetching: productsFetching,
+    isError: productsError,
+    refetch: refetchProducts,
+  } = useGetPublishedProductsQuery(productQueryArgs);
 
-      setProducts(filteredProducts);
-      setTotal(filteredProducts.length);
-    } catch (err) {
-      toast.error('Failed to load products');
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedBrand, selectedCategory, search]);
+  const products = productsData?.products || [];
+
   const handleSelectBrand = (brand) => {
-    setSelectedBrand(brand);
-    setSelectedCategory('all');
+    setSelectedBrandId(brand.id);
+    setProductType('all');
     setSearch('');
-    navigate(`/shop/${brand.id}`);
+    setSearchInput('');
+    navigate(`/storefront/${brand.id}`);
   };
 
-  const handleBackToBrands = () => {
-    setSelectedBrand(null);
-    setCategories([]);
-    setProducts([]);
-    setSelectedCategory('all');
+  const handleBackToAll = () => {
+    setSelectedBrandId(null);
+    setProductType('all');
     setSearch('');
-    navigate('/shop');
+    setSearchInput('');
+    navigate('/storefront');
   };
 
+  const handleSearchSubmit = (e) => {
+    e?.preventDefault();
+    setSearch(searchInput);
+  };
 
-  // Show brand selection view
-  if (!selectedBrand) {
+  const handleViewProduct = (product) => {
+    navigate(`/storefront/product/${product.id}`);
+  };
+
+  if (!selectedBrandId) {
     return (
       <div className="min-h-screen" data-testid="shop-page">
-        <Header title="Shop by Brand" subtitle="Select a brand to browse products" />
+        <Header
+          title="Storefront"
+          subtitle="Browse brands and published merch from the marketplace"
+        />
 
-        <div className="p-4 sm:p-6">
-          {loading ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="w-10 h-10 border-2 border-white border-t-transparent rounded-full animate-spin" />
+        <div className="p-4 sm:p-6 space-y-8">
+          <section>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-medium text-white flex items-center gap-2">
+                <Storefront weight="duotone" className="w-5 h-5 text-violet-400" />
+                Latest published products
+              </h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-zinc-400 hover:text-white"
+                onClick={() => refetchProducts()}
+              >
+                Refresh
+              </Button>
             </div>
-          ) : brands.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64 text-center">
-              <Package weight="duotone" className="w-16 h-16 text-zinc-600 mb-4" />
-              <p className="text-zinc-400">No brands available</p>
-              <p className="text-sm text-zinc-500 mt-2">Seed some data to get started</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {brands.map((brand, index) => (
-                <div
-                  key={brand.id}
-                  onClick={() => handleSelectBrand(brand)}
-                  className={`relative bg-gradient-to-br ${brandColors[index % brandColors.length]} border rounded-xl p-6 cursor-pointer hover:scale-[1.02] transition-all duration-200 group`}
-                  data-testid={`brand-card-${brand.id}`}
+
+            <form
+              onSubmit={handleSearchSubmit}
+              className="flex flex-col sm:flex-row gap-3 mb-4"
+            >
+              <div className="relative flex-1">
+                <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                <Input
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  placeholder="Search products…"
+                  className="pl-9 bg-zinc-900 border-zinc-800 text-white"
+                  data-testid="shop-search"
+                />
+              </div>
+              <Select value={productType} onValueChange={setProductType}>
+                <SelectTrigger
+                  className="w-full sm:w-48 bg-zinc-900 border-zinc-800 text-white"
+                  data-testid="shop-type-filter"
                 >
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="w-14 h-14 rounded-xl bg-white/10 flex items-center justify-center">
-                      <span className="text-2xl font-bold text-white">{brand.name.charAt(0)}</span>
+                  <SelectValue placeholder="Product type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PRODUCT_TYPES.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>
+                      {t.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button type="submit" className="bg-violet-600 hover:bg-violet-500 text-white">
+                Search
+              </Button>
+            </form>
+
+            {productsLoading || productsFetching ? (
+              <div className="flex items-center justify-center h-48">
+                <div className="w-10 h-10 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : productsError ? (
+              <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-6 text-center text-red-300">
+                Could not load products from the backend. Check that the API is running.
+              </div>
+            ) : products.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-48 text-center bg-zinc-900 border border-zinc-800 rounded-lg">
+                <Package weight="duotone" className="w-12 h-12 text-zinc-600 mb-3" />
+                <p className="text-zinc-400">No published products yet</p>
+                <p className="text-sm text-zinc-500 mt-1">
+                  Products appear here once sellers publish merch listings
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {products.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    onClick={() => handleViewProduct(product)}
+                  />
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section>
+            <h2 className="text-lg font-medium text-white mb-4 flex items-center gap-2">
+              <Tag weight="duotone" className="w-5 h-5 text-violet-400" />
+              Shop by brand
+            </h2>
+
+            {brandsLoading ? (
+              <div className="flex items-center justify-center h-40">
+                <div className="w-10 h-10 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : brandsError ? (
+              <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-6 text-center text-red-300">
+                Could not load brands from the backend.
+              </div>
+            ) : brands.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-40 text-center bg-zinc-900 border border-zinc-800 rounded-lg">
+                <Package weight="duotone" className="w-12 h-12 text-zinc-600 mb-3" />
+                <p className="text-zinc-400">No brands available</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {brands.map((brand, index) => (
+                  <button
+                    type="button"
+                    key={brand.id}
+                    onClick={() => handleSelectBrand(brand)}
+                    className={`text-left rounded-lg border bg-gradient-to-br p-5 hover:scale-[1.01] transition-transform ${
+                      brandColors[index % brandColors.length]
+                    }`}
+                    data-testid={`shop-brand-${brand.id}`}
+                  >
+                    <div className="flex items-start gap-3">
+                      {brand.logo_url ? (
+                        <img
+                          src={brand.logo_url}
+                          alt=""
+                          className="w-12 h-12 rounded-md object-cover bg-zinc-800"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-md bg-zinc-800/80 flex items-center justify-center text-lg font-semibold text-white">
+                          {(brand.name || '?').charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-semibold text-white truncate">{brand.name}</h3>
+                        {brand.slug && (
+                          <p className="text-xs text-zinc-400 font-mono">/{brand.slug}</p>
+                        )}
+                        {brand.description && (
+                          <p className="text-sm text-zinc-400 line-clamp-2 mt-1">
+                            {brand.description}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    <Tag weight="duotone" className="w-6 h-6 text-white/50 group-hover:text-white/80 transition-colors" />
-                  </div>
-                  <h3 className="text-xl font-bold text-white mb-2">{brand.name}</h3>
-                  <p className="text-sm text-white/60">{brand.description || 'Quality sanitary products'}</p>
-                  <div className="mt-4 pt-4 border-t border-white/10">
-                    <span className="text-xs text-white/50">Click to browse products</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </section>
         </div>
       </div>
     );
   }
 
-  // Show products view for selected brand
   return (
     <div className="min-h-screen" data-testid="shop-products-page">
-      <Header title={selectedBrand.name} subtitle={`${total} products available`} />
+      <Header
+        title={selectedBrand?.name || 'Brand store'}
+        subtitle={
+          selectedBrand?.description ||
+          'Published merch for this brand from the marketplace API'
+        }
+      />
 
-      <div className="p-6 space-y-6">
-        {/* Back button and filters */}
-        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+      <div className="p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
           <Button
             variant="ghost"
-            onClick={handleBackToBrands}
-            className="text-zinc-400 hover:text-white"
-            data-testid="back-to-brands"
+            size="sm"
+            onClick={handleBackToAll}
+            className="text-zinc-400 hover:text-white w-fit"
+            data-testid="shop-back"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            All Brands
+            All products & brands
           </Button>
 
-          <div className="flex flex-col sm:flex-row flex-1 gap-4">
+          <form
+            onSubmit={handleSearchSubmit}
+            className="flex flex-1 flex-col sm:flex-row gap-3"
+          >
             <div className="relative flex-1">
               <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
               <Input
-                placeholder="Search products..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 bg-zinc-900 border-zinc-800 text-white placeholder-zinc-500"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="Search in this brand…"
+                className="pl-9 bg-zinc-900 border-zinc-800 text-white"
                 data-testid="shop-search"
               />
             </div>
-
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-full sm:w-48 bg-zinc-900 border-zinc-800 text-white" data-testid="shop-category-filter">
-                <Funnel className="w-4 h-4 mr-2" />
-                <SelectValue placeholder="All Categories" />
+            <Select value={productType} onValueChange={setProductType}>
+              <SelectTrigger
+                className="w-full sm:w-48 bg-zinc-900 border-zinc-800 text-white"
+                data-testid="shop-type-filter"
+              >
+                <SelectValue placeholder="Product type" />
               </SelectTrigger>
-              <SelectContent className="bg-zinc-900 border-zinc-800">
-                <SelectItem value="all" className="text-zinc-300">All Categories</SelectItem>
-                {categories.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.id} className="text-zinc-300">
-                    {cat.name}
+              <SelectContent>
+                {PRODUCT_TYPES.map((t) => (
+                  <SelectItem key={t.value} value={t.value}>
+                    {t.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          </div>
+            <Button type="submit" className="bg-violet-600 hover:bg-violet-500 text-white">
+              Search
+            </Button>
+          </form>
         </div>
 
-        {/* Category chips */}
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setSelectedCategory('all')}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${selectedCategory === 'all'
-              ? 'bg-white text-black'
-              : 'bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700'
-              }`}
-          >
-            All
-          </button>
-          {categories.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => setSelectedCategory(cat.id)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${selectedCategory === cat.id
-                ? 'bg-white text-black'
-                : 'bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700'
-                }`}
-              data-testid={`category-chip-${cat.id}`}
-            >
-              {cat.name}
-            </button>
-          ))}
-        </div>
-
-        {/* Products grid */}
-        {loading ? (
+        {productsLoading || productsFetching ? (
           <div className="flex items-center justify-center h-64">
-            <div className="w-10 h-10 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            <div className="w-10 h-10 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : productsError ? (
+          <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-6 text-center text-red-300">
+            Failed to load products for this brand.
           </div>
         ) : products.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-center bg-zinc-900 border border-zinc-800 rounded-md">
             <Package weight="duotone" className="w-12 h-12 text-zinc-600 mb-4" />
             <p className="text-zinc-400">No products found</p>
-            <p className="text-sm text-zinc-500 mt-2">Try changing your filters</p>
+            <p className="text-sm text-zinc-500 mt-2">
+              Try clearing filters or check that this brand has published merch
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {products.map((product) => (
-              <div
+              <ProductCard
                 key={product.id}
-                className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden hover:border-zinc-700 transition-colors"
-                data-testid={`shop-product-${product.id}`}
-              >
-                {/* Product image placeholder */}
-                <div className="aspect-square bg-zinc-800 flex items-center justify-center">
-                  <Package weight="duotone" className="w-16 h-16 text-zinc-600" />
-                </div>
-
-                {/* Product info */}
-                <div className="p-4 space-y-3">
-                  <div>
-                    <h3 className="font-medium text-white line-clamp-2">{product.name}</h3>
-                    <p className="text-xs text-zinc-500 font-mono mt-1">{product.sku}</p>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-xl font-bold text-white">₹{product.price?.toFixed(2)}</span>
-                    <span className={`text-xs px-2 py-1 rounded ${product.stock > 10 ? 'bg-green-500/20 text-green-400' : product.stock > 0 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'}`}>
-                      {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
-                    </span>
-                  </div>
-
-                  <Button
-                    className="w-full bg-white text-black hover:bg-zinc-200"
-
-                    disabled={product.stock <= 0}
-                    data-testid={`add-to-cart-${product.id}`}
-                  >
-                    <ShoppingCart className="w-4 h-4 mr-2" />
-                    Add to Cart
-                  </Button>
-                </div>
-              </div>
+                product={product}
+                onClick={() => handleViewProduct(product)}
+              />
             ))}
           </div>
         )}

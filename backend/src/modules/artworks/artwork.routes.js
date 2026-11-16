@@ -7,6 +7,7 @@ const {
   hasPermission,
 } = require("../../common/middleware/permission.middleware");
 const ArtworkController = require("./controller/artwork.controller");
+const { optionalAuth } = require("../../common/middleware/optional-auth");
 const router = express.Router({ mergeParams: true });
 const { singleUpload } = require("../../common/middleware/upload");
 
@@ -40,7 +41,7 @@ router.delete(
 router.get("/", ArtworkController.getArtworks);
 
 // Single artwork by ID (dynamic param)
-router.get("/:id", ArtworkController.getArtwork);
+router.get("/:id", optionalAuth, ArtworkController.getArtwork);
 
 // Authenticated actions on specific artwork
 router.patch(

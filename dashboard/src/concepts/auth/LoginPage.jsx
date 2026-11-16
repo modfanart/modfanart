@@ -22,6 +22,7 @@ export const LoginPage = () => {
     loginWithGoogle,
     isLoggingIn,
     isGoogleLoggingIn,
+    logout,
   } = useAuth();
 
   const navigate = useNavigate();
@@ -47,17 +48,13 @@ export const LoginPage = () => {
         password,
       });
 
-      // Existing user
+      // The workspace has no sign-up (/register was a blank page). Staff
+      // accounts are MOD accounts given a staff role in Roles & permissions.
       if (result?.isNewUser || result?.requiresSignup) {
-        sessionStorage.setItem(
-          'pendingSignupEmail',
-          email
-        );
-
-        navigate('/register', {
-          replace: true,
-        });
-
+        try { await logout(); } catch { /* already signed out */ }
+        const msg = 'No MOD account for this sign-in. Create one on the main site, then ask an admin for workspace access.';
+        setError(msg);
+        toast.error(msg);
         return;
       }
 
@@ -89,19 +86,13 @@ export const LoginPage = () => {
       // Google account doesn't exist in our DB yet.
       // Firebase authentication succeeded, but the
       // application account still needs to be created.
-      if (
-        result?.isNewUser ||
-        result?.requiresSignup
-      ) {
-        sessionStorage.setItem(
-          'pendingGoogleIdToken',
-          result.idToken
-        );
-
-        navigate('/register', {
-          replace: true,
-        });
-
+      // The workspace has no sign-up (/register was a blank page). Staff
+      // accounts are MOD accounts given a staff role in Roles & permissions.
+      if (result?.isNewUser || result?.requiresSignup) {
+        try { await logout(); } catch { /* already signed out */ }
+        const msg = 'No MOD account for this sign-in. Create one on the main site, then ask an admin for workspace access.';
+        setError(msg);
+        toast.error(msg);
         return;
       }
 

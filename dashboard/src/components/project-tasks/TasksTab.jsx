@@ -63,8 +63,10 @@ const TasksTab = () => {
     }
   };
 
-  const handleViewTask = (taskId) => {
-    navigate(`/tasks/${taskId}`);
+  // There is no task detail route (/tasks/:id was a blank page); open the
+  // task's project, where the board shows it.
+  const handleViewTask = (task) => {
+    if (task?.project_id) navigate(`/project/${task.project_id}`);
   };
 
   if (isLoading) {
@@ -134,7 +136,7 @@ const TasksTab = () => {
             <Card
               key={task.id}
               className="bg-zinc-900 border-zinc-800 hover:border-zinc-700 transition-all cursor-pointer group"
-              onClick={() => handleViewTask(task.id)}
+              onClick={() => handleViewTask(task)}
             >
               <CardContent className="p-5">
                 <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">

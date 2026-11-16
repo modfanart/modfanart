@@ -186,7 +186,7 @@ export default function ForCreatorsPage() {
 
             <div className="flex flex-col gap-3 sm:flex-row justify-center">
               <Link href="/signup?type=creator">
-                <Button size="lg" className="bg-white text-primary hover:bg-white/90">
+                <Button size="lg" className="bg-background text-primary hover:bg-background/90">
                   Sign Up Now
                 </Button>
               </Link>
@@ -195,7 +195,7 @@ export default function ForCreatorsPage() {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="border-white text-white hover:bg-white/10"
+                  className="border-white text-white hover:bg-background/10"
                 >
                   Contact Sales
                 </Button>

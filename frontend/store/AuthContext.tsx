@@ -52,7 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     data?.user?.role?.name ?? ''
   );
 
-  const { data: brandsData } = useGetMyBrandsQuery(undefined, {
+  const { data: brandsData, isLoading: brandsLoading } = useGetMyBrandsQuery(undefined, {
     skip: !hasBrandRole,
   });
 
@@ -91,7 +91,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // don't treat the pre-rehydration window as logged out. After that,
         // only loading while the current-user query is in flight.
         user,
-        loading: !initialized || (isLoading && !!accessToken),
+        // Brand accounts also wait for their brand list so dashboard guards and
+        // the Dashboard link don't briefly see "no brand".
+        loading: !initialized || (isLoading && !!accessToken) || (hasBrandRole && brandsLoading),
         logout: handleLogout,
       }}
     >

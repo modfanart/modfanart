@@ -218,7 +218,7 @@ const AssignJudgeModal = ({
 const OpportunityDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, can } = useAuth();
 
   const [contest, setContest] = useState(null);
   const [showAssignModal, setShowAssignModal] = useState(false);
@@ -296,7 +296,9 @@ const OpportunityDetailPage = () => {
      ORGANIZER CHECK
   ---------------------------------------------------------- */
 
+  // Workspace staff manage every contest; they are never its "organizer".
   const isOrganizer =
+    can('contests.manage') ||
     contest?.created_by === user?.id ||
     contest?.organizer_id === user?.id ||
     contest?.user_id === user?.id;
@@ -739,6 +741,24 @@ const OpportunityDetailPage = () => {
                 <Trophy className="mr-2 h-4 w-4" />
                 Leaderboard
               </Button>
+
+              <Button
+                variant="outline"
+                className="w-full border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white"
+                onClick={() => navigate(`/campaigns/prizes?contest=${contest.id}`)}
+              >
+                Prizes
+              </Button>
+
+              {can('contests.manage') && (
+                <Button
+                  variant="outline"
+                  className="w-full border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white"
+                  onClick={() => navigate(`/opportunity/${contest.id}/edit`)}
+                >
+                  Edit contest
+                </Button>
+              )}
             </div>
           </div>
         </div>

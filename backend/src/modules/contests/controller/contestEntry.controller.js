@@ -99,8 +99,24 @@ class ContestEntryController {
       }
 
       const now = new Date();
+      if (contest.start_date && new Date(contest.start_date) > now) {
+        return res.status(403).json({ error: 'Submissions have not opened yet' });
+      }
       if (new Date(contest.submission_end_date) < now) {
         return res.status(403).json({ error: 'Submission period has ended' });
+      }
+
+      // Conflict of interest: judges of this contest cannot also compete in it.
+      const isJudge = await db
+        .selectFrom('contest_judges')
+        .select('judge_id')
+        .where('contest_id', '=', contest.id)
+        .where('judge_id', '=', req.user.id)
+        .executeTakeFirst();
+      if (isJudge) {
+        return res
+          .status(403)
+          .json({ error: 'Judges cannot submit entries to a contest they judge' });
       }
 
       const artwork = await Artwork.findById(artworkId);

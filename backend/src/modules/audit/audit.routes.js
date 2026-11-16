@@ -1,23 +1,18 @@
-// backend/src/routes/audit.routes.js
+// src/modules/audit/audit.routes.js  ->  /api/audit
 const express = require('express');
+const { authenticateToken } = require('../../common/middleware/auth.middleware');
+const { requirePermission } = require('../../common/middleware/require-admin');
+const ctrl = require('./controller/audit.controller');
+
 const router = express.Router();
-const {
-  createAuditLogHandler,
-  getAuditLogByIdHandler,
-  getAuditLogsByUserIdHandler,
-  searchAuditLogsHandler,
-} = require('./controller/audit.controller');
 
-// POST /api/audit
-router.post('/', createAuditLogHandler);
+router.use(authenticateToken, requirePermission('audit.view'));
 
-// GET /api/audit/:id
-router.get('/:id', getAuditLogByIdHandler);
-
-// GET /api/audit/user/:userId
-router.get('/user/:userId', getAuditLogsByUserIdHandler);
-
-// GET /api/audit/search
-router.get('/search', searchAuditLogsHandler);
+// Static paths first: '/:id' would otherwise swallow them.
+router.get('/', ctrl.search);
+router.get('/facets', ctrl.facets);
+router.get('/daily', ctrl.daily);
+router.get('/export', ctrl.exportCsv);
+router.get('/:id', ctrl.getById);
 
 module.exports = router;

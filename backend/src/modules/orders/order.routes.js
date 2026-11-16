@@ -1,5 +1,6 @@
 // Mounted at /api/orders. (The older /api/order router is the single-license
 // purchase flow and is left untouched.)
+const { requireGoodStanding } = require('../../common/policy');
 const router = require('express').Router();
 
 const controller = require('./order.controller');
@@ -15,7 +16,7 @@ router.use(authenticateToken);
 
 // Buyer
 router.get('/me', controller.getMyOrders);
-router.post('/pay', controller.createPayment);
+router.post('/pay', requireGoodStanding, controller.createPayment);
 router.post('/confirm-payment', controller.confirmPayment);
 
 // Seller: orders that contain at least one of my line items.

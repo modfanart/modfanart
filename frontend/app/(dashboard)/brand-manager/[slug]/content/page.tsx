@@ -54,11 +54,11 @@ export default function BrandPostsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Brand Posts</h1>
 
-        <Button asChild>
-          <Link href={`/dashboard/brand/${brandSlug}/${user?.id}/posts/new`}>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            New Post
-          </Link>
+        {/* BRD-06: the post editor route (/dashboard/brand/.../posts/new) was
+            never shipped. Disabled until a post editor exists. */}
+        <Button disabled title="Post editor coming soon">
+          <PlusCircle className="mr-2 h-4 w-4" />
+          New Post
         </Button>
       </div>
 
@@ -175,10 +175,8 @@ function PostList({ posts, brandSlug, managerId }: PostListProps) {
 
               {/* ACTIONS */}
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" asChild>
-                  <Link href={`/dashboard/brand/${brandSlug}/${managerId ?? ''}/posts/${post.id}`}>
-                    <Edit className="h-4 w-4" />
-                  </Link>
+                <Button variant="ghost" size="icon" disabled title="Post editor coming soon" aria-label="Edit post (coming soon)">
+                  <Edit className="h-4 w-4" />
                 </Button>
 
                 <Button

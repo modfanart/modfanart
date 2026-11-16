@@ -90,7 +90,7 @@ export default function PricingPage() {
               Annual
               <Badge
                 variant="outline"
-                className="ml-2 bg-green-50 text-green-700 hover:bg-green-50 hover:text-green-700"
+                className="ml-2 bg-success-subtle text-success hover:bg-success-subtle hover:text-success"
               >
                 Save 20%
               </Badge>
@@ -113,19 +113,19 @@ export default function PricingPage() {
                 <CardContent className="flex-1">
                   <ul className="space-y-3">
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mr-2" />
+                      <CheckCircle className="h-5 w-5 text-success shrink-0 mr-2" />
                       <span>Unlimited submissions</span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mr-2" />
+                      <CheckCircle className="h-5 w-5 text-success shrink-0 mr-2" />
                       <span>AI-powered screening</span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mr-2" />
+                      <CheckCircle className="h-5 w-5 text-success shrink-0 mr-2" />
                       <span>Basic analytics</span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mr-2" />
+                      <CheckCircle className="h-5 w-5 text-success shrink-0 mr-2" />
                       <span>Standard revenue share (70/30)</span>
                     </li>
                   </ul>
@@ -155,23 +155,23 @@ export default function PricingPage() {
                 <CardContent className="flex-1">
                   <ul className="space-y-3">
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mr-2" />
+                      <CheckCircle className="h-5 w-5 text-success shrink-0 mr-2" />
                       <span>Everything in Free tier</span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mr-2" />
+                      <CheckCircle className="h-5 w-5 text-success shrink-0 mr-2" />
                       <span>Priority review process</span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mr-2" />
+                      <CheckCircle className="h-5 w-5 text-success shrink-0 mr-2" />
                       <span>Enhanced revenue share (80/20)</span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mr-2" />
+                      <CheckCircle className="h-5 w-5 text-success shrink-0 mr-2" />
                       <span>Advanced analytics dashboard</span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mr-2" />
+                      <CheckCircle className="h-5 w-5 text-success shrink-0 mr-2" />
                       <span>Direct communication with brands</span>
                     </li>
                   </ul>
@@ -209,23 +209,23 @@ export default function PricingPage() {
                 <CardContent className="flex-1">
                   <ul className="space-y-3">
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mr-2" />
+                      <CheckCircle className="h-5 w-5 text-success shrink-0 mr-2" />
                       <span>Everything in Premium tier</span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mr-2" />
+                      <CheckCircle className="h-5 w-5 text-success shrink-0 mr-2" />
                       <span>Highest revenue share (85/15)</span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mr-2" />
+                      <CheckCircle className="h-5 w-5 text-success shrink-0 mr-2" />
                       <span>Dedicated account manager</span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mr-2" />
+                      <CheckCircle className="h-5 w-5 text-success shrink-0 mr-2" />
                       <span>Featured artist promotion</span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mr-2" />
+                      <CheckCircle className="h-5 w-5 text-success shrink-0 mr-2" />
                       <span>Early access to brand partnerships</span>
                     </li>
                   </ul>
@@ -266,23 +266,23 @@ export default function PricingPage() {
                 <CardContent className="flex-1">
                   <ul className="space-y-3">
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mr-2" />
+                      <CheckCircle className="h-5 w-5 text-success shrink-0 mr-2" />
                       <span>No upfront cost</span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mr-2" />
+                      <CheckCircle className="h-5 w-5 text-success shrink-0 mr-2" />
                       <span>Revenue share model (70/30)</span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mr-2" />
+                      <CheckCircle className="h-5 w-5 text-success shrink-0 mr-2" />
                       <span>Basic IP protection tools</span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mr-2" />
+                      <CheckCircle className="h-5 w-5 text-success shrink-0 mr-2" />
                       <span>Standard approval workflow</span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mr-2" />
+                      <CheckCircle className="h-5 w-5 text-success shrink-0 mr-2" />
                       <span>Basic analytics dashboard</span>
                     </li>
                   </ul>
@@ -312,23 +312,23 @@ export default function PricingPage() {
                 <CardContent className="flex-1">
                   <ul className="space-y-3">
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mr-2" />
+                      <CheckCircle className="h-5 w-5 text-success shrink-0 mr-2" />
                       <span>Lower revenue share (80/20)</span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mr-2" />
+                      <CheckCircle className="h-5 w-5 text-success shrink-0 mr-2" />
                       <span>Advanced IP protection tools</span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mr-2" />
+                      <CheckCircle className="h-5 w-5 text-success shrink-0 mr-2" />
                       <span>Custom brand guidelines integration</span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mr-2" />
+                      <CheckCircle className="h-5 w-5 text-success shrink-0 mr-2" />
                       <span>Priority approval workflow</span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mr-2" />
+                      <CheckCircle className="h-5 w-5 text-success shrink-0 mr-2" />
                       <span>Comprehensive analytics</span>
                     </li>
                   </ul>
@@ -366,30 +366,30 @@ export default function PricingPage() {
                 <CardContent className="flex-1">
                   <ul className="space-y-3">
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mr-2" />
+                      <CheckCircle className="h-5 w-5 text-success shrink-0 mr-2" />
                       <span>Everything in Brand tier</span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mr-2" />
+                      <CheckCircle className="h-5 w-5 text-success shrink-0 mr-2" />
                       <span>Lowest revenue share rates</span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mr-2" />
+                      <CheckCircle className="h-5 w-5 text-success shrink-0 mr-2" />
                       <span>Dedicated account manager</span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mr-2" />
+                      <CheckCircle className="h-5 w-5 text-success shrink-0 mr-2" />
                       <span>API access for integration</span>
                     </li>
                     <li className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mr-2" />
+                      <CheckCircle className="h-5 w-5 text-success shrink-0 mr-2" />
                       <span>Custom reporting and analytics</span>
                     </li>
                   </ul>
                 </CardContent>
                 <CardFooter>
                   <Button className="w-full" variant="outline" asChild>
-                    <Link href="/contact-sales">Contact Sales</Link>
+                    <Link href="/contact/sales">Contact Sales</Link>
                   </Button>
                 </CardFooter>
               </Card>
@@ -440,7 +440,7 @@ export default function PricingPage() {
               discuss a custom solution for your organization.
             </p>
             <Button asChild>
-              <Link href="/contact-sales">Contact Sales</Link>
+              <Link href="/contact/sales">Contact Sales</Link>
             </Button>
           </div>
           <div className="md:w-1/3 flex justify-center">

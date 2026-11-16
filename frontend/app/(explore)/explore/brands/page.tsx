@@ -126,7 +126,7 @@ export default function ExploreBrandsPage() {
             ) : (
               <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                 {brands.map((brand) => (
-                  <Link key={brand.id} href={`/brands/${brand.slug}`}>
+                  <Link key={brand.id} href={`/brand/${brand.slug}`}>
                     <Card className="rounded-2xl hover:shadow-lg transition-all cursor-pointer overflow-hidden">
                       {brand.banner_url && (
                         <div className="h-24 w-full overflow-hidden">

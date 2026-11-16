@@ -69,10 +69,10 @@ type Tone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';
 
 export const TONE_CLASS: Record<Tone, string> = {
   neutral: 'bg-muted text-muted-foreground border-transparent',
-  info: 'bg-blue-100 text-blue-800 border-transparent dark:bg-blue-950 dark:text-blue-200',
-  success: 'bg-emerald-100 text-emerald-800 border-transparent dark:bg-emerald-950 dark:text-emerald-200',
-  warning: 'bg-amber-100 text-amber-800 border-transparent dark:bg-amber-950 dark:text-amber-200',
-  danger: 'bg-red-100 text-red-800 border-transparent dark:bg-red-950 dark:text-red-200',
+  info: 'bg-info-subtle text-info border-transparent',
+  success: 'bg-success-subtle text-success border-transparent',
+  warning: 'bg-warning-subtle text-warning-strong border-transparent',
+  danger: 'bg-destructive-subtle text-destructive border-transparent',
 };
 
 export const MERCH_STATUS: Record<MerchStatus, { label: string; tone: Tone }> = {
@@ -111,6 +111,7 @@ export const SELLER_STATUS: Record<SellerStatus, { label: string; tone: Tone }> 
 
 export const PAYOUT_STATUS: Record<PayoutStatus, { label: string; tone: Tone }> = {
   pending: { label: 'Pending', tone: 'warning' },
+  on_hold: { label: 'On hold (dispute)', tone: 'danger' },
   paid: { label: 'Paid', tone: 'success' },
   failed: { label: 'Failed', tone: 'danger' },
 };

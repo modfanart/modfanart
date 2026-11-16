@@ -13,7 +13,7 @@ function SafeImage({ src, alt = '', fill = false, className = '', ...rest }: any
   if (isEmpty) {
     return (
       <div
-        className={`relative ${fill ? 'w-full h-full' : 'w-full h-full'} ${className} bg-gray-200`}
+        className={`relative ${fill ? 'w-full h-full' : 'w-full h-full'} ${className} bg-muted`}
       >
         <span className="sr-only">{alt || 'Image placeholder'}</span>
       </div>
@@ -61,7 +61,7 @@ export default function AboutPage() {
           <br />
           <h1 className="text-5xl md:text-6xl font-black leading-tight tracking-tight ">
             DESERVES{' '}
-            <span className="bg-purple-600 text-white px-[4px] py-0 leading-none rounded-sm">
+            <span className="bg-primary text-primary-foreground px-[4px] py-0 leading-none rounded-sm">
               OFFICIAL
             </span>{' '}
           </h1>
@@ -89,7 +89,7 @@ export default function AboutPage() {
       </section>
 
       {/* ═══════════════════════ WHY MOD WAS CREATED ════════════════════════ */}
-      <section className="bg-white py-20 px-6">
+      <section className="bg-background py-20 px-6">
         <div className="max-w-5xl mx-auto">
           {/* Title */}
           <div className="flex items-center justify-center gap-3 mb-8">
@@ -141,13 +141,13 @@ export default function AboutPage() {
       </section>
 
       {/* ═══════════════════════ WHAT MOD ACTUALLY DOES ════════════════════════ */}
-      <section className="bg-white py-12 px-6 ">
+      <section className="bg-background py-12 px-6 ">
         <div className="max-w-3xl mx-auto text-center">
           <h2 className="text-4xl md:text-5xl font-black tracking-tight">
-            WHAT <span className="text-purple-500">MOD</span> ACTUALLY DOES
+            WHAT <span className="text-primary">MOD</span> ACTUALLY DOES
           </h2>
 
-          <p className="mt-8 text-sm text-gray-600 leading-relaxed">
+          <p className="mt-8 text-sm text-muted-foreground leading-relaxed">
             MOD is a fan licensing infrastructure platform.
             <br />
             <strong>We create structured pathways where:</strong>
@@ -161,20 +161,20 @@ export default function AboutPage() {
               'Approved designs become licensed merchandise',
               'Artists earn royalties from official releases',
             ].map((text, i) => (
-              <div key={i} className="flex items-start gap-4 bg-gray-50 rounded-2xl px-6 py-5">
-                <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center shrink-0 text-purple-600 font-bold text-sm">
+              <div key={i} className="flex items-start gap-4 bg-muted rounded-2xl px-6 py-5">
+                <div className="w-8 h-8 rounded-full bg-primary-subtle flex items-center justify-center shrink-0 text-primary font-bold text-sm">
                   {i + 1}
                 </div>
-                <p className="text-sm text-gray-700 leading-relaxed">{text}</p>
+                <p className="text-sm text-foreground leading-relaxed">{text}</p>
               </div>
             ))}
           </div>
 
-          <p className="mt-8 text-sm text-gray-500 leading-relaxed max-w-2xl mx-auto">
+          <p className="mt-8 text-sm text-muted-foreground leading-relaxed max-w-2xl mx-auto">
             Every step is structured and supported by intelligent automation designed to streamline
             review, protect brand standards, and maintain transparency.
           </p>
-          <p className="mt-4 text-sm text-gray-500 leading-relaxed max-w-2xl mx-auto">
+          <p className="mt-4 text-sm text-muted-foreground leading-relaxed max-w-2xl mx-auto">
             Our system combines AI-assisted screening with brand-led approval, making collaboration
             possible at scale while preserving full human oversight.
           </p>
@@ -182,19 +182,19 @@ export default function AboutPage() {
       </section>
 
       {/* ═══════════════════ OUR APPROACH TO CREATIVITY ════════════════════ */}
-      <section className="bg-white py-16 px-6">
+      <section className="bg-background py-16 px-6">
         <div className="max-w-5xl mx-auto">
           <h2 className="text-4xl md:text-5xl font-black tracking-tight text-center leading-tight mb-12">
             OUR APPROACH TO
             <br />
-            <span className="text-purple-500">CREATIVITY</span> AND{' '}
-            <span className="text-purple-500">LICENSING</span>
+            <span className="text-primary">CREATIVITY</span> AND{' '}
+            <span className="text-primary">LICENSING</span>
           </h2>
 
           <div className="flex flex-col md:flex-row gap-10 items-start max-w-3xl mx-auto">
             {/* Left — text */}
             <div className="flex-1">
-              <p className="text-sm text-gray-600 leading-relaxed">
+              <p className="text-sm text-muted-foreground leading-relaxed">
                 We believe creativity thrives when expectations are clear.
                 <br />
                 Artists deserve to know what's allowed.
@@ -203,7 +203,7 @@ export default function AboutPage() {
                 <br />
                 And fandom deserves better than silence or takedowns.
               </p>
-              <p className="mt-5 text-sm text-gray-600">MOD is built around:</p>
+              <p className="mt-5 text-sm text-muted-foreground">MOD is built around:</p>
 
               <div className="mt-4 space-y-3">
                 {[
@@ -216,13 +216,13 @@ export default function AboutPage() {
                   },
                 ].map(({ icon, text }, i) => (
                   <div key={i} className="flex items-center gap-3">
-                    <CheckCircle2 size={16} className="text-purple-500 shrink-0" />
-                    <span className="text-sm font-bold text-gray-800">{text}</span>
+                    <CheckCircle2 size={16} className="text-primary shrink-0" />
+                    <span className="text-sm font-bold text-foreground">{text}</span>
                   </div>
                 ))}
               </div>
 
-              <p className="mt-6 text-sm text-gray-500 leading-relaxed">
+              <p className="mt-6 text-sm text-muted-foreground leading-relaxed">
                 This isn't about exploiting fan passion.
                 <br />
                 It's about building something sustainable.
@@ -234,10 +234,10 @@ export default function AboutPage() {
             <div className="flex-shrink-0 flex gap-3">
               {/* Left column */}
               <div className="flex flex-col gap-3 mt-8">
-                <div className="w-[160px] h-[160px] bg-purple-100 rounded-2xl flex items-center justify-center">
+                <div className="w-[160px] h-[160px] bg-primary-subtle rounded-2xl flex items-center justify-center">
                   <img src={license1.src} alt="Info" className="w-16 h-16" />
                 </div>
-                <div className="relative w-[160px] h-[160px] rounded-2xl overflow-hidden bg-gray-200">
+                <div className="relative w-[160px] h-[160px] rounded-2xl overflow-hidden bg-muted">
                   <SafeImage
                     src="https://res.cloudinary.com/dbsdj2f2l/image/upload/v1776133975/ae950b44c9b4311155d3820c4406ac501b12527a_ig1tdr.png"
                     alt="Fan art"
@@ -249,7 +249,7 @@ export default function AboutPage() {
 
               {/* Right column — sits higher */}
               <div className="flex flex-col gap-3">
-                <div className="relative w-[160px] h-[160px] rounded-2xl overflow-hidden bg-gray-200">
+                <div className="relative w-[160px] h-[160px] rounded-2xl overflow-hidden bg-muted">
                   <SafeImage
                     src="https://res.cloudinary.com/dbsdj2f2l/image/upload/v1776133960/2331c71fb8e497567176ade34ff7b72c0b0d3594_izougv.png"
                     alt="Fan art"
@@ -257,7 +257,7 @@ export default function AboutPage() {
                     className="object-cover"
                   />
                 </div>
-                <div className="w-[160px] h-[160px] bg-purple-100 rounded-2xl flex items-center justify-center">
+                <div className="w-[160px] h-[160px] bg-primary-subtle rounded-2xl flex items-center justify-center">
                   <img src={palette2.src} alt="Info" className="w-16 h-16" />
                 </div>
               </div>
@@ -267,7 +267,7 @@ export default function AboutPage() {
       </section>
 
       {/* ═══════════════════════ THE FUTURE ════════════════════════ */}
-      <section className="bg-white py-10 px-6">
+      <section className="bg-background py-10 px-6">
         <div className="max-w-5xl mx-auto">
           <div className="relative rounded-3xl overflow-hidden min-h-[360px]">
             <div className="absolute inset-0">
@@ -285,7 +285,7 @@ export default function AboutPage() {
             {/* Content */}
             <div className="relative z-10 flex flex-col items-center justify-center text-center text-white px-8 py-16">
               <h2 className="text-4xl md:text-5xl font-black leading-tight tracking-tight">
-                THE <span className="text-purple-400">FUTURE</span> WE'RE
+                THE <span className="text-primary">FUTURE</span> WE'RE
                 <br />
                 WORKING TOWARD
               </h2>
@@ -308,7 +308,7 @@ export default function AboutPage() {
       </section>
 
       {/* ═══════════════════════ JOIN CTA ════════════════════════ */}
-      <section className="bg-white py-20 px-6 text-center">
+      <section className="bg-background py-20 px-6 text-center">
         <div className="max-w-3xl mx-auto">
           {/* Overlapping avatars */}
           {/* <div className="flex justify-center mb-6">
@@ -316,7 +316,7 @@ export default function AboutPage() {
               {avatars.map((src, i) => (
                 <div
                   key={i}
-                  className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-white bg-gray-300"
+                  className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-white bg-border"
                 >
                   <SafeImage src={src} alt="" fill className="object-cover" />
                 </div>
@@ -330,7 +330,7 @@ export default function AboutPage() {
             OFFICIAL COLLABORATION
           </h2>
 
-          <p className="mt-6 text-sm text-gray-500 leading-relaxed">
+          <p className="mt-6 text-sm text-muted-foreground leading-relaxed">
             Whether you're a brand looking to activate your fandom safely
             <br />
             or an artist looking for a legitimate way to get licensed,
@@ -346,7 +346,7 @@ export default function AboutPage() {
             ].map((text, i) => (
               <Button
                 key={i}
-                className="bg-purple-600 hover:bg-purple-700 rounded-full px-6 text-sm flex items-center gap-2 cursor-default"
+                className="bg-primary hover:bg-primary-hover rounded-full px-6 text-sm flex items-center gap-2 cursor-default"
               >
                 <CheckCircle2 size={14} /> {text}
               </Button>

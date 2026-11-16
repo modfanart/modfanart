@@ -1,4 +1,5 @@
 const express = require("express");
+const { requirePermission } = require("../../common/middleware/require-admin");
 const router = express.Router();
 
 const brandController = require("./controller/brand.controller");
@@ -33,15 +34,22 @@ router.post(
 router.get(
   "/verification-requests",
   authenticateToken,
-  authorize(['BRAND_MANAGER', "ADMIN", "SUPER_ADMIN", "DEVELOPER" ]),
+  requirePermission("brands.verify"), // SECURITY: brand managers could read every applicant's contact data
   brandController.getBrandVerificationRequests
 );
 
 router.patch(
   "/verification-requests/:requestId/approve",
   authenticateToken,
-  authorize(['BRAND_MANAGER', "ADMIN", "SUPER_ADMIN", "DEVELOPER" ]),
+  requirePermission("brands.verify"), // SECURITY: brand managers could approve their own verification
   brandController.approveBrandVerificationRequest
+);
+
+router.patch(
+  "/verification-requests/:requestId/reject",
+  authenticateToken,
+  requirePermission("brands.verify"),
+  brandController.rejectBrandVerificationRequest
 );
 
 // ───────────────────────────────────────────────
@@ -193,10 +201,10 @@ router.delete(
 // ADMIN CREATION
 // ───────────────────────────────────────────────
 
-router.post("/", authenticateToken, brandController.adminCreateBrand);
+router.post("/", authenticateToken, requirePermission("brands.manage"), brandController.adminCreateBrand);
 
 // ───────────────────────────────────────────────
 // EXPORT
 // ───────────────────────────────────────────────
 
-module.exports = router;
+module.exports = router;

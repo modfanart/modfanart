@@ -34,7 +34,7 @@ function SafeImage({ src, alt = '', fill = false, className = '', ...rest }: any
   if (isEmpty) {
     return (
       <div
-        className={`relative ${fill ? 'w-full h-full' : 'w-full h-full'} ${className} bg-gray-200`}
+        className={`relative ${fill ? 'w-full h-full' : 'w-full h-full'} ${className} bg-muted`}
       >
         <span className="sr-only">{alt || 'Image placeholder'}</span>
       </div>
@@ -47,15 +47,15 @@ function SafeImage({ src, alt = '', fill = false, className = '', ...rest }: any
 function FaqItem({ question, answer }: { question: string; answer: string }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="border-b border-gray-200 py-5 cursor-pointer" onClick={() => setOpen(!open)}>
+    <div className="border-b border-border py-5 cursor-pointer" onClick={() => setOpen(!open)}>
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-gray-900">{question}</span>
+        <span className="text-sm font-medium text-foreground">{question}</span>
         <ChevronDown
           size={18}
-          className={`text-purple-500 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+          className={`text-primary transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
         />
       </div>
-      {open && <p className="mt-3 text-sm text-gray-500 leading-relaxed">{answer}</p>}
+      {open && <p className="mt-3 text-sm text-muted-foreground leading-relaxed">{answer}</p>}
     </div>
   );
 }
@@ -70,9 +70,9 @@ function ArtistCard({ src, name, brand }: { src: string; name: string; brand: st
       <div className="p-4">
         <div className="flex items-center gap-1">
           <span className="text-white text-sm font-semibold">{name}</span>
-          <BadgeCheck size={14} className="text-purple-400 shrink-0" />
+          <BadgeCheck size={14} className="text-primary shrink-0" />
         </div>
-        <p className="text-gray-400 text-xs mt-0.5">Licensed to: {brand}</p>
+        <p className="text-muted-foreground text-xs mt-0.5">Licensed to: {brand}</p>
       </div>
     </div>
   );
@@ -120,7 +120,7 @@ export default function ForArtistsPage() {
           </h1>
           <h1 className="text-5xl md:text-6xl font-black leading-tight tracking-tight mt-2">
             GET IT OFFICIALLY{' '}
-            <span className="bg-purple-600 text-white px-1 py-0 leading-none rounded-sm">
+            <span className="bg-primary text-primary-foreground px-1 py-0 leading-none rounded-sm">
               LICENSED.
             </span>
           </h1>
@@ -141,7 +141,7 @@ export default function ForArtistsPage() {
           <div className="mt-8 flex flex-col items-center gap-3">
             <Button
               onClick={() => router.push('/login')}
-              className="bg-purple-600 hover:bg-purple-700 rounded-full px-8 text-sm flex items-center gap-2"
+              className="bg-primary hover:bg-primary-hover rounded-full px-8 text-sm flex items-center gap-2"
             >
               <Upload size={15} /> Submit Your Art
             </Button>
@@ -155,12 +155,12 @@ export default function ForArtistsPage() {
       </section>
 
       {/* ═══════════════════════ PROBLEM WITH FAN ART ════════════════════════ */}
-      <section className="bg-white py-24 px-6">
+      <section className="bg-background py-24 px-6">
         <div className="max-w-3xl mx-auto">
           <h2 className="text-4xl md:text-5xl font-black tracking-tight text-center">
-            THE PROBLEM WITH <span className="text-purple-500">FAN ART</span>
+            THE PROBLEM WITH <span className="text-primary">FAN ART</span>
           </h2>
-          <p className="mt-5 text-sm text-gray-500 text-center">
+          <p className="mt-5 text-sm text-muted-foreground text-center">
             Most fan art lives in a gray area.
           </p>
 
@@ -173,15 +173,15 @@ export default function ForArtistsPage() {
             ].map((text, i) => (
               <div
                 key={i}
-                className="flex items-center gap-3 bg-gray-100 rounded-xl px-5 py-4 w-full"
+                className="flex items-center gap-3 bg-muted rounded-xl px-5 py-4 w-full"
               >
-                <XCircle size={18} className="text-purple-500 shrink-0" />
-                <span className="text-sm font-bold text-gray-800">{text}</span>
+                <XCircle size={18} className="text-primary shrink-0" />
+                <span className="text-sm font-bold text-foreground">{text}</span>
               </div>
             ))}
           </div>
 
-          <p className="mt-8 text-sm text-gray-500 text-center">
+          <p className="mt-8 text-sm text-muted-foreground text-center">
             Even great work struggles to move forward when there's no clear approval process behind
             it.
           </p>
@@ -189,13 +189,13 @@ export default function ForArtistsPage() {
       </section>
 
       {/* ══════════════════════ THE OPPORTUNITY MOD CREATES ══════════════════════ */}
-      <section className="bg-white py-6 px-6">
+      <section className="bg-background py-6 px-6">
         <div className="max-w-4xl mx-auto">
-          <div className="flex flex-col md:flex-row rounded-3xl overflow-hidden shadow-lg bg-[#F4F4F4] border border-blue-200">
+          <div className="flex flex-col md:flex-row rounded-3xl overflow-hidden shadow-lg bg-[#F4F4F4] border border-info/30">
             {/* Left text */}
             <div className="flex-1 p-10">
               <div className="flex items-center gap-3 mb-5">
-                <span className="w-10 h-10 rounded-full bg-white flex items-center justify-center mb-4">
+                <span className="w-10 h-10 rounded-full bg-background flex items-center justify-center mb-4">
                   <img src={star2.src} alt="Award 1" className="w-6 h-6" />
                 </span>
                 <h3 className="text-2xl font-bold leading-tight">
@@ -204,18 +204,18 @@ export default function ForArtistsPage() {
                   MOD Creates
                 </h3>
               </div>
-              <p className="text-sm text-gray-600 leading-relaxed">
+              <p className="text-sm text-muted-foreground leading-relaxed">
                 MOD was built to give <strong>fan artists</strong> a legitimate way in. Instead of
                 posting into the void, artists submit work through official campaigns.
               </p>
-              <p className="mt-4 text-sm text-gray-600 leading-relaxed">
+              <p className="mt-4 text-sm text-muted-foreground leading-relaxed">
                 Instead of hoping for permission, artists work within{' '}
                 <strong>brand guidelines.</strong>
                 <br />
                 Instead of worrying about <strong>copyright</strong>, artists know exactly where
                 they stand.
               </p>
-              <p className="mt-4 text-sm text-gray-600 leading-relaxed">
+              <p className="mt-4 text-sm text-muted-foreground leading-relaxed">
                 When a <strong>design is approved</strong>, it's not just seen, it's licensed.
               </p>
             </div>
@@ -234,23 +234,23 @@ export default function ForArtistsPage() {
       </section>
 
       {/* ══════════════════════ HOW MOD WORKS FOR ARTISTS ════════════════════════ */}
-      <section className="bg-white py-24 px-6">
+      <section className="bg-background py-24 px-6">
         <div className="max-w-3xl mx-auto">
           <h2 className="text-4xl md:text-5xl font-black tracking-tight text-center leading-tight">
             HOW MOD WORKS FOR
             <br />
-            <span className="text-purple-500">ARTISTS</span>
+            <span className="text-primary">ARTISTS</span>
           </h2>
 
           <div className="mt-14 space-y-10">
             {[
               {
-                icon: <UserCircle size={20} className="text-purple-500" />,
+                icon: <UserCircle size={20} className="text-primary" />,
                 title: 'Create Your Profile',
                 body: 'Set up your artist profile and showcase your style. This helps brands understand who you are and how you approach your work.',
               },
               {
-                icon: <Upload size={20} className="text-purple-500" />,
+                icon: <Upload size={20} className="text-primary" />,
                 title: 'Submit to Official Campaigns',
                 body: 'Artists submit fan art tied to active brand campaigns, each with clear rules and creative direction.',
               },
@@ -267,14 +267,14 @@ export default function ForArtistsPage() {
             ].map(({ icon, title, body }, i) => (
               <div key={i} className="flex gap-5">
                 <div className="flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-primary-subtle flex items-center justify-center shrink-0">
                     {icon}
                   </div>
-                  {i < 3 && <div className="w-px flex-1 bg-purple-200 mt-2" />}
+                  {i < 3 && <div className="w-px flex-1 bg-primary/20 mt-2" />}
                 </div>
                 <div className="pb-6">
                   <h4 className="font-bold text-base">{title}</h4>
-                  <p className="mt-1 text-sm text-gray-500 leading-relaxed whitespace-pre-line">
+                  <p className="mt-1 text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
                     {body}
                   </p>
                 </div>
@@ -285,10 +285,10 @@ export default function ForArtistsPage() {
       </section>
 
       {/* ══════════════════════ WHAT ARTISTS GAIN ════════════════════════ */}
-      <section className="bg-white px-6">
+      <section className="bg-background px-6">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-4xl md:text-5xl font-black tracking-tight text-center mb-10">
-            WHAT <span className="text-purple-500">ARTISTS</span> GAIN
+            WHAT <span className="text-primary">ARTISTS</span> GAIN
           </h2>
 
           <div className="flex flex-col md:flex-row rounded-3xl overflow-hidden shadow-lg">
@@ -314,10 +314,10 @@ export default function ForArtistsPage() {
               ].map(({ title, body }, i) => (
                 <div key={i}>
                   <div className="flex items-center gap-2 mb-1">
-                    <BadgeCheck size={18} className="text-purple-400 shrink-0" />
+                    <BadgeCheck size={18} className="text-primary shrink-0" />
                     <h4 className="font-bold text-sm">{title}</h4>
                   </div>
-                  <p className="text-xs text-gray-400 leading-relaxed pl-6">{body}</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed pl-6">{body}</p>
                 </div>
               ))}
             </div>
@@ -333,7 +333,7 @@ export default function ForArtistsPage() {
             </div>
           </div>
 
-          <p className="mt-8 text-center text-sm font-semibold text-gray-800">
+          <p className="mt-8 text-center text-sm font-semibold text-foreground">
             MOD isn't about shortcuts.
             <br />
             It's about building something real.
@@ -342,17 +342,17 @@ export default function ForArtistsPage() {
       </section>
 
       {/* ══════════════════════ FEATURED ARTIST WORK ════════════════════════ */}
-      <section className="bg-white py-16 px-6">
+      <section className="bg-background py-16 px-6">
         <div className="max-w-4xl mx-auto text-center">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <Star size={32} className="text-purple-500 fill-purple-500" />
+            <Star size={32} className="text-primary fill-primary" />
             <h2 className="text-4xl md:text-5xl font-black tracking-tight">FEATURED ARTIST WORK</h2>
           </div>
 
-          <p className="text-sm text-gray-500 mt-2">
+          <p className="text-sm text-muted-foreground mt-2">
             Artists on MOD don't just share fan art, they participate in licensed campaigns.
           </p>
-          <p className="mt-4 text-sm text-gray-600 font-medium">Every featured design:</p>
+          <p className="mt-4 text-sm text-muted-foreground font-medium">Every featured design:</p>
 
           <div className="mt-4 flex flex-wrap justify-center gap-3">
             {[
@@ -363,15 +363,15 @@ export default function ForArtistsPage() {
             ].map((text, i) => (
               <div
                 key={i}
-                className="flex items-center gap-2 bg-gray-100 rounded-full px-5 py-2 text-sm font-semibold text-gray-800"
+                className="flex items-center gap-2 bg-muted rounded-full px-5 py-2 text-sm font-semibold text-foreground"
               >
-                <CheckCircle2 size={14} className="text-purple-500 shrink-0" />
+                <CheckCircle2 size={14} className="text-primary shrink-0" />
                 {text}
               </div>
             ))}
           </div>
 
-          <p className="mt-5 text-sm text-gray-500 italic">
+          <p className="mt-5 text-sm text-muted-foreground italic">
             What you see here isn't popular. It's approval.
           </p>
 
@@ -385,12 +385,12 @@ export default function ForArtistsPage() {
       </section>
 
       {/* ══════════════════════ READY TO SUBMIT CTA ════════════════════════ */}
-      <section className="bg-white py-10 px-6">
+      <section className="bg-background py-10 px-6">
         <div className="max-w-4xl mx-auto">
           <div className="relative rounded-3xl overflow-hidden bg-black text-white text-center py-16 px-8">
             {/* purple glow */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-72 h-40 bg-purple-600 blur-[80px] opacity-60 rounded-full" />
+              <div className="w-72 h-40 bg-primary blur-[80px] opacity-60 rounded-full" />
             </div>
 
             <div className="relative z-10">
@@ -412,9 +412,9 @@ export default function ForArtistsPage() {
                 ].map((t, i) => (
                   <div
                     key={i}
-                    className="flex items-center gap-2 bg-white/10 rounded-full px-5 py-2 text-xs font-medium hover:bg-white/20 transition-colors"
+                    className="flex items-center gap-2 bg-background/10 rounded-full px-5 py-2 text-xs font-medium hover:bg-background/20 transition-colors"
                   >
-                    <CheckCircle2 size={13} className="text-purple-400" /> {t}
+                    <CheckCircle2 size={13} className="text-primary" /> {t}
                   </div>
                 ))}
               </div>
@@ -422,7 +422,7 @@ export default function ForArtistsPage() {
               <div className="mt-7 flex flex-col items-center gap-3">
                 <Button
                   onClick={() => router.push('/login')}
-                  className="bg-purple-600 hover:bg-purple-700 rounded-full px-8 flex items-center gap-2"
+                  className="bg-primary hover:bg-primary-hover rounded-full px-8 flex items-center gap-2"
                 >
                   <Upload size={15} /> Submit Your Art
                 </Button>
@@ -438,7 +438,7 @@ export default function ForArtistsPage() {
       </section>
 
       {/* ══════════════════════ FAQ ════════════════════════ */}
-      <section className="bg-white py-20 px-6">
+      <section className="bg-background py-20 px-6">
         <div className="max-w-3xl mx-auto">
           <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-10">
             FREQUENTLY ASKED QUESTIONS

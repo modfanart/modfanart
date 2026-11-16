@@ -38,8 +38,11 @@ function isSuspiciousRequest(req: NextRequest) {
   const path = req.nextUrl.pathname;
 
   return (
+    // NOTE: this used to match /bot|spider|crawler/, which returned 403 to
+    // Googlebot, Bingbot and every link-preview bot -> the site could not be
+    // indexed or previewed (major SEO bug). Only block known attack tools.
     !ua ||
-    /sqlmap|nikto|scanner|bot|spider|crawler/i.test(ua) ||
+    /sqlmap|nikto|nmap|masscan|zgrab|acunetix|nessus|wpscan|dirbuster|gobuster/i.test(ua) ||
     path.includes('..') ||
     path.includes('//') ||
     path.includes('<script') ||

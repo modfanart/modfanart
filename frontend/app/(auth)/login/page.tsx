@@ -148,16 +148,16 @@ function LoginPageInner() {
     <>
       
       <h1 className="text-3xl font-bold mb-2">Sign in</h1>
-      <p className="text-gray-600 mb-8">Welcome back! Please enter your information.</p>
+      <p className="text-muted-foreground mb-8">Welcome back! Please enter your information.</p>
       <Link
         href="/"
-        className="text-sm text-gray-500 mb-1 hover:text-gray-700 transition-colors"
+        className="text-sm text-muted-foreground mb-1 hover:text-foreground transition-colors"
       >
         Home
       </Link>
 
       {form.formState.errors.root && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
+        <div className="bg-destructive-subtle border border-destructive/30 text-destructive px-4 py-3 rounded mb-6">
           {form.formState.errors.root.message}
         </div>
       )}
@@ -202,7 +202,7 @@ function LoginPageInner() {
                     <button
                       type="button"
                       onClick={() => setShowPassword((prev) => !prev)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
                       aria-label={showPassword ? 'Hide password' : 'Show password'}
                     >
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -236,14 +236,14 @@ function LoginPageInner() {
                 </FormItem>
               )}
             />
-            <Link href="/forgot-password" className="text-sm text-[#9747ff] hover:underline">
+            <Link href="/forgot-password" className="text-sm text-primary hover:underline">
               Forgot password?
             </Link>
           </div>
 
           <Button
             type="submit"
-            className="w-full h-12 bg-black hover:bg-gray-800 text-white"
+            className="w-full h-12 bg-black hover:bg-foreground text-background"
             disabled={isLoading}
           >
             {isLoading ? 'Signing in...' : 'Sign in'}
@@ -254,16 +254,16 @@ function LoginPageInner() {
       <div className="mt-6">
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-300" />
+            <div className="w-full border-t border-border" />
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-white text-gray-500">or</span>
+            <span className="px-2 bg-background text-muted-foreground">or</span>
           </div>
         </div>
 
         <Button
           variant="outline"
-          className="w-full mt-4 h-12 border-gray-300"
+          className="w-full mt-4 h-12 border-border"
           onClick={onGoogleSignIn}
           disabled={isLoading || isGoogleLoading}
           type="button"
@@ -278,9 +278,9 @@ function LoginPageInner() {
         </Button>
       </div>
 
-      <p className="mt-6 text-center text-sm text-gray-600">
+      <p className="mt-6 text-center text-sm text-muted-foreground">
         Don&apos;t have an account yet?{' '}
-        <Link href="/signup" className="text-[#9747ff] hover:underline font-medium">
+        <Link href="/signup" className="text-primary hover:underline font-medium">
           Sign up
         </Link>
       </p>

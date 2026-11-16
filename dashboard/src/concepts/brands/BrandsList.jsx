@@ -31,8 +31,6 @@ import {
   useGetAllBrandsQuery,
   useDeleteBrandMutation,
   useUpdateBrandMutation,
-  useGetVerificationRequestsQuery,
-  useApproveVerificationRequestMutation,
 } from '../../services/api/brandApi';
 
 import { toast } from 'sonner';
@@ -40,7 +38,6 @@ import { toast } from 'sonner';
 const BrandsListPage = () => {
   const navigate = useNavigate();
 
-  const [tab, setTab] = useState('all');
   const [view, setView] = useState('card');
 
   const [deleteConfirm, setDeleteConfirm] = useState({
@@ -52,22 +49,18 @@ const BrandsListPage = () => {
   // Queries
   // ============================
 
-  const { data, isLoading } = useGetAllBrandsQuery({});
-
-  const {
-    data: requests = [],
-    isLoading: requestsLoading,
-  } = useGetVerificationRequestsQuery();
+  // Directory shows only verified brands
+  const { data, isLoading } = useGetAllBrandsQuery({ verified: true });
 
   const [deleteBrand] = useDeleteBrandMutation();
   const [updateBrand] = useUpdateBrandMutation();
-  const [approveRequest] =
-    useApproveVerificationRequestMutation();
 
   const brands = data?.brands ?? [];
 
+  // Prefer explicit verification_request_id; fall back to active status
   const verifiedBrands = brands.filter(
-    (brand) => brand.verification_request_id !== null
+    (brand) =>
+      brand.verification_request_id != null || brand.status === 'active'
   );
 
   // ============================
@@ -111,30 +104,11 @@ const BrandsListPage = () => {
     }
   };
 
-  const handleApprove = async (requestId) => {
-    try {
-      await approveRequest({
-        requestId,
-      }).unwrap();
-
-      toast.success(
-        'Verification request approved'
-      );
-    } catch (error) {
-      toast.error(
-        'Failed to approve verification request'
-      );
-    }
-  };
-
   // ============================
   // Display Data
   // ============================
 
-  const displayedBrands =
-    tab === 'verified'
-      ? verifiedBrands
-      : brands;
+  const displayedBrands = verifiedBrands;
 
   return (
     <div
@@ -143,7 +117,7 @@ const BrandsListPage = () => {
     >
       <Header
         title="Brands"
-        subtitle={`${brands.length} total brands`}
+        subtitle={`${displayedBrands.length} verified brands`}
       />
 
       <div className="p-4 sm:p-6 space-y-6">
@@ -154,42 +128,16 @@ const BrandsListPage = () => {
 
         <div className="flex flex-col lg:flex-row justify-between gap-4">
 
-          {/* Tabs */}
-          <div className="flex flex-wrap gap-2">
+          {/* Left: verified only + requests link */}
+          <div className="flex flex-wrap gap-2 items-center">
+            <span className="text-sm text-zinc-400">
+              Showing verified brands only
+            </span>
             <Button
-              variant={
-                tab === 'all'
-                  ? 'default'
-                  : 'outline'
-              }
-              onClick={() => setTab('all')}
+              variant="outline"
+              onClick={() => navigate('/brands/requests')}
             >
-              All Brands
-            </Button>
-
-            <Button
-              variant={
-                tab === 'verified'
-                  ? 'default'
-                  : 'outline'
-              }
-              onClick={() =>
-                setTab('verified')
-              }
-            >
-              Verified
-            </Button>
-
-            <Button
-              variant={
-                tab === 'requests'
-                  ? 'default'
-                  : 'outline'
-              }
-              onClick={() =>
-                setTab('requests')
-              }
-            >
+              <ShieldCheck className="w-4 h-4 mr-2" />
               Verification Requests
             </Button>
           </div>
@@ -198,52 +146,44 @@ const BrandsListPage = () => {
           <div className="flex items-center gap-2">
 
             {/* View Toggle */}
-            {tab !== 'requests' && (
-              <div className="flex items-center border border-zinc-800 bg-zinc-900 rounded-md p-1">
+            <div className="flex items-center border border-zinc-800 bg-zinc-900 rounded-md p-1">
 
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() =>
-                    setView('card')
-                  }
-                  className={
-                    view === 'card'
-                      ? 'bg-zinc-800 text-white'
-                      : 'text-zinc-500 hover:text-white'
-                  }
-                >
-                  <SquaresFour className="w-4 h-4 mr-2" />
-                  Cards
-                </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setView('card')}
+                className={
+                  view === 'card'
+                    ? 'bg-zinc-800 text-white'
+                    : 'text-zinc-500 hover:text-white'
+                }
+              >
+                <SquaresFour className="w-4 h-4 mr-2" />
+                Cards
+              </Button>
 
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() =>
-                    setView('table')
-                  }
-                  className={
-                    view === 'table'
-                      ? 'bg-zinc-800 text-white'
-                      : 'text-zinc-500 hover:text-white'
-                  }
-                >
-                  <List className="w-4 h-4 mr-2" />
-                  Table
-                </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setView('table')}
+                className={
+                  view === 'table'
+                    ? 'bg-zinc-800 text-white'
+                    : 'text-zinc-500 hover:text-white'
+                }
+              >
+                <List className="w-4 h-4 mr-2" />
+                Table
+              </Button>
 
-              </div>
-            )}
+            </div>
 
             {/* Add Brand */}
             <Button
               className="bg-white text-black hover:bg-zinc-200"
-              onClick={() =>
-                navigate('/brand/create')
-              }
+              onClick={() => navigate('/brand/create')}
             >
               <Plus className="w-4 h-4 mr-2" />
               Add Brand
@@ -260,12 +200,6 @@ const BrandsListPage = () => {
           <div className="flex items-center justify-center h-64">
             <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin" />
           </div>
-        ) : tab === 'requests' ? (
-          <VerificationRequestsSection
-            requests={requests}
-            loading={requestsLoading}
-            onApprove={handleApprove}
-          />
         ) : view === 'table' ? (
           <BrandsTable
             brands={displayedBrands}
@@ -833,143 +767,5 @@ const BrandsTable = ({
 /* ============================================================
    Verification Requests
 ============================================================ */
-
-const VerificationRequestsSection = ({
-  requests = [],
-  loading,
-  onApprove,
-}) => {
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (!requests.length) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64 text-center bg-zinc-900 border border-zinc-800 rounded-xl">
-
-        <Users
-          weight="duotone"
-          className="w-12 h-12 text-zinc-600 mb-4"
-        />
-
-        <p className="text-zinc-400">
-          No verification requests
-        </p>
-
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-
-      {requests.map((req) => (
-
-        <div
-          key={req.id}
-          className="bg-zinc-900 border border-zinc-800 rounded-xl p-6"
-        >
-
-          {/* Header */}
-          <div className="flex justify-between items-start gap-4">
-
-            <div className="min-w-0">
-
-              <h3 className="font-semibold text-white text-lg">
-                {req.company_name}
-              </h3>
-
-              {req.website && (
-                <a
-                  href={req.website}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-sm text-blue-400 hover:underline break-all"
-                >
-                  {req.website}
-                </a>
-              )}
-
-            </div>
-
-            <span className="px-2 py-1 text-xs rounded bg-zinc-800 text-zinc-300 capitalize flex-shrink-0">
-              {req.status}
-            </span>
-
-          </div>
-
-          {/* Documents */}
-          {req.documents?.length > 0 && (
-            <div className="mt-4">
-
-              <p className="text-xs text-zinc-500 mb-1">
-                Documents
-              </p>
-
-              <div className="flex flex-wrap gap-2">
-
-                {req.documents.map(
-                  (doc, idx) => (
-                    <span
-                      key={idx}
-                      className="text-xs px-2 py-1 bg-zinc-800 text-zinc-300 rounded"
-                    >
-                      {doc}
-                    </span>
-                  )
-                )}
-
-              </div>
-
-            </div>
-          )}
-
-          {/* Notes */}
-          {req.notes && (
-            <p className="mt-3 text-sm text-zinc-400 border-l-2 border-zinc-700 pl-3">
-              {req.notes}
-            </p>
-          )}
-
-          {/* Actions */}
-          <div className="flex flex-col sm:flex-row gap-3 mt-6">
-
-            <button
-              onClick={() =>
-                onApprove(req.id)
-              }
-              className="flex-1 bg-white text-black py-2 rounded-md hover:bg-zinc-200 transition-colors"
-            >
-              Approve Verification
-            </button>
-
-            <button
-              type="button"
-              className="flex-1 border border-red-900 text-red-400 hover:bg-red-950 py-2 rounded-md transition-colors"
-            >
-              Reject
-            </button>
-
-            <Link
-              to={`/brand/${req.user_id}/verification-workflow`}
-              className="flex-1 text-center border border-zinc-700 text-zinc-300 hover:bg-zinc-800 py-2 rounded-md transition-colors"
-            >
-              View Workflow
-            </Link>
-
-          </div>
-
-        </div>
-
-      ))}
-
-    </div>
-  );
-};
 
 export default BrandsListPage;

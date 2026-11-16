@@ -52,7 +52,16 @@ class WebhookController {
         case "charge.refunded": {
           const charge = event.data.object;
 
-          await OrderFulfillmentService.handleRefund(charge.id);
+          await OrderFulfillmentService.handleRefund(charge);
+
+          break;
+        }
+
+        // GA-18: chargebacks used to be ignored.
+        case "charge.dispute.created":
+        case "charge.dispute.updated":
+        case "charge.dispute.closed": {
+          await OrderFulfillmentService.handleDispute(event.data.object);
 
           break;
         }
@@ -63,8 +72,11 @@ class WebhookController {
     } catch (error) {
       console.error(`Error processing webhook ${event.type}:`, error);
 
-      // Don't return error to Stripe
-      // Stripe will retry if webhook endpoint fails
+      // BUG FIX: this returned 200 even when fulfilment failed, so Stripe
+      // never retried and a paid order could stay unfulfilled forever.
+      // Fulfilment is idempotent (orders are claimed atomically), so a
+      // 500 here is safe: Stripe retries with backoff.
+      return res.status(500).json({ received: false });
     }
 
     return res.json({

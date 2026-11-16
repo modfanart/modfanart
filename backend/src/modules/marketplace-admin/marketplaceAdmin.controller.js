@@ -45,6 +45,11 @@ module.exports = {
 
   cancelOrder: wrap(async (req) => ({ order: await service.cancelOrder(req.params.id) })),
 
+  listPrizes: wrap((req) => service.listPrizes({ ...req.query, contestId: req.query.contest_id, brandId: req.query.brand_id })),
+  setPrizeStatus: wrap(async (req) => ({ prize: await service.setPrizeStatus(req.params.id, req.body || {}) })),
+  listDisputes: wrap((req) => service.listDisputes(req.query), 'disputes'),
+  overview: wrap(() => service.overview()),
+
   listReviews: wrap((req) => service.listReviews(req.query), 'reviews'),
   removeReview: wrap(async (req) => ({ removed: await service.removeReview(req.params.id) })),
 };

@@ -1,76 +1,95 @@
 'use client';
 
+// Handles Firebase email-verification links (AUTH-03 / GA-05).
+//
+// The old version called GET /api/auth/verify-email?token=…, an endpoint
+// that never existed, so every link failed. Firebase sends
+// ?mode=verifyEmail&oobCode=… when the project's action URL points here
+// (Firebase console → Authentication → Templates → Customise action URL →
+// https://<site>/verify-account). When Firebase's own hosted page handles the
+// link instead, it redirects here with no code: we then just refresh the
+// session.
+
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { API_BASE_URL } from '@/services';
+import { applyActionCode, reload } from 'firebase/auth';
+import { firebaseAuth } from '@/lib/firebase';
+import { useAppDispatch } from '@/store/hooks';
+import { setToken } from '@/services/api/features/authSlice';
+import { userApi } from '@/services/api/userApi';
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const dispatch = useAppDispatch();
 
-  const token = searchParams.get('token');
+  const mode = searchParams.get('mode');
+  const oobCode = searchParams.get('oobCode');
 
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('Verifying your email...');
 
   useEffect(() => {
-    if (!token) {
-      setStatus('error');
-      setMessage('Invalid verification link.');
-      return;
-    }
+    const finish = async () => {
+      const u = firebaseAuth.currentUser;
+      if (u) {
+        await reload(u);
+        dispatch(setToken(await u.getIdToken(true)));
+        dispatch(userApi.util.invalidateTags(['CurrentUser']));
+      }
+      setStatus('success');
+      setMessage('Your email has been verified. Contests, voting and checkout are now unlocked.');
+      setTimeout(() => router.push(u ? '/' : '/login'), 2500);
+    };
 
-    const verifyEmail = async () => {
+    const run = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/auth/verify-email?token=${token}`);
-        const data = await res.json();
-
-        if (!res.ok) {
-          throw new Error(data.error || 'Verification failed');
+        if (oobCode && (!mode || mode === 'verifyEmail')) {
+          await applyActionCode(firebaseAuth, oobCode);
+        } else if (oobCode) {
+          throw new Error('This link is not an email-verification link.');
         }
-
-        setStatus('success');
-        setMessage('Your email has been verified successfully 🎉');
-
-        setTimeout(() => {
-          router.push('/login');
-        }, 3000);
+        await finish();
       } catch (err: any) {
         setStatus('error');
-        setMessage(err.message || 'Verification failed. Token may be expired.');
+        setMessage(
+          err?.code === 'auth/invalid-action-code' || err?.code === 'auth/expired-action-code'
+            ? 'This verification link has expired or was already used. Sign in and use "Resend email".'
+            : err?.message || 'Verification failed.'
+        );
       }
     };
 
-    verifyEmail();
-  }, [token, router]);
+    run();
+  }, [mode, oobCode, router, dispatch]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="max-w-md w-full bg-white shadow-md rounded-xl p-8 text-center space-y-4">
+    <div className="min-h-screen flex items-center justify-center bg-muted px-4">
+      <div className="max-w-md w-full bg-background shadow-md rounded-xl p-8 text-center space-y-4">
         {status === 'loading' && (
           <>
             <h2 className="text-xl font-semibold">Verifying...</h2>
-            <p className="text-gray-600">{message}</p>
+            <p className="text-muted-foreground">{message}</p>
           </>
         )}
 
         {status === 'success' && (
           <>
-            <h2 className="text-xl font-semibold text-green-600">Success ✅</h2>
-            <p className="text-gray-600">{message}</p>
-            <p className="text-sm text-gray-400">Redirecting to login...</p>
+            <h2 className="text-xl font-semibold text-success">Success ✅</h2>
+            <p className="text-muted-foreground">{message}</p>
+            <p className="text-sm text-muted-foreground">Redirecting to login...</p>
           </>
         )}
 
         {status === 'error' && (
           <>
-            <h2 className="text-xl font-semibold text-red-600">Error ❌</h2>
-            <p className="text-gray-600">{message}</p>
+            <h2 className="text-xl font-semibold text-destructive">Error ❌</h2>
+            <p className="text-muted-foreground">{message}</p>
 
             <Link
               href="/login"
-              className="inline-block mt-4 px-4 py-2 bg-black text-white rounded-md"
+              className="inline-block mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-md"
             >
               Go to Login
             </Link>

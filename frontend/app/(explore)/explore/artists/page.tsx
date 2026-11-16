@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useGetAllUsersQuery } from '../../../../services/api/userApi';
+import { useGetUsersByRoleSlugQuery } from '../../../../services/api/userApi';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -14,16 +14,14 @@ export default function ExploreArtistsPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
 
-  const { data, isLoading, isFetching } = useGetAllUsersQuery({
+  const { data, isLoading, isFetching } = useGetUsersByRoleSlugQuery({
+    roleSlug: 'ARTIST',
     page,
     limit: 12,
     search,
-    // backend should filter by role
-    // if your backend supports it:
-    // role: "artist"
   });
 
-  const artists = data?.users?.filter((user) => user.role?.name === 'artist') || [];
+  const artists = data?.users ?? [];
 
   return (
     <div className="min-h-screen bg-background">

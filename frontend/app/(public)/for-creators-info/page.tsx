@@ -6,7 +6,7 @@ export default function ForCreatorsPage() {
   return (
     <div className="flex flex-col items-center">
       {/* Hero section */}
-      <section className="w-full pt-24 pb-12 md:pb-24 lg:pb-32 bg-gradient-to-b from-[#9747ff]/20 to-background">
+      <section className="w-full pt-24 pb-12 md:pb-24 lg:pb-32 bg-gradient-to-b from-primary/20 to-background">
         <div className="container px-4 md:px-6">
           <div className="grid gap-6 lg:grid-cols-2 lg:gap-12 xl:grid-cols-2">
             <div className="flex flex-col justify-center space-y-4">
@@ -20,11 +20,11 @@ export default function ForCreatorsPage() {
               </div>
               <div className="flex flex-col gap-2 min-[400px]:flex-row">
                 <Link href="/signup">
-                  <Button size="lg" className="bg-[#9747ff] hover:bg-[#8035e0]">
+                  <Button size="lg" className="bg-primary hover:bg-primary-hover">
                     Join as a Creator
                   </Button>
                 </Link>
-                <Link href="/contact-sales">
+                <Link href="/contact/sales">
                   <Button size="lg" variant="outline">
                     Schedule a Demo
                   </Button>
@@ -62,7 +62,7 @@ export default function ForCreatorsPage() {
           </div>
           <div className="mx-auto grid max-w-5xl gap-6 py-12 lg:grid-cols-3">
             <div className="flex flex-col space-y-4 rounded-lg border bg-card p-6">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#9747ff] text-white">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="24"
@@ -86,7 +86,7 @@ export default function ForCreatorsPage() {
               </p>
             </div>
             <div className="flex flex-col space-y-4 rounded-lg border bg-card p-6">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#9747ff] text-white">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="24"
@@ -112,7 +112,7 @@ export default function ForCreatorsPage() {
               </p>
             </div>
             <div className="flex flex-col space-y-4 rounded-lg border bg-card p-6">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#9747ff] text-white">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="24"
@@ -154,7 +154,7 @@ export default function ForCreatorsPage() {
           <div className="mx-auto grid max-w-6xl gap-8 py-12 md:grid-cols-2 lg:grid-cols-4">
             {steps.map((step, index) => (
               <div key={step.title} className="flex flex-col items-center space-y-3 text-center">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#9747ff] text-white text-xl font-bold">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground text-xl font-bold">
                   {index + 1}
                 </div>
                 <h3 className="text-xl font-bold">{step.title}</h3>
@@ -181,7 +181,7 @@ export default function ForCreatorsPage() {
           <div className="mx-auto grid max-w-5xl gap-6 py-12 md:grid-cols-2">
             {features.map((feature) => (
               <div key={feature.title} className="flex items-start space-x-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#9747ff] text-white">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="24"
@@ -208,7 +208,7 @@ export default function ForCreatorsPage() {
       </section>
 
       {/* CTA section */}
-      <section className="w-full py-12 md:py-24 lg:py-32 bg-[#9747ff] text-white">
+      <section className="w-full py-12 md:py-24 lg:py-32 bg-primary text-primary-foreground">
         <div className="container px-4 md:px-6">
           <div className="flex flex-col items-center justify-center space-y-4 text-center">
             <div className="space-y-2">
@@ -222,15 +222,15 @@ export default function ForCreatorsPage() {
             </div>
             <div className="flex flex-col gap-2 min-[400px]:flex-row">
               <Link href="/signup?role=creator">
-                <Button size="lg" className="bg-white text-[#9747ff] hover:bg-gray-100">
+                <Button size="lg" className="bg-background text-primary hover:bg-muted">
                   Join as a Creator
                 </Button>
               </Link>
-              <Link href="/contact-sales">
+              <Link href="/contact/sales">
                 <Button
                   size="lg"
                   variant="outline"
-                  className="border-white text-white hover:bg-white/10"
+                  className="border-white text-white hover:bg-background/10"
                 >
                   Schedule a Demo
                 </Button>

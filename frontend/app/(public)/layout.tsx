@@ -1,14 +1,8 @@
 import type React from 'react';
-// import { MainNav } from '@/components/layouts/main-nav';
-import MainNav from '@/components/layouts/main-nav-new';
-import { SiteFooter } from '@/components/layouts/site-footer';
 
+// The site header/footer are rendered once by LayoutWrapper in the root
+// layout. Rendering MainNav here as well produced a second (overlapping)
+// header on every public page and doubled its API polling (FAN-04).
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <>
-      <MainNav />
-      <main className="flex-1 bg-white">{children}</main>
-      {/* <SiteFooter /> */}
-    </>
-  );
+  return <main className="flex-1 bg-background">{children}</main>;
 }

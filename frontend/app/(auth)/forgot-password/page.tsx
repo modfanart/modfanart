@@ -50,19 +50,19 @@ export default function ForgotPasswordPage() {
 
   return (
     <>
-      <Link href="/login" className="flex items-center text-gray-600 mb-4 hover:text-gray-900">
+      <Link href="/login" className="flex items-center text-muted-foreground mb-4 hover:text-foreground">
         <ArrowLeft size={16} className="mr-1" /> Back to sign in
       </Link>
 
       {isSubmitted ? (
         <div>
           <h1 className="text-3xl font-bold mb-2">Check your email</h1>
-          <p className="text-gray-600 mb-6">
+          <p className="text-muted-foreground mb-6">
             We&apos;ve sent a password reset link to <span className="font-medium">{userEmail}</span>
           </p>
           <p className="mb-8">Please check your email and follow the instructions to reset your password.</p>
           <Link href="/login">
-            <Button className="w-full h-12 bg-black hover:bg-gray-800 text-white">
+            <Button className="w-full h-12 bg-black hover:bg-foreground text-background">
               Back to Sign in
             </Button>
           </Link>
@@ -70,7 +70,7 @@ export default function ForgotPasswordPage() {
       ) : (
         <div>
           <h1 className="text-3xl font-bold mb-2">Forgot password?</h1>
-          <p className="text-gray-600 mb-8">No worries, we&apos;ll send you reset instructions.</p>
+          <p className="text-muted-foreground mb-8">No worries, we&apos;ll send you reset instructions.</p>
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -90,7 +90,7 @@ export default function ForgotPasswordPage() {
 
               <Button
                 type="submit"
-                className="w-full h-12 bg-black hover:bg-gray-800 text-white"
+                className="w-full h-12 bg-black hover:bg-foreground text-background"
                 disabled={isLoading}
               >
                 {isLoading ? 'Sending...' : 'Reset password'}

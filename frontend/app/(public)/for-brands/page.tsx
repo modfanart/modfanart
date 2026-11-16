@@ -32,7 +32,7 @@ function SafeImage({ src, alt = '', fill = false, className = '', ...rest }: any
   if (isEmpty) {
     return (
       <div
-        className={`relative ${fill ? 'w-full h-full' : 'w-full h-full'} ${className} bg-gray-200`}
+        className={`relative ${fill ? 'w-full h-full' : 'w-full h-full'} ${className} bg-muted`}
       >
         <span className="sr-only">{alt || 'Image placeholder'}</span>
       </div>
@@ -45,15 +45,15 @@ function SafeImage({ src, alt = '', fill = false, className = '', ...rest }: any
 function FaqItem({ question, answer }: { question: string; answer: string }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="border-b border-gray-200 py-5 cursor-pointer" onClick={() => setOpen(!open)}>
+    <div className="border-b border-border py-5 cursor-pointer" onClick={() => setOpen(!open)}>
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-gray-900">{question}</span>
+        <span className="text-sm font-medium text-foreground">{question}</span>
         <ChevronDown
           size={18}
-          className={`text-purple-500 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+          className={`text-primary transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
         />
       </div>
-      {open && <p className="mt-3 text-sm text-gray-500 leading-relaxed">{answer}</p>}
+      {open && <p className="mt-3 text-sm text-muted-foreground leading-relaxed">{answer}</p>}
     </div>
   );
 }
@@ -74,7 +74,7 @@ export default function ForBrandsPage() {
 
         <div className="absolute inset-0 flex flex-col items-center justify-start text-center text-white px-4 pt-24 z-20">
           <h1 className="text-5xl md:text-6xl font-black leading-tight tracking-tight">
-            ACTIVATE YOUR <span className="bg-purple-600 text-white px-2 rounded-sm">FANDOM.</span>
+            ACTIVATE YOUR <span className="bg-primary text-primary-foreground px-2 rounded-sm">FANDOM.</span>
             <br />
             LICENSE CREATIVITY ON
             <br />
@@ -98,7 +98,7 @@ export default function ForBrandsPage() {
           <div className="mt-8 flex items-center gap-4">
             <span className="text-white font-bold tracking-widest text-sm">LAUNCH A CAMPAIGN</span>
             <Link href="/contact/sales">
-              <Button className="bg-purple-600 hover:bg-purple-700 rounded-full px-6 text-sm flex items-center gap-2">
+              <Button className="bg-primary hover:bg-primary-hover rounded-full px-6 text-sm flex items-center gap-2">
                 <CalendarCheck size={15} /> Book a Demo
               </Button>
             </Link>
@@ -107,12 +107,12 @@ export default function ForBrandsPage() {
       </section>
 
       {/* ═══════════════════════ PROBLEM BRANDS FACE ════════════════════════ */}
-      <section className="bg-white py-24 px-6 text-center">
+      <section className="bg-background py-24 px-6 text-center">
         <div className="max-w-3xl mx-auto">
           <h2 className="text-4xl md:text-5xl font-black tracking-tight">
-            THE PROBLEM <span className="text-purple-500">BRANDS</span> FACE
+            THE PROBLEM <span className="text-primary">BRANDS</span> FACE
           </h2>
-          <p className="mt-5 text-sm text-gray-500">
+          <p className="mt-5 text-sm text-muted-foreground">
             Fan art doesn't stop because a brand ignores it.
           </p>
 
@@ -125,15 +125,15 @@ export default function ForBrandsPage() {
             ].map((text, i) => (
               <div
                 key={i}
-                className="flex items-center gap-2 bg-gray-100 rounded-full px-5 py-2 text-sm font-semibold text-gray-800"
+                className="flex items-center gap-2 bg-muted rounded-full px-5 py-2 text-sm font-semibold text-foreground"
               >
-                <CheckCircle2 size={15} className="text-purple-500 shrink-0" />
+                <CheckCircle2 size={15} className="text-primary shrink-0" />
                 {text}
               </div>
             ))}
           </div>
 
-          <p className="mt-8 text-sm text-gray-500 leading-relaxed">
+          <p className="mt-8 text-sm text-muted-foreground leading-relaxed">
             Most brands don't have the time or internal resources to review thousands of
             submissions.
             <br />
@@ -144,7 +144,7 @@ export default function ForBrandsPage() {
 
           <p className="mt-6 text-lg font-medium">
             The result is a{' '}
-            <span className="relative inline-block text-purple-500">
+            <span className="relative inline-block text-primary">
               lose-lose situation,
               <img src={underline.src} alt="" className="absolute left-0 -bottom-2 w-full" />
             </span>{' '}
@@ -154,24 +154,24 @@ export default function ForBrandsPage() {
       </section>
 
       {/* ══════════════════════ THE MOD APPROACH ════════════════════════ */}
-      <section className="bg-white py-6 px-6">
+      <section className="bg-background py-6 px-6">
         <div className="max-w-5xl mx-auto">
           <div className="flex flex-col md:flex-row rounded-3xl overflow-hidden shadow-lg bg-[#F4F4F4]">
             {/* Left text */}
             <div className="flex-1 p-10">
               <div className="flex items-center gap-3 mb-5">
-                <span className="w-10 h-10 rounded-full bg-white flex items-center justify-center mb-4">
+                <span className="w-10 h-10 rounded-full bg-background flex items-center justify-center mb-4">
                   <img src={star2.src} alt="Award 1" className="w-6 h-6" />
                 </span>
                 <h3 className="text-2xl font-bold">The MOD Approach</h3>
               </div>
-              <p className="text-sm text-gray-600 leading-relaxed">
+              <p className="text-sm text-muted-foreground leading-relaxed">
                 MOD was built to solve this problem with structure, not shortcuts.
                 <br />
                 Instead of fighting fan creativity,{' '}
                 <strong>MOD gives brands a way to guide it.</strong>
               </p>
-              <p className="mt-4 text-sm text-gray-600 leading-relaxed">
+              <p className="mt-4 text-sm text-muted-foreground leading-relaxed">
                 <strong>You define what's allowed.</strong>
                 <br />
                 Artists submit work within those boundaries.
@@ -180,7 +180,7 @@ export default function ForBrandsPage() {
                 <br />
                 Only approved designs become licensed merchandise.
               </p>
-              <p className="mt-4 text-sm text-gray-600 leading-relaxed">
+              <p className="mt-4 text-sm text-muted-foreground leading-relaxed">
                 This <strong>keeps your IP protected</strong> while opening the door to real
                 engagement and new revenue.
               </p>
@@ -199,12 +199,12 @@ export default function ForBrandsPage() {
       </section>
 
       {/* ══════════════════════ HOW MOD WORKS ════════════════════════ */}
-      <section className="bg-white py-24 px-6">
+      <section className="bg-background py-24 px-6">
         <div className="max-w-3xl mx-auto">
           <h2 className="text-4xl md:text-5xl font-black tracking-tight text-center leading-tight">
             HOW MOD WORKS
             <br />
-            FOR <span className="text-purple-500">BRANDS</span> & IP HOLDERS
+            FOR <span className="text-primary">BRANDS</span> & IP HOLDERS
           </h2>
 
           <div className="mt-14 space-y-10">
@@ -233,15 +233,15 @@ export default function ForBrandsPage() {
               <div key={i} className="flex gap-5">
                 {/* Icon column with connecting line */}
                 <div className="flex flex-col items-center">
-                  <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-primary-subtle flex items-center justify-center shrink-0">
                     {icon}
                   </div>
-                  {i < 3 && <div className="w-px flex-1 bg-purple-200 mt-2" />}
+                  {i < 3 && <div className="w-px flex-1 bg-primary/20 mt-2" />}
                 </div>
                 {/* Text */}
                 <div className="pb-6">
                   <h4 className="font-bold text-base">{title}</h4>
-                  <p className="mt-1 text-sm text-gray-500 leading-relaxed whitespace-pre-line">
+                  <p className="mt-1 text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
                     {body}
                   </p>
                 </div>
@@ -252,10 +252,10 @@ export default function ForBrandsPage() {
       </section>
 
       {/* ══════════════════════ WHY BRANDS CHOOSE MOD ════════════════════════ */}
-      <section className="bg-white px-6">
+      <section className="bg-background px-6">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-4xl md:text-5xl font-black tracking-tight text-center mb-10">
-            WHY <span className="text-purple-500">BRANDS</span> CHOOSE MOD
+            WHY <span className="text-primary">BRANDS</span> CHOOSE MOD
           </h2>
 
           <div className="flex flex-col md:flex-row rounded-3xl overflow-hidden shadow-lg">
@@ -277,17 +277,17 @@ export default function ForBrandsPage() {
               ].map(({ title, body }, i) => (
                 <div key={i}>
                   <div className="flex items-center gap-2 mb-1">
-                    <BadgeCheck size={18} className="text-purple-400 shrink-0" />
+                    <BadgeCheck size={18} className="text-primary shrink-0" />
                     <h4 className="font-bold text-sm">{title}</h4>
                   </div>
-                  <p className="text-xs text-gray-400 leading-relaxed pl-6">{body}</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed pl-6">{body}</p>
                 </div>
               ))}
             </div>
 
             {/* Right — purple gradient with logo */}
-            <div className="w-full md:w-[280px] bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center p-10">
-              <span className="text-5xl font-black text-black tracking-widest select-none">
+            <div className="w-full md:w-[280px] bg-gradient-to-br from-primary to-primary flex items-center justify-center p-10">
+              <span className="text-5xl font-black text-foreground tracking-widest select-none">
                 <Image
                   src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/mod-logo-dark-gTZuJePnecraDwGyMlBCHe6E6xJgsx.png"
                   alt="MOD Logo"
@@ -300,7 +300,7 @@ export default function ForBrandsPage() {
             </div>
           </div>
 
-          <p className="mt-8 text-center text-sm font-semibold text-gray-800">
+          <p className="mt-8 text-center text-sm font-semibold text-foreground">
             MOD turns unmanaged fan activity into something
             <br />
             structured, reviewable, and brand-safe.
@@ -309,10 +309,10 @@ export default function ForBrandsPage() {
       </section>
 
       {/* ══════════════════════ TYPICAL CAMPAIGN ════════════════════════ */}
-      <section className="bg-white py-16 px-6">
+      <section className="bg-background py-16 px-6">
         <div className="max-w-5xl mx-auto text-center">
           <h2 className="text-4xl md:text-5xl font-black tracking-tight">
-            A TYPICAL <span className="text-purple-500">CAMPAIGN</span> ON MOD
+            A TYPICAL <span className="text-primary">CAMPAIGN</span> ON MOD
           </h2>
 
           {/* 4 steps with arrows */}
@@ -336,12 +336,12 @@ export default function ForBrandsPage() {
               },
             ].map(({ icon, text }, i) => (
               <div key={i} className="flex items-center gap-3">
-                <div className="bg-gray-100 rounded-2xl p-6 w-[175px] text-center flex flex-col items-center gap-3 shadow-sm">
+                <div className="bg-muted rounded-2xl p-6 w-[175px] text-center flex flex-col items-center gap-3 shadow-sm">
                   {icon}
-                  <p className="text-xs text-gray-600 leading-relaxed">{text}</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{text}</p>
                 </div>
                 {i < 3 && (
-                  <span className="text-gray-400 text-xl font-bold hidden md:block">→</span>
+                  <span className="text-muted-foreground text-xl font-bold hidden md:block">→</span>
                 )}
               </div>
             ))}
@@ -351,8 +351,8 @@ export default function ForBrandsPage() {
           <div className="mt-8 flex flex-wrap justify-center gap-6">
             {['Fans feel recognized.', 'Artists earn royalties.', 'Brands stay in control.'].map(
               (t, i) => (
-                <div key={i} className="flex items-center gap-2 text-sm text-gray-700 font-medium">
-                  <CheckCircle2 size={15} className="text-purple-500" /> {t}
+                <div key={i} className="flex items-center gap-2 text-sm text-foreground font-medium">
+                  <CheckCircle2 size={15} className="text-primary" /> {t}
                 </div>
               )
             )}
@@ -363,12 +363,12 @@ export default function ForBrandsPage() {
       </section>
 
       {/* ══════════════════════ READY CTA ════════════════════════ */}
-      <section className="bg-white py-10 px-6">
+      <section className="bg-background py-10 px-6">
         <div className="max-w-4xl mx-auto">
           <div className="relative rounded-3xl overflow-hidden bg-black text-white text-center py-16 px-8">
             {/* purple glow */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-72 h-40 bg-purple-600 blur-[80px] opacity-60 rounded-full" />
+              <div className="w-72 h-40 bg-primary blur-[80px] opacity-60 rounded-full" />
             </div>
 
             <div className="relative z-10">
@@ -382,7 +382,7 @@ export default function ForBrandsPage() {
               </p>
               <p className="mt-5 font-bold tracking-widest text-sm">LAUNCH A CAMPAIGN</p>
               <Link href="/contact/sales">
-                <Button className="mt-4 bg-purple-600 hover:bg-purple-700 rounded-full px-8 flex items-center gap-2 mx-auto">
+                <Button className="mt-4 bg-primary hover:bg-primary-hover rounded-full px-8 flex items-center gap-2 mx-auto">
                   <CalendarCheck size={15} /> Book a Demo
                 </Button>
               </Link>
@@ -392,7 +392,7 @@ export default function ForBrandsPage() {
       </section>
 
       {/* ══════════════════════ FAQ ════════════════════════ */}
-      <section className="bg-white py-20 px-6">
+      <section className="bg-background py-20 px-6">
         <div className="max-w-3xl mx-auto">
           <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-10">
             FREQUENTLY ASKED QUESTIONS

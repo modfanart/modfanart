@@ -41,6 +41,24 @@ function Inner({ orderIds, prepare, disabled, label, onPaid }: PaymentFormProps)
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Stripe's card field lives in an iframe and can't see our CSS variables,
+  // so resolve the design tokens once and pass them in.
+  const cardStyle = useMemo(() => {
+    if (typeof window === 'undefined') return { base: { fontSize: '16px' } };
+    const css = getComputedStyle(document.documentElement);
+    const tok = (name: string) => `hsl(${css.getPropertyValue(`--${name}`).trim().replace(/ /g, ', ')})`;
+    return {
+      base: {
+        fontSize: '16px',
+        color: tok('foreground'),
+        iconColor: tok('primary'),
+        fontFamily: getComputedStyle(document.body).fontFamily,
+        '::placeholder': { color: tok('muted-foreground') },
+      },
+      invalid: { color: tok('destructive'), iconColor: tok('destructive') },
+    };
+  }, []);
+
   const pay = async () => {
     if (!stripe || !elements) return;
 
@@ -94,7 +112,7 @@ function Inner({ orderIds, prepare, disabled, label, onPaid }: PaymentFormProps)
         <CardElement
           options={{
             hidePostalCode: true,
-            style: { base: { fontSize: '16px' } },
+            style: cardStyle,
           }}
         />
       </div>
