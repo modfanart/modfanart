@@ -24,6 +24,11 @@ async function up(db) {
     db
   );
 
+  // Production's orders table predates the currency column (it only ever
+  // existed in the hand-run marketplace.sql), so create it before defaulting.
+  await sql`
+    ALTER TABLE orders ADD COLUMN IF NOT EXISTS currency varchar(3) NOT NULL DEFAULT 'USD'
+  `.execute(db);
   await sql`ALTER TABLE orders ALTER COLUMN currency SET DEFAULT 'USD'`.execute(
     db
   );

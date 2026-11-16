@@ -6,6 +6,7 @@ const {
   generateInvoicePDF,
 } = require("../../../common/utils/pdfGenerators");
 const payoutService = require("../../payout/payout.service");
+const payoutSettlement = require("../../payout/payout-settlement.service");
 
 class OrderFulfillmentService {
   // Entry point for a succeeded PaymentIntent. Handles both shapes:
@@ -203,12 +204,16 @@ class OrderFulfillmentService {
       throw e;
     }
 
-    // Digital-only orders are done, so their payouts can be generated now.
-    // Kept outside the transaction (payouts read committed order_items) and
-    // wrapped so a payout hiccup never undoes licenses the buyer already has.
+    // Digital-only orders are done, so their payouts can be generated now
+    // and moved on Stripe Connect. Kept outside the transaction (payouts read
+    // committed order_items) and wrapped so a payout hiccup never undoes
+    // licenses the buyer already has. Settlement needs the PaymentIntent
+    // itself to tell a destination charge (already paid out) from a platform
+    // charge.
     if (!outcome.hasMerch) {
       try {
         await payoutService.generatePayoutsForOrder(orderId);
+        await payoutSettlement.settlePayoutsForOrder(orderId, paymentIntent);
       } catch (payoutErr) {
         console.error(`Payout generation failed for order ${orderId}:`, payoutErr);
       }

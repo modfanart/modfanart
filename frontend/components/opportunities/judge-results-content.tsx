@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { AlertTriangle, ExternalLink, Trophy } from 'lucide-react';
+import { AlertTriangle, ExternalLink, FileText, Trophy } from 'lucide-react';
+
+import { isPdfUrl } from '@/lib/utils/file-type';
 
 import {
   useGetContestQuery,
@@ -39,13 +41,22 @@ function FinalistRow({
 
         <div className="relative h-20 w-20 rounded-md overflow-hidden bg-muted shrink-0">
           {(entry.artwork_thumbnail || entry.artwork_file_url) && (
-            <Image
-              src={entry.artwork_thumbnail || entry.artwork_file_url || ''}
-              alt={entry.artwork_title || 'Entry'}
-              fill
-              className="object-cover"
-              sizes="80px"
-            />
+            isPdfUrl(entry.artwork_thumbnail || entry.artwork_file_url) ? (
+              <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-muted">
+                <FileText className="h-7 w-7 text-muted-foreground" />
+                <span className="text-[10px] font-medium leading-none text-muted-foreground">
+                  PDF
+                </span>
+              </div>
+            ) : (
+              <Image
+                src={entry.artwork_thumbnail || entry.artwork_file_url || ''}
+                alt={entry.artwork_title || 'Entry'}
+                fill
+                className="object-cover"
+                sizes="80px"
+              />
+            )
           )}
         </div>
 

@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { AlertTriangle, Check, Copy, Link2, Trophy } from 'lucide-react';
+import { AlertTriangle, Check, Copy, FileText, Link2, Trophy } from 'lucide-react';
+
+import { isPdfUrl } from '@/lib/utils/file-type';
 
 import {
   useGetLeaderboardQuery,
@@ -186,13 +188,22 @@ export function ResultsTabContent({ contestId }: { contestId: string }) {
 
               <div className="relative h-16 w-16 rounded-md overflow-hidden bg-muted shrink-0">
                 {(entry.artwork_thumbnail || entry.artwork_file_url) && (
-                  <Image
-                    src={entry.artwork_thumbnail || entry.artwork_file_url || ''}
-                    alt={entry.artwork_title || 'Entry'}
-                    fill
-                    className="object-cover"
-                    sizes="64px"
-                  />
+                  isPdfUrl(entry.artwork_thumbnail || entry.artwork_file_url) ? (
+                    <div className="flex h-full w-full flex-col items-center justify-center gap-0.5 bg-muted">
+                      <FileText className="h-5 w-5 text-muted-foreground" />
+                      <span className="text-[9px] font-medium leading-none text-muted-foreground">
+                        PDF
+                      </span>
+                    </div>
+                  ) : (
+                    <Image
+                      src={entry.artwork_thumbnail || entry.artwork_file_url || ''}
+                      alt={entry.artwork_title || 'Entry'}
+                      fill
+                      className="object-cover"
+                      sizes="64px"
+                    />
+                  )
                 )}
               </div>
 

@@ -6,6 +6,7 @@ const ArtworkPricingTier = require("../models/artworkPricingTier.model");
 const CDNFile = require("../../cdn/models/cdn-file.model");
 const CDNFileService = require("../../cdn/services/cdn-file.service");
 const cdnFileModel = require("../../cdn/models/cdn-file.model");
+const { renderPdfThumbnail } = require("../utils/pdf-thumbnail.util");
 const { applyPublicArtworkFilter } = require("../artwork.visibility");
 const { isAdminUser } = require("../../../common/middleware/require-admin");
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -58,12 +59,22 @@ class ArtworkController {
         });
       }
 
-const cdnService = new CDNFileService(cdnFileModel);
+      const cdnService = new CDNFileService(cdnFileModel);
 
-const cdnFile = await cdnService.createFileRecord(
-  req.file,
-  userId
-);
+      let pdfThumbnailUrl = null;
+      if (ext === ".pdf") {
+        const thumbBuffer = await renderPdfThumbnail(req.file.path);
+        if (thumbBuffer) {
+          const thumbFilename = `${path.parse(req.file.filename).name}-thumb.png`;
+          pdfThumbnailUrl = await cdnService.uploadBufferToCDN(
+            thumbBuffer,
+            thumbFilename,
+            "image/png"
+          );
+        }
+      }
+
+      const cdnFile = await cdnService.createFileRecord(req.file, userId);
 
       // Create artwork
       const artwork = await Artwork.create(userId, {
@@ -71,12 +82,13 @@ const cdnFile = await cdnService.createFileRecord(
         description: description?.trim() || null,
 
         file_url: cdnFile.url,
-        thumbnail_url: cdnFile.url,
+        thumbnail_url: pdfThumbnailUrl || cdnFile.url,
         source_file_url: cdnFile.url,
 
         status: "draft",
         moderation_status: "pending",
       });
+
 
       if (!artwork) {
         return res.status(500).json({

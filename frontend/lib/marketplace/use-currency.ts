@@ -9,9 +9,9 @@ const listeners = new Set<() => void>();
 function read(): Currency {
   try {
     const v = window.localStorage.getItem(KEY);
-    return v === 'USD' ? 'USD' : 'INR';
+    return v === 'USD' ? v : 'USD';
   } catch {
-    return 'INR';
+    return 'USD';
   }
 }
 
@@ -25,10 +25,10 @@ function subscribe(cb: () => void) {
 }
 
 // Buyer's display + checkout currency, shared across the storefront, cart and
-// checkout. The backend prices every variant in both INR and USD; this only
-// decides which one is shown and sent to /cart/checkout.
+// checkout. The platform is USD-only (see `Currency`); this only decides
+// which one is shown and sent to /cart/checkout.
 export function useCurrency(): [Currency, (c: Currency) => void] {
-  const currency = useSyncExternalStore(subscribe, read, () => 'INR' as Currency);
+  const currency = useSyncExternalStore(subscribe, read, () => 'USD' as Currency);
 
   const setCurrency = useCallback((c: Currency) => {
     try {

@@ -1,4 +1,5 @@
 const service = require('./payout.service');
+const settlement = require('./payout-settlement.service');
 
 function handleError(res, error) {
   console.error(error);
@@ -96,6 +97,22 @@ async function markFailed(req, res) {
   }
 }
 
+// Admin-only: re-run Stripe Connect settlement for one payout. Resolves to
+// 'paid' or 'failed' (or stays 'pending' while the seller has no Connect
+// account); the row is returned either way so the caller sees the outcome.
+async function settle(req, res) {
+  try {
+    const payout = await settlement.settleById(req.params.id);
+
+    return res.json({
+      message: `Payout ${payout.status}`,
+      payout,
+    });
+  } catch (error) {
+    return handleError(res, error);
+  }
+}
+
 module.exports = {
   getMyPayouts,
   listAllPayouts,
@@ -103,4 +120,5 @@ module.exports = {
   generateForOrder,
   markPaid,
   markFailed,
+  settle,
 };

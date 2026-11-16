@@ -39,6 +39,21 @@ class CDNFileService {
     return `${CDN_BASE_URL}/${key}`;
   }
 
+  async uploadBufferToCDN(buffer, remoteFilename, mimeType, keyPrefix = S3_KEY_PREFIX) {
+  const key = `${keyPrefix}/${remoteFilename}`;
+
+  await s3.send(
+    new PutObjectCommand({
+      Bucket: S3_BUCKET_NAME,
+      Key: key,
+      Body: buffer,
+      ContentType: mimeType,
+    })
+  );
+
+  return `${CDN_BASE_URL}/${key}`;
+}
+
   async createFileRecord(file, uploadedBy = null, keyPrefix = S3_KEY_PREFIX) {
     const remoteFilename = file.filename;
 
