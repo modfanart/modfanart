@@ -9,6 +9,7 @@
     "migrate:latest": "node src/scripts/migrate.js",
     "db:migrate": "node src/scripts/migrate.js",
     "migrate:status": "node src/scripts/migrate.js --status",
+    "db:sql": "node src/scripts/apply-sql.js",
     "dev": "node index.js",
     "build": "tsc",
     "start": "node index.js",
