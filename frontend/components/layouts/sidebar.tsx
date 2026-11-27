@@ -20,6 +20,19 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
   const { user } = useAuth();
 
+  const permissions = user?.role?.permissions ?? {};
+
+  const hasPermission = (permission?: string) => {
+    if (!permission) return true;
+
+    // Admin / wildcard permissions
+    if (permissions['*'] === true || permissions['all'] === true) {
+      return true;
+    }
+
+    return permissions[permission] === true;
+  };
+
   // Judging is granted per contest through contest_judges, not through a role,
   // so it cannot come from sidebarConfig (which is keyed on user.role.name).
   // The decision rules (and why pending invitations count) live in
@@ -116,10 +129,9 @@ export default function Sidebar({ onClose }: { onClose?: () => void }) {
       <Separator />
 
       <div className="p-4">
-        {/* AUTH-07: this Settings button had no link */}
-        <Button variant="outline" className="w-full justify-start gap-2" asChild>
-          <Link href={role === 'brand_manager' || role === 'brand_owner' ? '/dashboard/settings' : '/settings'} onClick={() => onClose?.()}>
-            Settings
+        <Button variant="outline" className="w-full justify-start gap-2">
+          <Link href="/settings">
+            <span className="text-sm font-medium">Settings</span>
           </Link>
         </Button>
       </div>
